@@ -1,11 +1,22 @@
 import React, { useState } from 'react'
 import { Menu, X, User, Settings, LogOut, Bell, Search, Zap } from 'lucide-react'
 import { Button } from '../ui/Button'
+import { useAuth } from '../../contexts/AuthContext'
 import { cn } from '../../utils/cn'
 
 const Header = ({ onSidebarToggle, className }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  const { user, profile, signOut } = useAuth()
+
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      window.location.href = '/login'
+    } catch (error) {
+      console.error('Erro no logout:', error)
+    }
+  }
 
   return (
     <header className={cn("bg-white shadow-soft border-b border-gray-200", className)}>
@@ -86,7 +97,7 @@ const Header = ({ onSidebarToggle, className }) => {
                   <User className="h-4 w-4 text-primary-600" />
                 </div>
                 <span className="hidden sm:block text-sm font-medium text-gray-700">
-                  Admin
+                  {profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}
                 </span>
               </Button>
 
@@ -110,6 +121,10 @@ const Header = ({ onSidebarToggle, className }) => {
                     <hr className="my-1" />
                     <a
                       href="#"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        handleLogout()
+                      }}
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       <LogOut className="mr-3 h-4 w-4" />

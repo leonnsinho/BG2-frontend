@@ -4,7 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
-import { SimpleDashboard } from './components/SimpleDashboard'
+import { DashboardPage } from './pages/DashboardPage'
 import { useAuth } from './contexts/AuthContext'
 
 // Componente para redirecionar baseado no estado de auth
@@ -34,7 +34,7 @@ function AppRoutes() {
         path="/dashboard" 
         element={
           <ProtectedRoute>
-            <SimpleDashboard />
+            <DashboardPage />
           </ProtectedRoute>
         }
       />
