@@ -237,6 +237,20 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Função para recarregar o perfil atual
+  const refreshProfile = async () => {
+    if (!user?.id) return null
+    
+    try {
+      const updatedProfile = await fetchProfile(user.id)
+      setProfile(updatedProfile)
+      return updatedProfile
+    } catch (error) {
+      console.error('Erro ao recarregar perfil:', error)
+      return null
+    }
+  }
+
   const value = {
     user,
     profile,
@@ -251,6 +265,7 @@ export function AuthProvider({ children }) {
     hasRole,
     getActiveCompany,
     fetchProfile,
+    refreshProfile,
   }
 
   return (

@@ -1,4 +1,7 @@
 import React from 'react'
+import { useLocation, Link } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import { usePermissions } from '../../hooks/useAuth'
 import { 
   BarChart3, 
   Users, 
@@ -11,69 +14,196 @@ import {
   UserCircle,
   ChevronRight,
   Home,
-  X
+  X,
+  UserPlus,
+  Shield,
+  Database
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
-const navigationItems = [
-  {
-    name: 'Dashboard',
-    icon: Home,
-    href: '/dashboard',
-    current: true
-  },
-  {
-    name: 'Jornadas',
-    icon: Target,
-    href: '/jornadas',
-    children: [
-      { name: 'Estratégica', href: '/jornadas/estrategica' },
-      { name: 'Financeira', href: '/jornadas/financeira' },
-      { name: 'Pessoas & Cultura', href: '/jornadas/pessoas' },
-      { name: 'Receita', href: '/jornadas/receita' },
-      { name: 'Operacional', href: '/jornadas/operacional' }
+// Função para obter itens de navegação baseados no perfil do usuário
+const getNavigationItems = (profile, permissions) => {
+  const baseItems = [
+    {
+      name: 'Dashboard',
+      icon: Home,
+      href: '/dashboard',
+      roles: ['super_admin', 'consultant', 'company_admin', 'user']
+    }
+  ]
+
+  // Super Admin - Acesso total
+  if (permissions.isSuperAdmin()) {
+    return [
+      ...baseItems,
+      {
+        name: 'Gestão de Sistema',
+        icon: Shield,
+        href: '/admin',
+        children: [
+          { name: 'Usuários', href: '/admin/users' },
+          { name: 'Empresas', href: '/admin/companies' },
+          { name: 'Configurações', href: '/admin/settings' }
+        ]
+      },
+      {
+        name: 'Convites',
+        icon: UserPlus,
+        href: '/invites'
+      },
+      {
+        name: 'Relatórios Globais',
+        icon: BarChart3,
+        href: '/reports',
+        children: [
+          { name: 'Por Empresa', href: '/reports/companies' },
+          { name: 'Por Usuário', href: '/reports/users' },
+          { name: 'Métricas Sistema', href: '/reports/system' }
+        ]
+      }
     ]
-  },
-  {
-    name: 'CRM',
-    icon: Users,
-    href: '/crm'
-  },
-  {
-    name: 'Financeiro',
-    icon: DollarSign,
-    href: '/financeiro',
-    children: [
-      { name: 'Fluxo de Caixa', href: '/financeiro/fluxo-caixa' },
-      { name: 'DRE', href: '/financeiro/dre' },
-      { name: 'DFC', href: '/financeiro/dfc' },
-      { name: 'Orçamento', href: '/financeiro/orcamento' }
-    ]
-  },
-  {
-    name: 'Relatórios',
-    icon: FileText,
-    href: '/relatorios'
-  },
-  {
-    name: 'Analytics',
-    icon: TrendingUp,
-    href: '/analytics'
-  },
-  {
-    name: 'Empresa',
-    icon: Building2,
-    href: '/empresa'
-  },
-  {
-    name: 'Usuários',
-    icon: UserCircle,
-    href: '/usuarios'
   }
-]
+
+  // Consultor - Múltiplas empresas
+  if (permissions.isConsultant()) {
+    return [
+      ...baseItems,
+      {
+        name: 'Empresas',
+        icon: Building2,
+        href: '/companies',
+        children: [
+          { name: 'Visão Geral', href: '/companies/overview' },
+          { name: 'Comparativo', href: '/companies/compare' },
+          { name: 'Relatórios', href: '/companies/reports' }
+        ]
+      },
+      {
+        name: 'Convites',
+        icon: UserPlus,
+        href: '/invites'
+      },
+      {
+        name: 'Jornadas',
+        icon: Target,
+        href: '/jornadas',
+        children: [
+          { name: 'Estratégica', href: '/jornadas/estrategica' },
+          { name: 'Financeira', href: '/jornadas/financeira' },
+          { name: 'Pessoas & Cultura', href: '/jornadas/pessoas' },
+          { name: 'Receita', href: '/jornadas/receita' },
+          { name: 'Operacional', href: '/jornadas/operacional' }
+        ]
+      },
+      {
+        name: 'CRM',
+        icon: Users,
+        href: '/crm'
+      },
+      {
+        name: 'Financeiro',
+        icon: DollarSign,
+        href: '/financeiro',
+        children: [
+          { name: 'Fluxo de Caixa', href: '/financeiro/fluxo-caixa' },
+          { name: 'DRE', href: '/financeiro/dre' },
+          { name: 'DFC', href: '/financeiro/dfc' },
+          { name: 'Orçamento', href: '/financeiro/orcamento' }
+        ]
+      }
+    ]
+  }
+
+  // Admin da Empresa - Gestão da empresa
+  if (permissions.isCompanyAdmin()) {
+    return [
+      ...baseItems,
+      {
+        name: 'Equipe',
+        icon: Users,
+        href: '/team',
+        children: [
+          { name: 'Membros', href: '/team/members' },
+          { name: 'Convites', href: '/team/invites' },
+          { name: 'Permissões', href: '/team/permissions' }
+        ]
+      },
+      {
+        name: 'Convites',
+        icon: UserPlus,
+        href: '/invites'
+      },
+      {
+        name: 'Jornadas',
+        icon: Target,
+        href: '/jornadas',
+        children: [
+          { name: 'Estratégica', href: '/jornadas/estrategica' },
+          { name: 'Financeira', href: '/jornadas/financeira' },
+          { name: 'Pessoas & Cultura', href: '/jornadas/pessoas' },
+          { name: 'Receita', href: '/jornadas/receita' },
+          { name: 'Operacional', href: '/jornadas/operacional' }
+        ]
+      },
+      {
+        name: 'CRM',
+        icon: Users,
+        href: '/crm'
+      },
+      {
+        name: 'Financeiro',
+        icon: DollarSign,
+        href: '/financeiro',
+        children: [
+          { name: 'Fluxo de Caixa', href: '/financeiro/fluxo-caixa' },
+          { name: 'DRE', href: '/financeiro/dre' },
+          { name: 'DFC', href: '/financeiro/dfc' },
+          { name: 'Orçamento', href: '/financeiro/orcamento' }
+        ]
+      },
+      {
+        name: 'Relatórios',
+        icon: BarChart3,
+        href: '/reports',
+        children: [
+          { name: 'Vendas', href: '/reports/sales' },
+          { name: 'Financeiro', href: '/reports/financial' },
+          { name: 'Equipe', href: '/reports/team' }
+        ]
+      }
+    ]
+  }
+
+  // Usuário comum - Acesso limitado
+  return [
+    ...baseItems,
+    {
+      name: 'CRM',
+      icon: Users,
+      href: '/crm'
+    },
+    {
+      name: 'Relatórios',
+      icon: BarChart3,
+      href: '/reports',
+      children: [
+        { name: 'Minhas Vendas', href: '/reports/my-sales' },
+        { name: 'Meu Desempenho', href: '/reports/my-performance' }
+      ]
+    }
+  ]
+}
 
 const Sidebar = ({ isOpen, onClose, className }) => {
+  const location = useLocation()
+  const { profile } = useAuth()
+  const permissions = usePermissions()
   const [expandedItems, setExpandedItems] = React.useState(['Jornadas'])
+
+  // Obter itens de navegação baseados no usuário atual
+  const navigationItems = React.useMemo(() => {
+    return getNavigationItems(profile, permissions)
+  }, [profile, permissions])
 
   const toggleExpanded = (itemName) => {
     setExpandedItems(prev => 
@@ -81,6 +211,14 @@ const Sidebar = ({ isOpen, onClose, className }) => {
         ? prev.filter(name => name !== itemName)
         : [...prev, itemName]
     )
+  }
+
+  const isCurrentPath = (href) => {
+    return location.pathname === href
+  }
+
+  const hasActiveChild = (children) => {
+    return children?.some(child => location.pathname === child.href)
   }
 
   return (
@@ -115,69 +253,108 @@ const Sidebar = ({ isOpen, onClose, className }) => {
         {/* Navegação - Scrollable */}
         <nav className="flex-1 overflow-y-auto py-6 px-3">
           <div className="space-y-1">
-            {navigationItems.map((item) => (
-              <div key={item.name}>
-                <a
-                  href={item.href}
-                  className={cn(
-                    "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                    item.current
-                      ? "bg-primary-50 text-primary-700"
-                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                  )}
-                  onClick={(e) => {
-                    if (item.children) {
-                      e.preventDefault()
-                      toggleExpanded(item.name)
-                    }
-                  }}
-                >
-                  <item.icon
-                    className={cn(
-                      "mr-3 h-5 w-5 flex-shrink-0",
-                      item.current ? "text-primary-500" : "text-gray-400 group-hover:text-gray-500"
-                    )}
-                  />
-                  <span className="flex-1">{item.name}</span>
-                  {item.children && (
-                    <ChevronRight
+            {navigationItems.map((item) => {
+              const isActive = isCurrentPath(item.href) || hasActiveChild(item.children)
+              
+              return (
+                <div key={item.name}>
+                  {item.children ? (
+                    <button
+                      onClick={() => toggleExpanded(item.name)}
                       className={cn(
-                        "ml-3 h-4 w-4 transition-transform",
-                        expandedItems.includes(item.name) ? "rotate-90" : ""
+                        "w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
+                        isActive
+                          ? "bg-primary-50 text-primary-700"
+                          : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                       )}
-                    />
+                    >
+                      <item.icon
+                        className={cn(
+                          "mr-3 h-5 w-5 flex-shrink-0",
+                          isActive ? "text-primary-500" : "text-gray-400 group-hover:text-gray-500"
+                        )}
+                      />
+                      <span className="flex-1">{item.name}</span>
+                      <ChevronRight
+                        className={cn(
+                          "ml-3 h-4 w-4 transition-transform",
+                          expandedItems.includes(item.name) ? "rotate-90" : ""
+                        )}
+                      />
+                    </button>
+                  ) : (
+                    <Link
+                      to={item.href}
+                      className={cn(
+                        "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                        isActive
+                          ? "bg-primary-50 text-primary-700"
+                          : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                      )}
+                      onClick={onClose}
+                    >
+                      <item.icon
+                        className={cn(
+                          "mr-3 h-5 w-5 flex-shrink-0",
+                          isActive ? "text-primary-500" : "text-gray-400 group-hover:text-gray-500"
+                        )}
+                      />
+                      <span className="flex-1">{item.name}</span>
+                    </Link>
                   )}
-                </a>
 
-                {/* Subitens */}
-                {item.children && expandedItems.includes(item.name) && (
-                  <div className="mt-1 ml-6 space-y-1">
-                    {item.children.map((subItem) => (
-                      <a
-                        key={subItem.name}
-                        href={subItem.href}
-                        className="group flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:text-gray-900 hover:bg-gray-50"
-                      >
-                        <span className="w-2 h-2 bg-gray-300 rounded-full mr-3 flex-shrink-0"></span>
-                        {subItem.name}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                  {/* Subitens */}
+                  {item.children && expandedItems.includes(item.name) && (
+                    <div className="mt-1 ml-6 space-y-1">
+                      {item.children.map((subItem) => (
+                        <Link
+                          key={subItem.name}
+                          to={subItem.href}
+                          className={cn(
+                            "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                            isCurrentPath(subItem.href)
+                              ? "text-primary-700 bg-primary-50"
+                              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                          )}
+                          onClick={onClose}
+                        >
+                          <span 
+                            className={cn(
+                              "w-2 h-2 rounded-full mr-3 flex-shrink-0",
+                              isCurrentPath(subItem.href) ? "bg-primary-500" : "bg-gray-300"
+                            )}
+                          ></span>
+                          {subItem.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </nav>
 
         {/* Footer da Sidebar */}
         <div className="flex-shrink-0 p-4 border-t border-gray-200">
-          <a
-            href="/configuracoes"
-            className="group flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:text-gray-900 hover:bg-gray-50"
+          <Link
+            to="/settings"
+            className={cn(
+              "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+              isCurrentPath('/settings')
+                ? "bg-primary-50 text-primary-700"
+                : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+            )}
+            onClick={onClose}
           >
-            <Settings className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+            <Settings 
+              className={cn(
+                "mr-3 h-5 w-5",
+                isCurrentPath('/settings') ? "text-primary-500" : "text-gray-400 group-hover:text-gray-500"
+              )}
+            />
             Configurações
-          </a>
+          </Link>
         </div>
       </aside>
     </>

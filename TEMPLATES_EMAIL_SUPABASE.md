@@ -1,0 +1,985 @@
+# 📧 TEMPLATES DE EMAIL PARA SUPABASE
+## Configuração Completa de Email Templates
+
+### 📋 RESUMO DOS TEMPLATES
+
+Este documento contém todos os templates de email necessários para configurar no Supabase Dashboard em **Authentication > Email Templates**.
+
+**Templates incluídos:**
+1. 🔐 **Password Recovery** - Recuperação de senha
+2. ✅ **Email Confirmation** - Confirmação de email/cadastro  
+3. 🎉 **Welcome Email** - Boas-vindas (opcional)
+4. 🔄 **Email Change Confirmation** - Mudança de email
+5. 🔐 **Magic Link** - Login sem senha (opcional)
+
+---
+
+## 🛠️ COMO CONFIGURAR NO SUPABASE
+
+### **Passo a Passo:**
+1. Acesse: https://supabase.com/dashboard
+2. Vá para seu projeto: `ecmgbinyotuxhiniadom`
+3. Clique em **Authentication** no menu lateral
+4. Clique em **Email Templates**
+5. Selecione cada template e cole o código HTML correspondente
+6. Configure as variáveis de redirect URL
+7. Salve cada template
+
+---
+
+## 1. 🔐 RECUPERAÇÃO DE SENHA (Password Recovery)
+
+### **Configurações:**
+- **Subject:** `Redefinir sua senha - Partimap`
+- **Redirect URL:** `{{ .SiteURL }}/reset-password`
+
+### **Template HTML:**
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir Senha - Partimap</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8fafc;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .logo {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .header-subtitle {
+            color: #e0e7ff;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #64748b;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .reset-button {
+            display: inline-block;
+            padding: 14px 28px;
+            background-color: #dc2626;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .reset-button:hover {
+            background-color: #b91c1c;
+        }
+        
+        .security-info {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        
+        .security-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        
+        .security-text {
+            color: #92400e;
+            font-size: 14px;
+        }
+        
+        .footer {
+            background-color: #f1f5f9;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .footer-text {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .footer-link {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header, .content, .footer {
+                padding: 20px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🗺️ Partimap</div>
+            <div class="header-subtitle">Mapeamento Participativo Inteligente</div>
+        </div>
+        
+        <div class="content">
+            <h1 class="title">Redefinir sua senha</h1>
+            <p class="message">
+                Você solicitou a redefinição de sua senha. Clique no botão abaixo para criar uma nova senha segura.
+            </p>
+            
+            <div class="button-container">
+                <a href="{{ .ConfirmationURL }}" class="reset-button">
+                    🔐 Redefinir Senha
+                </a>
+            </div>
+            
+            <div class="security-info">
+                <div class="security-title">⚠️ Informações de Segurança</div>
+                <div class="security-text">
+                    • Este link expira em 1 hora<br>
+                    • Se você não solicitou esta redefinição, ignore este email<br>
+                    • Nunca compartilhe este link com outras pessoas
+                </div>
+            </div>
+            
+            <p class="message" style="font-size: 14px; margin-top: 20px;">
+                Se o botão não funcionar, copie e cole este link no seu navegador:<br>
+                <span style="word-break: break-all; color: #2563eb;">{{ .ConfirmationURL }}</span>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p class="footer-text">
+                Este email foi enviado pelo sistema Partimap.<br>
+                Se você tem dúvidas, entre em contato conosco em 
+                <a href="mailto:suporte@partimap.com" class="footer-link">suporte@partimap.com</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+```
+
+---
+
+## 2. ✅ CONFIRMAÇÃO DE EMAIL (Email Confirmation)
+
+### **Configurações:**
+- **Subject:** `Confirme seu email - Bem-vindo ao Partimap! 🎉`
+- **Redirect URL:** `{{ .SiteURL }}/login?message=email-confirmed`
+
+### **Template HTML:**
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirme seu Email - Partimap</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8fafc;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .logo {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .header-subtitle {
+            color: #d1fae5;
+            font-size: 16px;
+        }
+        
+        .welcome-badge {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 15px;
+            display: inline-block;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #64748b;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .confirm-button {
+            display: inline-block;
+            padding: 14px 28px;
+            background-color: #059669;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .confirm-button:hover {
+            background-color: #047857;
+        }
+        
+        .features {
+            background-color: #f8fafc;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        
+        .features-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #475569;
+        }
+        
+        .feature-icon {
+            margin-right: 10px;
+            font-size: 16px;
+        }
+        
+        .footer {
+            background-color: #f1f5f9;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .footer-text {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .footer-link {
+            color: #059669;
+            text-decoration: none;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header, .content, .footer {
+                padding: 20px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🗺️ Partimap</div>
+            <div class="header-subtitle">Mapeamento Participativo Inteligente</div>
+            <div class="welcome-badge">🎉 Bem-vindo!</div>
+        </div>
+        
+        <div class="content">
+            <h1 class="title">Confirme seu email</h1>
+            <p class="message">
+                Olá! Obrigado por se cadastrar no Partimap. Para completar seu cadastro e começar a usar nossa plataforma, confirme seu endereço de email.
+            </p>
+            
+            <div class="button-container">
+                <a href="{{ .ConfirmationURL }}" class="confirm-button">
+                    ✅ Confirmar Email
+                </a>
+            </div>
+            
+            <div class="features">
+                <div class="features-title">🚀 O que você pode fazer no Partimap:</div>
+                <div class="feature-item">
+                    <span class="feature-icon">🗺️</span>
+                    Criar mapas participativos interativos
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">👥</span>
+                    Engajar sua comunidade em decisões
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    Analisar dados geoespaciais em tempo real
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🎯</span>
+                    Tomar decisões baseadas em dados
+                </div>
+            </div>
+            
+            <p class="message" style="font-size: 14px; margin-top: 20px;">
+                Se o botão não funcionar, copie e cole este link no seu navegador:<br>
+                <span style="word-break: break-all; color: #059669;">{{ .ConfirmationURL }}</span>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p class="footer-text">
+                Precisa de ajuda? Estamos aqui para você!<br>
+                Entre em contato: <a href="mailto:suporte@partimap.com" class="footer-link">suporte@partimap.com</a><br>
+                Ou acesse nossa documentação: <a href="#" class="footer-link">docs.partimap.com</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+```
+
+---
+
+## 3. 🔄 MUDANÇA DE EMAIL (Email Change Confirmation)
+
+### **Configurações:**
+- **Subject:** `Confirme sua nova alteração de email - Partimap`
+- **Redirect URL:** `{{ .SiteURL }}/login?message=email-changed`
+
+### **Template HTML:**
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmar Mudança de Email - Partimap</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8fafc;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .logo {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .header-subtitle {
+            color: #e9d5ff;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #64748b;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .email-info {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .email-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .email-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        .email-value {
+            color: #1e293b;
+            font-weight: 600;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .confirm-button {
+            display: inline-block;
+            padding: 14px 28px;
+            background-color: #7c3aed;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .confirm-button:hover {
+            background-color: #6d28d9;
+        }
+        
+        .security-info {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        
+        .security-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        
+        .security-text {
+            color: #92400e;
+            font-size: 14px;
+        }
+        
+        .footer {
+            background-color: #f1f5f9;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .footer-text {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .footer-link {
+            color: #7c3aed;
+            text-decoration: none;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header, .content, .footer {
+                padding: 20px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+            
+            .email-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🗺️ Partimap</div>
+            <div class="header-subtitle">Mapeamento Participativo Inteligente</div>
+        </div>
+        
+        <div class="content">
+            <h1 class="title">Confirme sua nova alteração de email</h1>
+            <p class="message">
+                Você solicitou a alteração do endereço de email da sua conta. Para confirmar esta mudança, clique no botão abaixo.
+            </p>
+            
+            <div class="email-info">
+                <div class="email-row">
+                    <span class="email-label">📧 Email atual:</span>
+                    <span class="email-value">{{ .Email }}</span>
+                </div>
+                <div class="email-row">
+                    <span class="email-label">📧 Novo email:</span>
+                    <span class="email-value">{{ .NewEmail }}</span>
+                </div>
+            </div>
+            
+            <div class="button-container">
+                <a href="{{ .ConfirmationURL }}" class="confirm-button">
+                    🔄 Confirmar Alteração
+                </a>
+            </div>
+            
+            <div class="security-info">
+                <div class="security-title">🛡️ Informações de Segurança</div>
+                <div class="security-text">
+                    • Este link expira em 24 horas<br>
+                    • Se você não solicitou esta alteração, entre em contato conosco imediatamente<br>
+                    • Após a confirmação, use o novo email para fazer login
+                </div>
+            </div>
+            
+            <p class="message" style="font-size: 14px; margin-top: 20px;">
+                Se o botão não funcionar, copie e cole este link no seu navegador:<br>
+                <span style="word-break: break-all; color: #7c3aed;">{{ .ConfirmationURL }}</span>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p class="footer-text">
+                Precisa de ajuda com sua conta?<br>
+                Entre em contato: <a href="mailto:suporte@partimap.com" class="footer-link">suporte@partimap.com</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+```
+
+---
+
+## 4. 🔐 MAGIC LINK (Login sem senha) - OPCIONAL
+
+### **Configurações:**
+- **Subject:** `Seu link de acesso ao Partimap 🔑`
+- **Redirect URL:** `{{ .SiteURL }}/dashboard`
+
+### **Template HTML:**
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link de Acesso - Partimap</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8fafc;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .logo {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .header-subtitle {
+            color: #fed7aa;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #64748b;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .magic-button {
+            display: inline-block;
+            padding: 14px 28px;
+            background-color: #ea580c;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .magic-button:hover {
+            background-color: #dc2626;
+        }
+        
+        .security-info {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        
+        .security-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        
+        .security-text {
+            color: #92400e;
+            font-size: 14px;
+        }
+        
+        .footer {
+            background-color: #f1f5f9;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .footer-text {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .footer-link {
+            color: #ea580c;
+            text-decoration: none;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header, .content, .footer {
+                padding: 20px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🗺️ Partimap</div>
+            <div class="header-subtitle">Mapeamento Participativo Inteligente</div>
+        </div>
+        
+        <div class="content">
+            <h1 class="title">🔑 Seu link de acesso</h1>
+            <p class="message">
+                Clique no botão abaixo para fazer login instantaneamente na sua conta Partimap. Sem necessidade de senha!
+            </p>
+            
+            <div class="button-container">
+                <a href="{{ .ConfirmationURL }}" class="magic-button">
+                    ✨ Acessar Partimap
+                </a>
+            </div>
+            
+            <div class="security-info">
+                <div class="security-title">🔒 Informações de Segurança</div>
+                <div class="security-text">
+                    • Este link funciona apenas uma vez<br>
+                    • Expira em 5 minutos por segurança<br>
+                    • Se você não solicitou este acesso, ignore este email
+                </div>
+            </div>
+            
+            <p class="message" style="font-size: 14px; margin-top: 20px;">
+                Se o botão não funcionar, copie e cole este link no seu navegador:<br>
+                <span style="word-break: break-all; color: #ea580c;">{{ .ConfirmationURL }}</span>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p class="footer-text">
+                Este link foi gerado para o email: {{ .Email }}<br>
+                Precisa de ajuda? <a href="mailto:suporte@partimap.com" class="footer-link">suporte@partimap.com</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+```
+
+---
+
+## 5. 📧 CONFIGURAÇÕES GERAIS NO SUPABASE
+
+### **Settings Recomendadas:**
+
+#### **Email Rate Limits:**
+- Rate limit: 30 emails por hora por IP
+- Rate limit per email: 6 emails por hora
+
+#### **SMTP Configuration (Produção):**
+```
+Host: smtp.gmail.com (ou seu provedor)
+Port: 587
+Username: noreply@partimap.com
+Password: [App Password]
+Sender Name: Partimap
+Sender Email: noreply@partimap.com
+```
+
+#### **Site URL Configuration:**
+```
+Site URL: https://app.partimap.com (sua URL de produção)
+Additional redirect URLs:
+- http://localhost:5174 (desenvolvimento)
+- https://app.partimap.com/reset-password
+- https://app.partimap.com/login
+```
+
+---
+
+## 6. 🧪 TESTE DOS TEMPLATES
+
+### **Como testar cada template:**
+
+#### **1. Password Recovery:**
+```javascript
+// No console do navegador ou componente React
+await supabase.auth.resetPasswordForEmail('seu@email.com')
+```
+
+#### **2. Email Confirmation:**
+```javascript
+// Ao fazer signup
+await supabase.auth.signUp({
+  email: 'teste@email.com',
+  password: 'password123'
+})
+```
+
+#### **3. Email Change:**
+```javascript
+// Quando logado
+await supabase.auth.updateUser({
+  email: 'novoemail@email.com'
+})
+```
+
+#### **4. Magic Link:**
+```javascript
+// Login sem senha
+await supabase.auth.signInWithOtp({
+  email: 'user@email.com'
+})
+```
+
+---
+
+## 📝 VARIÁVEIS DISPONÍVEIS
+
+### **Variáveis do Supabase que você pode usar nos templates:**
+
+```
+{{ .Email }}          - Email do usuário
+{{ .NewEmail }}       - Novo email (para mudança)
+{{ .ConfirmationURL }} - URL de confirmação
+{{ .SiteURL }}        - URL base do site
+{{ .Token }}          - Token de verificação
+```
+
+---
+
+## 🎯 PRÓXIMOS PASSOS
+
+### **Após configurar os templates:**
+
+1. **✅ Testar cada template individualmente**
+2. **✅ Configurar SMTP personalizado para produção**  
+3. **✅ Ajustar rate limits conforme necessário**
+4. **✅ Personalizar URLs de redirect**
+5. **✅ Validar responsividade dos emails**
+
+---
+
+## 📞 SUPORTE
+
+**Se precisar de ajuda:**
+- Documentação: https://supabase.com/docs/guides/auth/auth-email-templates  
+- Testes: Use o Auth Debug no dashboard do Supabase
+
+---
+
+**🎉 Com esses templates, você terá um sistema de email profissional completo para o Partimap!**

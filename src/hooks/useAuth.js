@@ -143,7 +143,7 @@ export function useProfile() {
 }
 
 export function usePermissions() {
-  const { profile, hasPermission, hasRole, getActiveCompany } = useAuth()
+  const { profile, hasPermission, hasRole, getActiveCompany, loading } = useAuth()
 
   const checkPermission = (permission) => hasPermission(permission)
   const checkRole = (roles) => hasRole(roles)
@@ -162,6 +162,7 @@ export function usePermissions() {
     isSuperAdmin,
     isConsultant,
     isCompanyAdmin,
-    isUser
+    isUser,
+    isLoading: loading
   }
 }

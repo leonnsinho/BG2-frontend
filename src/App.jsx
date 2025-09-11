@@ -1,5 +1,6 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
@@ -7,6 +8,9 @@ import { RegisterPage } from './pages/RegisterPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { DashboardPage } from './pages/DashboardPage'
+import SettingsPage from './pages/SettingsPage'
+import { InviteSystem } from './components/InviteSystem'
+import AcceptInvitePage from './pages/AcceptInvitePage'
 import { useAuth } from './contexts/AuthContext'
 
 // Componente para redirecionar baseado no estado de auth
@@ -32,6 +36,7 @@ function AppRoutes() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/accept-invite" element={<AcceptInvitePage />} />
       
       {/* Rotas protegidas */}
       <Route 
@@ -39,6 +44,24 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route 
+        path="/settings" 
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route 
+        path="/invites" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'consultant', 'company_admin']}>
+            <InviteSystem />
           </ProtectedRoute>
         }
       />
@@ -58,6 +81,16 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-50">
           <AppRoutes />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
         </div>
       </Router>
     </AuthProvider>
