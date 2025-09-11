@@ -19,7 +19,7 @@ const Layout = ({ children, className }) => {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       <Sidebar 
         isOpen={sidebarOpen} 
@@ -27,7 +27,7 @@ const Layout = ({ children, className }) => {
       />
 
       {/* Main Content */}
-      <div className="flex flex-col flex-1 lg:pl-64">
+      <div className="flex flex-col lg:ml-64">
         {/* Header */}
         <Header onSidebarToggle={() => setSidebarOpen(true)} />
 
