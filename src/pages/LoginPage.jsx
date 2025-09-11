@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { useLogin } from '../hooks/useAuth'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
@@ -8,13 +9,24 @@ import { Loading } from '../components/ui/Loading'
 import { Eye, EyeOff, Zap } from 'lucide-react'
 
 export function LoginPage() {
+  const location = useLocation()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   })
   const [showPassword, setShowPassword] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   const { login, loading, error, clearError } = useLogin()
   const { user } = useAuth()
+
+  // Mostrar mensagem de sucesso vinda da navegação (ex: reset de senha)
+  useEffect(() => {
+    if (location.state?.message && location.state?.type === 'success') {
+      setSuccessMessage(location.state.message)
+      // Limpar o state para não mostrar novamente
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state])
 
   // Redirecionar se já estiver logado
   useEffect(() => {
@@ -109,6 +121,13 @@ export function LoginPage() {
               </div>
             </div>
 
+            {/* Mensagem de Sucesso */}
+            {successMessage && (
+              <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                <p className="text-sm text-green-700">{successMessage}</p>
+              </div>
+            )}
+
             {/* Erro */}
             {error && (
               <div className="bg-danger-50 border border-danger-200 rounded-md p-3">
@@ -135,18 +154,18 @@ export function LoginPage() {
 
             {/* Links */}
             <div className="flex items-center justify-between text-sm">
-              <a
-                href="/forgot-password"
+              <Link
+                to="/forgot-password"
                 className="text-primary-600 hover:text-primary-700 transition-colors"
               >
                 Esqueceu a senha?
-              </a>
-              <a
-                href="/register"
+              </Link>
+              <Link
+                to="/register"
                 className="text-primary-600 hover:text-primary-700 transition-colors"
               >
                 Criar conta
-              </a>
+              </Link>
             </div>
           </form>
         </Card>
