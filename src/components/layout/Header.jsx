@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Menu, X, User, Settings, LogOut, Bell, Search, Zap } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { useAuth } from '../../contexts/AuthContext'
@@ -18,8 +18,23 @@ const Header = ({ onSidebarToggle, className }) => {
     }
   }
 
+  // Fechar dropdowns ao clicar fora
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dropdown-container')) {
+        setIsUserMenuOpen(false)
+        setIsNotificationOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
   return (
-    <header className={cn("bg-white shadow-soft border-b border-gray-200", className)}>
+    <header className={cn("bg-white shadow-sm border-b border-gray-200 flex-shrink-0", className)}>
       <div className="max-w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo e Sidebar Toggle */}
@@ -63,7 +78,7 @@ const Header = ({ onSidebarToggle, className }) => {
             </Button>
 
             {/* Notificações */}
-            <div className="relative">
+            <div className="relative dropdown-container">
               <Button
                 variant="ghost"
                 size="icon"
@@ -71,11 +86,11 @@ const Header = ({ onSidebarToggle, className }) => {
                 className="relative"
               >
                 <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-danger-500 rounded-full"></span>
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
               </Button>
               
               {isNotificationOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-strong border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-strong border border-gray-200 z-[60]">
                   <div className="p-4 border-b border-gray-100">
                     <h3 className="text-lg font-semibold text-gray-900">Notificações</h3>
                   </div>
@@ -87,7 +102,7 @@ const Header = ({ onSidebarToggle, className }) => {
             </div>
 
             {/* Menu do Usuário */}
-            <div className="relative">
+            <div className="relative dropdown-container">
               <Button
                 variant="ghost"
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -102,7 +117,7 @@ const Header = ({ onSidebarToggle, className }) => {
               </Button>
 
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-strong border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-strong border border-gray-200 z-[60]">
                   <div className="py-1">
                     <a
                       href="#"

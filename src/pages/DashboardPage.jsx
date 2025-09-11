@@ -125,7 +125,7 @@ export function DashboardPage() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
               Olá, {profile?.full_name || user?.email}! 👋
@@ -139,35 +139,50 @@ export function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm">
-              <Bell className="w-4 h-4 mr-2" />
-              Notificações
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+              <Bell className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Notificações</span>
             </Button>
-            <Button variant="outline" size="sm">
-              <Settings className="w-4 h-4 mr-2" />
-              Configurações
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+              <Settings className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Configurações</span>
             </Button>
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat) => (
-            <Card key={stat.name} className="p-6">
-              <div className="flex items-center">
-                <div className={`w-12 h-12 bg-${stat.color}-100 rounded-lg flex items-center justify-center`}>
-                  <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <div className="flex items-center">
-                    <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
-                    <p className="ml-2 text-sm text-success-600">{stat.change}</p>
+          {stats.map((stat) => {
+            const getColorClasses = (color) => {
+              const colorMap = {
+                primary: { bg: 'bg-blue-100', text: 'text-blue-600' },
+                secondary: { bg: 'bg-purple-100', text: 'text-purple-600' },
+                success: { bg: 'bg-green-100', text: 'text-green-600' },
+                warning: { bg: 'bg-amber-100', text: 'text-amber-600' },
+                danger: { bg: 'bg-red-100', text: 'text-red-600' }
+              }
+              return colorMap[color] || colorMap.primary
+            }
+            
+            const colors = getColorClasses(stat.color)
+            
+            return (
+              <Card key={stat.name} className="p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center">
+                  <div className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center`}>
+                    <stat.icon className={`w-6 h-6 ${colors.text}`} />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">{stat.name}</p>
+                    <div className="flex items-center">
+                      <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+                      <p className="ml-2 text-sm text-green-600">{stat.change}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            )
+          })}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -178,21 +193,36 @@ export function DashboardPage() {
                 Ações Rápidas
               </h3>
               <div className="space-y-3">
-                {quickActions.map((action) => (
-                  <a
-                    key={action.title}
-                    href={action.href}
-                    className="flex items-center p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className={`w-10 h-10 bg-${action.color}-100 rounded-lg flex items-center justify-center`}>
-                      <action.icon className={`w-5 h-5 text-${action.color}-600`} />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-gray-900">{action.title}</p>
-                      <p className="text-xs text-gray-600">{action.description}</p>
-                    </div>
-                  </a>
-                ))}
+                {quickActions.map((action) => {
+                  const getColorClasses = (color) => {
+                    const colorMap = {
+                      primary: { bg: 'bg-blue-100', text: 'text-blue-600' },
+                      secondary: { bg: 'bg-purple-100', text: 'text-purple-600' },
+                      success: { bg: 'bg-green-100', text: 'text-green-600' },
+                      warning: { bg: 'bg-amber-100', text: 'text-amber-600' },
+                      danger: { bg: 'bg-red-100', text: 'text-red-600' }
+                    }
+                    return colorMap[color] || colorMap.primary
+                  }
+                  
+                  const colors = getColorClasses(action.color)
+                  
+                  return (
+                    <a
+                      key={action.title}
+                      href={action.href}
+                      className="flex items-center p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className={`w-10 h-10 ${colors.bg} rounded-lg flex items-center justify-center`}>
+                        <action.icon className={`w-5 h-5 ${colors.text}`} />
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm font-medium text-gray-900">{action.title}</p>
+                        <p className="text-xs text-gray-600">{action.description}</p>
+                      </div>
+                    </a>
+                  )
+                })}
               </div>
             </Card>
           </div>

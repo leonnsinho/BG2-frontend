@@ -88,7 +88,7 @@ const Sidebar = ({ isOpen, onClose, className }) => {
       {/* Overlay para mobile */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-gray-900 bg-opacity-50 z-30 lg:hidden"
           onClick={onClose}
         />
       )}
@@ -96,13 +96,13 @@ const Sidebar = ({ isOpen, onClose, className }) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 w-64 h-full bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+          "fixed top-0 left-0 z-40 w-64 h-full bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:z-10 flex flex-col",
           isOpen ? "translate-x-0" : "-translate-x-full",
           className
         )}
       >
         {/* Header da Sidebar */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
           <button
             onClick={onClose}
@@ -112,8 +112,8 @@ const Sidebar = ({ isOpen, onClose, className }) => {
           </button>
         </div>
 
-        {/* Navegação */}
-        <nav className="mt-6 px-3">
+        {/* Navegação - Scrollable */}
+        <nav className="flex-1 overflow-y-auto py-6 px-3">
           <div className="space-y-1">
             {navigationItems.map((item) => (
               <div key={item.name}>
@@ -122,7 +122,7 @@ const Sidebar = ({ isOpen, onClose, className }) => {
                   className={cn(
                     "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
                     item.current
-                      ? "bg-primary-50 text-primary-700 border-r-2 border-primary-700"
+                      ? "bg-primary-50 text-primary-700"
                       : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                   )}
                   onClick={(e) => {
@@ -170,7 +170,7 @@ const Sidebar = ({ isOpen, onClose, className }) => {
         </nav>
 
         {/* Footer da Sidebar */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <div className="flex-shrink-0 p-4 border-t border-gray-200">
           <a
             href="/configuracoes"
             className="group flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:text-gray-900 hover:bg-gray-50"
