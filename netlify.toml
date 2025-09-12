@@ -5,8 +5,41 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# SPA Redirect Rules - Multiple approaches for maximum compatibility
 [[redirects]]
   from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+  
+# Specific redirects for known routes (optional, for better SEO)
+[[redirects]]
+  from = "/login"
+  to = "/index.html"
+  status = 200
+  
+[[redirects]]
+  from = "/dashboard" 
+  to = "/index.html"
+  status = 200
+  
+[[redirects]]
+  from = "/invite"
+  to = "/index.html"
+  status = 200
+  
+[[redirects]]
+  from = "/settings"
+  to = "/index.html"
+  status = 200
+  
+[[redirects]]
+  from = "/system-test"
+  to = "/index.html"
+  status = 200
+  
+[[redirects]]
+  from = "/accept-invite"
   to = "/index.html"
   status = 200
 

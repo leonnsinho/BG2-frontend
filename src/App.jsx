@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
+import { UserProvider } from './contexts/UserContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
@@ -11,7 +12,22 @@ import { DashboardPage } from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
 import { InviteSystem } from './components/InviteSystem'
 import AcceptInvitePage from './pages/AcceptInvitePage'
+import { SystemTestPage } from './pages/SystemTestPage'
 import { useAuth } from './contexts/AuthContext'
+import { ToastContainer } from './components/ui/FeedbackComponents'
+import { useUserContext } from './contexts/UserContext'
+
+// Componente para gerenciar notificações globais
+function NotificationManager() {
+  const { notifications, removeNotification } = useUserContext()
+
+  return (
+    <ToastContainer 
+      toasts={notifications} 
+      onRemove={removeNotification} 
+    />
+  )
+}
 
 // Componente para redirecionar baseado no estado de auth
 function RootRedirect() {
@@ -66,6 +82,22 @@ function AppRoutes() {
         }
       />
       
+      {/* Página de Testes do Sistema (apenas para desenvolvimento) */}
+      <Route 
+        path="/system-test" 
+        element={
+          <ProtectedRoute>
+            <SystemTestPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Página de aceitar convite (pública) */}
+      <Route 
+        path="/accept-invite" 
+        element={<AcceptInvitePage />} 
+      />
+      
       {/* Redirecionar raiz baseado no estado de auth */}
       <Route path="/" element={<RootRedirect />} />
       
@@ -78,21 +110,24 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-gray-50">
-          <AppRoutes />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-            }}
-          />
-        </div>
-      </Router>
+      <UserProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50">
+            <AppRoutes />
+            <NotificationManager />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+              }}
+            />
+          </div>
+        </Router>
+      </UserProvider>
     </AuthProvider>
   )
 }

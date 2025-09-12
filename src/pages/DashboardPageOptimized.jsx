@@ -1,10 +1,10 @@
-import React, { memo, useMemo, Suspense } from 'react'
+import React, { memo, useMemo } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/usePermissions'
 import { Layout } from '../components/layout/Layout'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
-import { DashboardSkeleton, SmartLoader } from '../components/ui/DashboardLoaders'
+import { LoadingSpinner } from '../components/ui/FeedbackComponents'
 import { 
   Users, 
   Building2, 
@@ -17,7 +17,7 @@ import {
   LogOut
 } from 'lucide-react'
 
-// Dados estáticos movidos para fora do componente para evitar re-criação
+// Dados estáticos otimizados (movidos para fora do componente)
 const DASHBOARD_STATS = [
   {
     name: 'Empresas Ativas',
@@ -84,20 +84,38 @@ const RECENT_ACTIVITIES = [
   }
 ]
 
+const COLOR_CLASSES = {
+  primary: { bg: 'bg-blue-100', text: 'text-blue-600' },
+  secondary: { bg: 'bg-purple-100', text: 'text-purple-600' },
+  success: { bg: 'bg-green-100', text: 'text-green-600' },
+  warning: { bg: 'bg-amber-100', text: 'text-amber-600' },
+  danger: { bg: 'bg-red-100', text: 'text-red-600' }
+}
+
+const PROGRESS_DATA = [
+  {
+    percentage: 85,
+    title: 'Jornada Estratégica',
+    subtitle: '17 de 20 processos concluídos',
+    color: 'primary'
+  },
+  {
+    percentage: 92,
+    title: 'Jornada Financeira',
+    subtitle: '23 de 25 processos concluídos',
+    color: 'success'
+  },
+  {
+    percentage: 67,
+    title: 'Jornada Pessoas',
+    subtitle: '12 de 18 processos concluídos',
+    color: 'warning'
+  }
+]
+
 // Componente de estatística otimizado
 const StatCard = memo(({ stat }) => {
-  const getColorClasses = (color) => {
-    const colorMap = {
-      primary: { bg: 'bg-blue-100', text: 'text-blue-600' },
-      secondary: { bg: 'bg-purple-100', text: 'text-purple-600' },
-      success: { bg: 'bg-green-100', text: 'text-green-600' },
-      warning: { bg: 'bg-amber-100', text: 'text-amber-600' },
-      danger: { bg: 'bg-red-100', text: 'text-red-600' }
-    }
-    return colorMap[color] || colorMap.primary
-  }
-  
-  const colors = getColorClasses(stat.color)
+  const colors = COLOR_CLASSES[stat.color] || COLOR_CLASSES.primary
   
   return (
     <Card className="p-6 hover:shadow-md transition-shadow">
@@ -119,6 +137,78 @@ const StatCard = memo(({ stat }) => {
 
 StatCard.displayName = 'StatCard'
 
+// Componente de ação rápida otimizado
+const QuickActionCard = memo(({ action }) => {
+  const colors = COLOR_CLASSES[action.color] || COLOR_CLASSES.primary
+  
+  return (
+    <a
+      href={action.href}
+      className="flex items-center p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+    >
+      <div className={`w-10 h-10 ${colors.bg} rounded-lg flex items-center justify-center`}>
+        <action.icon className={`w-5 h-5 ${colors.text}`} />
+      </div>
+      <div className="ml-3">
+        <p className="text-sm font-medium text-gray-900">{action.title}</p>
+        <p className="text-xs text-gray-600">{action.description}</p>
+      </div>
+    </a>
+  )
+})
+
+QuickActionCard.displayName = 'QuickActionCard'
+
+// Componente de atividade otimizado
+const ActivityItem = memo(({ activity }) => {
+  const getActivityIcon = () => {
+    switch (activity.type) {
+      case 'login': return <LogOut className="w-4 h-4 text-gray-600" />
+      case 'goal': return <Target className="w-4 h-4 text-green-600" />
+      case 'company': return <Building2 className="w-4 h-4 text-blue-600" />
+      case 'report': return <BarChart3 className="w-4 h-4 text-amber-600" />
+      default: return <Users className="w-4 h-4 text-gray-600" />
+    }
+  }
+
+  return (
+    <div className="flex items-start space-x-3">
+      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+        {getActivityIcon()}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-gray-900">
+          <span className="font-medium">{activity.user}</span> {activity.action}
+        </p>
+        <div className="flex items-center mt-1 text-xs text-gray-500">
+          <span>{activity.company}</span>
+          <span className="mx-2">•</span>
+          <span>{activity.time}</span>
+        </div>
+      </div>
+    </div>
+  )
+})
+
+ActivityItem.displayName = 'ActivityItem'
+
+// Componente de progresso otimizado
+const ProgressCircle = memo(({ data }) => {
+  const colors = COLOR_CLASSES[data.color] || COLOR_CLASSES.primary
+  
+  return (
+    <div className="text-center">
+      <div className={`w-20 h-20 mx-auto ${colors.bg} rounded-full flex items-center justify-center mb-3`}>
+        <span className={`text-2xl font-bold ${colors.text}`}>{data.percentage}%</span>
+      </div>
+      <h4 className="font-medium text-gray-900">{data.title}</h4>
+      <p className="text-sm text-gray-600">{data.subtitle}</p>
+    </div>
+  )
+})
+
+ProgressCircle.displayName = 'ProgressCircle'
+
 export function DashboardPage() {
   const { user, profile, loading: authLoading } = useAuth()
   const { 
@@ -129,7 +219,7 @@ export function DashboardPage() {
     isLoading: permissionsLoading 
   } = usePermissions()
 
-  // Memoizar ações rápidas para evitar recálculo desnecessário
+  // Memoizar ações rápidas para evitar recálculo
   const quickActions = useMemo(() => {
     const actions = [
       {
@@ -169,7 +259,7 @@ export function DashboardPage() {
     return actions.filter(action => action.show)
   }, [isSuperAdmin, isConsultant, isCompanyAdmin])
 
-  // Memoizar informações do usuário para evitar recálculos
+  // Memoizar informações do usuário
   const userInfo = useMemo(() => {
     if (!profile && !user) return { name: 'Carregando...', roleDisplay: '' }
     
@@ -188,13 +278,13 @@ export function DashboardPage() {
     return { name, roleDisplay }
   }, [profile, user, activeCompany])
 
-  // Loading otimizado com skeleton
+  // Loading state otimizado
   if (authLoading || permissionsLoading) {
     return (
       <Layout>
-        <Suspense fallback={<SmartLoader />}>
-          <DashboardSkeleton />
-        </Suspense>
+        <div className="flex items-center justify-center min-h-96">
+          <LoadingSpinner size="lg" text="Carregando dashboard..." />
+        </div>
       </Layout>
     )
   }
@@ -237,36 +327,9 @@ export function DashboardPage() {
                 Ações Rápidas
               </h3>
               <div className="space-y-3">
-                {quickActions.map((action) => {
-                  const getColorClasses = (color) => {
-                    const colorMap = {
-                      primary: { bg: 'bg-blue-100', text: 'text-blue-600' },
-                      secondary: { bg: 'bg-purple-100', text: 'text-purple-600' },
-                      success: { bg: 'bg-green-100', text: 'text-green-600' },
-                      warning: { bg: 'bg-amber-100', text: 'text-amber-600' },
-                      danger: { bg: 'bg-red-100', text: 'text-red-600' }
-                    }
-                    return colorMap[color] || colorMap.primary
-                  }
-                  
-                  const colors = getColorClasses(action.color)
-                  
-                  return (
-                    <a
-                      key={action.title}
-                      href={action.href}
-                      className="flex items-center p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className={`w-10 h-10 ${colors.bg} rounded-lg flex items-center justify-center`}>
-                        <action.icon className={`w-5 h-5 ${colors.text}`} />
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-900">{action.title}</p>
-                        <p className="text-xs text-gray-600">{action.description}</p>
-                      </div>
-                    </a>
-                  )
-                })}
+                {quickActions.map((action) => (
+                  <QuickActionCard key={action.title} action={action} />
+                ))}
               </div>
             </Card>
           </div>
@@ -284,57 +347,22 @@ export function DashboardPage() {
               </div>
               <div className="space-y-4">
                 {RECENT_ACTIVITIES.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                      {activity.type === 'login' && <LogOut className="w-4 h-4 text-gray-600" />}
-                      {activity.type === 'goal' && <Target className="w-4 h-4 text-green-600" />}
-                      {activity.type === 'company' && <Building2 className="w-4 h-4 text-blue-600" />}
-                      {activity.type === 'report' && <BarChart3 className="w-4 h-4 text-amber-600" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900">
-                        <span className="font-medium">{activity.user}</span> {activity.action}
-                      </p>
-                      <div className="flex items-center mt-1 text-xs text-gray-500">
-                        <span>{activity.company}</span>
-                        <span className="mx-2">•</span>
-                        <span>{activity.time}</span>
-                      </div>
-                    </div>
-                  </div>
+                  <ActivityItem key={activity.id} activity={activity} />
                 ))}
               </div>
             </Card>
           </div>
         </div>
 
-        {/* Progress Overview */}
+        {/* Progress Overview Otimizado */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Visão Geral do Progresso
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto bg-primary-100 rounded-full flex items-center justify-center mb-3">
-                <span className="text-2xl font-bold text-primary-600">85%</span>
-              </div>
-              <h4 className="font-medium text-gray-900">Jornada Estratégica</h4>
-              <p className="text-sm text-gray-600">17 de 20 processos concluídos</p>
-            </div>
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto bg-success-100 rounded-full flex items-center justify-center mb-3">
-                <span className="text-2xl font-bold text-success-600">92%</span>
-              </div>
-              <h4 className="font-medium text-gray-900">Jornada Financeira</h4>
-              <p className="text-sm text-gray-600">23 de 25 processos concluídos</p>
-            </div>
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto bg-warning-100 rounded-full flex items-center justify-center mb-3">
-                <span className="text-2xl font-bold text-warning-600">67%</span>
-              </div>
-              <h4 className="font-medium text-gray-900">Jornada Pessoas</h4>
-              <p className="text-sm text-gray-600">12 de 18 processos concluídos</p>
-            </div>
+            {PROGRESS_DATA.map((data, index) => (
+              <ProgressCircle key={index} data={data} />
+            ))}
           </div>
         </Card>
       </div>
