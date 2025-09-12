@@ -11,6 +11,7 @@ Este documento contém todos os templates de email necessários para configurar 
 3. 🎉 **Welcome Email** - Boas-vindas (opcional)
 4. 🔄 **Email Change Confirmation** - Mudança de email
 5. 🔐 **Magic Link** - Login sem senha (opcional)
+6. 📩 **Invite Email** - Convite para sistema (CUSTOM)
 
 ---
 
@@ -882,6 +883,416 @@ Este documento contém todos os templates de email necessários para configurar 
 
 ---
 
+## 📩 CONVITE PARA SISTEMA (Invite Email) - CUSTOM
+
+### **Uso:**
+Este template é usado para enviar convites de usuários através do sistema de convites implementado no Marco 2 Day 7.
+
+### **Configurações:**
+- **Subject:** `Você foi convidado para o Partimap! 🎉`
+- **Trigger:** Função `create_invite()` do sistema
+- **Integration:** Usar com serviço de email externo (SendGrid/Resend)
+
+### **Template HTML:**
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convite para Partimap - {{company_name}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8fafc;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .logo {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .header-subtitle {
+            color: #e0e7ff;
+            font-size: 16px;
+        }
+        
+        .invite-badge {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 15px;
+            display: inline-block;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #64748b;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .invite-info {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 25px 0;
+        }
+        
+        .invite-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .invite-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        .invite-value {
+            color: #1e293b;
+            font-weight: 600;
+        }
+        
+        .company-badge {
+            background-color: #6366f1;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .role-badge {
+            background-color: #059669;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .invite-button {
+            display: inline-block;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(99, 102, 241, 0.25);
+        }
+        
+        .invite-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(99, 102, 241, 0.35);
+        }
+        
+        .features {
+            background-color: #f8fafc;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        
+        .features-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #475569;
+        }
+        
+        .feature-icon {
+            margin-right: 10px;
+            font-size: 16px;
+        }
+        
+        .expiry-info {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        
+        .expiry-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        
+        .expiry-text {
+            color: #92400e;
+            font-size: 14px;
+        }
+        
+        .personal-message {
+            background-color: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        
+        .personal-title {
+            font-weight: 600;
+            color: #0c4a6e;
+            margin-bottom: 8px;
+        }
+        
+        .personal-text {
+            color: #0c4a6e;
+            font-style: italic;
+        }
+        
+        .footer {
+            background-color: #f1f5f9;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .footer-text {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .footer-link {
+            color: #6366f1;
+            text-decoration: none;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header, .content, .footer {
+                padding: 20px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+            
+            .invite-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🗺️ Partimap</div>
+            <div class="header-subtitle">Mapeamento Participativo Inteligente</div>
+            <div class="invite-badge">🎉 Você foi convidado!</div>
+        </div>
+        
+        <div class="content">
+            <h1 class="title">Bem-vindo ao Partimap!</h1>
+            <p class="message">
+                <strong>{{invited_by_name}}</strong> convidou você para se juntar à plataforma Partimap e fazer parte da equipe <strong>{{company_name}}</strong>.
+            </p>
+            
+            <div class="invite-info">
+                <div class="invite-row">
+                    <span class="invite-label">🏢 Empresa:</span>
+                    <span class="company-badge">{{company_name}}</span>
+                </div>
+                <div class="invite-row">
+                    <span class="invite-label">👤 Função:</span>
+                    <span class="role-badge">{{role_name}}</span>
+                </div>
+                <div class="invite-row">
+                    <span class="invite-label">📧 Email:</span>
+                    <span class="invite-value">{{invite_email}}</span>
+                </div>
+                <div class="invite-row">
+                    <span class="invite-label">🗓️ Convidado em:</span>
+                    <span class="invite-value">{{invite_date}}</span>
+                </div>
+            </div>
+            
+            {{#if invite_message}}
+            <div class="personal-message">
+                <div class="personal-title">💬 Mensagem pessoal:</div>
+                <div class="personal-text">"{{invite_message}}"</div>
+            </div>
+            {{/if}}
+            
+            <div class="button-container">
+                <a href="{{invite_url}}" class="invite-button">
+                    🚀 Aceitar Convite
+                </a>
+            </div>
+            
+            <div class="features">
+                <div class="features-title">🌟 O que você pode fazer no Partimap:</div>
+                <div class="feature-item">
+                    <span class="feature-icon">🗺️</span>
+                    Criar mapas participativos interativos
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">👥</span>
+                    Colaborar com sua equipe em tempo real
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    Analisar dados e gerar relatórios
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🎯</span>
+                    Gerenciar projetos e clientes
+                </div>
+            </div>
+            
+            <div class="expiry-info">
+                <div class="expiry-title">⏰ Importante</div>
+                <div class="expiry-text">
+                    • Este convite expira em 7 dias ({{expiry_date}})<br>
+                    • Você precisa aceitar o convite para acessar a plataforma<br>
+                    • Se já tem conta, será adicionado automaticamente à empresa
+                </div>
+            </div>
+            
+            <p class="message" style="font-size: 14px; margin-top: 20px;">
+                Se o botão não funcionar, copie e cole este link no seu navegador:<br>
+                <span style="word-break: break-all; color: #6366f1;">{{invite_url}}</span>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p class="footer-text">
+                Este convite foi enviado por <strong>{{invited_by_name}}</strong> ({{invited_by_email}}) para se juntar à <strong>{{company_name}}</strong>.<br><br>
+                Precisa de ajuda? Entre em contato: <a href="mailto:suporte@partimap.com" class="footer-link">suporte@partimap.com</a><br>
+                Ou acesse nossa documentação: <a href="https://docs.partimap.com" class="footer-link">docs.partimap.com</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+```
+
+### **Variáveis do Template de Convite:**
+```javascript
+// Variáveis que devem ser substituídas ao enviar o email:
+{
+  "company_name": "Nome da Empresa",
+  "role_name": "Administrator | Consultor | Usuário",
+  "invite_email": "email@convidado.com",
+  "invite_date": "15 de Setembro, 2024",
+  "invite_message": "Mensagem personalizada (opcional)",
+  "invite_url": "https://app.partimap.com/accept-invite?token=abc123",
+  "invited_by_name": "João Silva",
+  "invited_by_email": "joao@empresa.com",
+  "expiry_date": "22 de Setembro, 2024"
+}
+```
+
+### **Integração com Sistema de Convites:**
+```javascript
+// Exemplo de uso no InviteSystem.jsx
+const sendInviteEmail = async (inviteData) => {
+  const emailTemplate = {
+    to: inviteData.email,
+    subject: `Você foi convidado para o Partimap! 🎉`,
+    html: renderTemplate('invite', {
+      company_name: inviteData.company.name,
+      role_name: getRoleDisplayName(inviteData.role),
+      invite_email: inviteData.email,
+      invite_date: formatDate(new Date()),
+      invite_message: inviteData.message,
+      invite_url: `${window.location.origin}/accept-invite?token=${inviteData.token}`,
+      invited_by_name: inviteData.invitedBy.full_name,
+      invited_by_email: inviteData.invitedBy.email,
+      expiry_date: formatDate(inviteData.expires_at)
+    })
+  }
+  
+  // Enviar via serviço de email (SendGrid, Resend, etc.)
+  await sendEmail(emailTemplate)
+}
+```
+
+### **Roles Display Names:**
+```javascript
+const getRoleDisplayName = (role) => {
+  const roles = {
+    'super_admin': 'Super Administrador',
+    'consultant': 'Consultor',
+    'company_admin': 'Administrador da Empresa',
+    'user': 'Usuário'
+  }
+  return roles[role] || 'Usuário'
+}
+```
+
+---
+
 ## 5. 📧 CONFIGURAÇÕES GERAIS NO SUPABASE
 
 ### **Settings Recomendadas:**
@@ -946,6 +1357,22 @@ await supabase.auth.signInWithOtp({
 })
 ```
 
+#### **5. Invite Email (Custom):**
+```javascript
+// Não é template nativo do Supabase
+// Deve ser integrado com serviço de email externo
+// Usar após criar convite com create_invite()
+
+const inviteData = {
+  email: 'user@example.com',
+  company_name: 'Empresa XYZ',
+  role: 'user',
+  token: 'generated_token'
+}
+
+await sendInviteEmail(inviteData)
+```
+
 ---
 
 ## 📝 VARIÁVEIS DISPONÍVEIS
@@ -971,6 +1398,188 @@ await supabase.auth.signInWithOtp({
 3. **✅ Ajustar rate limits conforme necessário**
 4. **✅ Personalizar URLs de redirect**
 5. **✅ Validar responsividade dos emails**
+
+---
+
+---
+
+## 🔗 INTEGRAÇÃO COM SISTEMA DE CONVITES
+
+### **Serviços de Email Recomendados:**
+
+#### **1. Resend (Recomendado)**
+```javascript
+import { Resend } from 'resend'
+
+const resend = new Resend('re_xxxxxxxxxxxx')
+
+const sendInviteEmail = async (inviteData) => {
+  const { data, error } = await resend.emails.send({
+    from: 'Partimap <convites@partimap.com>',
+    to: [inviteData.email],
+    subject: 'Você foi convidado para o Partimap! 🎉',
+    html: renderInviteTemplate(inviteData),
+  })
+  
+  if (error) {
+    throw new Error(`Erro ao enviar convite: ${error.message}`)
+  }
+  
+  return data
+}
+```
+
+#### **2. SendGrid**
+```javascript
+import sgMail from '@sendgrid/mail'
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+
+const sendInviteEmail = async (inviteData) => {
+  const msg = {
+    to: inviteData.email,
+    from: 'convites@partimap.com',
+    subject: 'Você foi convidado para o Partimap! 🎉',
+    html: renderInviteTemplate(inviteData),
+  }
+  
+  await sgMail.send(msg)
+}
+```
+
+### **Implementação no Sistema:**
+
+#### **1. Modificar função create_invite no Supabase:**
+```sql
+-- Adicionar na função create_invite após inserir convite
+-- Chamar função de envio de email via webhook ou API
+
+CREATE OR REPLACE FUNCTION create_invite(
+    p_email TEXT,
+    p_company_id UUID,
+    p_role TEXT,
+    p_message TEXT DEFAULT NULL
+)
+RETURNS JSON AS $$
+DECLARE
+    invite_id UUID;
+    invite_token TEXT;
+    result JSON;
+BEGIN
+    -- ... código existente ...
+    
+    -- Após inserir convite com sucesso
+    INSERT INTO public.invites (...) 
+    VALUES (...) 
+    RETURNING id INTO invite_id;
+    
+    -- Trigger para envio de email (via webhook)
+    PERFORM pg_notify('invite_created', json_build_object(
+        'invite_id', invite_id,
+        'email', p_email,
+        'company_id', p_company_id,
+        'role', p_role,
+        'token', invite_token,
+        'message', p_message
+    )::text);
+    
+    -- Retornar resultado
+    RETURN json_build_object(
+        'success', true,
+        'invite_id', invite_id,
+        'token', invite_token
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+#### **2. Webhook Handler (Next.js API Route):**
+```javascript
+// pages/api/webhooks/invite-created.js
+import { sendInviteEmail } from '../../../lib/email'
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+  
+  try {
+    const { invite_id, email, company_id, role, token, message } = req.body
+    
+    // Buscar dados adicionais necessários
+    const company = await getCompany(company_id)
+    const invitedBy = await getInvitedByUser(req.user.id)
+    
+    // Preparar dados do email
+    const emailData = {
+      email,
+      company_name: company.name,
+      role_name: getRoleDisplayName(role),
+      invite_message: message,
+      invite_url: `${process.env.NEXT_PUBLIC_APP_URL}/accept-invite?token=${token}`,
+      invited_by_name: invitedBy.full_name,
+      invited_by_email: invitedBy.email,
+      invite_date: new Date().toLocaleDateString('pt-BR'),
+      expiry_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')
+    }
+    
+    // Enviar email
+    await sendInviteEmail(emailData)
+    
+    res.status(200).json({ success: true })
+  } catch (error) {
+    console.error('Erro ao enviar convite:', error)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+}
+```
+
+#### **3. Template Renderer:**
+```javascript
+// lib/email-templates.js
+export const renderInviteTemplate = (data) => {
+  // Template HTML do convite (usar o template HTML acima)
+  let template = `<!-- Template HTML completo -->`
+  
+  // Substituir variáveis
+  Object.keys(data).forEach(key => {
+    const regex = new RegExp(`{{${key}}}`, 'g')
+    template = template.replace(regex, data[key] || '')
+  })
+  
+  // Tratar condicionais (como {{#if invite_message}})
+  template = template.replace(/{{#if invite_message}}([\s\S]*?){{\/if}}/g, 
+    data.invite_message ? '$1' : '')
+  
+  return template
+}
+```
+
+#### **4. Integração no Frontend:**
+```javascript
+// InviteSystem.jsx - Modificar função sendInvite
+const sendInvite = async (formData) => {
+  try {
+    // Criar convite no banco (isso já trigga o webhook)
+    const { data, error } = await supabase.rpc('create_invite', {
+      p_email: formData.email,
+      p_company_id: formData.companyId,
+      p_role: formData.role,
+      p_message: formData.message
+    })
+    
+    if (error) throw error
+    
+    // Email será enviado automaticamente via webhook
+    toast.success('Convite enviado com sucesso!')
+    
+    // Recarregar lista
+    await loadInvites()
+  } catch (error) {
+    toast.error('Erro ao enviar convite: ' + error.message)
+  }
+}
+```
 
 ---
 

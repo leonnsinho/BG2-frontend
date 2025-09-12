@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { sendInviteEmail as sendInviteEmailService, getEmailConfig } from '../services/emailService'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
@@ -15,7 +16,8 @@ import {
   Trash2,
   RefreshCw,
   AlertCircle,
-  Users
+  Users,
+  Settings
 } from 'lucide-react'
 
 export function InviteSystem() {
@@ -31,6 +33,14 @@ export function InviteSystem() {
   const [selectedCompany, setSelectedCompany] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [emailConfig, setEmailConfig] = useState(null)
+
+  // Carregar configuração de email
+  useEffect(() => {
+    const config = getEmailConfig()
+    setEmailConfig(config)
+    console.log('📧 Configuração de email:', config)
+  }, [])
 
   // Carregar empresas do usuário
   useEffect(() => {
@@ -113,8 +123,14 @@ export function InviteSystem() {
         setSuccess(`Convite enviado para ${inviteForm.email}!`)
         setInviteForm({ email: '', role: 'user', message: '' })
         
-        // Enviar email de convite (simulado por enquanto)
-        await sendInviteEmail(data)
+        // Enviar email de convite
+        try {
+          await sendInviteEmailService(data)
+          setSuccess(prev => prev + ' Email enviado com sucesso!')
+        } catch (emailError) {
+          console.warn('Email não pôde ser enviado:', emailError.message)
+          setSuccess(prev => prev + ' (Email será enviado posteriormente)')
+        }
         
         // Recarregar lista
         loadInvites()
@@ -130,12 +146,37 @@ export function InviteSystem() {
   }
 
   const sendInviteEmail = async (inviteData) => {
-    // Por enquanto, vamos simular o envio do email
-    // Em produção, isso seria feito via Supabase Edge Functions
-    console.log('Email de convite enviado:', inviteData)
-    
-    // Aqui você implementaria o envio real via Supabase Edge Functions
-    // ou serviço de email como Resend, SendGrid, etc.
+    try {
+      console.log('📧 Enviando email de convite para:', inviteData.email)
+      
+      // Buscar informações adicionais necessárias
+      const company = companies.find(c => c.id === inviteData.company_id)
+      
+      // Preparar dados completos para o email
+      const emailData = {
+        email: inviteData.email,
+        company_name: company?.name || 'Empresa',
+        role: inviteData.role,
+        message: inviteData.message,
+        token: inviteData.token,
+        invited_by_name: profile?.full_name || 'Administrador',
+        invited_by_email: profile?.email || user?.email
+      }
+      
+      // Enviar email usando o serviço
+      const result = await sendInviteEmailService(emailData)
+      
+      if (result.success) {
+        console.log('✅ Email enviado com sucesso!')
+        return result
+      } else {
+        console.error('❌ Erro no envio:', result.message)
+        throw new Error(result.message)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao enviar email de convite:', error)
+      throw error
+    }
   }
 
   const cancelInvite = async (inviteId) => {
@@ -164,15 +205,25 @@ export function InviteSystem() {
     try {
       setLoading(true)
       
-      // Reenviar email (simular)
-      await sendInviteEmail({
+      // Reenviar email
+      const company = companies.find(c => c.id === invite.company_id)
+      const emailData = {
         email: invite.email,
+        company_name: company?.name || invite.company_name,
+        role: invite.role,
+        message: invite.invite_message,
         token: invite.token,
-        company_id: invite.company_id,
-        role: invite.role
-      })
+        invited_by_name: profile?.full_name || 'Administrador',
+        invited_by_email: profile?.email || user?.email
+      }
       
-      setSuccess(`Convite reenviado para ${invite.email}!`)
+      const result = await sendInviteEmailService(emailData)
+      
+      if (result.success) {
+        setSuccess(`Convite reenviado para ${invite.email}!`)
+      } else {
+        setError(`Erro ao reenviar: ${result.message}`)
+      }
     } catch (err) {
       setError('Erro ao reenviar convite')
     } finally {
@@ -245,6 +296,25 @@ export function InviteSystem() {
 
   return (
     <div className="space-y-6">
+      {/* Status do Email Service */}
+      {emailConfig && (
+        <Card className="p-4 bg-blue-50 border-blue-200">
+          <div className="flex items-center space-x-3">
+            <Settings className="w-5 h-5 text-blue-600" />
+            <div>
+              <p className="font-medium text-blue-900">
+                Status do Email: {emailConfig.configured ? '✅ Configurado' : '❌ Não configurado'}
+              </p>
+              <p className="text-sm text-blue-700">
+                Serviço: {emailConfig.service} • 
+                API: {emailConfig.apiKey} • 
+                From: {emailConfig.fromEmail}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Formulário de Convite */}
       <Card className="p-6">
         <div className="flex items-center mb-6">
