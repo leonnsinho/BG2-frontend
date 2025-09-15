@@ -13,6 +13,10 @@ import SettingsPage from './pages/SettingsPage'
 import { InviteSystem } from './components/InviteSystem'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 import { SystemTestPage } from './pages/SystemTestPage'
+import MatrizBossaPage from './pages/MatrizBossaPage'
+import JourneyProcessesPage from './pages/JourneyProcessesPage'
+import ProcessEvaluationPage from './pages/ProcessEvaluationPage'
+import JornadasPage from './pages/JornadasPage'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
 import { useUserContext } from './contexts/UserContext'
@@ -74,6 +78,33 @@ function AppRoutes() {
       />
       
       <Route 
+        path="/matriz-bossa" 
+        element={
+          <ProtectedRoute>
+            <MatrizBossaPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route 
+        path="/matriz-bossa/:slug" 
+        element={
+          <ProtectedRoute>
+            <JourneyProcessesPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route 
+        path="/matriz-bossa/:slug/:processId/avaliar" 
+        element={
+          <ProtectedRoute>
+            <ProcessEvaluationPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route 
         path="/invites" 
         element={
           <ProtectedRoute requiredRole={['super_admin', 'consultant', 'company_admin']}>
@@ -96,6 +127,24 @@ function AppRoutes() {
       <Route 
         path="/accept-invite" 
         element={<AcceptInvitePage />} 
+      />
+      
+      {/* Rotas das Jornadas de Negócio */}
+      <Route 
+        path="/jornadas" 
+        element={
+          <ProtectedRoute>
+            <JornadasPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/jornadas/:slug" 
+        element={
+          <ProtectedRoute>
+            <JornadasPage />
+          </ProtectedRoute>
+        }
       />
       
       {/* Redirecionar raiz baseado no estado de auth */}

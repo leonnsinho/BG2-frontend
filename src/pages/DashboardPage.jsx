@@ -1,4 +1,5 @@
 import React, { memo, useMemo, Suspense } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/usePermissions'
 import { Layout } from '../components/layout/Layout'
@@ -133,6 +134,15 @@ export function DashboardPage() {
   const quickActions = useMemo(() => {
     const actions = [
       {
+        title: 'Matriz Bossa',
+        description: 'Avaliar maturidade empresarial com 5 jornadas e 143 processos',
+        icon: Target,
+        href: '/matriz-bossa',
+        color: 'primary',
+        show: true,
+        featured: true // Destacar como principal
+      },
+      {
         title: 'Nova Empresa',
         description: 'Cadastrar nova empresa no sistema',
         icon: Building2,
@@ -252,9 +262,12 @@ export function DashboardPage() {
                   const colors = getColorClasses(action.color)
                   
                   return (
-                    <a
+                    <Link
                       key={action.title}
-                      href={action.href}
+                      to={action.href}
+                      onClick={(e) => {
+                        console.log('Navegando para:', action.href)
+                      }}
                       className="flex items-center p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
                     >
                       <div className={`w-10 h-10 ${colors.bg} rounded-lg flex items-center justify-center`}>
@@ -264,7 +277,7 @@ export function DashboardPage() {
                         <p className="text-sm font-medium text-gray-900">{action.title}</p>
                         <p className="text-xs text-gray-600">{action.description}</p>
                       </div>
-                    </a>
+                    </Link>
                   )
                 })}
               </div>

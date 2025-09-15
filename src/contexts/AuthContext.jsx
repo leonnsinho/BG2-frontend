@@ -16,19 +16,28 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [profileCache, setProfileCache] = useState({}) // Cache para perfis
 
   // Buscar perfil do usuário
-  const fetchProfile = async (userId) => {
+  const fetchProfile = async (userId, useCache = true) => {
+    if (!userId) return null
+    
+    // Verificar cache primeiro
+    if (useCache && profileCache[userId]) {
+      return profileCache[userId]
+    }
+    
     const timeoutMs = 5000 // 5 segundos timeout
     
     return new Promise(async (resolve, reject) => {
       const timeoutId = setTimeout(() => {
+        console.warn('Timeout ao buscar perfil, permitindo acesso com funcionalidades limitadas')
         resolve(null) // Resolver com null em vez de rejeitar
       }, timeoutMs)
 
       try {
-        // Primeiro tentar buscar apenas o perfil básico (sem JOIN)
-        const { data, error } = await supabase
+        // Primeiro buscar apenas o perfil básico
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', userId)
@@ -36,20 +45,61 @@ export function AuthProvider({ children }) {
 
         clearTimeout(timeoutId)
 
-        if (error) {
-          // Se não encontrou o perfil, retornar null mas não travar
-          if (error.code === 'PGRST116') {
+        if (profileError) {
+          if (profileError.code === 'PGRST116') {
+            console.warn('Perfil não encontrado, permitindo acesso com funcionalidades básicas')
             resolve(null)
             return
           }
           
-          resolve(null) // Resolver com null em vez de rejeitar
+          console.warn('Erro ao buscar perfil:', profileError.message)
+          resolve(null)
           return
         }
 
-        resolve(data)
+        // Se conseguiu buscar o perfil básico, tentar buscar dados das empresas separadamente
+        try {
+          const { data: userCompaniesData, error: companiesError } = await supabase
+            .from('user_companies')
+            .select(`
+              id,
+              role,
+              is_active,
+              permissions,
+              companies (
+                id,
+                name,
+                slug
+              )
+            `)
+            .eq('user_id', userId)
+
+          // Mesmo se der erro nas empresas, retornar o perfil básico
+          const fullProfile = {
+            ...profileData,
+            user_companies: companiesError ? [] : userCompaniesData
+          }
+
+          // Cache o resultado
+          setProfileCache(prev => ({ ...prev, [userId]: fullProfile }))
+          resolve(fullProfile)
+
+        } catch (companiesError) {
+          console.warn('Erro ao buscar empresas do usuário, usando perfil básico:', companiesError)
+          
+          // Retornar perfil básico sem dados de empresas
+          const basicProfile = {
+            ...profileData,
+            user_companies: []
+          }
+          
+          setProfileCache(prev => ({ ...prev, [userId]: basicProfile }))
+          resolve(basicProfile)
+        }
+
       } catch (error) {
         clearTimeout(timeoutId)
+        console.error('Erro inesperado ao buscar perfil:', error)
         resolve(null) // Resolver com null em vez de rejeitar
       }
     })
@@ -200,49 +250,79 @@ export function AuthProvider({ children }) {
 
   // Efeito para monitorar mudanças de autenticação
   useEffect(() => {
+    let mounted = true // Flag para evitar updates em componente desmontado
+    
     // Verificar sessão atual
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return
+      
       setUser(session?.user ?? null)
       if (session?.user) {
         fetchProfile(session.user.id)
           .then((profile) => {
-            setProfile(profile)
-            setLoading(false)
+            if (mounted) {
+              setProfile(profile)
+              setLoading(false)
+            }
           })
           .catch((error) => {
-            setProfile(null) // Permitir continuar mesmo sem perfil
-            setLoading(false)
+            if (mounted) {
+              setProfile(null) // Permitir continuar mesmo sem perfil
+              setLoading(false)
+            }
           })
       } else {
-        setLoading(false)
+        if (mounted) {
+          setLoading(false)
+        }
       }
     })
 
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null)
+        if (!mounted) return
         
-        if (session?.user) {
-          const userProfile = await fetchProfile(session.user.id)
-          setProfile(userProfile)
-        } else {
-          setProfile(null)
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+        
+        // Só recarregar o perfil se o usuário mudou realmente
+        if (currentUser && currentUser.id !== user?.id) {
+          const userProfile = await fetchProfile(currentUser.id)
+          if (mounted) {
+            setProfile(userProfile)
+          }
+        } else if (!currentUser) {
+          if (mounted) {
+            setProfile(null)
+          }
         }
         
-        setLoading(false)
+        if (mounted) {
+          setLoading(false)
+        }
       }
     )
 
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, []) // Removido user da dependência para evitar loops
 
   // Função para recarregar o perfil atual
   const refreshProfile = async () => {
     if (!user?.id) return null
     
     try {
-      const updatedProfile = await fetchProfile(user.id)
+      // Invalidar cache e buscar perfil atualizado
+      setProfileCache(prev => {
+        const newCache = { ...prev }
+        delete newCache[user.id]
+        return newCache
+      })
+      
+      const updatedProfile = await fetchProfile(user.id, false) // false = não usar cache
       setProfile(updatedProfile)
       return updatedProfile
     } catch (error) {

@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "setup:matriz": "cd scripts && setup_matriz_bossa.bat",
+    "validate:matriz": "node scripts/setup_matriz_bossa.js validate"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

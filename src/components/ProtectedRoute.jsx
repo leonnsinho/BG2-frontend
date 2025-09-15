@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/useAuth'
@@ -8,7 +8,22 @@ import { Loading } from './ui/Loading'
 export function ProtectedRoute({ children, requiredRole = null, fallback = null }) {
   const { user, profile, loading } = useAuth()
   const permissions = usePermissions()
-
+  const [profileLoadTimeout, setProfileLoadTimeout] = useState(false)
+  
+  // Timeout para evitar loading infinito do perfil
+  useEffect(() => {
+    if (user && !profile && !loading) {
+      const timer = setTimeout(() => {
+        setProfileLoadTimeout(true)
+      }, 3000) // 3 segundos de timeout
+      
+      return () => clearTimeout(timer)
+    } else {
+      setProfileLoadTimeout(false)
+    }
+  }, [user, profile, loading])
+  
+  // Se ainda está carregando a autenticação inicial
   if (loading || permissions.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -17,17 +32,22 @@ export function ProtectedRoute({ children, requiredRole = null, fallback = null 
     )
   }
 
+  // Se não há usuário autenticado, redirecionar para login
   if (!user) {
     return <Navigate to="/login" replace />
   }
 
-  if (!profile) {
+  // Se há usuário mas não há perfil e não deu timeout ainda, mostrar loading
+  if (user && !profile && !profileLoadTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loading size="lg" text="Carregando perfil..." />
       </div>
     )
   }
+
+  // Após timeout ou com perfil carregado, prosseguir com verificação de roles
+  // (mesmo sem perfil completo, usuário pode acessar funcionalidades básicas)
 
   // Verificar se há role requerida
   if (requiredRole) {
