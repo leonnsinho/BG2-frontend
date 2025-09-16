@@ -17,9 +17,51 @@ import {
   X,
   UserPlus,
   Shield,
-  Database
+  Database,
+  Plus,
+  Zap
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
+
+// Função para obter ações rápidas baseadas nas permissões do usuário
+const getQuickActions = (permissions) => {
+  const actions = [
+    {
+      title: 'Nova Empresa',
+      description: 'Cadastrar nova empresa no sistema',
+      icon: Building2,
+      href: '/companies/new',
+      color: 'blue',
+      show: permissions.isSuperAdmin() || permissions.isConsultant()
+    },
+    {
+      title: 'Convidar Usuário',
+      description: 'Enviar convite para novo usuário',
+      icon: Users,
+      href: '/users/invite',
+      color: 'green',
+      show: permissions.isCompanyAdmin() || permissions.isSuperAdmin() || permissions.isConsultant()
+    },
+    {
+      title: 'Criar Meta',
+      description: 'Definir nova meta SMART',
+      icon: Target,
+      href: '/goals/new',
+      color: 'purple',
+      show: true
+    },
+    {
+      title: 'Ver Relatórios',
+      description: 'Acessar relatórios e dashboards',
+      icon: BarChart3,
+      href: '/reports',
+      color: 'orange',
+      show: true
+    }
+  ]
+
+  return actions.filter(action => action.show)
+}
 
 // Função para obter itens de navegação baseados no perfil do usuário
 const getNavigationItems = (profile, permissions) => {
@@ -96,6 +138,11 @@ const getNavigationItems = (profile, permissions) => {
         ]
       },
       {
+        name: 'Gestão de Processos',
+        icon: Settings,
+        href: '/process-management'
+      },
+      {
         name: 'CRM',
         icon: Users,
         href: '/crm'
@@ -144,6 +191,11 @@ const getNavigationItems = (profile, permissions) => {
           { name: 'Receita', href: '/jornadas/receita' },
           { name: 'Operacional', href: '/jornadas/operacional' }
         ]
+      },
+      {
+        name: 'Gestão de Processos',
+        icon: Settings,
+        href: '/process-management'
       },
       {
         name: 'CRM',
@@ -205,6 +257,11 @@ const Sidebar = ({ isOpen, onClose, className }) => {
     return getNavigationItems(profile, permissions)
   }, [profile, permissions])
 
+  // Obter ações rápidas baseadas no usuário atual
+  const quickActions = React.useMemo(() => {
+    return getQuickActions(permissions)
+  }, [permissions])
+
   const toggleExpanded = (itemName) => {
     setExpandedItems(prev => 
       prev.includes(itemName) 
@@ -252,6 +309,63 @@ const Sidebar = ({ isOpen, onClose, className }) => {
 
         {/* Navegação - Scrollable */}
         <nav className="flex-1 overflow-y-auto py-6 px-3">
+          
+          {/* Seção de Ações Rápidas */}
+          {quickActions.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center px-3 mb-3">
+                <Zap className="w-4 h-4 text-gray-400 mr-2" />
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Ações Rápidas
+                </h3>
+              </div>
+              
+              <div className="space-y-2">
+                {quickActions.map((action) => {
+                  const getColorClasses = (color) => {
+                    const colorMap = {
+                      blue: 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700',
+                      green: 'bg-green-50 hover:bg-green-100 border-green-200 text-green-700',
+                      purple: 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700',
+                      orange: 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700'
+                    }
+                    return colorMap[color] || colorMap.blue
+                  }
+
+                  return (
+                    <Link
+                      key={action.title}
+                      to={action.href}
+                      className={cn(
+                        "group flex items-center p-3 text-sm font-medium rounded-lg border transition-colors",
+                        getColorClasses(action.color)
+                      )}
+                      onClick={onClose}
+                    >
+                      <div className="flex items-center justify-center w-8 h-8 rounded-md bg-white border mr-3">
+                        <action.icon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{action.title}</p>
+                        <p className="text-xs opacity-75 truncate">{action.description}</p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Seção de Navegação Principal */}
+          <div className="mb-3">
+            <div className="flex items-center px-3 mb-3">
+              <Home className="w-4 h-4 text-gray-400 mr-2" />
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Navegação
+              </h3>
+            </div>
+          </div>
+          
           <div className="space-y-1">
             {navigationItems.map((item) => {
               const isActive = isCurrentPath(item.href) || hasActiveChild(item.children)

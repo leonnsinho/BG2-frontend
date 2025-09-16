@@ -3,6 +3,23 @@ import { supabase } from '../services/supabase'
 
 const AuthContext = createContext({})
 
+// Cache de perfis para evitar recarregamentos desnecessários
+const profileCache = new Map()
+const CACHE_TIMEOUT = 5 * 60 * 1000 // 5 minutos
+
+// Limpeza automática do cache
+const cleanupCache = () => {
+  const now = Date.now()
+  for (const [key, value] of profileCache.entries()) {
+    if (now - value.timestamp > CACHE_TIMEOUT) {
+      profileCache.delete(key)
+    }
+  }
+}
+
+// Limpeza periódica do cache
+setInterval(cleanupCache, CACHE_TIMEOUT)
+
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {
@@ -18,91 +35,120 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null)
   const [profileCache, setProfileCache] = useState({}) // Cache para perfis
 
-  // Buscar perfil do usuário
+  // Buscar perfil do usuário com carregamento otimizado
   const fetchProfile = async (userId, useCache = true) => {
     if (!userId) return null
     
     // Verificar cache primeiro
     if (useCache && profileCache[userId]) {
+      console.log('📋 Perfil carregado do cache')
       return profileCache[userId]
     }
     
-    const timeoutMs = 5000 // 5 segundos timeout
+    console.log('🔄 Buscando perfil do usuário:', userId)
     
-    return new Promise(async (resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        console.warn('Timeout ao buscar perfil, permitindo acesso com funcionalidades limitadas')
-        resolve(null) // Resolver com null em vez de rejeitar
-      }, timeoutMs)
+    try {
+      // Primeiro: buscar apenas perfil básico com timeout curto
+      const profilePromise = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      
+      // Timeout de apenas 3 segundos para perfil básico
+      const profileResult = await Promise.race([
+        profilePromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Profile timeout')), 3000)
+        )
+      ])
 
-      try {
-        // Primeiro buscar apenas o perfil básico
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single()
-
-        clearTimeout(timeoutId)
-
-        if (profileError) {
-          if (profileError.code === 'PGRST116') {
-            console.warn('Perfil não encontrado, permitindo acesso com funcionalidades básicas')
-            resolve(null)
-            return
-          }
-          
-          console.warn('Erro ao buscar perfil:', profileError.message)
-          resolve(null)
-          return
-        }
-
-        // Se conseguiu buscar o perfil básico, tentar buscar dados das empresas separadamente
-        try {
-          const { data: userCompaniesData, error: companiesError } = await supabase
-            .from('user_companies')
-            .select(`
-              id,
-              role,
-              is_active,
-              permissions,
-              companies (
-                id,
-                name,
-                slug
-              )
-            `)
-            .eq('user_id', userId)
-
-          // Mesmo se der erro nas empresas, retornar o perfil básico
-          const fullProfile = {
-            ...profileData,
-            user_companies: companiesError ? [] : userCompaniesData
-          }
-
-          // Cache o resultado
-          setProfileCache(prev => ({ ...prev, [userId]: fullProfile }))
-          resolve(fullProfile)
-
-        } catch (companiesError) {
-          console.warn('Erro ao buscar empresas do usuário, usando perfil básico:', companiesError)
-          
-          // Retornar perfil básico sem dados de empresas
+      if (profileResult.error) {
+        if (profileResult.error.code === 'PGRST116') {
+          console.warn('⚠️ Perfil não encontrado, criando perfil básico')
+          // Retornar perfil básico com dados do auth.users
           const basicProfile = {
-            ...profileData,
+            id: userId,
+            email: 'usuário@sistema.com', // Será substituído depois
+            full_name: null,
+            role: 'user',
             user_companies: []
           }
-          
-          setProfileCache(prev => ({ ...prev, [userId]: basicProfile }))
-          resolve(basicProfile)
+          return basicProfile
         }
-
-      } catch (error) {
-        clearTimeout(timeoutId)
-        console.error('Erro inesperado ao buscar perfil:', error)
-        resolve(null) // Resolver com null em vez de rejeitar
+        
+        throw profileResult.error
       }
-    })
+
+      const profileData = profileResult.data
+      console.log('✅ Perfil básico carregado:', profileData.email)
+
+      // Segundo: buscar empresas em background (não bloqueia UI)
+      setTimeout(async () => {
+        try {
+          const { data: userCompaniesData } = await supabase
+            .from('user_companies')
+            .select('id, role, is_active, permissions, company_id')
+            .eq('user_id', userId)
+            .eq('is_active', true)
+
+          let enrichedUserCompanies = []
+          
+          if (userCompaniesData?.length > 0) {
+            const companyIds = userCompaniesData.map(uc => uc.company_id)
+            
+            const { data: companiesData } = await supabase
+              .from('companies')
+              .select('id, name')
+              .in('id', companyIds)
+            
+            if (companiesData) {
+              enrichedUserCompanies = userCompaniesData.map(uc => ({
+                ...uc,
+                companies: companiesData.find(c => c.id === uc.company_id) || 
+                          { id: uc.company_id, name: 'Empresa Desconhecida' }
+              }))
+            }
+          }
+
+          // Atualizar cache com dados completos
+          const fullProfile = {
+            ...profileData,
+            user_companies: enrichedUserCompanies
+          }
+
+          setProfileCache(prev => ({ ...prev, [userId]: fullProfile }))
+          setProfile(fullProfile) // Atualizar estado
+          console.log('🏢 Dados de empresas carregados em background')
+
+        } catch (error) {
+          console.warn('⚠️ Erro ao carregar empresas em background:', error.message)
+        }
+      }, 100) // Carrega empresas após 100ms
+
+      // Retornar perfil básico imediatamente
+      const basicProfile = {
+        ...profileData,
+        user_companies: [] // Será preenchido em background
+      }
+
+      // Cache temporário
+      setProfileCache(prev => ({ ...prev, [userId]: basicProfile }))
+      
+      return basicProfile
+
+    } catch (error) {
+      console.warn('⚠️ Erro ao buscar perfil, usando fallback:', error.message)
+      
+      // Fallback: perfil mínimo que permite funcionamento
+      return {
+        id: userId,
+        email: 'carregando@sistema.com',
+        full_name: null,
+        role: 'user',
+        user_companies: []
+      }
+    }
   }
 
   // Login com email e senha
@@ -248,30 +294,43 @@ export function AuthProvider({ children }) {
     return profile.user_companies.find(uc => uc.is_active)?.companies
   }
 
-  // Efeito para monitorar mudanças de autenticação
+  // Efeito para monitorar mudanças de autenticação  
   useEffect(() => {
-    let mounted = true // Flag para evitar updates em componente desmontado
+    let mounted = true
     
-    // Verificar sessão atual
+    console.log('🚀 Inicializando autenticação')
+    
+    // Verificar sessão atual de forma otimizada
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return
       
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      
+      if (currentUser) {
+        console.log('👤 Usuário encontrado:', currentUser.email)
+        
+        // Buscar perfil de forma não-bloqueante
+        fetchProfile(currentUser.id)
           .then((profile) => {
             if (mounted) {
               setProfile(profile)
-              setLoading(false)
+              console.log('✅ Perfil carregado para:', profile?.email || currentUser.email)
             }
           })
           .catch((error) => {
+            console.warn('⚠️ Erro ao carregar perfil:', error.message)
             if (mounted) {
-              setProfile(null) // Permitir continuar mesmo sem perfil
+              setProfile(null)
+            }
+          })
+          .finally(() => {
+            if (mounted) {
               setLoading(false)
             }
           })
       } else {
+        console.log('❌ Nenhum usuário autenticado')
         if (mounted) {
           setLoading(false)
         }
@@ -283,16 +342,20 @@ export function AuthProvider({ children }) {
       async (event, session) => {
         if (!mounted) return
         
+        console.log('🔄 Mudança de auth:', event)
+        
         const currentUser = session?.user ?? null
         setUser(currentUser)
         
         // Só recarregar o perfil se o usuário mudou realmente
         if (currentUser && currentUser.id !== user?.id) {
+          console.log('🆕 Novo usuário, carregando perfil:', currentUser.email)
           const userProfile = await fetchProfile(currentUser.id)
           if (mounted) {
             setProfile(userProfile)
           }
         } else if (!currentUser) {
+          console.log('👋 Usuário fez logout')
           if (mounted) {
             setProfile(null)
           }

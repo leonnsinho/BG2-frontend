@@ -16,7 +16,10 @@ import { SystemTestPage } from './pages/SystemTestPage'
 import MatrizBossaPage from './pages/MatrizBossaPage'
 import JourneyProcessesPage from './pages/JourneyProcessesPage'
 import ProcessEvaluationPage from './pages/ProcessEvaluationPage'
+import ProcessManagementPage from './pages/ProcessManagementPage'
+import ProcessPersonalizationPage from './pages/ProcessPersonalizationPage'
 import JornadasPage from './pages/JornadasPage'
+import CreateCompanyPage from './pages/CreateCompanyPage'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
 import { useUserContext } from './contexts/UserContext'
@@ -143,6 +146,34 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <JornadasPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Rotas de Gestão de Processos Personalizados */}
+      <Route 
+        path="/process-management" 
+        element={
+          <ProtectedRoute>
+            <ProcessManagementPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/process/:processId/personalize" 
+        element={
+          <ProtectedRoute>
+            <ProcessPersonalizationPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Rota de Criação de Empresas (Super Admin) */}
+      <Route 
+        path="/companies/new" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <CreateCompanyPage />
           </ProtectedRoute>
         }
       />

@@ -130,60 +130,23 @@ export function DashboardPage() {
     isLoading: permissionsLoading 
   } = usePermissions()
 
-  // Memoizar ações rápidas para evitar recálculo desnecessário
-  const quickActions = useMemo(() => {
-    const actions = [
-      {
-        title: 'Matriz Bossa',
-        description: 'Avaliar maturidade empresarial com 5 jornadas e 143 processos',
-        icon: Target,
-        href: '/matriz-bossa',
-        color: 'primary',
-        show: true,
-        featured: true // Destacar como principal
-      },
-      {
-        title: 'Nova Empresa',
-        description: 'Cadastrar nova empresa no sistema',
-        icon: Building2,
-        href: '/companies/new',
-        color: 'primary',
-        show: isSuperAdmin || isConsultant
-      },
-      {
-        title: 'Convidar Usuário',
-        description: 'Enviar convite para novo usuário',
-        icon: Users,
-        href: '/users/invite',
-        color: 'secondary',
-        show: isCompanyAdmin || isSuperAdmin || isConsultant
-      },
-      {
-        title: 'Criar Meta',
-        description: 'Definir nova meta SMART',
-        icon: Target,
-        href: '/goals/new',
-        color: 'success',
-        show: true
-      },
-      {
-        title: 'Ver Relatórios',
-        description: 'Acessar relatórios e dashboards',
-        icon: BarChart3,
-        href: '/reports',
-        color: 'warning',
-        show: true
-      }
-    ]
-
-    return actions.filter(action => action.show)
-  }, [isSuperAdmin, isConsultant, isCompanyAdmin])
-
   // Memoizar informações do usuário para evitar recálculos
   const userInfo = useMemo(() => {
     if (!profile && !user) return { name: 'Carregando...', roleDisplay: '' }
     
-    const name = profile?.full_name || user?.email || 'Usuário'
+    // Priorizar full_name do profile, depois metadados do user, depois email
+    let name = 'Usuário'
+    
+    if (profile?.full_name) {
+      name = profile.full_name
+    } else if (user?.user_metadata?.full_name) {
+      name = user.user_metadata.full_name
+    } else if (user?.email) {
+      // Extrair nome do email se não houver nome completo
+      const emailName = user.email.split('@')[0]
+      name = emailName.charAt(0).toUpperCase() + emailName.slice(1)
+    }
+    
     const company = activeCompany ? `${activeCompany.name} • ` : ''
     
     const roleMap = {
@@ -239,53 +202,9 @@ export function DashboardPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Quick Actions Otimizado */}
-          <div className="lg:col-span-1">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Ações Rápidas
-              </h3>
-              <div className="space-y-3">
-                {quickActions.map((action) => {
-                  const getColorClasses = (color) => {
-                    const colorMap = {
-                      primary: { bg: 'bg-blue-100', text: 'text-blue-600' },
-                      secondary: { bg: 'bg-purple-100', text: 'text-purple-600' },
-                      success: { bg: 'bg-green-100', text: 'text-green-600' },
-                      warning: { bg: 'bg-amber-100', text: 'text-amber-600' },
-                      danger: { bg: 'bg-red-100', text: 'text-red-600' }
-                    }
-                    return colorMap[color] || colorMap.primary
-                  }
-                  
-                  const colors = getColorClasses(action.color)
-                  
-                  return (
-                    <Link
-                      key={action.title}
-                      to={action.href}
-                      onClick={(e) => {
-                        console.log('Navegando para:', action.href)
-                      }}
-                      className="flex items-center p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className={`w-10 h-10 ${colors.bg} rounded-lg flex items-center justify-center`}>
-                        <action.icon className={`w-5 h-5 ${colors.text}`} />
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-900">{action.title}</p>
-                        <p className="text-xs text-gray-600">{action.description}</p>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            </Card>
-          </div>
-
-          {/* Recent Activity Otimizado */}
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 gap-6">
+          {/* Recent Activity - Agora ocupa toda a largura */}
+          <div>
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
