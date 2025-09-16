@@ -89,6 +89,19 @@ const getNavigationItems = (profile, permissions) => {
         ]
       },
       {
+        name: 'Gerenciamento de Jornadas',
+        icon: Target,
+        href: '/journey-management',
+        children: [
+          { name: 'Visão Geral', href: '/journey-management/overview' },
+          { name: 'Estratégica', href: '/journey-management/estrategica' },
+          { name: 'Financeira', href: '/journey-management/financeira' },
+          { name: 'Pessoas & Cultura', href: '/journey-management/pessoas-cultura' },
+          { name: 'Receita/CRM', href: '/journey-management/receita-crm' },
+          { name: 'Operacional', href: '/journey-management/operacional' }
+        ]
+      },
+      {
         name: 'Convites',
         icon: UserPlus,
         href: '/invites'

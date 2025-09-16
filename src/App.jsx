@@ -20,6 +20,9 @@ import ProcessManagementPage from './pages/ProcessManagementPage'
 import ProcessPersonalizationPage from './pages/ProcessPersonalizationPage'
 import JornadasPage from './pages/JornadasPage'
 import CreateCompanyPage from './pages/CreateCompanyPage'
+import JourneyManagementOverview from './pages/JourneyManagement/index'
+import JourneyDetail from './pages/JourneyManagement/JourneyDetail'
+import ProcessEvaluationForm from './pages/JourneyManagement/ProcessEvaluationForm'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
 import { useUserContext } from './contexts/UserContext'
@@ -174,6 +177,40 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin']}>
             <CreateCompanyPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Rotas de Gerenciamento de Jornadas (Super Admin) */}
+      <Route 
+        path="/journey-management" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <JourneyManagementOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/journey-management/overview" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <JourneyManagementOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/journey-management/:journeySlug" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <JourneyDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/journey-management/:journeySlug/:processId/evaluate" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <ProcessEvaluationForm />
           </ProtectedRoute>
         }
       />
