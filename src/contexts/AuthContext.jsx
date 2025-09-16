@@ -1,18 +1,18 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { supabase } from '../services/supabase'
 
 const AuthContext = createContext({})
 
-// Cache de perfis para evitar recarregamentos desnecessários
-const profileCache = new Map()
+// Cache global de perfis para evitar recarregamentos desnecessários
+const globalProfileCache = new Map()
 const CACHE_TIMEOUT = 5 * 60 * 1000 // 5 minutos
 
 // Limpeza automática do cache
 const cleanupCache = () => {
   const now = Date.now()
-  for (const [key, value] of profileCache.entries()) {
+  for (const [key, value] of globalProfileCache.entries()) {
     if (now - value.timestamp > CACHE_TIMEOUT) {
-      profileCache.delete(key)
+      globalProfileCache.delete(key)
     }
   }
 }
@@ -33,23 +33,25 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [profileCache, setProfileCache] = useState({}) // Cache para perfis
-  const [pendingFetches, setPendingFetches] = useState({}) // Controle de chamadas simultâneas
+  const pendingFetches = useRef({}) // Controle de chamadas simultâneas
 
   // Buscar perfil do usuário com carregamento otimizado
   const fetchProfile = async (userId, useCache = true) => {
     if (!userId) return null
     
     // Evitar múltiplas chamadas simultâneas para o mesmo usuário
-    if (pendingFetches[userId]) {
+    if (pendingFetches.current[userId]) {
       console.log('⏳ Aguardando fetch em andamento para:', userId)
-      return pendingFetches[userId]
+      return pendingFetches.current[userId]
     }
     
-    // Verificar cache primeiro
-    if (useCache && profileCache[userId]) {
-      console.log('📋 Perfil carregado do cache')
-      return profileCache[userId]
+    // Verificar cache global primeiro
+    const cacheKey = `profile_${userId}`
+    const cachedData = globalProfileCache.get(cacheKey)
+    
+    if (useCache && cachedData && (Date.now() - cachedData.timestamp < CACHE_TIMEOUT)) {
+      console.log('📋 Perfil carregado do cache global:', cachedData.data?.email)
+      return cachedData.data
     }
     
     console.log('🔄 Buscando perfil do usuário:', userId)
@@ -120,13 +122,17 @@ export function AuthProvider({ children }) {
               }
             }
 
-            // Atualizar cache com dados completos
+            // Atualizar cache global com dados completos
             const fullProfile = {
               ...profileData,
               user_companies: enrichedUserCompanies
             }
 
-            setProfileCache(prev => ({ ...prev, [userId]: fullProfile }))
+            globalProfileCache.set(cacheKey, {
+              data: fullProfile,
+              timestamp: Date.now()
+            })
+            
             setProfile(fullProfile) // Atualizar estado
             console.log('🏢 Dados de empresas carregados em background')
 
@@ -141,19 +147,22 @@ export function AuthProvider({ children }) {
           user_companies: [] // Será preenchido em background
         }
 
-        // Cache temporário
-        setProfileCache(prev => ({ ...prev, [userId]: basicProfile }))
+        // Cache global temporário
+        globalProfileCache.set(cacheKey, {
+          data: basicProfile,
+          timestamp: Date.now()
+        })
         
         return basicProfile
 
       } catch (error) {
         console.warn('⚠️ Erro ao buscar perfil, usando fallback:', error.message)
         
-        // Verificar se já temos um perfil no cache para preservar dados
-        const existingProfile = profileCache[userId]
-        if (existingProfile) {
-          console.log('📋 Usando perfil do cache devido a timeout:', existingProfile.email)
-          return existingProfile
+        // Verificar se já temos um perfil no cache global para preservar dados
+        const existingCache = globalProfileCache.get(cacheKey)
+        if (existingCache) {
+          console.log('📋 Usando perfil do cache global devido a timeout:', existingCache.data?.email)
+          return existingCache.data
         }
         
         // Fallback: perfil mínimo que permite funcionamento (apenas para novos usuários)
@@ -167,16 +176,12 @@ export function AuthProvider({ children }) {
         }
       } finally {
         // Remover da lista de fetches pendentes
-        setPendingFetches(prev => {
-          const newPending = { ...prev }
-          delete newPending[userId]
-          return newPending
-        })
+        delete pendingFetches.current[userId]
       }
     })()
 
     // Armazenar promise para evitar chamadas duplicadas
-    setPendingFetches(prev => ({ ...prev, [userId]: fetchPromise }))
+    pendingFetches.current[userId] = fetchPromise
     
     return fetchPromise
   }
@@ -327,16 +332,23 @@ export function AuthProvider({ children }) {
   // Debug: monitorar cache e fetches pendentes
   useEffect(() => {
     const interval = setInterval(() => {
-      const cacheSize = Object.keys(profileCache).length
-      const pendingSize = Object.keys(pendingFetches).length
+      const cacheSize = globalProfileCache.size
+      const pendingSize = Object.keys(pendingFetches.current).length
       
       if (cacheSize > 0 || pendingSize > 0) {
-        console.log('📊 Status Auth - Cache:', cacheSize, 'Pending:', pendingSize)
+        console.log('📊 Status Auth - Cache Global:', cacheSize, 'Pending:', pendingSize)
+        
+        // Debug detalhado do cache
+        if (cacheSize > 0) {
+          for (const [key, value] of globalProfileCache.entries()) {
+            console.log(`🔍 Cache ${key}:`, value.data?.email, value.data?.role)
+          }
+        }
       }
     }, 10000) // A cada 10 segundos
     
     return () => clearInterval(interval)
-  }, [profileCache, pendingFetches])
+  }, [])
 
   // Efeito para monitorar mudanças de autenticação  
   useEffect(() => {
@@ -403,7 +415,7 @@ export function AuthProvider({ children }) {
           console.log('🆕 Novo usuário, carregando perfil:', currentUser.email)
           
           // Evitar chamar fetchProfile se já está sendo chamado
-          if (!pendingFetches[currentUser.id]) {
+          if (!pendingFetches.current[currentUser.id]) {
             const userProfile = await fetchProfile(currentUser.id)
             if (mounted) {
               setProfile(userProfile)
@@ -413,8 +425,8 @@ export function AuthProvider({ children }) {
           console.log('👋 Usuário fez logout')
           if (mounted) {
             setProfile(null)
-            setProfileCache({}) // Limpar cache no logout
-            setPendingFetches({}) // Limpar fetches pendentes
+            globalProfileCache.clear() // Limpar cache no logout
+            pendingFetches.current = {} // Limpar fetches pendentes
           }
         }
         
