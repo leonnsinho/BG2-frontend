@@ -23,6 +23,8 @@ import CreateCompanyPage from './pages/CreateCompanyPage'
 import JourneyManagementOverview from './pages/JourneyManagement/index'
 import JourneyDetail from './pages/JourneyManagement/JourneyDetail'
 import ProcessEvaluationForm from './pages/JourneyManagement/ProcessEvaluationForm'
+import UsersManagementPage from './pages/admin/UsersManagementPage'
+import CompaniesManagementPage from './pages/admin/CompaniesManagementPage'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
 import { useUserContext } from './contexts/UserContext'
@@ -177,6 +179,24 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin']}>
             <CreateCompanyPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Rotas de Administração (Super Admin) */}
+      <Route 
+        path="/admin/users" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <UsersManagementPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/admin/companies" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <CompaniesManagementPage />
           </ProtectedRoute>
         }
       />

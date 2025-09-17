@@ -234,7 +234,7 @@ export function DashboardPage() {
         title: 'Convidar Usuário',
         description: 'Enviar convite para novo usuário',
         icon: Users,
-        href: '/users/invite',
+        href: '/invites',
         color: 'secondary',
         show: isCompanyAdmin || isSuperAdmin || isConsultant
       },
@@ -266,6 +266,12 @@ export function DashboardPage() {
     const name = profile?.full_name || user?.email || 'Usuário'
     const company = activeCompany ? `${activeCompany.name} • ` : ''
     
+    console.log('Dashboard - Dados do perfil:', {
+      profile: profile,
+      activeCompany: activeCompany,
+      user_companies: profile?.user_companies
+    })
+    
     const roleMap = {
       'super_admin': 'Super Administrador',
       'consultant': 'Consultor',
@@ -273,7 +279,21 @@ export function DashboardPage() {
       'user': 'Usuário'
     }
     
-    const roleDisplay = company + (roleMap[profile?.role] || 'Usuário')
+    // Usar role da empresa ativa se existir, senão usar role global
+    const activeCompanyRole = profile?.user_companies?.find(uc => 
+      uc.is_active && uc.companies?.id === activeCompany?.id
+    )?.role
+    
+    console.log('Dashboard - Role calculation:', {
+      activeCompanyRole: activeCompanyRole,
+      profileRole: profile?.role,
+      activeCompanyId: activeCompany?.id
+    })
+    
+    const effectiveRole = activeCompanyRole || profile?.role || 'user'
+    const roleDisplay = company + (roleMap[effectiveRole] || 'Usuário')
+    
+    console.log('Dashboard - Final role display:', roleDisplay)
     
     return { name, roleDisplay }
   }, [profile, user, activeCompany])

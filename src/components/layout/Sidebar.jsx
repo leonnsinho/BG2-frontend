@@ -38,7 +38,7 @@ const getQuickActions = (permissions) => {
       title: 'Convidar Usuário',
       description: 'Enviar convite para novo usuário',
       icon: Users,
-      href: '/users/invite',
+      href: '/invites',
       color: 'green',
       show: permissions.isCompanyAdmin() || permissions.isSuperAdmin() || permissions.isConsultant()
     },
@@ -84,8 +84,7 @@ const getNavigationItems = (profile, permissions) => {
         href: '/admin',
         children: [
           { name: 'Usuários', href: '/admin/users' },
-          { name: 'Empresas', href: '/admin/companies' },
-          { name: 'Configurações', href: '/admin/settings' }
+          { name: 'Empresas', href: '/admin/companies' }
         ]
       },
       {
