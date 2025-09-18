@@ -4,15 +4,15 @@
 
 @layer base {
   * {
-    border-color: rgb(229 231 235);
+    border-color: rgb(209 213 219);
   }
   
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+    @apply bg-background text-neutral-900 font-sans antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+    @apply font-semibold tracking-tight text-neutral-900;
   }
 
   h1 {
@@ -32,11 +32,11 @@
   }
 
   p {
-    @apply leading-7;
+    @apply leading-7 text-neutral-700;
   }
 
   a {
-    @apply text-primary-600 hover:text-primary-700 transition-colors;
+    @apply text-primary-500 hover:text-primary-600 transition-colors;
   }
 }
 
@@ -46,30 +46,30 @@
   }
 
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700;
+    @apply btn bg-primary-500 text-background hover:bg-primary-600;
   }
 
   .btn-secondary {
-    @apply btn bg-secondary-100 text-secondary-900 hover:bg-secondary-200;
+    @apply btn bg-neutral-100 text-neutral-900 hover:bg-neutral-200;
   }
 
   .btn-success {
-    @apply btn bg-success-600 text-white hover:bg-success-700;
+    @apply btn bg-success-600 text-background hover:bg-success-700;
   }
 
   .btn-danger {
-    @apply btn bg-danger-600 text-white hover:bg-danger-700;
+    @apply btn bg-danger-600 text-background hover:bg-danger-700;
   }
 
   .card {
-    @apply rounded-lg border bg-white p-6 shadow-soft;
+    @apply rounded-lg border bg-background p-6 shadow-soft;
   }
 
   .input {
-    @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply flex h-10 w-full rounded-md border border-neutral-300 bg-background px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .label {
-    @apply text-sm font-medium leading-none;
+    @apply text-sm font-medium leading-none text-neutral-900;
   }
 }

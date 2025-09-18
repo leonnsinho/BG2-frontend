@@ -7,31 +7,34 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Cores da identidade Bossa Focus
+        // Novas cores da identidade BG2
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          DEFAULT: '#EBA500', // amarelo principal
+          50: '#FFF8E1',
+          100: '#FFEFC1',
+          200: '#FFE38F',
+          300: '#FFD75D',
+          400: '#FFC12A',
+          500: '#EBA500',
+          600: '#B88400',
+          700: '#8A6500',
+          800: '#5C4600',
+          900: '#373435', // escuro para contraste
         },
-        secondary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+        neutral: {
+          DEFAULT: '#373435', // cinza escuro
+          50: '#F5F5F5',
+          100: '#EDEDED',
+          200: '#D6D6D6',
+          300: '#B0B0B0',
+          400: '#8A8A8A',
+          500: '#373435',
+          600: '#2C2A29',
+          700: '#222120',
+          800: '#181716',
+          900: '#0F0E0D',
         },
+        background: '#FEFEFE', // branco principal
         success: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -68,6 +71,9 @@ export default {
           800: '#991b1b',
           900: '#7f1d1d',
         }
+      },
+      backgroundColor: {
+        'background': '#FEFEFE',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

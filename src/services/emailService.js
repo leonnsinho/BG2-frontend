@@ -2,7 +2,7 @@ import { Resend } from 'resend'
 
 // Configuração com variáveis de ambiente
 const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY || 'TEST_MODE'
-const FROM_EMAIL = import.meta.env.VITE_FROM_EMAIL || 'Partimap <convites@partimap.com>'
+const FROM_EMAIL = import.meta.env.VITE_FROM_EMAIL || 'BG2 <convites@bg2.com>'
 const APP_URL = import.meta.env.VITE_APP_URL || 'http://localhost:5173'
 
 // Inicializar Resend
@@ -26,7 +26,7 @@ const getInviteEmailTemplate = (data) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convite para Partimap - ${data.company_name}</title>
+    <title>Convite para BG2 - ${data.company_name}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -112,15 +112,15 @@ const getInviteEmailTemplate = (data) => {
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">🗺️ Partimap</div>
-            <div class="header-subtitle">Plataforma de Mapas Participativos</div>
+            <div class="logo">⚡ BG2</div>
+            <div class="header-subtitle">Plataforma de Gestão Empresarial</div>
             <div class="invite-badge">✉️ Convite Especial</div>
         </div>
         
         <div class="content">
             <h1 class="title">Você foi convidado! 🎉</h1>
             <p class="message">
-                <strong>${data.invited_by_name}</strong> convidou você para se juntar à plataforma Partimap 
+                <strong>${data.invited_by_name}</strong> convidou você para se juntar à plataforma BG2 
                 e fazer parte da equipe <strong>${data.company_name}</strong>.
             </p>
             
@@ -176,9 +176,9 @@ const getInviteEmailTemplate = (data) => {
                 Este convite foi enviado por <strong>${data.invited_by_name}</strong> (${data.invited_by_email}) 
                 para se juntar à <strong>${data.company_name}</strong>.<br><br>
                 Precisa de ajuda? Entre em contato: 
-                <a href="mailto:suporte@partimap.com" class="footer-link">suporte@partimap.com</a><br>
+                <a href="mailto:suporte@bg2.com" class="footer-link">suporte@bg2.com</a><br>
                 <br>
-                <strong>Partimap</strong> - Transformando dados em decisões
+                <strong>BG2</strong> - Transformando dados em decisões
             </p>
         </div>
     </div>
@@ -211,7 +211,7 @@ export const sendInviteEmail = async (inviteData) => {
       invite_message: inviteData.message,
       invite_url: `${APP_URL}/accept-invite?token=${inviteData.token}`,
       invited_by_name: inviteData.invited_by_name || 'Administrador',
-      invited_by_email: inviteData.invited_by_email || 'admin@partimap.com',
+      invited_by_email: inviteData.invited_by_email || 'admin@bg2.com',
       invite_date: new Date().toLocaleDateString('pt-BR', {
         day: 'numeric',
         month: 'long', 
@@ -265,12 +265,12 @@ export const sendInviteEmail = async (inviteData) => {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [inviteData.email],
-      subject: `Você foi convidado para o Partimap! 🎉`,
+      subject: `Você foi convidado para o BG2! 🎉`,
       html: htmlContent,
       text: `
         Olá!
         
-        ${templateData.invited_by_name} convidou você para se juntar à plataforma Partimap 
+        ${templateData.invited_by_name} convidou você para se juntar à plataforma BG2 
         e fazer parte da equipe ${templateData.company_name}.
         
         Sua função será: ${templateData.role_name}
@@ -282,7 +282,7 @@ export const sendInviteEmail = async (inviteData) => {
         Este convite expira em 7 dias (${templateData.expiry_date}).
         
         Atenciosamente,
-        Equipe Partimap
+        Equipe BG2
       `.trim()
     })
     

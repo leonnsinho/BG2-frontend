@@ -303,17 +303,23 @@ const Sidebar = ({ isOpen, onClose, className }) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 w-64 h-full bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:z-10 flex flex-col",
+          "fixed top-0 left-0 z-40 w-72 h-full bg-neutral-500 border-r border-neutral-600 rounded-r-[3rem] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:z-10 flex flex-col",
           isOpen ? "translate-x-0" : "-translate-x-full",
           className
         )}
       >
-        {/* Header da Sidebar */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+        {/* Header da Sidebar com Logo */}
+        <div className="flex items-center justify-between h-20 px-6 flex-shrink-0">
+          <div className="flex items-center justify-center w-full">
+            <img 
+              src="/LOGO 2.png" 
+              alt="BG2 Logo" 
+              className="h-12 w-auto object-contain"
+            />
+          </div>
           <button
             onClick={onClose}
-            className="lg:hidden p-1 rounded-md hover:bg-gray-100"
+            className="lg:hidden p-1 rounded-md hover:bg-neutral-600 text-background absolute right-4"
           >
             <X className="h-5 w-5" />
           </button>
@@ -326,8 +332,8 @@ const Sidebar = ({ isOpen, onClose, className }) => {
           {quickActions.length > 0 && (
             <div className="mb-6">
               <div className="flex items-center px-3 mb-3">
-                <Zap className="w-4 h-4 text-gray-400 mr-2" />
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <Zap className="w-4 h-4 text-neutral-300 mr-2" />
+                <h3 className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">
                   Ações Rápidas
                 </h3>
               </div>
@@ -336,10 +342,10 @@ const Sidebar = ({ isOpen, onClose, className }) => {
                 {quickActions.map((action) => {
                   const getColorClasses = (color) => {
                     const colorMap = {
-                      blue: 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700',
-                      green: 'bg-green-50 hover:bg-green-100 border-green-200 text-green-700',
-                      purple: 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700',
-                      orange: 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700'
+                      blue: 'bg-primary-100 hover:bg-primary-200 border-primary-300 text-primary-800',
+                      green: 'bg-primary-100 hover:bg-primary-200 border-primary-300 text-primary-800',
+                      purple: 'bg-primary-100 hover:bg-primary-200 border-primary-300 text-primary-800',
+                      orange: 'bg-primary-100 hover:bg-primary-200 border-primary-300 text-primary-800'
                     }
                     return colorMap[color] || colorMap.blue
                   }
@@ -354,7 +360,7 @@ const Sidebar = ({ isOpen, onClose, className }) => {
                       )}
                       onClick={onClose}
                     >
-                      <div className="flex items-center justify-center w-8 h-8 rounded-md bg-white border mr-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-md bg-background border mr-3">
                         <action.icon className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -371,8 +377,8 @@ const Sidebar = ({ isOpen, onClose, className }) => {
           {/* Seção de Navegação Principal */}
           <div className="mb-3">
             <div className="flex items-center px-3 mb-3">
-              <Home className="w-4 h-4 text-gray-400 mr-2" />
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <Home className="w-4 h-4 text-neutral-300 mr-2" />
+              <h3 className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">
                 Navegação
               </h3>
             </div>
@@ -390,14 +396,14 @@ const Sidebar = ({ isOpen, onClose, className }) => {
                       className={cn(
                         "w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
                         isActive
-                          ? "bg-primary-50 text-primary-700"
-                          : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                          ? "bg-primary-500 text-background"
+                          : "text-neutral-100 hover:text-background hover:bg-primary-500"
                       )}
                     >
                       <item.icon
                         className={cn(
                           "mr-3 h-5 w-5 flex-shrink-0",
-                          isActive ? "text-primary-500" : "text-gray-400 group-hover:text-gray-500"
+                          isActive ? "text-background" : "text-neutral-300 group-hover:text-background"
                         )}
                       />
                       <span className="flex-1">{item.name}</span>
@@ -414,15 +420,15 @@ const Sidebar = ({ isOpen, onClose, className }) => {
                       className={cn(
                         "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
                         isActive
-                          ? "bg-primary-50 text-primary-700"
-                          : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                          ? "bg-primary-500 text-background"
+                          : "text-neutral-100 hover:text-background hover:bg-primary-500"
                       )}
                       onClick={onClose}
                     >
                       <item.icon
                         className={cn(
                           "mr-3 h-5 w-5 flex-shrink-0",
-                          isActive ? "text-primary-500" : "text-gray-400 group-hover:text-gray-500"
+                          isActive ? "text-background" : "text-neutral-300 group-hover:text-background"
                         )}
                       />
                       <span className="flex-1">{item.name}</span>
@@ -439,15 +445,15 @@ const Sidebar = ({ isOpen, onClose, className }) => {
                           className={cn(
                             "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
                             isCurrentPath(subItem.href)
-                              ? "text-primary-700 bg-primary-50"
-                              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                              ? "text-background bg-primary-500"
+                              : "text-neutral-200 hover:text-background hover:bg-primary-500"
                           )}
                           onClick={onClose}
                         >
                           <span 
                             className={cn(
                               "w-2 h-2 rounded-full mr-3 flex-shrink-0",
-                              isCurrentPath(subItem.href) ? "bg-primary-500" : "bg-gray-300"
+                              isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
                             )}
                           ></span>
                           {subItem.name}
@@ -462,21 +468,21 @@ const Sidebar = ({ isOpen, onClose, className }) => {
         </nav>
 
         {/* Footer da Sidebar */}
-        <div className="flex-shrink-0 p-4 border-t border-gray-200">
+        <div className="flex-shrink-0 p-4 border-t border-neutral-600">
           <Link
             to="/settings"
             className={cn(
               "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
               isCurrentPath('/settings')
-                ? "bg-primary-50 text-primary-700"
-                : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                ? "bg-primary-500 text-background"
+                : "text-neutral-100 hover:text-background hover:bg-primary-500"
             )}
             onClick={onClose}
           >
             <Settings 
               className={cn(
                 "mr-3 h-5 w-5",
-                isCurrentPath('/settings') ? "text-primary-500" : "text-gray-400 group-hover:text-gray-500"
+                isCurrentPath('/settings') ? "text-background" : "text-neutral-300 group-hover:text-background"
               )}
             />
             Configurações

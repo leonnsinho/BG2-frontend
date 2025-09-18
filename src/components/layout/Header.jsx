@@ -34,7 +34,7 @@ const Header = ({ onSidebarToggle, className }) => {
   }, [])
 
   return (
-    <header className={cn("bg-white shadow-sm border-b border-gray-200 flex-shrink-0", className)}>
+    <header className={cn("bg-background shadow-sm border-b border-neutral-200 flex-shrink-0", className)}>
       <div className="max-w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo e Sidebar Toggle */}
@@ -49,11 +49,11 @@ const Header = ({ onSidebarToggle, className }) => {
             </Button>
             
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+                <Zap className="w-5 h-5 text-background" />
               </div>
-              <h1 className="text-xl font-bold text-gray-900 hidden sm:block">
-                Partimap
+              <h1 className="text-xl font-bold text-neutral-900 hidden sm:block">
+                BG2
               </h1>
             </div>
           </div>
@@ -61,11 +61,11 @@ const Header = ({ onSidebarToggle, className }) => {
           {/* Barra de Pesquisa - Oculta no mobile */}
           <div className="hidden md:flex flex-1 max-w-lg mx-8">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
               <input
                 type="text"
                 placeholder="Pesquisar..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-neutral-300 bg-background text-neutral-900 placeholder-neutral-500 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -90,12 +90,12 @@ const Header = ({ onSidebarToggle, className }) => {
               </Button>
               
               {isNotificationOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-strong border border-gray-200 z-[60]">
-                  <div className="p-4 border-b border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-900">Notificações</h3>
+                <div className="absolute right-0 mt-2 w-80 bg-background rounded-md shadow-strong border border-neutral-200 z-[60]">
+                  <div className="p-4 border-b border-neutral-100">
+                    <h3 className="text-lg font-semibold text-neutral-900">Notificações</h3>
                   </div>
                   <div className="p-4">
-                    <p className="text-sm text-gray-600">Nenhuma notificação nova</p>
+                    <p className="text-sm text-neutral-600">Nenhuma notificação nova</p>
                   </div>
                 </div>
               )}
@@ -109,26 +109,26 @@ const Header = ({ onSidebarToggle, className }) => {
                 className="flex items-center space-x-2 px-3"
               >
                 <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-primary-600" />
+                  <User className="h-4 w-4 text-primary-500" />
                 </div>
-                <span className="hidden sm:block text-sm font-medium text-gray-700">
+                <span className="hidden sm:block text-sm font-medium text-neutral-700">
                   {profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}
                 </span>
               </Button>
 
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-strong border border-gray-200 z-[60]">
+                <div className="absolute right-0 mt-2 w-48 bg-background rounded-md shadow-strong border border-neutral-200 z-[60]">
                   <div className="py-1">
                     <a
                       href="#"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-500"
                     >
                       <User className="mr-3 h-4 w-4" />
                       Perfil
                     </a>
                     <a
                       href="#"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-500"
                     >
                       <Settings className="mr-3 h-4 w-4" />
                       Configurações
@@ -140,7 +140,7 @@ const Header = ({ onSidebarToggle, className }) => {
                         e.preventDefault()
                         handleLogout()
                       }}
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-500"
                     >
                       <LogOut className="mr-3 h-4 w-4" />
                       Sair

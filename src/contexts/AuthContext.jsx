@@ -157,16 +157,14 @@ export function AuthProvider({ children }) {
 
       } catch (error) {
         console.warn('⚠️ Erro ao buscar perfil, usando fallback:', error.message)
-        
-        // Verificar se já temos um perfil no cache global para preservar dados
+        // Sempre tentar usar o perfil do cache global para preservar role e dados corretos
         const existingCache = globalProfileCache.get(cacheKey)
-        if (existingCache) {
-          console.log('📋 Usando perfil do cache global devido a timeout:', existingCache.data?.email)
+        if (existingCache && existingCache.data) {
+          console.log('📋 Usando perfil do cache global devido a timeout:', existingCache.data?.email, existingCache.data?.role)
           return existingCache.data
         }
-        
-        // Fallback: perfil mínimo que permite funcionamento (apenas para novos usuários)
-        console.warn('⚠️ Criando perfil fallback temporário')
+        // Só criar perfil mínimo se não houver nada no cache
+        console.warn('⚠️ Criando perfil fallback temporário (sem cache)')
         return {
           id: userId,
           email: 'carregando@sistema.com',

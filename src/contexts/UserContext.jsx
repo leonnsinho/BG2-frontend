@@ -264,7 +264,7 @@ export function UserProvider({ children }) {
   // Carregar preferências do localStorage
   const loadUserPreferences = () => {
     try {
-      const savedPrefs = localStorage.getItem(`partimap_preferences_${user.id}`)
+      const savedPrefs = localStorage.getItem(`bg2_preferences_${user.id}`)
       if (savedPrefs) {
         const preferences = JSON.parse(savedPrefs)
         dispatch({
@@ -281,7 +281,7 @@ export function UserProvider({ children }) {
   const saveUserPreferences = () => {
     try {
       localStorage.setItem(
-        `partimap_preferences_${user.id}`,
+        `bg2_preferences_${user.id}`,
         JSON.stringify(state.preferences)
       )
     } catch (error) {

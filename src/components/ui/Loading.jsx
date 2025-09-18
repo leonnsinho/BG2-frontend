@@ -20,9 +20,9 @@ export function Loading({
     return (
       <div className={cn('flex items-center justify-center', className)}>
         <div className="flex items-center space-x-2">
-          <Loader2 className={cn('animate-spin text-primary-600', sizeClasses[size])} />
+          <Loader2 className={cn('animate-spin text-primary-500', sizeClasses[size])} />
           {text && (
-            <span className="text-sm text-gray-600">{text}</span>
+            <span className="text-sm text-neutral-600">{text}</span>
           )}
         </div>
       </div>
@@ -32,11 +32,11 @@ export function Loading({
   if (variant === 'dots') {
     return (
       <div className={cn('flex items-center justify-center space-x-1', className)}>
-        <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-        <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-        <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
         {text && (
-          <span className="ml-2 text-sm text-gray-600">{text}</span>
+          <span className="ml-2 text-sm text-neutral-600">{text}</span>
         )}
       </div>
     )

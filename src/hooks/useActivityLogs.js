@@ -56,12 +56,12 @@ export function useActivityLogs() {
   // Salvar log localmente para demonstração
   const saveLogLocally = (logData) => {
     try {
-      const existingLogs = JSON.parse(localStorage.getItem('partimap_activity_logs') || '[]')
+      const existingLogs = JSON.parse(localStorage.getItem('bg2_activity_logs') || '[]')
       existingLogs.unshift(logData) // Adicionar no início
       
       // Manter apenas os últimos 100 logs
       const trimmedLogs = existingLogs.slice(0, 100)
-      localStorage.setItem('partimap_activity_logs', JSON.stringify(trimmedLogs))
+      localStorage.setItem('bg2_activity_logs', JSON.stringify(trimmedLogs))
     } catch (error) {
       console.warn('Não foi possível salvar log localmente:', error)
     }
@@ -70,7 +70,7 @@ export function useActivityLogs() {
   // Obter logs salvos localmente
   const getLocalLogs = () => {
     try {
-      return JSON.parse(localStorage.getItem('partimap_activity_logs') || '[]')
+      return JSON.parse(localStorage.getItem('bg2_activity_logs') || '[]')
     } catch {
       return []
     }
@@ -207,7 +207,7 @@ export function useActivityLogs() {
 
   // Limpar logs locais
   const clearLocalLogs = () => {
-    localStorage.removeItem('partimap_activity_logs')
+    localStorage.removeItem('bg2_activity_logs')
   }
 
   // Exportar logs (para debug)
@@ -219,7 +219,7 @@ export function useActivityLogs() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `partimap_logs_${new Date().toISOString().split('T')[0]}.json`
+    a.download = `bg2_logs_${new Date().toISOString().split('T')[0]}.json`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)

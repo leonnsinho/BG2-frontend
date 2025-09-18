@@ -62,7 +62,7 @@ export function LoginPage() {
             <Zap className="w-8 h-8 text-white" />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Bem-vindo ao Partimap
+            Bem-vindo ao BG2
           </h2>
           <p className="mt-2 text-gray-600">
             Faça login para acessar sua conta
