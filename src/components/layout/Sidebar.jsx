@@ -1,7 +1,8 @@
 import React from 'react'
 import { useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { usePermissions } from '../../hooks/useAuth'
+import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
+import { usePermissions } from '../../hooks/usePermissions'
 import { 
   BarChart3, 
   Users, 
@@ -20,7 +21,10 @@ import {
   Database,
   Plus,
   Zap,
-  AlertCircle
+  AlertCircle,
+  LogOut,
+  Calendar,
+  Kanban
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -33,7 +37,7 @@ const getQuickActions = (permissions) => {
       icon: Building2,
       href: '/companies/new',
       color: 'blue',
-      show: permissions.isSuperAdmin() || permissions.isGestor()
+      show: permissions.isSuperAdmin() // Removido permissions.isGestor()
     },
     {
       title: 'Convidar Usuário',
@@ -41,7 +45,7 @@ const getQuickActions = (permissions) => {
       icon: Users,
       href: '/invites',
       color: 'green',
-      show: permissions.isCompanyAdmin() || permissions.isSuperAdmin() || permissions.isAnyManager()
+      show: permissions.isCompanyAdmin() || permissions.isSuperAdmin() // Sem gestores
     },
     {
       title: 'Criar Meta',
@@ -57,7 +61,7 @@ const getQuickActions = (permissions) => {
       icon: BarChart3,
       href: '/reports',
       color: 'orange',
-      show: true
+      show: permissions.isSuperAdmin() || permissions.isCompanyAdmin() // Sem gestores
     }
   ]
 
@@ -131,19 +135,9 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     return [
       ...baseItems,
       {
-        name: 'Empresas',
-        icon: Building2,
-        href: '/companies',
-        children: [
-          { name: 'Visão Geral', href: '/companies/overview' },
-          { name: 'Comparativo', href: '/companies/compare' },
-          { name: 'Relatórios', href: '/companies/reports' }
-        ]
-      },
-      {
-        name: 'Convites',
-        icon: UserPlus,
-        href: '/invites'
+        name: 'Planejamento Estratégico',
+        icon: Kanban,
+        href: '/planejamento-estrategico'
       },
       {
         name: 'Jornadas',
@@ -155,22 +149,6 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         name: 'Gestão de Processos',
         icon: Settings,
         href: '/process-management'
-      },
-      {
-        name: 'CRM',
-        icon: Users,
-        href: '/crm'
-      },
-      {
-        name: 'Financeiro',
-        icon: DollarSign,
-        href: '/financeiro',
-        children: [
-          { name: 'Fluxo de Caixa', href: '/financeiro/fluxo-caixa' },
-          { name: 'DRE', href: '/financeiro/dre' },
-          { name: 'DFC', href: '/financeiro/dfc' },
-          { name: 'Orçamento', href: '/financeiro/orcamento' }
-        ]
       }
     ]
   }
@@ -180,6 +158,11 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     
     return [
       ...baseItems,
+      {
+        name: 'Planejamento Estratégico',
+        icon: Kanban,
+        href: '/planejamento-estrategico'
+      },
       {
         name: 'Convites',
         icon: UserPlus,
@@ -414,7 +397,8 @@ const getJourneyDisplayName = (journey) => {
 
 const Sidebar = ({ isOpen, onClose, className }) => {
   const location = useLocation()
-  const { profile } = useAuth()
+  const { profile, signOut } = useAuth()
+  const { getAccessibleJourneys } = useAuthPermissions()
   const permissions = usePermissions()
   const [expandedItems, setExpandedItems] = React.useState(['Jornadas'])
   const [accessibleJourneys, setAccessibleJourneys] = React.useState([])
@@ -442,7 +426,7 @@ const Sidebar = ({ isOpen, onClose, className }) => {
       try {
         if (isMounted) setJourneysLoading(true)
         console.log('🔄 Sidebar: Chamando getAccessibleJourneys...')
-        const journeys = await permissions.getAccessibleJourneys()
+        const journeys = await getAccessibleJourneys()
         console.log('📊 Sidebar: Jornadas recebidas:', journeys)
         
         if (isMounted) {
@@ -537,12 +521,12 @@ const Sidebar = ({ isOpen, onClose, className }) => {
         )}
       >
         {/* Header da Sidebar com Logo e Badge de Role */}
-        <div className="flex items-center justify-between h-20 px-6 flex-shrink-0">
+        <div className="flex items-center justify-between h-24 px-6 flex-shrink-0 pt-4">
           <div className="flex flex-col items-center justify-center w-full">
             <img 
               src="/LOGO 2.png" 
               alt="BG2 Logo" 
-              className="h-10 w-auto object-contain mb-1"
+              className="h-12 w-auto object-contain mb-2"
             />
             {/* Badge do tipo de gestor */}
             {permissions.isAnyManager() && (
@@ -746,12 +730,27 @@ const Sidebar = ({ isOpen, onClose, className }) => {
         </nav>
 
         {/* Footer da Sidebar */}
-        <div className="flex-shrink-0 p-4 border-t border-neutral-600">
+        <div className="flex-shrink-0 p-4 border-t border-neutral-600 space-y-2">
+          {/* Botão de Logout */}
+          <button
+            onClick={async () => {
+              await signOut()
+              onClose()
+            }}
+            className="group flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors text-neutral-100 hover:text-background hover:bg-red-500"
+          >
+            <LogOut 
+              className="mr-3 h-5 w-5 text-neutral-300 group-hover:text-background"
+            />
+            Sair
+          </button>
+
+          {/* Link de Configurações do Perfil */}
           <Link
-            to="/settings"
+            to="/profile"
             className={cn(
               "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
-              isCurrentPath('/settings')
+              isCurrentPath('/profile')
                 ? "bg-primary-500 text-background"
                 : "text-neutral-100 hover:text-background hover:bg-primary-500"
             )}
@@ -760,7 +759,7 @@ const Sidebar = ({ isOpen, onClose, className }) => {
             <Settings 
               className={cn(
                 "mr-3 h-5 w-5",
-                isCurrentPath('/settings') ? "text-background" : "text-neutral-300 group-hover:text-background"
+                isCurrentPath('/profile') ? "text-background" : "text-neutral-300 group-hover:text-background"
               )}
             />
             Configurações

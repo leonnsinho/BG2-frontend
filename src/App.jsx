@@ -11,6 +11,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { DashboardPage } from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
 import AssignedGoalsPage from './pages/AssignedGoalsPage'
+import { PlanejamentoEstrategicoPage } from './pages/PlanejamentoEstrategicoPage'
 import { InviteSystem } from './components/InviteSystem'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 import { SystemTestPage } from './pages/SystemTestPage'
@@ -92,6 +93,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AssignedGoalsPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route 
+        path="/planejamento-estrategico" 
+        element={
+          <ProtectedRoute>
+            <PlanejamentoEstrategicoPage />
           </ProtectedRoute>
         }
       />

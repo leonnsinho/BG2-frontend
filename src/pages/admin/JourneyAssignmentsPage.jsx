@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
@@ -8,7 +9,8 @@ import {
   BarChart3,
   Heart,
   Megaphone,
-  Settings
+  Settings,
+  ArrowLeft
 } from 'lucide-react'
 
 export default function JourneyAssignmentsPage() {
@@ -363,6 +365,17 @@ export default function JourneyAssignmentsPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* Botão para voltar ao dashboard */}
+      <div className="mb-6">
+        <Link
+          to="/"
+          className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors duration-200"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Voltar ao Dashboard
+        </Link>
+      </div>
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Atribuição de Jornadas

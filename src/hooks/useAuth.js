@@ -245,8 +245,26 @@ export function usePermissions() {
   const isConsultant = () => hasRole(['super_admin', 'gestor']) // gestor é o novo consultant
   // Verificações de status do usuário
   const isUnlinkedUser = () => {
-    // Usuário não vinculado: tem perfil, mas não tem empresa ativa
-    return profile?.id && !activeCompany
+    if (!profile) return false
+    
+    // Super admins nunca são considerados não vinculados
+    if (profile.role === 'super_admin') {
+      return false
+    }
+    
+    // Consultores também não são considerados não vinculados (acesso global)
+    if (profile.role === 'consultant') {
+      return false
+    }
+    
+    // Se não tem user_companies ou está vazio, é não vinculado
+    if (!profile.user_companies || profile.user_companies.length === 0) {
+      return true
+    }
+    
+    // Se não tem nenhuma empresa ativa, é não vinculado
+    const hasActiveCompany = profile.user_companies.some(uc => uc.is_active)
+    return !hasActiveCompany
   }
   
   const isCompanyAdmin = () => hasRole(['super_admin', 'gestor', 'company_admin'])

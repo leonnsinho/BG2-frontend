@@ -331,6 +331,16 @@ export function AuthProvider({ children }) {
   const isUnlinkedUser = () => {
     if (!profile) return false
     
+    // Super admins nunca são considerados não vinculados
+    if (profile.role === 'super_admin') {
+      return false
+    }
+    
+    // Consultores também não são considerados não vinculados (acesso global)
+    if (profile.role === 'consultant') {
+      return false
+    }
+    
     // Se não tem user_companies ou está vazio, é não vinculado
     if (!profile.user_companies || profile.user_companies.length === 0) {
       return true

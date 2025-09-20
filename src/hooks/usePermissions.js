@@ -121,8 +121,47 @@ export function usePermissions() {
   // Verificações de role
   const isSuperAdmin = () => hasRole('super_admin')
   const isConsultant = () => hasRole(['super_admin', 'consultant'])
-  const isCompanyAdmin = () => hasRole(['super_admin', 'consultant', 'company_admin'])
+  const isCompanyAdmin = () => {
+    return hasRole(['super_admin', 'consultant', 'company_admin'])
+  }
   const isUser = () => hasRole(['super_admin', 'consultant', 'company_admin', 'user'])
+
+  // Nova função específica para gestor
+  const isGestor = () => {
+    return hasRole(['gestor', 'gestor_financeiro', 'gestor_operacional', 'gestor_comercial', 'gestor_rh'])
+  }
+
+  // Verificar se é usuário não vinculado
+  const isUnlinkedUser = () => {
+    if (!profile) return false
+    
+    // Super admins e consultants nunca são considerados "não vinculados"
+    if (['super_admin', 'consultant'].includes(profile.role)) {
+      return false
+    }
+
+    // Se tem role global, não está desvinculado
+    if (profile.role) {
+      return false
+    }
+
+    // Se não tem user_companies ou nenhuma company ativa
+    if (!profile.user_companies || profile.user_companies.length === 0) {
+      return true
+    }
+
+    // Se tem user_companies mas nenhuma está ativa
+    const hasActiveCompany = profile.user_companies.some(uc => uc.is_active)
+    return !hasActiveCompany
+  }
+
+  // Verificar se é qualquer tipo de gestor
+  const isAnyManager = () => {
+    return hasRole([
+      'gestor', 'gestor_financeiro', 'gestor_estrategico', 
+      'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional'
+    ])
+  }
 
   // Obter todos os roles do usuário
   const getUserRoles = () => {
@@ -246,6 +285,9 @@ export function usePermissions() {
     isConsultant,
     isCompanyAdmin,
     isUser,
+    isGestor,
+    isUnlinkedUser,
+    isAnyManager,
 
     // Verificações contextuais
     hasCompanyPermission,

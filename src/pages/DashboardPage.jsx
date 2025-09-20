@@ -8,6 +8,7 @@ import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { DashboardSkeleton, SmartLoader } from '../components/ui/DashboardLoaders'
 import UnlinkedUserMessage from '../components/common/UnlinkedUserMessage'
+import { GestorDashboard } from '../components/dashboard/GestorDashboard'
 import { 
   Users, 
   Building2, 
@@ -129,6 +130,7 @@ export function DashboardPage() {
     isSuperAdmin, 
     isConsultant, 
     isCompanyAdmin,
+    isGestor,
     isLoading: permissionsLoading 
   } = usePermissions()
 
@@ -160,6 +162,12 @@ export function DashboardPage() {
     const roleMap = {
       'super_admin': 'Super Administrador',
       'consultant': 'Consultor',
+      'gestor': 'Gestor',
+      'gestor_financeiro': 'Gestor Financeiro',
+      'gestor_estrategico': 'Gestor Estratégico',
+      'gestor_pessoas_cultura': 'Gestor de Pessoas e Cultura',
+      'gestor_vendas_marketing': 'Gestor de Vendas e Marketing',
+      'gestor_operacional': 'Gestor Operacional',
       'company_admin': 'Administrador',
       'user': 'Usuário'
     }
@@ -283,6 +291,15 @@ export function DashboardPage() {
           </main>
         </div>
       </div>
+    )
+  }
+
+  // Dashboard específico para gestores
+  if (isGestor()) {
+    return (
+      <Layout>
+        <GestorDashboard />
+      </Layout>
     )
   }
 
