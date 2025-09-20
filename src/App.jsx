@@ -10,6 +10,7 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { DashboardPage } from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
+import AssignedGoalsPage from './pages/AssignedGoalsPage'
 import { InviteSystem } from './components/InviteSystem'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 import { SystemTestPage } from './pages/SystemTestPage'
@@ -24,6 +25,7 @@ import JourneyManagementOverview from './pages/JourneyManagement/index'
 import JourneyDetail from './pages/JourneyManagement/JourneyDetail'
 import ProcessEvaluationForm from './pages/JourneyManagement/ProcessEvaluationForm'
 import UsersManagementPage from './pages/admin/UsersManagementPage'
+import JourneyAssignmentsPage from './pages/admin/JourneyAssignmentsPage'
 import CompaniesManagementPage from './pages/admin/CompaniesManagementPage'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
@@ -81,6 +83,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route 
+        path="/goals/assigned" 
+        element={
+          <ProtectedRoute>
+            <AssignedGoalsPage />
           </ProtectedRoute>
         }
       />
@@ -189,6 +200,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin']}>
             <UsersManagementPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/admin/journey-assignments" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+            <JourneyAssignmentsPage />
           </ProtectedRoute>
         }
       />

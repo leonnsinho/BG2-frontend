@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/usePermissions'
 import { Layout } from '../components/layout/Layout'
+import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { DashboardSkeleton, SmartLoader } from '../components/ui/DashboardLoaders'
+import UnlinkedUserMessage from '../components/common/UnlinkedUserMessage'
 import { 
   Users, 
   Building2, 
@@ -121,7 +123,7 @@ const StatCard = memo(({ stat }) => {
 StatCard.displayName = 'StatCard'
 
 export function DashboardPage() {
-  const { user, profile, loading: authLoading } = useAuth()
+  const { user, profile, loading: authLoading, isUnlinkedUser } = useAuth()
   const { 
     activeCompany, 
     isSuperAdmin, 
@@ -189,6 +191,98 @@ export function DashboardPage() {
           <DashboardSkeleton />
         </Suspense>
       </Layout>
+    )
+  }
+
+  // Dashboard específico para usuários não vinculados
+  if (isUnlinkedUser()) {
+    return (
+      <div className="min-h-screen bg-background">
+        {/* Sidebar */}
+        <Sidebar 
+          isOpen={false} 
+          onClose={() => {}} 
+        />
+
+        {/* Main Content sem Header */}
+        <div className="flex flex-col lg:ml-72">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8">
+            <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+              <div className="max-w-4xl w-full text-center px-6">
+                {/* Saudação personalizada simplificada */}
+                <div className="mb-12">              
+                  <h1 className="text-4xl font-light text-neutral-900 mb-3">
+                    Olá, {userInfo.name}
+                  </h1>
+                  
+                  <div className="flex items-center justify-center space-x-2 mb-6">
+                    <div className="w-12 h-0.5 bg-primary-500"></div>
+                    <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+                    <div className="w-12 h-0.5 bg-primary-500"></div>
+                  </div>
+                  
+                  <p className="text-lg text-neutral-600 font-light">
+                    Bem-vindo ao seu painel pessoal no <span className="font-medium text-primary-600">BG2</span>
+                  </p>
+                </div>
+
+                {/* Cards explicativos em lista */}
+                <div className="space-y-4 mb-8">
+                  <div className="bg-background shadow-soft border border-neutral-100 rounded-xl p-6 text-left hover:shadow-medium transition-all duration-300 hover:border-primary-200">
+                    <div className="flex items-start space-x-4">
+                      <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                        <span className="text-sm font-bold text-primary-600">1</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-neutral-800 mb-2">Tarefas Atribuídas</h4>
+                        <p className="text-sm text-neutral-600 leading-relaxed">
+                          Gestores da sua empresa atribuirão tarefas específicas das jornadas para você. 
+                          Elas aparecerão automaticamente na seção "Metas Atribuídas" para acompanhamento.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-background shadow-soft border border-neutral-100 rounded-xl p-6 text-left hover:shadow-medium transition-all duration-300 hover:border-primary-200">
+                    <div className="flex items-start space-x-4">
+                      <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                        <span className="text-sm font-bold text-primary-600">2</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-neutral-800 mb-2">Acompanhamento de Progresso</h4>
+                        <p className="text-sm text-neutral-600 leading-relaxed">
+                          Visualize o progresso, prazos e status de cada tarefa de forma organizada. 
+                          Tenha controle total sobre suas responsabilidades e marcos importantes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status da conta com animação de loading */}
+                <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 mb-8 relative overflow-hidden">
+                  {/* Animação de loading no fundo */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-100 to-transparent opacity-30 animate-pulse"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-center space-x-3 mb-3">
+                      {/* Spinner de loading */}
+                      <div className="relative">
+                        <div className="w-4 h-4 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin"></div>
+                      </div>
+                      <span className="text-sm font-medium text-primary-800">Configurando sua conta</span>
+                    </div>
+                    <p className="text-sm text-primary-700">
+                      Sua conta está sendo configurada pelos gestores da empresa. 
+                      Em breve você terá acesso completo às suas tarefas personalizadas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
     )
   }
 

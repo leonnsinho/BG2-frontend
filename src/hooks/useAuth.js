@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../services/supabase'
 
 export function useLogin() {
   const [loading, setLoading] = useState(false)
@@ -150,9 +151,112 @@ export function usePermissions() {
   const activeCompany = getActiveCompany()
 
   const isSuperAdmin = () => hasRole('super_admin')
-  const isConsultant = () => hasRole(['super_admin', 'consultant'])
-  const isCompanyAdmin = () => hasRole(['super_admin', 'consultant', 'company_admin'])
-  const isUser = () => hasRole(['super_admin', 'consultant', 'company_admin', 'user'])
+  
+  // Gestor geral (antigo consultant) - tem acesso a tudo
+  const isGestor = () => hasRole(['super_admin', 'gestor'])
+  
+  // Gestores específicos por jornada
+  const isGestorFinanceiro = () => hasRole(['super_admin', 'gestor', 'gestor_financeiro'])
+  const isGestorEstrategico = () => hasRole(['super_admin', 'gestor', 'gestor_estrategico']) 
+  const isGestorPessoasCultura = () => hasRole(['super_admin', 'gestor', 'gestor_pessoas_cultura'])
+  const isGestorVendasMarketing = () => hasRole(['super_admin', 'gestor', 'gestor_vendas_marketing'])
+  const isGestorOperacional = () => hasRole(['super_admin', 'gestor', 'gestor_operacional'])
+  
+  // Função para verificar se tem acesso a jornada específica
+  const hasJourneyAccess = (journeyType) => {
+    // Super admin e gestor geral têm acesso a tudo
+    if (isSuperAdmin() || hasRole('gestor')) return true
+    
+    // Verificar acesso específico por jornada baseado no role
+    const journeyRoleMap = {
+      'financeira': 'gestor_financeiro',
+      'estrategica': 'gestor_estrategico', 
+      'pessoas-cultura': 'gestor_pessoas_cultura',
+      'receita-crm': 'gestor_vendas_marketing',
+      'operacional': 'gestor_operacional'
+    }
+    
+    return hasRole(journeyRoleMap[journeyType])
+  }
+  
+  // FUNÇÃO DESABILITADA - Sistema simplificado usa apenas atribuições manuais
+  // Função para obter as jornadas baseadas no role (base) - NÃO USADA NO SISTEMA SIMPLIFICADO
+  const getRoleBasedJourneys = () => {
+    // No sistema simplificado, retornamos array vazio para forçar uso apenas de atribuições manuais
+    return []
+    
+    /* CÓDIGO ANTIGO COMENTADO:
+    // Super admin e gestor geral têm acesso a tudo
+    if (isSuperAdmin() || hasRole('gestor')) {
+      return ['estrategica', 'financeira', 'pessoas-cultura', 'receita-crm', 'operacional']
+    }
+    
+    const journeys = []
+    if (hasRole('gestor_financeiro')) journeys.push('financeira')
+    if (hasRole('gestor_estrategico')) journeys.push('estrategica') 
+    if (hasRole('gestor_pessoas_cultura')) journeys.push('pessoas-cultura')
+    if (hasRole('gestor_vendas_marketing')) journeys.push('receita-crm')
+    if (hasRole('gestor_operacional')) journeys.push('operacional')
+    
+    return journeys
+    */
+  }
+  
+  // Função para obter jornadas efetivas (apenas atribuições manuais no sistema simplificado)
+  const getAccessibleJourneys = async () => {
+    console.log('🔍 getAccessibleJourneys chamada para usuário:', profile?.id, profile?.email)
+    
+    try {
+      if (!profile?.id) {
+        console.log('❌ Sem perfil - retornando array vazio')
+        return [] // No sistema simplificado, sem perfil = sem jornadas
+      }
+
+      console.log('🔄 Chamando get_user_effective_journeys...')
+      const { data, error } = await supabase
+        .rpc('get_user_effective_journeys', {
+          p_user_id: profile.id
+        })
+
+      if (error) {
+        console.error('❌ Erro ao buscar jornadas efetivas:', error)
+        return [] // No sistema simplificado, erro = sem jornadas
+      }
+
+      console.log('📊 Dados retornados da SQL:', data)
+      
+      // Retornar apenas jornadas ativas (sistema simplificado)
+      const journeySlugs = data?.map(journey => journey.journey_slug) || []
+      console.log('✅ Jornadas finais para usuário:', journeySlugs)
+      
+      return journeySlugs
+    } catch (error) {
+      console.error('❌ Erro ao buscar jornadas:', error)
+      return [] // No sistema simplificado, erro = sem jornadas
+    }
+  }
+  
+  // Função para obter jornadas atribuídas manualmente (igual à função principal no sistema simplificado)
+  const getManuallyAssignedJourneys = async () => {
+    return await getAccessibleJourneys() // No sistema simplificado, são as mesmas
+  }
+
+  // Manter compatibilidade com roles antigos
+  const isConsultant = () => hasRole(['super_admin', 'gestor']) // gestor é o novo consultant
+  // Verificações de status do usuário
+  const isUnlinkedUser = () => {
+    // Usuário não vinculado: tem perfil, mas não tem empresa ativa
+    return profile?.id && !activeCompany
+  }
+  
+  const isCompanyAdmin = () => hasRole(['super_admin', 'gestor', 'company_admin'])
+  const isUser = () => hasRole(['super_admin', 'gestor', 'company_admin', 'user'])
+  
+  // Função para verificar se é qualquer tipo de gestor
+  const isAnyManager = () => hasRole([
+    'gestor', 'gestor_financeiro', 'gestor_estrategico', 
+    'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional'
+  ])
 
   return {
     profile,
@@ -160,9 +264,22 @@ export function usePermissions() {
     checkPermission,
     checkRole,
     isSuperAdmin,
+    isGestor,
+    isGestorFinanceiro,
+    isGestorEstrategico,
+    isGestorPessoasCultura,
+    isGestorVendasMarketing,
+    isGestorOperacional,
+    hasJourneyAccess,
+    getAccessibleJourneys,
+    getRoleBasedJourneys,
+    getManuallyAssignedJourneys,
+    isAnyManager,
+    // Manter compatibilidade
     isConsultant,
     isCompanyAdmin,
     isUser,
+    isUnlinkedUser, // Nova função para usuários não vinculados
     isLoading: loading
   }
 }

@@ -20,7 +20,11 @@ import {
   XCircle,
   AlertCircle,
   Eye,
-  Link
+  Link,
+  DollarSign,
+  Target,
+  TrendingUp,
+  Settings
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
 
@@ -30,10 +34,35 @@ const ROLES = {
     color: 'red',
     icon: Shield
   },
-  'consultant': { 
-    label: 'Consultor', 
+  'gestor': { 
+    label: 'Gestor Geral', 
     color: 'purple',
     icon: Users
+  },
+  'gestor_financeiro': { 
+    label: 'Gestor Financeiro', 
+    color: 'green',
+    icon: DollarSign
+  },
+  'gestor_estrategico': { 
+    label: 'Gestor Estratégico', 
+    color: 'blue',
+    icon: Target
+  },
+  'gestor_pessoas_cultura': { 
+    label: 'Gestor Pessoas & Cultura', 
+    color: 'pink',
+    icon: Users
+  },
+  'gestor_vendas_marketing': { 
+    label: 'Gestor Vendas & Marketing', 
+    color: 'orange',
+    icon: TrendingUp
+  },
+  'gestor_operacional': { 
+    label: 'Gestor Operacional', 
+    color: 'teal',
+    icon: Settings
   },
   'company_admin': { 
     label: 'Admin Empresa', 
@@ -42,7 +71,7 @@ const ROLES = {
   },
   'user': { 
     label: 'Usuário', 
-    color: 'green',
+    color: 'gray',
     icon: Users
   }
 }
@@ -342,6 +371,22 @@ export default function UsersManagementPage() {
 
   const getRoleInfo = (role) => ROLES[role] || ROLES.user
 
+  // Função para obter as jornadas que um role tem acesso
+  const getJourneyAccess = (role) => {
+    const journeyMap = {
+      'super_admin': ['Todas as jornadas'],
+      'gestor': ['Todas as jornadas'],
+      'gestor_financeiro': ['Financeira'],
+      'gestor_estrategico': ['Estratégica'],
+      'gestor_pessoas_cultura': ['Pessoas & Cultura'],
+      'gestor_vendas_marketing': ['Vendas & Marketing'],
+      'gestor_operacional': ['Operacional'],
+      'company_admin': ['Todas as jornadas'],
+      'user': []
+    }
+    return journeyMap[role] || []
+  }
+
   if (loading) {
     return (
       <Layout>
@@ -442,6 +487,9 @@ export default function UsersManagementPage() {
                     Empresa
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Jornadas
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -531,6 +579,37 @@ export default function UsersManagementPage() {
                               </Button>
                             </div>
                           )}
+                        </div>
+                      </td>
+                      
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {(() => {
+                            const journeys = getJourneyAccess(effectiveRole)
+                            if (journeys.length === 0) {
+                              return <span className="text-gray-400">Nenhuma jornada</span>
+                            }
+                            if (journeys.includes('Todas as jornadas')) {
+                              return (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  <Target className="h-3 w-3 mr-1" />
+                                  Todas as jornadas
+                                </span>
+                              )
+                            }
+                            return (
+                              <div className="flex flex-wrap gap-1">
+                                {journeys.map((journey) => (
+                                  <span 
+                                    key={journey}
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                  >
+                                    {journey}
+                                  </span>
+                                ))}
+                              </div>
+                            )
+                          })()}
                         </div>
                       </td>
                       
@@ -648,6 +727,38 @@ export default function UsersManagementPage() {
                           Função na empresa: {getRoleInfo(selectedUser.company_role).label}
                         </p>
                       )}
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Jornadas Acessíveis</label>
+                      <div className="mt-1">
+                        {(() => {
+                          const journeys = getJourneyAccess(selectedUser.company_role || selectedUser.role)
+                          if (journeys.length === 0) {
+                            return <span className="text-sm text-gray-500">Nenhuma jornada</span>
+                          }
+                          if (journeys.includes('Todas as jornadas')) {
+                            return (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <Target className="h-3 w-3 mr-1" />
+                                Todas as jornadas
+                              </span>
+                            )
+                          }
+                          return (
+                            <div className="flex flex-wrap gap-1">
+                              {journeys.map((journey) => (
+                                <span 
+                                  key={journey}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                >
+                                  {journey}
+                                </span>
+                              ))}
+                            </div>
+                          )
+                        })()}
+                      </div>
                     </div>
                     
                     <div>
@@ -873,8 +984,17 @@ function LinkUserModal({ user, companies, onClose, onLink, loading }) {
                   >
                     <option value="user">Usuário</option>
                     <option value="company_admin">Admin da Empresa</option>
-                    <option value="consultant">Consultor</option>
+                    <option value="gestor">Gestor Geral</option>
+                    <option value="gestor_financeiro">Gestor Financeiro</option>
+                    <option value="gestor_estrategico">Gestor Estratégico</option>
+                    <option value="gestor_pessoas_cultura">Gestor de Pessoas & Cultura</option>
+                    <option value="gestor_vendas_marketing">Gestor de Vendas & Marketing</option>
+                    <option value="gestor_operacional">Gestor Operacional</option>
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    💡 <strong>Gestor Geral</strong> tem acesso a todas as jornadas. 
+                    <strong>Gestores específicos</strong> têm acesso apenas às suas jornadas.
+                  </p>
                 </div>
               </div>
             </div>

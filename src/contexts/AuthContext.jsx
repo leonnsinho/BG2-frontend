@@ -327,6 +327,20 @@ export function AuthProvider({ children }) {
     return profile.user_companies.find(uc => uc.is_active)?.companies
   }
 
+  // Verificar se usuário não está vinculado a nenhuma empresa
+  const isUnlinkedUser = () => {
+    if (!profile) return false
+    
+    // Se não tem user_companies ou está vazio, é não vinculado
+    if (!profile.user_companies || profile.user_companies.length === 0) {
+      return true
+    }
+    
+    // Se não tem nenhuma empresa ativa, é não vinculado
+    const hasActiveCompany = profile.user_companies.some(uc => uc.is_active)
+    return !hasActiveCompany
+  }
+
   // Debug: monitorar cache e fetches pendentes
   useEffect(() => {
     const interval = setInterval(() => {
@@ -474,6 +488,7 @@ export function AuthProvider({ children }) {
     hasPermission,
     hasRole,
     getActiveCompany,
+    isUnlinkedUser,
     fetchProfile,
     refreshProfile,
   }
