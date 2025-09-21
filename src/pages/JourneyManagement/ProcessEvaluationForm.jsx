@@ -27,9 +27,6 @@ const ProcessEvaluationForm = () => {
   const [process, setProcess] = useState(null)
   const [company, setCompany] = useState(null)
   const [evaluation, setEvaluation] = useState(null)
-  const [users, setUsers] = useState([])
-  const [filteredUsers, setFilteredUsers] = useState([])
-  const [userSearchTerm, setUserSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   
@@ -47,7 +44,6 @@ const ProcessEvaluationForm = () => {
     business_importance: 3,
     implementation_urgency: 3,
     implementation_ease: 3,
-    responsible_user_id: null,
     evidence_files: [],
     uploaded_files: []
   })
@@ -77,16 +73,6 @@ const ProcessEvaluationForm = () => {
     { value: 'blocked', label: 'Bloqueado', color: 'bg-red-100 text-red-800' }
   ]
 
-  const getRoleLabel = (role) => {
-    const roleLabels = {
-      'super_admin': 'Super Admin',
-      'consultant': 'Consultor',
-      'company_admin': 'Admin da Empresa',
-      'user': 'Usuário'
-    }
-    return roleLabels[role] || role
-  }
-
   // Carregar dados
   useEffect(() => {
     const fetchData = async () => {
@@ -113,38 +99,6 @@ const ProcessEvaluationForm = () => {
 
           if (companyError) throw companyError
           setCompany(companyData)
-
-          // Carregar usuários disponíveis
-          const { data: profilesData, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, full_name, email, role')
-            .order('full_name')
-
-
-
-
-
-          // Teste 3: Consulta sem RLS (usando rpc se necessário)
-          try {
-            const { data: rpcData, error: rpcError } = await supabase
-              .rpc('get_all_profiles')
-          
-            console.log('� Teste 3 - RPC sem RLS:')
-            console.log('   Resultado:', rpcData?.length || 0)
-            console.log('   Erro:', rpcError)
-          } catch (e) {
-            console.log('📊 Teste 3 - RPC não disponível:', e.message)
-          }
-
-          if (profilesError) {
-            console.error('Erro ao carregar usuários:', profilesError)
-            setUsers([])
-          } else {
-            // Filtrar usuários excluindo super admins
-            const filteredByRole = profilesData?.filter(user => user.role !== 'super_admin') || []
-            setUsers(filteredByRole)
-            setFilteredUsers(filteredByRole)
-          }
 
           // Carregar avaliação existente
           const { data: evaluationData, error: evaluationError } = await supabase
@@ -189,21 +143,6 @@ const ProcessEvaluationForm = () => {
 
     fetchData()
   }, [processId, companyId])
-
-  // Filtrar usuários baseado na busca
-  useEffect(() => {
-    console.log('🔍 Filtrando usuários:', { userSearchTerm, usersCount: users.length })
-    if (!userSearchTerm) {
-      setFilteredUsers(users)
-    } else {
-      const filtered = users.filter(user => 
-        user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-        (user.full_name && user.full_name.toLowerCase().includes(userSearchTerm.toLowerCase()))
-      )
-      setFilteredUsers(filtered)
-    }
-    console.log('🔍 Usuários filtrados:', filteredUsers.length)
-  }, [userSearchTerm, users])
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -332,37 +271,37 @@ const ProcessEvaluationForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200/50 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
+          <div className="py-8">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate(-1)}
-                className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+                className="p-3 rounded-2xl bg-gradient-to-r from-[#373435] to-[#373435]/90 hover:from-[#EBA500] hover:to-[#EBA500]/90 text-white transition-all duration-300 shadow-sm hover:shadow-md"
               >
-                <ChevronLeft className="h-5 w-5 text-gray-600" />
+                <ChevronLeft className="h-5 w-5" />
               </button>
               
-              <div className="p-3 rounded-lg bg-primary-500">
-                <Target className="h-6 w-6 text-white" />
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 shadow-sm">
+                <Target className="h-7 w-7 text-white" />
               </div>
               
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-bold text-[#373435]">
                   {evaluation ? 'Editar Avaliação' : 'Avaliar Processo'}
                 </h1>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-2 text-sm text-gray-600">
                   {process.code} - {process.name}
                 </p>
               </div>
             </div>
             
             {company && (
-              <div className="mt-4 flex items-center space-x-2 text-sm text-gray-600">
-                <Building2 className="h-4 w-4" />
-                <span>Empresa: {company.name}</span>
+              <div className="mt-6 flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 rounded-2xl border border-[#EBA500]/20">
+                <Building2 className="h-4 w-4 text-[#EBA500]" />
+                <span className="text-sm font-medium text-[#373435]">Empresa: {company.name}</span>
               </div>
             )}
           </div>
@@ -374,39 +313,44 @@ const ProcessEvaluationForm = () => {
           
           {/* Informações do Processo */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 p-8">
+              <h3 className="text-lg font-semibold text-[#373435] mb-6">
                 Detalhes do Processo
               </h3>
               
-              <dl className="space-y-4">
+              <dl className="space-y-6">
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Código</dt>
-                  <dd className="text-sm text-gray-900">{process.code}</dd>
+                  <dd className="text-sm text-[#373435] mt-1 px-3 py-1 bg-gradient-to-r from-[#373435]/10 to-[#373435]/5 rounded-2xl inline-block border border-[#373435]/20">{process.code}</dd>
                 </div>
                 
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Nome</dt>
-                  <dd className="text-sm text-gray-900">{process.name}</dd>
+                  <dd className="text-sm text-[#373435] mt-1 font-medium">{process.name}</dd>
                 </div>
                 
                 {process.category && (
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Categoria</dt>
-                    <dd className="text-sm text-gray-900">{process.category}</dd>
+                    <dd className="text-sm text-[#373435] mt-1 px-3 py-1 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 rounded-2xl inline-block border border-[#EBA500]/20">{process.category}</dd>
                   </div>
                 )}
                 
                 {process.description && (
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Descrição</dt>
-                    <dd className="text-sm text-gray-900">{process.description}</dd>
+                    <dd className="text-sm text-[#373435] mt-1 leading-relaxed">{process.description}</dd>
                   </div>
                 )}
                 
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Peso</dt>
-                  <dd className="text-sm text-gray-900">{process.weight}</dd>
+                  <dd className="text-sm text-[#373435] mt-1">
+                    <span className="inline-flex items-center space-x-1">
+                      <span className="w-2 h-2 bg-[#EBA500] rounded-full"></span>
+                      <span>{process.weight}</span>
+                    </span>
+                  </dd>
                 </div>
               </dl>
             </div>
@@ -414,33 +358,33 @@ const ProcessEvaluationForm = () => {
 
           {/* Formulário de Avaliação */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 p-8">
+              <h3 className="text-lg font-semibold text-[#373435] mb-8">
                 Avaliação do Processo
               </h3>
               
-              <form className="space-y-6">
+              <form className="space-y-8">
                 {/* Score Atual */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-[#373435] mb-4">
                     Score Atual (0-5)
                   </label>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3">
                     {[0, 1, 2, 3, 4, 5].map(score => (
                       <button
                         key={score}
                         type="button"
                         onClick={() => handleInputChange('current_score', score)}
-                        className={`flex flex-col items-center p-3 rounded-lg border-2 transition-colors ${
+                        className={`flex flex-col items-center p-4 rounded-2xl border-2 transition-all duration-200 ${
                           formData.current_score === score
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-[#EBA500] bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 shadow-md'
+                            : 'border-gray-200 hover:border-[#EBA500]/50 hover:bg-gray-50'
                         }`}
                       >
-                        <span className={`text-lg font-bold ${scoreColors[score]}`}>
+                        <span className={`text-lg font-bold ${formData.current_score === score ? 'text-[#EBA500]' : scoreColors[score]}`}>
                           {score}
                         </span>
-                        <span className="text-xs text-center mt-1">
+                        <span className="text-xs text-center mt-1 text-gray-600">
                           {scoreLabels[score]}
                         </span>
                       </button>
@@ -450,23 +394,23 @@ const ProcessEvaluationForm = () => {
 
                 {/* Score Meta */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-[#373435] mb-4">
                     Score Meta (0-5)
                   </label>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3">
                     {[0, 1, 2, 3, 4, 5].map(score => (
                       <button
                         key={score}
                         type="button"
                         onClick={() => handleInputChange('target_score', score)}
-                        className={`flex flex-col items-center p-3 rounded-lg border-2 transition-colors ${
+                        className={`flex flex-col items-center p-4 rounded-2xl border-2 transition-all duration-200 ${
                           formData.target_score === score
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-emerald-500 bg-gradient-to-r from-emerald-50 to-emerald-100/50 shadow-md'
+                            : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'
                         }`}
                       >
-                        <Star className={`h-5 w-5 ${formData.target_score === score ? 'text-green-600' : 'text-gray-400'}`} />
-                        <span className="text-xs mt-1">{score}</span>
+                        <Star className={`h-5 w-5 ${formData.target_score === score ? 'text-emerald-600' : 'text-gray-400'}`} />
+                        <span className="text-xs mt-1 text-gray-600">{score}</span>
                       </button>
                     ))}
                   </div>
@@ -474,8 +418,8 @@ const ProcessEvaluationForm = () => {
 
                 {/* Notas de Avaliação */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <FileText className="inline h-4 w-4 mr-1" />
+                  <label className="block text-sm font-semibold text-[#373435] mb-3">
+                    <FileText className="inline h-4 w-4 mr-2 text-[#EBA500]" />
                     Notas da Avaliação
                   </label>
                   <textarea
@@ -483,13 +427,13 @@ const ProcessEvaluationForm = () => {
                     value={formData.evaluation_notes}
                     onChange={(e) => handleInputChange('evaluation_notes', e.target.value)}
                     placeholder="Descreva a situação atual do processo..."
-                    className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 resize-none"
                   />
                 </div>
 
                 {/* Plano de Melhoria */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-[#373435] mb-3">
                     Plano de Melhoria
                   </label>
                   <textarea
@@ -497,34 +441,34 @@ const ProcessEvaluationForm = () => {
                     value={formData.improvement_plan}
                     onChange={(e) => handleInputChange('improvement_plan', e.target.value)}
                     placeholder="Descreva as ações para melhorar o processo..."
-                    className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 resize-none"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Prazo */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Calendar className="inline h-4 w-4 mr-1" />
+                    <label className="block text-sm font-semibold text-[#373435] mb-3">
+                      <Calendar className="inline h-4 w-4 mr-2 text-[#EBA500]" />
                       Prazo
                     </label>
                     <input
                       type="date"
                       value={formData.deadline}
                       onChange={(e) => handleInputChange('deadline', e.target.value)}
-                      className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200"
                     />
                   </div>
 
                   {/* Nível de Confiança */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-[#373435] mb-3">
                       Nível de Confiança
                     </label>
                     <select
                       value={formData.confidence_level}
                       onChange={(e) => handleInputChange('confidence_level', parseInt(e.target.value))}
-                      className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 bg-white"
                     >
                       <option value={1}>1 - Muito Baixo</option>
                       <option value={2}>2 - Baixo</option>
@@ -537,13 +481,13 @@ const ProcessEvaluationForm = () => {
 
                 {/* Status */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-[#373435] mb-3">
                     Status
                   </label>
                   <select
                     value={formData.status}
                     onChange={(e) => handleInputChange('status', e.target.value)}
-                    className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 bg-white"
                   >
                     {statusOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -555,7 +499,7 @@ const ProcessEvaluationForm = () => {
 
                 {/* Tem/não tem processo */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-[#373435] mb-3">
                     A empresa tem/usa este processo?
                   </label>
                   <div className="flex items-center space-x-4">
@@ -566,9 +510,9 @@ const ProcessEvaluationForm = () => {
                         value="true"
                         checked={formData.has_process === true}
                         onChange={() => handleInputChange('has_process', true)}
-                        className="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                        className="form-radio h-4 w-4 text-[#EBA500] focus:ring-[#EBA500]/30 border-gray-300"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Sim, tem/usa</span>
+                      <span className="ml-2 text-sm text-[#373435]">Sim, tem/usa</span>
                     </label>
                     <label className="inline-flex items-center">
                       <input
@@ -577,16 +521,16 @@ const ProcessEvaluationForm = () => {
                         value="false"
                         checked={formData.has_process === false}
                         onChange={() => handleInputChange('has_process', false)}
-                        className="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                        className="form-radio h-4 w-4 text-[#EBA500] focus:ring-[#EBA500]/30 border-gray-300"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Não tem/não usa</span>
+                      <span className="ml-2 text-sm text-[#373435]">Não tem/não usa</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Observações */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-[#373435] mb-3">
                     Observações Adicionais
                   </label>
                   <textarea
@@ -594,7 +538,7 @@ const ProcessEvaluationForm = () => {
                     value={formData.observations}
                     onChange={(e) => handleInputChange('observations', e.target.value)}
                     placeholder="Observações sobre o processo na empresa..."
-                    className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 resize-none"
                   />
                 </div>
 
@@ -610,7 +554,7 @@ const ProcessEvaluationForm = () => {
 
                 {/* Links de Evidência Adicionais */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-[#373435] mb-3">
                     Links Externos de Evidência (opcional)
                   </label>
                   <div className="space-y-2">
@@ -625,7 +569,7 @@ const ProcessEvaluationForm = () => {
                             handleInputChange('evidence_files', newFiles)
                           }}
                           placeholder="https://..."
-                          className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                          className="flex-1 border border-gray-200 rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200"
                         />
                         <button
                           type="button"
@@ -633,7 +577,7 @@ const ProcessEvaluationForm = () => {
                             const newFiles = formData.evidence_files.filter((_, i) => i !== index)
                             handleInputChange('evidence_files', newFiles)
                           }}
-                          className="p-2 text-red-600 hover:text-red-800"
+                          className="p-2 text-red-500 hover:text-red-600 rounded-xl hover:bg-red-50 transition-all duration-200"
                         >
                           ×
                         </button>
@@ -644,7 +588,7 @@ const ProcessEvaluationForm = () => {
                       onClick={() => {
                         handleInputChange('evidence_files', [...formData.evidence_files, ''])
                       }}
-                      className="text-sm text-primary-600 hover:text-primary-800"
+                      className="text-sm text-[#EBA500] hover:text-[#EBA500]/80 font-medium"
                     >
                       + Adicionar link externo
                     </button>
@@ -652,21 +596,21 @@ const ProcessEvaluationForm = () => {
                 </div>
 
                 {/* Seção de Priorização */}
-                <div className="border-t border-gray-200 pt-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">
+                <div className="border-t border-gray-100 pt-8">
+                  <h4 className="text-lg font-semibold text-[#373435] mb-6">
                     Avaliação de Prioridade
                   </h4>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {/* Importância para Empresa */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-[#373435] mb-3">
                         Importância para Empresa (1-5)
                       </label>
                       <select
                         value={formData.business_importance}
                         onChange={(e) => handleInputChange('business_importance', parseInt(e.target.value))}
-                        className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                        className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 bg-white"
                       >
                         <option value={1}>1 - Muito Baixa</option>
                         <option value={2}>2 - Baixa</option>
@@ -678,13 +622,13 @@ const ProcessEvaluationForm = () => {
 
                     {/* Urgência para Realização */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-[#373435] mb-3">
                         Urgência para Realização (1-5)
                       </label>
                       <select
                         value={formData.implementation_urgency}
                         onChange={(e) => handleInputChange('implementation_urgency', parseInt(e.target.value))}
-                        className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                        className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 bg-white"
                       >
                         <option value={1}>1 - Muito Baixa</option>
                         <option value={2}>2 - Baixa</option>
@@ -696,13 +640,13 @@ const ProcessEvaluationForm = () => {
 
                     {/* Facilidade para Implementar */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-[#373435] mb-3">
                         Facilidade para Implementar (1-5)
                       </label>
                       <select
                         value={formData.implementation_ease}
                         onChange={(e) => handleInputChange('implementation_ease', parseInt(e.target.value))}
-                        className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                        className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 bg-white"
                       >
                         <option value={1}>1 - Muito Difícil</option>
                         <option value={2}>2 - Difícil</option>
@@ -729,94 +673,12 @@ const ProcessEvaluationForm = () => {
                   </div>
                 </div>
 
-                {/* Usuário Responsável */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <User className="inline h-4 w-4 mr-1" />
-                    Usuário Responsável
-                    <span className="text-xs text-gray-500 ml-2">
-                      (Consultores, Admins de Empresa e Usuários) - {filteredUsers.length} disponíveis
-                    </span>
-                  </label>
-                  
-                  {/* Campo de busca */}
-                  <div className="mb-2">
-                    <input
-                      type="text"
-                      placeholder="Buscar por email ou nome..."
-                      value={userSearchTerm}
-                      onChange={(e) => setUserSearchTerm(e.target.value)}
-                      className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    />
-                  </div>
-                  
-                  {/* Lista de usuários filtrados */}
-                  <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-md">
-                    <div className="p-2">
-                      <label className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                        <input
-                          type="radio"
-                          name="responsible_user"
-                          value=""
-                          checked={!formData.responsible_user_id}
-                          onChange={() => handleInputChange('responsible_user_id', null)}
-                          className="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 mr-3"
-                        />
-                        <span className="text-sm text-gray-500 italic">Nenhum responsável selecionado</span>
-                      </label>
-                    </div>
-                    
-                    {filteredUsers.length > 0 ? (
-                      filteredUsers.map(user => (
-                        <div key={user.id} className="p-2">
-                          <label className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                            <input
-                              type="radio"
-                              name="responsible_user"
-                              value={user.id}
-                              checked={formData.responsible_user_id === user.id}
-                              onChange={() => handleInputChange('responsible_user_id', user.id)}
-                              className="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 mr-3"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {user.full_name || 'Nome não informado'}
-                              </p>
-                              <p className="text-xs text-gray-500 truncate">
-                                {user.email} • {getRoleLabel(user.role)}
-                              </p>
-                            </div>
-                          </label>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-sm text-gray-500">
-                        {userSearchTerm ? 'Nenhum usuário encontrado' : 'Carregando usuários...'}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Usuário selecionado */}
-                  {formData.responsible_user_id && (
-                    <div className="mt-2 p-2 bg-primary-50 rounded-md">
-                      {(() => {
-                        const selectedUser = users.find(u => u.id === formData.responsible_user_id)
-                        return selectedUser ? (
-                          <p className="text-sm text-primary-800">
-                            <strong>Selecionado:</strong> {selectedUser.full_name || 'Nome não informado'} ({selectedUser.email})
-                          </p>
-                        ) : null
-                      })()}
-                    </div>
-                  )}
-                </div>
-
                 {/* Botões de Ação */}
-                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <div className="flex justify-end space-x-4 pt-8 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={() => navigate(-1)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    className="px-6 py-3 text-sm font-medium text-[#373435] bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 transition-all duration-200"
                   >
                     Cancelar
                   </button>
@@ -825,7 +687,7 @@ const ProcessEvaluationForm = () => {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                    className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 border border-transparent rounded-2xl hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     {saving ? (
                       <>

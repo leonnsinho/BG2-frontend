@@ -20,53 +20,13 @@ import {
   Shield,
   Database,
   Plus,
-  Zap,
   AlertCircle,
   LogOut,
   Calendar,
-  Kanban
+  Kanban,
+  CheckSquare
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
-
-// Função para obter ações rápidas baseadas nas permissões do usuário
-const getQuickActions = (permissions) => {
-  const actions = [
-    {
-      title: 'Nova Empresa',
-      description: 'Cadastrar nova empresa no sistema',
-      icon: Building2,
-      href: '/companies/new',
-      color: 'blue',
-      show: permissions.isSuperAdmin() // Removido permissions.isGestor()
-    },
-    {
-      title: 'Convidar Usuário',
-      description: 'Enviar convite para novo usuário',
-      icon: Users,
-      href: '/invites',
-      color: 'green',
-      show: permissions.isCompanyAdmin() || permissions.isSuperAdmin() // Sem gestores
-    },
-    {
-      title: 'Criar Meta',
-      description: 'Definir nova meta SMART',
-      icon: Target,
-      href: '/goals/new',
-      color: 'purple',
-      show: true
-    },
-    {
-      title: 'Ver Relatórios',
-      description: 'Acessar relatórios e dashboards',
-      icon: BarChart3,
-      href: '/reports',
-      color: 'orange',
-      show: permissions.isSuperAdmin() || permissions.isCompanyAdmin() // Sem gestores
-    }
-  ]
-
-  return actions.filter(action => action.show)
-}
 
 // Função para obter itens de navegação baseados no perfil do usuário
 const getNavigationItems = (profile, permissions, accessibleJourneys = [], journeysLoading = true) => {
@@ -116,6 +76,11 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         name: 'Convites',
         icon: UserPlus,
         href: '/invites'
+      },
+      {
+        name: 'Criar Empresa',
+        icon: Building2,
+        href: '/companies/new'
       },
       {
         name: 'Relatórios Globais',
@@ -203,14 +168,8 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/team',
         children: [
           { name: 'Membros', href: '/team/members' },
-          { name: 'Convites', href: '/team/invites' },
           { name: 'Permissões', href: '/team/permissions' }
         ]
-      },
-      {
-        name: 'Convites',
-        icon: UserPlus,
-        href: '/invites'
       },
       {
         name: 'Jornadas',
@@ -224,30 +183,9 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/process-management'
       },
       {
-        name: 'CRM',
-        icon: Users,
-        href: '/crm'
-      },
-      {
-        name: 'Financeiro',
-        icon: DollarSign,
-        href: '/financeiro',
-        children: [
-          { name: 'Fluxo de Caixa', href: '/financeiro/fluxo-caixa' },
-          { name: 'DRE', href: '/financeiro/dre' },
-          { name: 'DFC', href: '/financeiro/dfc' },
-          { name: 'Orçamento', href: '/financeiro/orcamento' }
-        ]
-      },
-      {
-        name: 'Relatórios',
-        icon: BarChart3,
-        href: '/reports',
-        children: [
-          { name: 'Vendas', href: '/reports/sales' },
-          { name: 'Financeiro', href: '/reports/financial' },
-          { name: 'Equipe', href: '/reports/team' }
-        ]
+        name: 'Avaliação de Processos',
+        icon: CheckSquare,
+        href: '/journey-management/overview'
       }
     ]
   }
@@ -476,16 +414,6 @@ const Sidebar = ({ isOpen, onClose, className }) => {
     return getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading)
   }, [profile, accessibleJourneys, journeysLoading, permissions.isUnlinkedUser()])
 
-  // Obter ações rápidas baseadas no usuário atual
-  const quickActions = React.useMemo(() => {
-    // Usuários não vinculados não têm ações rápidas
-    if (permissions.isUnlinkedUser()) {
-      return []
-    }
-    
-    return getQuickActions(permissions)
-  }, [permissions.isUnlinkedUser()])
-
   const toggleExpanded = (itemName) => {
     setExpandedItems(prev => 
       prev.includes(itemName) 
@@ -546,60 +474,8 @@ const Sidebar = ({ isOpen, onClose, className }) => {
         {/* Navegação - Scrollable */}
         <nav className="flex-1 overflow-y-auto py-6 px-3">
           
-          {/* Seção de Ações Rápidas */}
-          {quickActions.length > 0 && (
-            <div className="mb-6">
-              <div className="flex items-center px-3 mb-3">
-                <Zap className="w-4 h-4 text-neutral-300 mr-2" />
-                <h3 className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">
-                  Ações Rápidas
-                </h3>
-              </div>
-              
-              <div className="space-y-2">
-                {quickActions.map((action) => {
-                  const getColorClasses = (color) => {
-                    const colorMap = {
-                      blue: 'bg-primary-100 hover:bg-primary-200 border-primary-300 text-primary-800',
-                      green: 'bg-primary-100 hover:bg-primary-200 border-primary-300 text-primary-800',
-                      purple: 'bg-primary-100 hover:bg-primary-200 border-primary-300 text-primary-800',
-                      orange: 'bg-primary-100 hover:bg-primary-200 border-primary-300 text-primary-800'
-                    }
-                    return colorMap[color] || colorMap.blue
-                  }
-
-                  return (
-                    <Link
-                      key={action.title}
-                      to={action.href}
-                      className={cn(
-                        "group flex items-center p-3 text-sm font-medium rounded-lg border transition-colors",
-                        getColorClasses(action.color)
-                      )}
-                      onClick={onClose}
-                    >
-                      <div className="flex items-center justify-center w-8 h-8 rounded-md bg-background border mr-3">
-                        <action.icon className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{action.title}</p>
-                        <p className="text-xs opacity-75 truncate">{action.description}</p>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Seção de Navegação Principal */}
           <div className="mb-3">
-            <div className="flex items-center px-3 mb-3">
-              <Home className="w-4 h-4 text-neutral-300 mr-2" />
-              <h3 className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">
-                Navegação
-              </h3>
-            </div>
             
             {/* Mensagem para usuários não vinculados */}
             {permissions.isUnlinkedUser() && (

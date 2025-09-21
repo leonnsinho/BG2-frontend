@@ -74,7 +74,7 @@ const GestorDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Dashboard do Gestor
+              Olá, {profile?.full_name || profile?.first_name || profile?.name || 'Gestor'}
             </h1>
             <p className="text-gray-600 mt-1">
               {activeCompany?.companies?.name || activeCompany?.name || 'Sua Empresa'}
@@ -121,36 +121,9 @@ const GestorDashboard = () => {
       </div>
 
       {/* Gráficos e Visualizações */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Gráfico de Progresso */}
         <SimpleChart />
-        
-        {/* Card de Ações Rápidas */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
-          <div className="space-y-3">
-            <button className="w-full bg-[#EBA500] text-white px-4 py-3 rounded-lg hover:bg-[#d4940a] transition-colors text-left">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Atribuir Nova Tarefa</span>
-                <CheckCircle2 className="h-5 w-5" />
-              </div>
-            </button>
-            
-            <button className="w-full border border-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Revisar Progresso</span>
-                <BarChart3 className="h-5 w-5" />
-              </div>
-            </button>
-            
-            <button className="w-full border border-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Gerenciar Equipe</span>
-                <Users className="h-5 w-5" />
-              </div>
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Seção de Estatísticas Detalhadas */}

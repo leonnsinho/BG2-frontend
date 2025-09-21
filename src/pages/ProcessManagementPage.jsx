@@ -92,15 +92,15 @@ export default function ProcessManagementPage() {
   if (loading) {
     return (
       <Layout>
-        <div className="space-y-6">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 space-y-8">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-64 mb-4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="h-8 bg-gray-200 rounded-2xl w-64 mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+                <div key={i} className="h-24 bg-gray-200 rounded-2xl"></div>
               ))}
             </div>
-            <div className="h-96 bg-gray-200 rounded"></div>
+            <div className="h-96 bg-gray-200 rounded-3xl"></div>
           </div>
         </div>
       </Layout>
@@ -113,40 +113,44 @@ export default function ProcessManagementPage() {
       <Layout>
         <div className="space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#EBA500] to-[#373435] bg-clip-text text-transparent">
               Gestão de Processos Personalizados
             </h1>
-            <p className="text-gray-600">
+            <p className="text-[#373435]/70 text-lg">
               Gerencie e priorize os processos da sua empresa
             </p>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-6">
+          <div className="bg-gradient-to-r from-[#EBA500]/5 to-[#EBA500]/10 border-2 border-[#EBA500]/20 rounded-3xl p-8">
             <div className="flex">
-              <svg className="flex-shrink-0 h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-yellow-800">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 rounded-2xl flex items-center justify-center">
+                  <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-6">
+                <h3 className="text-xl font-bold text-[#373435]">
                   Configuração de Empresa Necessária
                 </h3>
-                <div className="mt-2 text-sm text-yellow-700">
-                  <p className="mb-2">
+                <div className="mt-4 text-[#373435]/80">
+                  <p className="mb-4 text-lg">
                     Para acessar a gestão de processos, é necessário que seu usuário esteja associado a uma empresa.
                   </p>
-                  <div className="mb-2">
-                    <strong>Informações de Debug:</strong>
+                  <div className="mb-4">
+                    <strong className="text-[#373435]">Informações de Debug:</strong>
                   </div>
-                  <ul className="list-disc list-inside space-y-1 text-xs">
+                  <ul className="list-disc list-inside space-y-2 text-sm bg-[#373435]/5 rounded-2xl p-4">
                     <li>Company ID: {companyId}</li>
                     <li>Profile: {profile ? 'Carregado' : 'Não carregado'}</li>
                     <li>User Companies: {profile?.user_companies ? `${profile.user_companies.length} encontradas` : 'Nenhuma encontrada'}</li>
                   </ul>
                 </div>
-                <div className="mt-4">
+                <div className="mt-6">
                   <button
                     onClick={() => window.location.reload()}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                    className="bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 hover:from-[#EBA500]/90 hover:to-[#EBA500] text-white px-6 py-3 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                   >
                     Tentar Novamente
                   </button>
@@ -182,48 +186,49 @@ export default function ProcessManagementPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 space-y-8">
         {/* Cabeçalho */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 p-8">
+          <h1 className="text-3xl font-bold text-[#373435] mb-3">
             Gestão de Processos Personalizados
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-lg">
             Gerencie e priorize os processos da sua empresa
           </p>
         </div>
 
         {/* Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-6 rounded-lg border">
-            <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-            <div className="text-sm text-gray-600">Total de Processos</div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-2xl border border-gray-200/50 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div className="text-2xl font-bold text-[#EBA500]">{stats.total}</div>
+            <div className="text-sm text-gray-600 font-medium">Total de Processos</div>
           </div>
-          <div className="bg-white p-6 rounded-lg border">
-            <div className="text-2xl font-bold text-green-600">{stats.hasProcess}</div>
-            <div className="text-sm text-gray-600">Implementados</div>
+          <div className="bg-white p-6 rounded-2xl border border-gray-200/50 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div className="text-2xl font-bold text-emerald-600">{stats.hasProcess}</div>
+            <div className="text-sm text-gray-600 font-medium">Implementados</div>
           </div>
-          <div className="bg-white p-6 rounded-lg border">
-            <div className="text-2xl font-bold text-red-600">{stats.missingProcess}</div>
-            <div className="text-sm text-gray-600">Não Implementados</div>
+          <div className="bg-white p-6 rounded-2xl border border-gray-200/50 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div className="text-2xl font-bold text-red-500">{stats.missingProcess}</div>
+            <div className="text-sm text-gray-600 font-medium">Não Implementados</div>
           </div>
-          <div className="bg-white p-6 rounded-lg border">
-            <div className="text-2xl font-bold text-yellow-600">{stats.highPriority}</div>
-            <div className="text-sm text-gray-600">Alta Prioridade</div>
+          <div className="bg-white p-6 rounded-2xl border border-gray-200/50 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div className="text-2xl font-bold text-amber-600">{stats.highPriority}</div>
+            <div className="text-sm text-gray-600 font-medium">Alta Prioridade</div>
           </div>
         </div>
 
         {/* Filtros */}
-        <div className="bg-white p-4 rounded-lg border">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white p-8 rounded-3xl border border-gray-200/50 shadow-sm">
+          <h3 className="text-lg font-semibold text-[#373435] mb-6">Filtros e Ordenação</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-[#373435] mb-3">
                 Jornada
               </label>
               <select
                 value={selectedJourney}
                 onChange={(e) => setSelectedJourney(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 bg-white"
               >
                 <option value="all">Todas as Jornadas</option>
                 <option value="estrategica">Estratégica</option>
@@ -234,13 +239,13 @@ export default function ProcessManagementPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-[#373435] mb-3">
                 Status
               </label>
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 bg-white"
               >
                 <option value="all">Todos</option>
                 <option value="has_process">Implementados</option>
@@ -249,13 +254,13 @@ export default function ProcessManagementPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-[#373435] mb-3">
                 Ordenar por
               </label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 bg-white"
               >
                 <option value="priority">Prioridade</option>
                 <option value="importance">Importância</option>
@@ -266,7 +271,7 @@ export default function ProcessManagementPage() {
             <div className="flex items-end">
               <button
                 onClick={reload}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                className="w-full bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 text-white px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 Atualizar
               </button>
@@ -275,43 +280,48 @@ export default function ProcessManagementPage() {
         </div>
 
         {/* Lista de Processos */}
-        <div className="bg-white rounded-lg border">
+        <div className="bg-white rounded-3xl border border-gray-200/50 shadow-sm">
+          <div className="px-8 py-6 border-b border-gray-100">
+            <h3 className="text-lg font-semibold text-[#373435]">
+              Processos ({filteredEvaluations.length})
+            </h3>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Processo
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Jornada
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Prioridade
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Importância
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Urgência
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Facilidade
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-50">
                 {filteredEvaluations.map((evaluation) => (
-                  <tr key={evaluation.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                  <tr key={evaluation.id} className="hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5 transition-all duration-200">
+                    <td className="px-8 py-6 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-semibold text-[#373435]">
                           {evaluation.processes?.name}
                         </div>
                         <div className="text-sm text-gray-500">
@@ -319,37 +329,37 @@ export default function ProcessManagementPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">
+                    <td className="px-8 py-6 whitespace-nowrap">
+                      <span className="text-sm text-gray-700 font-medium">
                         {evaluation.processes?.journeys?.name}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-8 py-6 whitespace-nowrap">
                       {getStatusBadge(evaluation.has_process)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-8 py-6 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
                         {getPriorityBadge(evaluation.priority_score)}
                         {evaluation.priority_score && (
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-gray-600 font-medium">
                             {evaluation.priority_score}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-8 py-6 whitespace-nowrap text-sm text-gray-700 font-medium">
                       {evaluation.business_importance || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-8 py-6 whitespace-nowrap text-sm text-gray-700 font-medium">
                       {evaluation.implementation_urgency || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-8 py-6 whitespace-nowrap text-sm text-gray-700 font-medium">
                       {evaluation.implementation_ease || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-8 py-6 whitespace-nowrap text-sm font-medium">
                       <Link
                         to={`/process/${evaluation.process_id}/personalize`}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-[#EBA500] hover:text-[#EBA500]/80 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 hover:from-[#EBA500]/20 hover:to-[#EBA500]/10 px-4 py-2 rounded-2xl font-medium transition-all duration-200 border border-[#EBA500]/30 hover:shadow-md"
                       >
                         Editar
                       </Link>
@@ -361,12 +371,25 @@ export default function ProcessManagementPage() {
           </div>
           
           {filteredEvaluations.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-gray-500">
-                {evaluations.length === 0 
-                  ? 'Nenhuma avaliação de processo encontrada' 
-                  : 'Nenhum processo encontrado com os filtros aplicados'
-                }
+            <div className="text-center py-20">
+              <div className="bg-gradient-to-r from-[#EBA500]/5 to-[#EBA500]/10 rounded-3xl p-12 inline-block">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div className="text-[#373435] text-xl font-semibold">
+                  {evaluations.length === 0 
+                    ? 'Nenhuma avaliação de processo encontrada' 
+                    : 'Nenhum processo encontrado com os filtros aplicados'
+                  }
+                </div>
+                <div className="text-[#373435]/60 mt-2">
+                  {evaluations.length === 0 
+                    ? 'Comece criando sua primeira avaliação de processo' 
+                    : 'Tente ajustar os filtros para ver mais resultados'
+                  }
+                </div>
               </div>
             </div>
           )}

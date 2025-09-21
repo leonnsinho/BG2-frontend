@@ -234,7 +234,7 @@ function AppRoutes() {
       <Route 
         path="/journey-management" 
         element={
-          <ProtectedRoute requiredRole={['super_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <JourneyManagementOverview />
           </ProtectedRoute>
         }
@@ -242,7 +242,7 @@ function AppRoutes() {
       <Route 
         path="/journey-management/overview" 
         element={
-          <ProtectedRoute requiredRole={['super_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <JourneyManagementOverview />
           </ProtectedRoute>
         }
@@ -250,7 +250,7 @@ function AppRoutes() {
       <Route 
         path="/journey-management/:journeySlug" 
         element={
-          <ProtectedRoute requiredRole={['super_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <JourneyDetail />
           </ProtectedRoute>
         }
@@ -258,7 +258,7 @@ function AppRoutes() {
       <Route 
         path="/journey-management/:journeySlug/:processId/evaluate" 
         element={
-          <ProtectedRoute requiredRole={['super_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <ProcessEvaluationForm />
           </ProtectedRoute>
         }

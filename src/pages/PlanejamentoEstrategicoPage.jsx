@@ -1,6 +1,6 @@
 import React from 'react'
 import { Layout } from '../components/layout/Layout'
-import { PlanejamentoEstrategico } from '../components/planejamento/PlanejamentoEstrategico'
+import PlanejamentoEstrategico from '../components/planejamento/PlanejamentoEstrategico'
 
 const PlanejamentoEstrategicoPage = () => {
   return (

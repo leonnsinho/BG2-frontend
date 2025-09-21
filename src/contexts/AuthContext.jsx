@@ -244,13 +244,43 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     try {
       setLoading(true)
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
       
+      // Tentar logout no Supabase, mas não falhar se der erro
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.warn('⚠️ Erro no logout do Supabase (ignorando):', error.message)
+        // Não throw do erro - continua com limpeza local
+      }
+      
+      // Limpar estado local independente do resultado do servidor
       setUser(null)
       setProfile(null)
+      setError(null)
+      
+      // Limpar cache global de perfis
+      globalProfileCache.clear()
+      
+      // Limpar pending fetches
+      pendingFetches.current = {}
+      
+      // Limpar localStorage se necessário
+      try {
+        localStorage.removeItem('supabase.auth.token')
+        localStorage.removeItem('partimap_tasks') // Limpar tarefas do planejamento
+      } catch (localError) {
+        console.warn('⚠️ Erro ao limpar localStorage:', localError)
+      }
+      
+      console.log('✅ Logout realizado com sucesso')
+      
     } catch (error) {
-      setError(error.message)
+      console.error('❌ Erro crítico no logout:', error)
+      // Mesmo com erro crítico, limpar estado local
+      setUser(null)
+      setProfile(null)
+      setError(null)
+      globalProfileCache.clear()
+      pendingFetches.current = {}
     } finally {
       setLoading(false)
     }
