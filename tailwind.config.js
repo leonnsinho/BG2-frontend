@@ -76,8 +76,9 @@ export default {
         'background': '#FEFEFE',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Creato Display', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['Creato Display', 'Inter', 'system-ui', 'sans-serif'],
+        creato: ['Creato Display', 'sans-serif'],
       },
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',

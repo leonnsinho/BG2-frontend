@@ -1,3 +1,6 @@
+/* Importação das fontes Creato Display */
+@import url('./assets/fonts/fonts.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,7 +11,7 @@
   }
   
   body {
-    @apply bg-background text-neutral-900 font-sans antialiased;
+    @apply bg-background text-neutral-900 font-creato antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
