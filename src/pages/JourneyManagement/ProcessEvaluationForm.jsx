@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
-import FileUploadField from '../../components/FileUploadField'
 import { 
   Target, 
   Building2, 
@@ -10,9 +9,6 @@ import {
   Save,
   AlertCircle,
   CheckCircle,
-  Star,
-  FileText,
-  Calendar,
   User
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -24,6 +20,32 @@ const ProcessEvaluationForm = () => {
   const navigate = useNavigate()
   const { profile } = useAuth()
   
+  // Mapear dados das jornadas
+  const journeysData = {
+    'estrategica': {
+      name: 'Jornada Estratégica',
+      shortName: 'Estratégia'
+    },
+    'financeira': {
+      name: 'Jornada Financeira', 
+      shortName: 'Financeira'
+    },
+    'pessoas-cultura': {
+      name: 'Jornada Pessoas e Cultura',
+      shortName: 'Pessoas e Cultura'
+    },
+    'receita-crm': {
+      name: 'Jornada Receita/CRM',
+      shortName: 'Receita/CRM'
+    },
+    'operacional': {
+      name: 'Jornada Operacional',
+      shortName: 'Operacional'
+    }
+  }
+  
+  const journey = journeysData[journeySlug]
+  
   const [process, setProcess] = useState(null)
   const [company, setCompany] = useState(null)
   const [evaluation, setEvaluation] = useState(null)
@@ -32,38 +54,39 @@ const ProcessEvaluationForm = () => {
   
   // Form state
   const [formData, setFormData] = useState({
-    current_score: 0,
-    target_score: 0,
-    evaluation_notes: '',
-    improvement_plan: '',
-    deadline: '',
-    confidence_level: 3,
     status: 'pending',
     has_process: null,
     observations: '',
     business_importance: 3,
     implementation_urgency: 3,
-    implementation_ease: 3,
-    evidence_files: [],
-    uploaded_files: []
+    implementation_ease: 3
   })
 
-  const scoreLabels = {
-    0: 'Não Avaliado',
-    1: 'Muito Ruim',
-    2: 'Ruim', 
-    3: 'Regular',
-    4: 'Bom',
-    5: 'Excelente'
+  // Labels para importância do negócio
+  const businessImportanceLabels = {
+    1: 'Irrelevante',
+    2: 'Irrelevante',
+    3: 'Pouco importante',
+    4: 'Importante',
+    5: 'Muito importante'
   }
 
-  const scoreColors = {
-    0: 'text-gray-500',
-    1: 'text-red-700',
-    2: 'text-orange-700',
-    3: 'text-yellow-700',
-    4: 'text-blue-700',
-    5: 'text-green-700'
+  // Labels para urgência de implementação
+  const implementationUrgencyLabels = {
+    1: 'Sem urgência',
+    2: 'Pouco urgente',
+    3: 'Urgente',
+    4: 'Muito urgente',
+    5: 'Urgentíssimo'
+  }
+
+  // Labels para facilidade de implementação
+  const implementationEaseLabels = {
+    1: 'Difícil implementação',
+    2: 'Muito esforço',
+    3: 'Esforço mediano',
+    4: 'Pouco esforço',
+    5: 'Sem esforço'
   }
 
   const statusOptions = [
@@ -115,21 +138,13 @@ const ProcessEvaluationForm = () => {
           if (evaluationData) {
             setEvaluation(evaluationData)
             setFormData({
-              current_score: evaluationData.current_score || 0,
-              target_score: evaluationData.target_score || 0,
-              evaluation_notes: evaluationData.evaluation_notes || '',
-              improvement_plan: evaluationData.improvement_plan || '',
-              deadline: evaluationData.deadline || '',
-              confidence_level: evaluationData.confidence_level || 3,
               status: evaluationData.status || 'pending',
               has_process: evaluationData.has_process,
               observations: evaluationData.observations || '',
               business_importance: evaluationData.business_importance || 3,
               implementation_urgency: evaluationData.implementation_urgency || 3,
               implementation_ease: evaluationData.implementation_ease || 3,
-              responsible_user_id: evaluationData.responsible_user_id || null,
-              evidence_files: evaluationData.evidence_files || [],
-              uploaded_files: []
+              responsible_user_id: evaluationData.responsible_user_id || null
             })
           }
         }
@@ -145,10 +160,21 @@ const ProcessEvaluationForm = () => {
   }, [processId, companyId])
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      }
+      
+      // Se "Não tem/não usa" for selecionado, resetar valores de priorização para valor mínimo
+      if (field === 'has_process' && value === false) {
+        newData.business_importance = 1
+        newData.implementation_urgency = 1
+        newData.implementation_ease = 1
+      }
+      
+      return newData
+    })
   }
 
   const handleSave = async () => {
@@ -177,18 +203,13 @@ const ProcessEvaluationForm = () => {
         process_id: processId,
         evaluator_id: profile.id,
         evaluated_at: new Date().toISOString(),
-        current_score: formData.current_score || 0,
-        target_score: formData.target_score || 0,
+        status: formData.status || 'pending',
         has_process: formData.has_process || false,
         observations: formData.observations || '',
-        business_importance: formData.business_importance || 1,
-        implementation_urgency: formData.implementation_urgency || 1,
-        implementation_ease: formData.implementation_ease || 1,
-        responsible_user_id: formData.responsible_user_id || null,
-        evidence_files: [
-          ...(formData.evidence_files || []),
-          ...(formData.uploaded_files?.map(file => file.path) || [])
-        ].filter(file => file && file.trim() !== '')
+        business_importance: formData.has_process === false ? 1 : (formData.business_importance || 1),
+        implementation_urgency: formData.has_process === false ? 1 : (formData.implementation_urgency || 1),
+        implementation_ease: formData.has_process === false ? 1 : (formData.implementation_ease || 1),
+        responsible_user_id: formData.responsible_user_id || null
       }
 
       console.log('🔄 Tentando salvar avaliação:', {
@@ -293,7 +314,7 @@ const ProcessEvaluationForm = () => {
                   {evaluation ? 'Editar Avaliação' : 'Avaliar Processo'}
                 </h1>
                 <p className="mt-2 text-sm text-gray-600">
-                  {process.code} - {process.name}
+                  {journey ? journey.shortName : 'Jornada'}/{process.name}
                 </p>
               </div>
             </div>
@@ -308,8 +329,8 @@ const ProcessEvaluationForm = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-[95%] mx-auto px-6 sm:px-8 lg:px-12 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
           
           {/* Informações do Processo */}
           <div className="lg:col-span-1">
@@ -357,128 +378,13 @@ const ProcessEvaluationForm = () => {
           </div>
 
           {/* Formulário de Avaliação */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-4">
             <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 p-8">
               <h3 className="text-lg font-semibold text-[#373435] mb-8">
                 Avaliação do Processo
               </h3>
               
               <form className="space-y-8">
-                {/* Score Atual */}
-                <div>
-                  <label className="block text-sm font-semibold text-[#373435] mb-4">
-                    Score Atual (0-5)
-                  </label>
-                  <div className="flex items-center space-x-3">
-                    {[0, 1, 2, 3, 4, 5].map(score => (
-                      <button
-                        key={score}
-                        type="button"
-                        onClick={() => handleInputChange('current_score', score)}
-                        className={`flex flex-col items-center p-4 rounded-2xl border-2 transition-all duration-200 ${
-                          formData.current_score === score
-                            ? 'border-[#EBA500] bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 shadow-md'
-                            : 'border-gray-200 hover:border-[#EBA500]/50 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span className={`text-lg font-bold ${formData.current_score === score ? 'text-[#EBA500]' : scoreColors[score]}`}>
-                          {score}
-                        </span>
-                        <span className="text-xs text-center mt-1 text-gray-600">
-                          {scoreLabels[score]}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Score Meta */}
-                <div>
-                  <label className="block text-sm font-semibold text-[#373435] mb-4">
-                    Score Meta (0-5)
-                  </label>
-                  <div className="flex items-center space-x-3">
-                    {[0, 1, 2, 3, 4, 5].map(score => (
-                      <button
-                        key={score}
-                        type="button"
-                        onClick={() => handleInputChange('target_score', score)}
-                        className={`flex flex-col items-center p-4 rounded-2xl border-2 transition-all duration-200 ${
-                          formData.target_score === score
-                            ? 'border-emerald-500 bg-gradient-to-r from-emerald-50 to-emerald-100/50 shadow-md'
-                            : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <Star className={`h-5 w-5 ${formData.target_score === score ? 'text-emerald-600' : 'text-gray-400'}`} />
-                        <span className="text-xs mt-1 text-gray-600">{score}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Notas de Avaliação */}
-                <div>
-                  <label className="block text-sm font-semibold text-[#373435] mb-3">
-                    <FileText className="inline h-4 w-4 mr-2 text-[#EBA500]" />
-                    Notas da Avaliação
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={formData.evaluation_notes}
-                    onChange={(e) => handleInputChange('evaluation_notes', e.target.value)}
-                    placeholder="Descreva a situação atual do processo..."
-                    className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 resize-none"
-                  />
-                </div>
-
-                {/* Plano de Melhoria */}
-                <div>
-                  <label className="block text-sm font-semibold text-[#373435] mb-3">
-                    Plano de Melhoria
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={formData.improvement_plan}
-                    onChange={(e) => handleInputChange('improvement_plan', e.target.value)}
-                    placeholder="Descreva as ações para melhorar o processo..."
-                    className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 resize-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Prazo */}
-                  <div>
-                    <label className="block text-sm font-semibold text-[#373435] mb-3">
-                      <Calendar className="inline h-4 w-4 mr-2 text-[#EBA500]" />
-                      Prazo
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.deadline}
-                      onChange={(e) => handleInputChange('deadline', e.target.value)}
-                      className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200"
-                    />
-                  </div>
-
-                  {/* Nível de Confiança */}
-                  <div>
-                    <label className="block text-sm font-semibold text-[#373435] mb-3">
-                      Nível de Confiança
-                    </label>
-                    <select
-                      value={formData.confidence_level}
-                      onChange={(e) => handleInputChange('confidence_level', parseInt(e.target.value))}
-                      className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 bg-white"
-                    >
-                      <option value={1}>1 - Muito Baixo</option>
-                      <option value={2}>2 - Baixo</option>
-                      <option value={3}>3 - Médio</option>
-                      <option value={4}>4 - Alto</option>
-                      <option value={5}>5 - Muito Alto</option>
-                    </select>
-                  </div>
-                </div>
-
                 {/* Status */}
                 <div>
                   <label className="block text-sm font-semibold text-[#373435] mb-3">
@@ -542,135 +448,256 @@ const ProcessEvaluationForm = () => {
                   />
                 </div>
 
-                {/* Upload de Arquivos */}
-                <FileUploadField
-                  companyId={companyId}
-                  processId={processId}
-                  evaluationId={evaluation?.id}
-                  value={formData.uploaded_files}
-                  onChange={(files) => handleInputChange('uploaded_files', files)}
-                  disabled={saving}
-                />
-
-                {/* Links de Evidência Adicionais */}
-                <div>
-                  <label className="block text-sm font-semibold text-[#373435] mb-3">
-                    Links Externos de Evidência (opcional)
-                  </label>
-                  <div className="space-y-2">
-                    {formData.evidence_files.map((file, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <input
-                          type="url"
-                          value={file}
-                          onChange={(e) => {
-                            const newFiles = [...formData.evidence_files]
-                            newFiles[index] = e.target.value
-                            handleInputChange('evidence_files', newFiles)
-                          }}
-                          placeholder="https://..."
-                          className="flex-1 border border-gray-200 rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newFiles = formData.evidence_files.filter((_, i) => i !== index)
-                            handleInputChange('evidence_files', newFiles)
-                          }}
-                          className="p-2 text-red-500 hover:text-red-600 rounded-xl hover:bg-red-50 transition-all duration-200"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleInputChange('evidence_files', [...formData.evidence_files, ''])
-                      }}
-                      className="text-sm text-[#EBA500] hover:text-[#EBA500]/80 font-medium"
-                    >
-                      + Adicionar link externo
-                    </button>
-                  </div>
-                </div>
-
                 {/* Seção de Priorização */}
                 <div className="border-t border-gray-100 pt-8">
                   <h4 className="text-lg font-semibold text-[#373435] mb-6">
                     Avaliação de Prioridade
                   </h4>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {/* Importância para Empresa */}
+                  {formData.has_process === false && (
+                    <div className="bg-orange-50 p-4 rounded-2xl border border-orange-200 mb-6">
+                      <p className="text-orange-800 text-sm">
+                        ⚠️ Como a empresa não tem/usa este processo, a avaliação de prioridade não é aplicável.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className={`grid grid-cols-1 gap-8 ${formData.has_process === false ? 'opacity-50 pointer-events-none' : ''}`}>
+                    {/* Importância para o Negócio */}
                     <div>
-                      <label className="block text-sm font-semibold text-[#373435] mb-3">
-                        Importância para Empresa (1-5)
+                      <label className="block text-sm font-semibold text-[#373435] mb-4">
+                        Importância para o Negócio
                       </label>
-                      <select
-                        value={formData.business_importance}
-                        onChange={(e) => handleInputChange('business_importance', parseInt(e.target.value))}
-                        className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 bg-white"
-                      >
-                        <option value={1}>1 - Muito Baixa</option>
-                        <option value={2}>2 - Baixa</option>
-                        <option value={3}>3 - Média</option>
-                        <option value={4}>4 - Alta</option>
-                        <option value={5}>5 - Muito Alta</option>
-                      </select>
+                      <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+                        {[
+                          { value: 1, label: 'Irrelevante' },
+                          { value: 2, label: 'Irrelevante' },
+                          { value: 3, label: 'Pouco importante' },
+                          { value: 4, label: 'Importante' },
+                          { value: 5, label: 'Muito importante' }
+                        ].map(option => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => handleInputChange('business_importance', option.value)}
+                            disabled={formData.has_process === false}
+                            className={`flex flex-col items-center p-5 rounded-2xl border-2 transition-all duration-200 min-h-[90px] justify-center ${
+                              formData.business_importance === option.value && formData.has_process !== false
+                                ? 'border-indigo-500 bg-gradient-to-r from-indigo-50 to-indigo-100/50 shadow-md'
+                                : formData.has_process === false
+                                ? 'border-gray-200 bg-gray-100 cursor-not-allowed'
+                                : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className={`text-xl font-bold mb-2 ${
+                              formData.business_importance === option.value && formData.has_process !== false
+                                ? 'text-indigo-600' 
+                                : formData.has_process === false 
+                                ? 'text-gray-400' 
+                                : 'text-gray-600'
+                            }`}>
+                              {option.value}
+                            </span>
+                            <span className={`text-xs text-center leading-tight px-1 ${
+                              formData.has_process === false ? 'text-gray-400' : 'text-gray-600'
+                            }`}>
+                              {option.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
-                    {/* Urgência para Realização */}
+                    {/* Urgência para Implementação */}
                     <div>
-                      <label className="block text-sm font-semibold text-[#373435] mb-3">
-                        Urgência para Realização (1-5)
+                      <label className="block text-sm font-semibold text-[#373435] mb-4">
+                        Urgência para Implementação
                       </label>
-                      <select
-                        value={formData.implementation_urgency}
-                        onChange={(e) => handleInputChange('implementation_urgency', parseInt(e.target.value))}
-                        className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 bg-white"
-                      >
-                        <option value={1}>1 - Muito Baixa</option>
-                        <option value={2}>2 - Baixa</option>
-                        <option value={3}>3 - Média</option>
-                        <option value={4}>4 - Alta</option>
-                        <option value={5}>5 - Muito Alta</option>
-                      </select>
+                      <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+                        {[
+                          { value: 1, label: 'Sem urgência' },
+                          { value: 2, label: 'Pouco urgente' },
+                          { value: 3, label: 'Urgente' },
+                          { value: 4, label: 'Muito urgente' },
+                          { value: 5, label: 'Urgentíssimo' }
+                        ].map(option => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => handleInputChange('implementation_urgency', option.value)}
+                            disabled={formData.has_process === false}
+                            className={`flex flex-col items-center p-5 rounded-2xl border-2 transition-all duration-200 min-h-[90px] justify-center ${
+                              formData.implementation_urgency === option.value && formData.has_process !== false
+                                ? 'border-orange-500 bg-gradient-to-r from-orange-50 to-orange-100/50 shadow-md'
+                                : formData.has_process === false
+                                ? 'border-gray-200 bg-gray-100 cursor-not-allowed'
+                                : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className={`text-xl font-bold mb-2 ${
+                              formData.implementation_urgency === option.value && formData.has_process !== false
+                                ? 'text-orange-600' 
+                                : formData.has_process === false 
+                                ? 'text-gray-400' 
+                                : 'text-gray-600'
+                            }`}>
+                              {option.value}
+                            </span>
+                            <span className={`text-xs text-center leading-tight px-1 ${
+                              formData.has_process === false ? 'text-gray-400' : 'text-gray-600'
+                            }`}>
+                              {option.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Facilidade para Implementar */}
                     <div>
-                      <label className="block text-sm font-semibold text-[#373435] mb-3">
-                        Facilidade para Implementar (1-5)
+                      <label className="block text-sm font-semibold text-[#373435] mb-4">
+                        Facilidade para Implementar
                       </label>
-                      <select
-                        value={formData.implementation_ease}
-                        onChange={(e) => handleInputChange('implementation_ease', parseInt(e.target.value))}
-                        className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 bg-white"
-                      >
-                        <option value={1}>1 - Muito Difícil</option>
-                        <option value={2}>2 - Difícil</option>
-                        <option value={3}>3 - Média</option>
-                        <option value={4}>4 - Fácil</option>
-                        <option value={5}>5 - Muito Fácil</option>
-                      </select>
+                      <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+                        {[
+                          { value: 1, label: 'Difícil implementação' },
+                          { value: 2, label: 'Muito esforço' },
+                          { value: 3, label: 'Esforço mediano' },
+                          { value: 4, label: 'Pouco esforço' },
+                          { value: 5, label: 'Sem esforço' }
+                        ].map(option => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => handleInputChange('implementation_ease', option.value)}
+                            disabled={formData.has_process === false}
+                            className={`flex flex-col items-center p-5 rounded-2xl border-2 transition-all duration-200 min-h-[90px] justify-center ${
+                              formData.implementation_ease === option.value && formData.has_process !== false
+                                ? 'border-green-500 bg-gradient-to-r from-green-50 to-green-100/50 shadow-md'
+                                : formData.has_process === false
+                                ? 'border-gray-200 bg-gray-100 cursor-not-allowed'
+                                : 'border-gray-200 hover:border-green-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className={`text-xl font-bold mb-2 ${
+                              formData.implementation_ease === option.value && formData.has_process !== false
+                                ? 'text-green-600' 
+                                : formData.has_process === false 
+                                ? 'text-gray-400' 
+                                : 'text-gray-600'
+                            }`}>
+                              {option.value}
+                            </span>
+                            <span className={`text-xs text-center leading-tight px-1 ${
+                              formData.has_process === false ? 'text-gray-400' : 'text-gray-600'
+                            }`}>
+                              {option.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Nota de Priorização - Calculada automaticamente */}
-                  <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-blue-900">
-                        Nota de Priorização (calculada automaticamente):
-                      </span>
-                      <span className="text-lg font-bold text-blue-900">
-                        {((formData.business_importance * formData.implementation_urgency) / formData.implementation_ease).toFixed(2)}
-                      </span>
+                  {/* Preview das Seleções */}
+                  <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-2xl border border-gray-200">
+                    <div className="flex items-center justify-center mb-6">
+                      <h5 className="text-base font-semibold text-[#373435] flex items-center space-x-2">
+                        <span>✨</span>
+                        <span>Resumo da Avaliação de Prioridade</span>
+                      </h5>
                     </div>
-                    <p className="text-xs text-blue-700 mt-1">
-                      Fórmula: (Importância × Urgência) ÷ Facilidade
-                    </p>
+                    
+                    {formData.has_process === false ? (
+                      <div className="text-center py-8">
+                        <div className="text-gray-500 text-lg mb-2">⚠️</div>
+                        <div className="text-gray-600 font-medium mb-2">Processo Não Utilizado</div>
+                        <div className="text-gray-500 text-sm mb-4">
+                          A empresa não utiliza este processo, portanto não há avaliação de prioridade.
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Nota: Para fins de banco de dados, valores mínimos (1) serão salvos.
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {/* Importância */}
+                          <div className="bg-white p-4 rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-indigo-100/30 min-h-[100px] flex flex-col justify-between">
+                            <div className="text-xs text-indigo-600 font-semibold mb-2 uppercase tracking-wide">
+                              Importância
+                            </div>
+                            <div className="flex-1 flex flex-col justify-center">
+                              <div className="text-2xl font-bold text-indigo-700 mb-1">
+                                {formData.business_importance}/5
+                              </div>
+                              <div className="text-xs text-indigo-600 leading-tight font-medium">
+                                {businessImportanceLabels[formData.business_importance]}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Urgência */}
+                          <div className="bg-white p-4 rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100/30 min-h-[100px] flex flex-col justify-between">
+                            <div className="text-xs text-orange-600 font-semibold mb-2 uppercase tracking-wide">
+                              Urgência
+                            </div>
+                            <div className="flex-1 flex flex-col justify-center">
+                              <div className="text-2xl font-bold text-orange-700 mb-1">
+                                {formData.implementation_urgency}/5
+                              </div>
+                              <div className="text-xs text-orange-600 leading-tight font-medium">
+                                {implementationUrgencyLabels[formData.implementation_urgency]}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Facilidade */}
+                          <div className="bg-white p-4 rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-green-100/30 min-h-[100px] flex flex-col justify-between">
+                            <div className="text-xs text-green-600 font-semibold mb-2 uppercase tracking-wide">
+                              Facilidade
+                            </div>
+                            <div className="flex-1 flex flex-col justify-center">
+                              <div className="text-2xl font-bold text-green-700 mb-1">
+                                {formData.implementation_ease}/5
+                              </div>
+                              <div className="text-xs text-green-600 leading-tight font-medium">
+                                {implementationEaseLabels[formData.implementation_ease]}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Priorização */}
+                          <div className="bg-white p-4 rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/30 min-h-[100px] flex flex-col justify-between sm:col-span-2 lg:col-span-1">
+                            <div className="text-xs text-blue-600 font-semibold mb-2 uppercase tracking-wide">
+                              Nota Final
+                            </div>
+                            <div className="flex-1 flex flex-col justify-center">
+                              <div className="text-3xl font-bold text-blue-700 mb-1">
+                                {formData.has_process === false 
+                                  ? 'N/A'
+                                  : formData.business_importance && formData.implementation_urgency && formData.implementation_ease
+                                  ? ((formData.business_importance * formData.implementation_urgency) / formData.implementation_ease).toFixed(1)
+                                  : '0.0'
+                                }
+                              </div>
+                              <div className="text-xs text-blue-600 leading-tight font-medium">
+                                Priorização
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Fórmula */}
+                        <div className="mt-4 p-3 bg-white/50 rounded-xl border border-gray-200/50">
+                          <div className="text-xs text-gray-600 text-center font-medium">
+                            📊 Fórmula: (Importância × Urgência) ÷ Facilidade
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
+
                 </div>
 
                 {/* Botões de Ação */}

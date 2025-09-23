@@ -35,7 +35,6 @@ const JourneyDetail = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [usageFilter, setUsageFilter] = useState('all')
   const [selectedProcess, setSelectedProcess] = useState(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
 
@@ -148,57 +147,82 @@ const JourneyDetail = () => {
         setProcesses(processesData || [])
 
         // Carregar avaliações se uma empresa está selecionada
-        if (companyId && processesData?.length > 0) {
-          try {
-            // Carregar todas as avaliações desta empresa
-            const { data: evaluationsData, error: evaluationsError } = await supabase
-              .from('process_evaluations')
-              .select(`
-                id,
-                process_id,
-                company_id,
-                business_importance,
-                implementation_urgency,
-                implementation_ease,
-                priority_score,
-                has_process,
-                observations,
-                status,
-                evaluated_at,
-                created_at,
-                updated_at
-              `)
-              .eq('company_id', companyId)
+        if (companyId && journeyDbData.id) {
+          console.log('🔍 Carregando avaliações para:', { companyId, journeyId: journeyDbData.id })
+          
+          // Primeiro, vamos verificar se existem avaliações para esta empresa
+          const { data: evaluationsCheck, error: checkError } = await supabase
+            .from('process_evaluations')
+            .select('*')
+            .eq('company_id', companyId)
+            .limit(5)
 
-            if (evaluationsError) {
-              console.warn('Erro ao carregar avaliações:', evaluationsError)
-              setProcesses(processesData || [])
-            } else {
-              setEvaluations(evaluationsData || [])
-              
-              // Enriquecer os processos com dados de avaliação
-              const enrichedProcesses = processesData?.map(process => {
-                const evaluation = evaluationsData?.find(evalData => evalData.process_id === process.id)
-                
-                return {
-                  ...process,
-                  // Usar os nomes corretos dos campos
-                  business_importance: evaluation?.business_importance || null,
-                  implementation_urgency: evaluation?.implementation_urgency || null,
-                  implementation_ease: evaluation?.implementation_ease || null,
-                  priority_score: evaluation?.priority_score || null,
-                  evaluation_id: evaluation?.id || null,
-                  evaluation_data: evaluation
-                }
-              }) || []
-              
-              setProcesses(enrichedProcesses)
-            }
-          } catch (error) {
-            console.error('Erro ao processar avaliações:', error)
+          console.log('🧪 Teste de avaliações existentes:', {
+            count: evaluationsCheck?.length || 0,
+            sample: evaluationsCheck?.[0],
+            error: checkError
+          })
+
+          const { data: evaluationsData, error: evaluationsError } = await supabase
+            .from('process_evaluations')
+            .select(`
+              id,
+              process_id,
+              company_id,
+              current_score,
+              target_score,
+              importance_score,
+              urgency_score,
+              ease_score,
+              notes,
+              created_at,
+              updated_at,
+              process:processes(id, name, code)
+            `)
+            .eq('company_id', companyId)
+            .in('process_id', processesData?.map(p => p.id) || [])
+
+          console.log('📊 Dados de avaliações carregados:', {
+            count: evaluationsData?.length || 0,
+            data: evaluationsData,
+            error: evaluationsError
+          })
+
+          if (evaluationsError) {
+            console.warn('Erro ao carregar avaliações:', evaluationsError)
             setProcesses(processesData || [])
+          } else {
+            setEvaluations(evaluationsData || [])
+            
+            // Enriquecer os processos com dados de avaliação
+            const enrichedProcesses = processesData?.map(process => {
+              const evaluation = evaluationsData?.find(evalData => evalData.process_id === process.id)
+              console.log(`🔍 Processo ${process.name}:`, {
+                processId: process.id,
+                evaluation: evaluation,
+                importance: evaluation?.importance_score,
+                urgency: evaluation?.urgency_score,
+                ease: evaluation?.ease_score,
+                current: evaluation?.current_score
+              })
+              
+              return {
+                ...process,
+                importance_score: evaluation?.importance_score || null,
+                urgency_score: evaluation?.urgency_score || null,
+                ease_score: evaluation?.ease_score || null,
+                current_score: evaluation?.current_score || null,
+                target_score: evaluation?.target_score || null,
+                evaluation_id: evaluation?.id || null,
+                evaluation_data: evaluation // Para debug
+              }
+            }) || []
+            
+            console.log('✅ Processos enriquecidos:', enrichedProcesses.filter(p => p.evaluation_id))
+            setProcesses(enrichedProcesses)
           }
         } else {
+          console.log('⚠️ Sem empresa selecionada, carregando processos básicos')
           setProcesses(processesData || [])
         }
 
@@ -212,11 +236,6 @@ const JourneyDetail = () => {
     fetchData()
   }, [journeySlug, companyId])
 
-  // Obter status de avaliação para um processo
-  const getProcessEvaluation = (processId) => {
-    return evaluations.find(evaluation => evaluation.process_id === processId)
-  }
-
   // Filtrar processos
   const filteredProcesses = processes.filter(process => {
     const matchesSearch = process.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -225,74 +244,55 @@ const JourneyDetail = () => {
     
     const matchesCategory = selectedCategory === 'all' || process.category === selectedCategory
     
-    const evaluation = getProcessEvaluation(process.id)
-    const hasProcess = evaluation?.has_process ?? true
-    const matchesUsage = usageFilter === 'all' || 
-                        (usageFilter === 'utilized' && hasProcess) ||
-                        (usageFilter === 'not-utilized' && !hasProcess)
-    
-    return matchesSearch && matchesCategory && matchesUsage
+    return matchesSearch && matchesCategory
   })
 
   // Obter categorias únicas
   const categories = [...new Set(processes.map(p => p.category).filter(Boolean))]
 
-  // Função para obter label da importância para o negócio
-  const getBusinessImportanceLabel = (score) => {
-    if (score === 5) return 'Muito importante'
-    if (score === 4) return 'Importante'
-    if (score === 3) return 'Pouco importante'
-    if (score === 2) return 'Irrelevante'
-    if (score === 1) return 'Irrelevante'
-    return 'Não avaliado'
+  // Obter status de avaliação para um processo
+  const getProcessEvaluation = (processId) => {
+    return evaluations.find(evaluation => evaluation.process_id === processId)
   }
 
-  // Função para obter label da urgência para implementação
-  const getImplementationUrgencyLabel = (score) => {
-    if (score === 5) return 'Urgentíssimo'
-    if (score === 4) return 'Muito urgente'
-    if (score === 3) return 'Urgente'
-    if (score === 2) return 'Pouco urgente'
-    if (score === 1) return 'Sem urgência'
-    return 'Não avaliado'
+  const getScoreColor = (score) => {
+    if (score >= 4) return 'bg-green-100 text-green-800'
+    if (score >= 3) return 'bg-yellow-100 text-yellow-800'
+    if (score >= 2) return 'bg-orange-100 text-orange-800'
+    return 'bg-red-100 text-red-800'
   }
 
-  // Função para obter label da facilidade de implementação
-  const getImplementationEaseLabel = (score) => {
-    if (score === 5) return 'Sem esforço'
-    if (score === 4) return 'Pouco esforço'
-    if (score === 3) return 'Esforço mediano'
-    if (score === 2) return 'Muito esforço'
-    if (score === 1) return 'Difícil implementação'
-    return 'Não avaliado'
+  const getScoreLabel = (score) => {
+    if (score === 5) return 'Excelente'
+    if (score === 4) return 'Bom'
+    if (score === 3) return 'Regular'
+    if (score === 2) return 'Ruim'
+    if (score === 1) return 'Muito Ruim'
+    return 'Não Avaliado'
   }
 
   // Função para mostrar detalhes do processo
   const showProcessDetails = (process) => {
+    console.log('🔍 Dados completos do processo selecionado:', process)
+    console.log('📊 Campos específicos:', {
+      id: process.id,
+      name: process.name,
+      importance_score: process.importance_score,
+      urgency_score: process.urgency_score,
+      ease_score: process.ease_score,
+      current_score: process.current_score,
+      evaluation_id: process.evaluation_id,
+      evaluation_data: process.evaluation_data
+    })
     setSelectedProcess(process)
     setShowDetailsModal(true)
   }
 
-  // Função para calcular nota de priorização (usar o campo já calculado ou calcular)
-  const calculatePriorityScore = (process) => {
-    const evaluation = process.evaluation_data || {}
-    
-    // Se o processo não é usado pela empresa, não há priorização
-    if (evaluation.has_process === false) {
-      return 0
-    }
-    
-    // Se já existe o priority_score calculado, usar ele
-    if (evaluation.priority_score) {
-      return evaluation.priority_score
-    }
-    
-    // Se não, calcular baseado nos campos disponíveis
-    if (evaluation.business_importance && evaluation.implementation_urgency && evaluation.implementation_ease) {
-      return Math.round(((evaluation.business_importance * 3 + evaluation.implementation_urgency * 2 + evaluation.implementation_ease * 1) / 6) * 100) / 100
-    }
-    
-    return 0
+  // Função para calcular nota de priorização (baseada na importância, urgência e facilidade)
+  const calculatePriorityScore = (importance, urgency, ease) => {
+    if (!importance || !urgency || !ease) return 0
+    // Fórmula: (Importância × 3 + Urgência × 2 + Facilidade × 1) / 6
+    return Math.round(((importance * 3 + urgency * 2 + ease * 1) / 6) * 100) / 100
   }
 
   // Função para obter cor da priorização
@@ -347,8 +347,11 @@ const JourneyDetail = () => {
   const ProcessDetailsModal = () => {
     if (!selectedProcess) return null
 
-    const priorityScore = calculatePriorityScore(selectedProcess)
-    const evaluation = selectedProcess.evaluation_data || {}
+    const priorityScore = calculatePriorityScore(
+      selectedProcess.importance_score,
+      selectedProcess.urgency_score,
+      selectedProcess.ease_score
+    )
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -359,7 +362,7 @@ const JourneyDetail = () => {
               <div>
                 <div className="flex items-center space-x-3 mb-3">
                   <span className="inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium bg-gradient-to-r from-[#373435]/10 to-[#373435]/20 text-[#373435] border border-[#373435]/20">
-                    {journey.name.replace('Jornada ', '')}/{selectedProcess.name}
+                    {selectedProcess.code}
                   </span>
                   {selectedProcess.category && (
                     <span className="inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium bg-gradient-to-r from-[#EBA500]/20 to-[#EBA500]/30 text-[#EBA500] border border-[#EBA500]/30">
@@ -367,7 +370,7 @@ const JourneyDetail = () => {
                     </span>
                   )}
                 </div>
-                <h3 className="text-2xl font-bold text-[#373435]">{selectedProcess.description || selectedProcess.name}</h3>
+                <h3 className="text-2xl font-bold text-[#373435]">{selectedProcess.name}</h3>
               </div>
               <button
                 onClick={() => setShowDetailsModal(false)}
@@ -387,6 +390,30 @@ const JourneyDetail = () => {
               </div>
             )}
 
+            </div>
+            </div>
+
+            {/* Debug Section - Temporária */}
+            <div className="mb-8 p-4 bg-gray-100 rounded-2xl">
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">Debug - Dados Raw:</h4>
+              <div className="text-xs text-gray-600 space-y-1">
+                <div>ID: {selectedProcess.id}</div>
+                <div>Evaluation ID: {selectedProcess.evaluation_id || 'Nenhum'}</div>
+                <div>Importance Score: {JSON.stringify(selectedProcess.importance_score)}</div>
+                <div>Urgency Score: {JSON.stringify(selectedProcess.urgency_score)}</div>
+                <div>Ease Score: {JSON.stringify(selectedProcess.ease_score)}</div>
+                <div>Current Score: {JSON.stringify(selectedProcess.current_score)}</div>
+                {selectedProcess.evaluation_data && (
+                  <div className="mt-2">
+                    <strong>Evaluation Data:</strong>
+                    <pre className="text-xs bg-white p-2 rounded mt-1 overflow-auto">
+                      {JSON.stringify(selectedProcess.evaluation_data, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Métricas de Priorização */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
@@ -399,52 +426,42 @@ const JourneyDetail = () => {
                 )}
               </div>
               
-              {evaluation.has_process === false ? (
-                <div className="bg-orange-50 p-6 rounded-2xl border border-orange-200 text-center">
-                  <div className="text-orange-500 text-2xl mb-3">⚠️</div>
-                  <h5 className="font-semibold text-orange-800 mb-2">Processo Não Utilizado</h5>
-                  <p className="text-sm text-orange-700">
-                    A empresa não utiliza este processo, portanto não há avaliação de prioridade aplicável.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Importância para o Negócio */}
-                    <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
-                      <div className="flex items-center justify-between mb-2">
-                        <h5 className="font-semibold text-indigo-800">Importância para o Negócio</h5>
-                        <div className="flex items-center space-x-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <div
-                              key={star}
-                              className={`w-4 h-4 rounded-full ${
-                                star <= (evaluation.business_importance || 0)
-                                  ? 'bg-indigo-500'
-                                  : 'bg-gray-200'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-sm text-indigo-700">
-                        {evaluation.business_importance ? 
-                          `${evaluation.business_importance}/5 - ${getBusinessImportanceLabel(evaluation.business_importance)}` : 
-                          'Ainda não avaliado'
-                        }
-                      </p>
-                    </div>
-
-                {/* Urgência para Implementação */}
-                <div className="bg-orange-50 p-6 rounded-2xl border border-orange-100">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Importância para a Empresa */}
+                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
                   <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-semibold text-orange-800">Urgência para Implementação</h5>
+                    <h5 className="font-semibold text-blue-800">Importância para a Empresa</h5>
                     <div className="flex items-center space-x-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <div
                           key={star}
                           className={`w-4 h-4 rounded-full ${
-                            star <= (evaluation.implementation_urgency || 0)
+                            star <= (selectedProcess.importance_score || 0)
+                              ? 'bg-blue-500'
+                              : 'bg-gray-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    {selectedProcess.importance_score ? 
+                      `${selectedProcess.importance_score}/5 - Avaliado` : 
+                      'Ainda não avaliado'
+                    }
+                  </p>
+                </div>
+
+                {/* Urgência para Realização */}
+                <div className="bg-orange-50 p-6 rounded-2xl border border-orange-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-semibold text-orange-800">Urgência para Realização</h5>
+                    <div className="flex items-center space-x-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <div
+                          key={star}
+                          className={`w-4 h-4 rounded-full ${
+                            star <= (selectedProcess.urgency_score || 0)
                               ? 'bg-orange-500'
                               : 'bg-gray-200'
                           }`}
@@ -453,8 +470,8 @@ const JourneyDetail = () => {
                     </div>
                   </div>
                   <p className="text-sm text-orange-700">
-                    {evaluation.implementation_urgency ? 
-                      `${evaluation.implementation_urgency}/5 - ${getImplementationUrgencyLabel(evaluation.implementation_urgency)}` : 
+                    {selectedProcess.urgency_score ? 
+                      `${selectedProcess.urgency_score}/5 - Avaliado` : 
                       'Ainda não avaliado'
                     }
                   </p>
@@ -469,7 +486,7 @@ const JourneyDetail = () => {
                         <div
                           key={star}
                           className={`w-4 h-4 rounded-full ${
-                            star <= (evaluation.implementation_ease || 0)
+                            star <= (selectedProcess.ease_score || 0)
                               ? 'bg-green-500'
                               : 'bg-gray-200'
                           }`}
@@ -478,8 +495,8 @@ const JourneyDetail = () => {
                     </div>
                   </div>
                   <p className="text-sm text-green-700">
-                    {evaluation.implementation_ease ? 
-                      `${evaluation.implementation_ease}/5 - ${getImplementationEaseLabel(evaluation.implementation_ease)}` : 
+                    {selectedProcess.ease_score ? 
+                      `${selectedProcess.ease_score}/5 - Avaliado` : 
                       'Ainda não avaliado'
                     }
                   </p>
@@ -503,26 +520,6 @@ const JourneyDetail = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Observações */}
-              {evaluation.observations && (
-                <div className="mt-6 bg-gray-50 p-4 rounded-2xl border border-gray-200">
-                  <h5 className="font-semibold text-gray-800 mb-2">Observações</h5>
-                  <p className="text-sm text-gray-600">{evaluation.observations}</p>
-                </div>
-              )}
-                </>
-              )}
-
-              {/* Se não há avaliação */}
-              {!selectedProcess.evaluation_id && (
-                <div className="mt-6 bg-yellow-50 p-6 rounded-2xl border border-yellow-100 text-center">
-                  <h5 className="font-semibold text-yellow-800 mb-2">Processo Não Avaliado</h5>
-                  <p className="text-sm text-yellow-700">
-                    Este processo ainda não foi avaliado para esta empresa.
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Informações Adicionais */}
@@ -556,7 +553,7 @@ const JourneyDetail = () => {
                   className="flex items-center space-x-2 px-6 py-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white rounded-2xl font-medium transition-all duration-200"
                 >
                   <Edit className="h-4 w-4" />
-                  <span>{selectedProcess.evaluation_id ? 'Editar Avaliação' : 'Avaliar Processo'}</span>
+                  <span>Avaliar Processo</span>
                 </button>
               )}
             </div>
@@ -642,33 +639,23 @@ const JourneyDetail = () => {
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
-
-              <select
-                value={usageFilter}
-                onChange={(e) => setUsageFilter(e.target.value)}
-                className="block w-full pl-4 pr-10 py-3 text-base border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm rounded-2xl transition-all duration-200"
-              >
-                <option value="all">Todos os processos</option>
-                <option value="utilized">Utilizados</option>
-                <option value="not-utilized">Não utilizados</option>
-              </select>
             </div>
           </div>
         </div>
 
         {/* Estatísticas */}
         {company && evaluations.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <BarChart3 className="h-8 w-8 text-red-500" />
+                  <BarChart3 className="h-8 w-8 text-[#EBA500]" />
                 </div>
                 <div className="ml-4">
                   <div className="text-lg font-medium text-[#373435]">
-                    {evaluations.filter(e => e.business_importance >= 4 && e.has_process !== false).length}
+                    {evaluations.filter(e => e.current_score >= 4).length}
                   </div>
-                  <div className="text-sm text-gray-500">Alta Importância</div>
+                  <div className="text-sm text-gray-500">Excelentes</div>
                 </div>
               </div>
             </div>
@@ -676,13 +663,13 @@ const JourneyDetail = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <Clock className="h-8 w-8 text-orange-500" />
+                  <CheckCircle className="h-8 w-8 text-emerald-500" />
                 </div>
                 <div className="ml-4">
                   <div className="text-lg font-medium text-[#373435]">
-                    {evaluations.filter(e => e.implementation_urgency >= 4 && e.has_process !== false).length}
+                    {evaluations.filter(e => e.current_score >= 3).length}
                   </div>
-                  <div className="text-sm text-gray-500">Urgentes</div>
+                  <div className="text-sm text-gray-500">Satisfatórios</div>
                 </div>
               </div>
             </div>
@@ -690,27 +677,13 @@ const JourneyDetail = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <CheckCircle className="h-8 w-8 text-green-500" />
+                  <AlertCircle className="h-8 w-8 text-amber-500" />
                 </div>
                 <div className="ml-4">
                   <div className="text-lg font-medium text-[#373435]">
-                    {evaluations.filter(e => e.implementation_ease >= 4 && e.has_process !== false).length}
+                    {evaluations.filter(e => e.current_score < 3 && e.current_score > 0).length}
                   </div>
-                  <div className="text-sm text-gray-500">Fáceis</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <AlertCircle className="h-8 w-8 text-orange-400" />
-                </div>
-                <div className="ml-4">
-                  <div className="text-lg font-medium text-[#373435]">
-                    {evaluations.filter(e => e.has_process === false).length}
-                  </div>
-                  <div className="text-sm text-gray-500">Não Utilizados</div>
+                  <div className="text-sm text-gray-500">Precisam Atenção</div>
                 </div>
               </div>
             </div>
@@ -754,7 +727,7 @@ const JourneyDetail = () => {
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-3">
                           <span className="inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium bg-gradient-to-r from-[#373435]/10 to-[#373435]/20 text-[#373435] border border-[#373435]/20">
-                            {journey.name.replace('Jornada ', '')}/{process.name}
+                            {process.code}
                           </span>
                           
                           {process.category && (
@@ -764,36 +737,27 @@ const JourneyDetail = () => {
                           )}
                         </div>
                         
-                        <h4 className="text-lg font-semibold text-[#373435] mb-3 flex items-center space-x-3">
-                          <span>{process.description || 'Descrição do processo'}</span>
-                          {evaluation && evaluation.has_process === false && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-2xl text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-300">
-                              <span className="mr-1">⚠️</span>
-                              Não Utilizado
-                            </span>
-                          )}
+                        <h4 className="text-lg font-semibold text-[#373435] mb-3">
+                          {process.name}
                         </h4>
                       </div>
                       
                       <div className="flex items-center space-x-4 ml-6">
                         {evaluation ? (
                           <div className="text-right">
-                            {evaluation.has_process === false ? (
-                              <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-orange-100 text-orange-800 border border-orange-300">
-                                <span className="mr-2">⚠️</span>
-                                Processo Não Utilizado
-                              </div>
-                            ) : (
-                              <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-green-100 text-green-800 border border-green-200">
-                                <span className="mr-2">✅</span>
-                                Processo Avaliado
+                            <div className={`inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium ${getScoreColor(evaluation.current_score)}`}>
+                              {evaluation.current_score}/5 - {getScoreLabel(evaluation.current_score)}
+                            </div>
+                            
+                            {evaluation.target_score && (
+                              <div className="text-xs text-gray-500 mt-2">
+                                Meta: {evaluation.target_score}/5
                               </div>
                             )}
                           </div>
                         ) : company ? (
                           <div className="text-right">
                             <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200">
-                              <span className="mr-2">⏳</span>
                               Não Avaliado
                             </div>
                           </div>

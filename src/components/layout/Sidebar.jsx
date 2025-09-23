@@ -97,15 +97,14 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/planejamento-estrategico'
       },
       {
-        name: 'Jornadas',
-        icon: Target,
-        href: '/jornadas',
-        children: getJourneyChildren(accessibleJourneys)
+        name: 'Tarefas em Andamento',
+        icon: CheckSquare,
+        href: '/tarefas-andamento'
       },
       {
-        name: 'Gestão de Processos',
-        icon: Settings,
-        href: '/process-management'
+        name: 'Usuários Ativos',
+        icon: Users,
+        href: '/usuarios-ativos'
       }
     ]
   }
