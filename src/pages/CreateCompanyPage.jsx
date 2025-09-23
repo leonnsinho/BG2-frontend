@@ -54,12 +54,12 @@ export default function CreateCompanyPage() {
   if (!isSuperAdmin) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
                 <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Acesso Negado</h3>
+                <h3 className="text-lg font-medium text-[#373435] mb-2">Acesso Negado</h3>
                 <p className="text-gray-600 mb-4">
                   Apenas Super Administradores podem criar empresas.
                 </p>
@@ -288,27 +288,21 @@ export default function CreateCompanyPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
+        <div className="max-w-4xl mx-auto">
           
           {/* Header */}
           <div className="mb-8">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/dashboard')}
-              className="mb-4"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar ao Dashboard
-            </Button>
             
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 text-blue-600">
-                <Building2 className="w-6 h-6" />
+              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10">
+                <Building2 className="w-6 h-6 text-[#EBA500]" />
               </div>
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900">Nova Empresa</h1>
-                <p className="text-gray-600">Cadastre uma nova empresa no sistema</p>
+                <h1 className="text-3xl font-bold text-[#373435] mb-3">Nova Empresa</h1>
+                <p className="text-gray-600 text-lg">
+                  Cadastre uma nova empresa no sistema
+                </p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -346,15 +340,15 @@ export default function CreateCompanyPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             
             {/* Informações Básicas */}
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Building2 className="w-5 h-5" />
+            <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl">
+              <h2 className="text-xl font-semibold text-[#373435] mb-4 flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-[#EBA500]" />
                 Informações Básicas
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     Nome da Empresa *
                   </label>
                   <Input
@@ -368,7 +362,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     CNPJ
                   </label>
                   <Input
@@ -381,13 +375,13 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     Porte da Empresa
                   </label>
                   <select
                     value={formData.size}
                     onChange={(e) => handleInputChange('size', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200"
                   >
                     <option value="micro">Microempresa</option>
                     <option value="pequena">Pequena Empresa</option>
@@ -397,7 +391,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     Setor de Atuação
                   </label>
                   <Input
@@ -412,15 +406,15 @@ export default function CreateCompanyPage() {
             </Card>
 
             {/* Informações de Contato */}
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Phone className="w-5 h-5" />
+            <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl">
+              <h2 className="text-xl font-semibold text-[#373435] mb-4 flex items-center gap-2">
+                <Phone className="w-5 h-5 text-[#EBA500]" />
                 Informações de Contato
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     <Mail className="w-4 h-4 inline mr-1" />
                     Email Principal *
                   </label>
@@ -435,7 +429,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     <Phone className="w-4 h-4 inline mr-1" />
                     Telefone
                   </label>
@@ -449,7 +443,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     <Globe className="w-4 h-4 inline mr-1" />
                     Website
                   </label>
@@ -465,15 +459,15 @@ export default function CreateCompanyPage() {
             </Card>
 
             {/* Endereço */}
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
+            <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl">
+              <h2 className="text-xl font-semibold text-[#373435] mb-4 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-[#EBA500]" />
                 Endereço (Opcional)
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     Logradouro
                   </label>
                   <Input
@@ -486,7 +480,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     Número
                   </label>
                   <Input
@@ -499,7 +493,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     Complemento
                   </label>
                   <Input
@@ -512,7 +506,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     Bairro
                   </label>
                   <Input
@@ -525,7 +519,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     Cidade
                   </label>
                   <Input
@@ -538,7 +532,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     Estado
                   </label>
                   <Input
@@ -551,7 +545,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
                     CEP
                   </label>
                   <Input
@@ -566,18 +560,18 @@ export default function CreateCompanyPage() {
             </Card>
 
             {/* Informações do Sistema */}
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
+            <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl">
+              <h2 className="text-xl font-semibold text-[#373435] mb-4 flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-[#EBA500]" />
                 Configurações Iniciais
               </h2>
               
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 border border-[#EBA500]/30 rounded-2xl p-4">
                 <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <Check className="w-5 h-5 text-[#EBA500] mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-blue-800 mb-1">Configuração Automática</h4>
-                    <ul className="text-sm text-blue-700 space-y-1">
+                    <h4 className="font-medium text-[#373435] mb-1">Configuração Automática</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
                       <li>• Plano: Básico (pode ser alterado posteriormente)</li>
                       <li>• Status: Ativo</li>
                       <li>• Criado por: {user?.email}</li>

@@ -12,7 +12,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
 import AssignedGoalsPage from './pages/AssignedGoalsPage'
 import { PlanejamentoEstrategicoPage } from './pages/PlanejamentoEstrategicoPage'
-import { InviteSystem } from './components/InviteSystem'
+import InvitesPage from './pages/InvitesPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 import { SystemTestPage } from './pages/SystemTestPage'
 import MatrizBossaPage from './pages/MatrizBossaPage'
@@ -137,7 +137,7 @@ function AppRoutes() {
         path="/invites" 
         element={
           <ProtectedRoute requiredRole={['super_admin', 'consultant', 'company_admin']}>
-            <InviteSystem />
+            <InvitesPage />
           </ProtectedRoute>
         }
       />

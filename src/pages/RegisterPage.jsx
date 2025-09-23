@@ -3,9 +3,9 @@ import { supabase } from '../services/supabase'
 import { useNavigate, Link } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-import { Card } from '../components/ui/Card'
 import { Loading } from '../components/ui/Loading'
-import { Eye, EyeOff, UserPlus, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, Mail, Lock, User, Building, ArrowLeft } from 'lucide-react'
+import ParticlesBackground from '../components/ui/ParticlesBackground'
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -28,7 +28,7 @@ export function RegisterPage() {
   }
 
   const validateForm = () => {
-    if (!formData.email || !formData.password || !formData.fullName) {
+    if (!formData.email || !formData.password || !formData.fullName || !formData.companyName) {
       setError('Todos os campos obrigatórios devem ser preenchidos')
       return false
     }
@@ -64,7 +64,7 @@ export function RegisterPage() {
           data: {
             full_name: formData.fullName,
             role: 'user', // Usuário padrão
-            company_name: formData.companyName || null
+            company_name: formData.companyName
           }
         }
       })
@@ -81,7 +81,8 @@ export function RegisterPage() {
           navigate('/login', { 
             state: { 
               email: formData.email,
-              message: 'Conta criada com sucesso! Faça login para continuar.' 
+              message: 'Conta criada com sucesso! Faça login para continuar.',
+              type: 'success'
             }
           })
         }, 2000)
@@ -102,158 +103,278 @@ export function RegisterPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center">
-          <Loading size="lg" />
-          <p className="mt-4 text-gray-600">Criando sua conta...</p>
-        </Card>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <UserPlus className="mx-auto h-12 w-12 text-blue-600 mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900">Criar Conta</h1>
-          <p className="text-gray-600 mt-2">Preencha os dados para se registrar</p>
+    <div className="min-h-screen bg-background flex">
+      {/* Painel Esquerdo - Hero Section */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 relative overflow-hidden">
+        {/* Partículas animadas */}
+        <ParticlesBackground />
+        
+        {/* Decoração geométrica */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
+          <div className="absolute bottom-40 right-32 w-48 h-48 bg-white/5 rounded-full blur-2xl"></div>
+          <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-white/8 rounded-full blur-lg"></div>
         </div>
+        
+        <div className="relative z-10 flex flex-col justify-center px-16 py-24">
+          <div className="max-w-lg">
+            <img 
+              src="/LOGO 1.png" 
+              alt="BG2 Logo" 
+              className="h-20 w-auto mb-8 drop-shadow-sm object-contain"
+            />
+            <h1 className="text-5xl font-black leading-tight mb-6" style={{color: '#373435'}}>
+              Comece sua
+              <br />
+              <span className="opacity-90">Jornada</span>
+            </h1>
+            <p className="text-xl font-light leading-relaxed mb-8" style={{color: '#373435', opacity: 0.8}}>
+              Crie sua conta e descubra como nossa plataforma pode 
+              transformar a gestão da sua empresa com insights inteligentes.
+            </p>
+            <div className="flex items-center space-x-6" style={{color: '#373435', opacity: 0.7}}>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 rounded-full" style={{backgroundColor: '#373435'}}></div>
+                <span className="font-medium">Setup Rápido</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 rounded-full" style={{backgroundColor: '#373435'}}></div>
+                <span className="font-medium">Gratuito para Começar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nome Completo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nome Completo *
-            </label>
-            <Input
-              type="text"
-              value={formData.fullName}
-              onChange={(e) => handleChange('fullName', e.target.value)}
-              placeholder="Seu nome completo"
-              required
+      {/* Painel Direito - Formulário de Cadastro */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-16">
+        <div className="w-full max-w-md space-y-8">
+          
+          {/* Logo Mobile */}
+          <div className="lg:hidden text-center mb-8">
+            <img 
+              src="/LOGO 1.png" 
+              alt="BG2 Logo" 
+              className="h-16 w-auto mx-auto mb-4 object-contain"
             />
           </div>
 
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email *
-            </label>
-            <Input
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-              placeholder="seu@email.com"
-              required
-            />
+          {/* Header */}
+          <div className="text-center lg:text-left">
+            <h2 className="text-3xl font-black text-neutral-900 mb-2">
+              Criar sua conta
+            </h2>
+            <p className="text-neutral-600 font-light">
+              Preencha os dados para começar
+            </p>
           </div>
 
-          {/* Nome da Empresa (Opcional) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nome da Empresa (opcional)
-            </label>
-            <Input
-              type="text"
-              value={formData.companyName}
-              onChange={(e) => handleChange('companyName', e.target.value)}
-              placeholder="Nome da sua empresa"
-            />
-          </div>
-
-          {/* Senha */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Senha *
-            </label>
-            <div className="relative">
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={(e) => handleChange('password', e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                required
-                minLength={6}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
+          {/* Formulário */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* Campo Nome Completo */}
+            <div className="space-y-2">
+              <label htmlFor="fullName" className="text-sm font-medium text-neutral-900 block">
+                Nome Completo *
+              </label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                <input
+                  id="fullName"
+                  type="text"
+                  required
+                  value={formData.fullName}
+                  onChange={(e) => handleChange('fullName', e.target.value)}
+                  placeholder="Seu nome completo"
+                  disabled={loading}
+                  className="w-full pl-12 pr-4 py-4 border border-neutral-200 rounded-lg 
+                           bg-white text-neutral-900 placeholder:text-neutral-400
+                           focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                           disabled:bg-neutral-50 disabled:cursor-not-allowed
+                           transition-all duration-200 font-medium"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Confirmar Senha */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirmar Senha *
-            </label>
-            <div className="relative">
-              <Input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={formData.confirmPassword}
-                onChange={(e) => handleChange('confirmPassword', e.target.value)}
-                placeholder="Digite a senha novamente"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
+            {/* Campo Email */}
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-neutral-900 block">
+                Email *
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => handleChange('email', e.target.value)}
+                  placeholder="seu@email.com"
+                  disabled={loading}
+                  className="w-full pl-12 pr-4 py-4 border border-neutral-200 rounded-lg 
+                           bg-white text-neutral-900 placeholder:text-neutral-400
+                           focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                           disabled:bg-neutral-50 disabled:cursor-not-allowed
+                           transition-all duration-200 font-medium"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Mensagens de Erro/Sucesso */}
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-              {error}
+            {/* Campo Empresa */}
+            <div className="space-y-2">
+              <label htmlFor="companyName" className="text-sm font-medium text-neutral-900 block">
+                Nome da Empresa *
+              </label>
+              <div className="relative">
+                <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                <input
+                  id="companyName"
+                  type="text"
+                  required
+                  value={formData.companyName}
+                  onChange={(e) => handleChange('companyName', e.target.value)}
+                  placeholder="Nome da sua empresa"
+                  disabled={loading}
+                  className="w-full pl-12 pr-4 py-4 border border-neutral-200 rounded-lg 
+                           bg-white text-neutral-900 placeholder:text-neutral-400
+                           focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                           disabled:bg-neutral-50 disabled:cursor-not-allowed
+                           transition-all duration-200 font-medium"
+                />
+              </div>
             </div>
-          )}
 
-          {success && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
-              {success}
+            {/* Campo Senha */}
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium text-neutral-900 block">
+                Senha *
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={formData.password}
+                  onChange={(e) => handleChange('password', e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  disabled={loading}
+                  className="w-full pl-12 pr-12 py-4 border border-neutral-200 rounded-lg 
+                           bg-white text-neutral-900 placeholder:text-neutral-400
+                           focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                           disabled:bg-neutral-50 disabled:cursor-not-allowed
+                           transition-all duration-200 font-medium"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 
+                           text-neutral-400 hover:text-neutral-600 transition-colors"
+                  disabled={loading}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
             </div>
-          )}
 
-          {/* Botão de Registro */}
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            className="w-full"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loading size="sm" className="mr-2" />
-                Criando conta...
-              </>
-            ) : (
-              'Criar Conta'
+            {/* Campo Confirmar Senha */}
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="text-sm font-medium text-neutral-900 block">
+                Confirmar Senha *
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                  placeholder="Digite a senha novamente"
+                  disabled={loading}
+                  className="w-full pl-12 pr-12 py-4 border border-neutral-200 rounded-lg 
+                           bg-white text-neutral-900 placeholder:text-neutral-400
+                           focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                           disabled:bg-neutral-50 disabled:cursor-not-allowed
+                           transition-all duration-200 font-medium"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 
+                           text-neutral-400 hover:text-neutral-600 transition-colors"
+                  disabled={loading}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Mensagem de Sucesso */}
+            {success && (
+              <div className="bg-success-50 border border-success-200 rounded-lg p-4">
+                <p className="text-sm text-success-700 font-medium">{success}</p>
+              </div>
             )}
-          </Button>
-        </form>
 
-        {/* Link para Login */}
-        <div className="mt-6 text-center">
-          <Link 
-            to="/login"
-            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-500"
-          >
-            <ArrowLeft size={16} className="mr-1" />
-            Já tem uma conta? Fazer login
-          </Link>
+            {/* Erro */}
+            {error && (
+              <div className="bg-danger-50 border border-danger-200 rounded-lg p-4">
+                <p className="text-sm text-danger-700 font-medium">{error}</p>
+              </div>
+            )}
+
+            {/* Botão de Cadastro */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-bold py-4 
+                       px-6 rounded-lg transition-all duration-200 flex items-center justify-center
+                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary-500
+                       shadow-lg hover:shadow-xl transform hover:-translate-y-0.5
+                       active:transform active:translate-y-0 active:shadow-lg"
+            >
+              {loading ? (
+                <div className="flex items-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                  Criando conta...
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  Criar Conta Gratuita
+                  <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-200 group-hover:translate-x-1" />
+                </div>
+              )}
+            </button>
+
+            {/* Link para login */}
+            <div className="text-center pt-6 border-t border-neutral-100">
+              <p className="text-neutral-600 text-sm">
+                Já possui uma conta?{' '}
+                <Link
+                  to="/login"
+                  className="text-primary-600 hover:text-primary-700 font-bold 
+                           transition-colors duration-200 inline-flex items-center"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  Fazer login
+                </Link>
+              </p>
+            </div>
+          </form>
+
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

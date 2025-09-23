@@ -13,7 +13,7 @@ import {
   TrendingUp,
   Building2,
   UserCircle,
-  ChevronRight,
+  ChevronLeft,
   Home,
   X,
   UserPlus,
@@ -525,6 +525,7 @@ const Sidebar = ({ isOpen, onClose, className }) => {
           <div className="space-y-1">
             {navigationItems.map((item) => {
               const isActive = isCurrentPath(item.href) || hasActiveChild(item.children)
+              const isDashboard = item.name === 'Dashboard'
               
               return (
                 <div key={item.name}>
@@ -532,71 +533,83 @@ const Sidebar = ({ isOpen, onClose, className }) => {
                     <button
                       onClick={() => toggleExpanded(item.name)}
                       className={cn(
-                        "w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
+                        "w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-left",
+                        "hover:scale-[1.02] active:scale-[0.98]",
                         isActive
-                          ? "bg-primary-500 text-background"
-                          : "text-neutral-100 hover:text-background hover:bg-primary-500"
+                          ? "bg-primary-500 text-background shadow-lg"
+                          : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md"
                       )}
                     >
-                      <item.icon
+                      <ChevronLeft
                         className={cn(
-                          "mr-3 h-5 w-5 flex-shrink-0",
-                          isActive ? "text-background" : "text-neutral-300 group-hover:text-background"
-                        )}
-                      />
-                      <span className="flex-1">{item.name}</span>
-                      <ChevronRight
-                        className={cn(
-                          "ml-3 h-4 w-4 transition-transform",
+                          "mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-300",
                           expandedItems.includes(item.name) ? "rotate-90" : ""
                         )}
                       />
+                      <span className="flex-1">{item.name}</span>
                     </button>
                   ) : (
                     <Link
                       to={item.href}
                       className={cn(
-                        "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                        "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                        "hover:scale-[1.02] active:scale-[0.98]",
                         isActive
-                          ? "bg-primary-500 text-background"
-                          : "text-neutral-100 hover:text-background hover:bg-primary-500"
+                          ? "bg-primary-500 text-background shadow-lg"
+                          : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md"
                       )}
                       onClick={onClose}
                     >
-                      <item.icon
-                        className={cn(
-                          "mr-3 h-5 w-5 flex-shrink-0",
-                          isActive ? "text-background" : "text-neutral-300 group-hover:text-background"
-                        )}
-                      />
+                      {isDashboard ? (
+                        <Home
+                          className={cn(
+                            "mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200",
+                            isActive ? "text-background" : "text-neutral-300 group-hover:text-background"
+                          )}
+                        />
+                      ) : (
+                        <ChevronLeft
+                          className="mr-3 h-5 w-5 flex-shrink-0 text-neutral-400 transition-colors duration-200"
+                        />
+                      )}
                       <span className="flex-1">{item.name}</span>
                     </Link>
                   )}
 
-                  {/* Subitens */}
-                  {item.children && expandedItems.includes(item.name) && (
-                    <div className="mt-1 ml-6 space-y-1">
-                      {item.children.map((subItem) => (
-                        <Link
-                          key={subItem.name}
-                          to={subItem.href}
-                          className={cn(
-                            "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                            isCurrentPath(subItem.href)
-                              ? "text-background bg-primary-500"
-                              : "text-neutral-200 hover:text-background hover:bg-primary-500"
-                          )}
-                          onClick={onClose}
-                        >
-                          <span 
+                  {/* Subitens com animação suave */}
+                  {item.children && (
+                    <div 
+                      className={cn(
+                        "overflow-hidden transition-all duration-300 ease-in-out",
+                        expandedItems.includes(item.name) 
+                          ? "max-h-96 opacity-100" 
+                          : "max-h-0 opacity-0"
+                      )}
+                    >
+                      <div className="mt-1 ml-6 space-y-1">
+                        {item.children.map((subItem) => (
+                          <Link
+                            key={subItem.name}
+                            to={subItem.href}
                             className={cn(
-                              "w-2 h-2 rounded-full mr-3 flex-shrink-0",
-                              isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
+                              "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                              "hover:scale-[1.02] active:scale-[0.98]",
+                              isCurrentPath(subItem.href)
+                                ? "text-background bg-primary-500 shadow-lg"
+                                : "text-neutral-200 hover:text-background hover:bg-primary-500/80 hover:shadow-md"
                             )}
-                          ></span>
-                          {subItem.name}
-                        </Link>
-                      ))}
+                            onClick={onClose}
+                          >
+                            <span 
+                              className={cn(
+                                "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
+                                isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
+                              )}
+                            ></span>
+                            {subItem.name}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -613,29 +626,30 @@ const Sidebar = ({ isOpen, onClose, className }) => {
               await signOut()
               onClose()
             }}
-            className="group flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors text-neutral-100 hover:text-background hover:bg-red-500"
+            className="group flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-neutral-100 hover:text-background hover:bg-red-500/80 hover:shadow-md active:scale-[0.98]"
           >
             <LogOut 
-              className="mr-3 h-5 w-5 text-neutral-300 group-hover:text-background"
+              className="mr-3 h-5 w-5 text-neutral-300 group-hover:text-background transition-colors duration-200"
             />
             Sair
           </button>
 
           {/* Link de Configurações do Perfil */}
           <Link
-            to="/profile"
+            to="/settings"
             className={cn(
-              "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
-              isCurrentPath('/profile')
-                ? "bg-primary-500 text-background"
-                : "text-neutral-100 hover:text-background hover:bg-primary-500"
+              "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+              "hover:scale-[1.02] active:scale-[0.98]",
+              isCurrentPath('/settings')
+                ? "bg-primary-500 text-background shadow-lg"
+                : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md"
             )}
             onClick={onClose}
           >
             <Settings 
               className={cn(
-                "mr-3 h-5 w-5",
-                isCurrentPath('/profile') ? "text-background" : "text-neutral-300 group-hover:text-background"
+                "mr-3 h-5 w-5 transition-colors duration-200",
+                isCurrentPath('/settings') ? "text-background" : "text-neutral-300 group-hover:text-background"
               )}
             />
             Configurações

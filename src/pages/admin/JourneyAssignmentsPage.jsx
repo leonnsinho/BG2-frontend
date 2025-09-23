@@ -21,6 +21,7 @@ export default function JourneyAssignmentsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState(null)
   const [showAssignmentModal, setShowAssignmentModal] = useState(false)
+  const [modalAnimating, setModalAnimating] = useState(false)
 
   // Mapeamento de ícones por tipo de jornada
   const journeyIcons = {
@@ -65,6 +66,26 @@ export default function JourneyAssignmentsPage() {
     loadInitialData()
   }, [])
 
+  // Fechar modal com ESC
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && showAssignmentModal) {
+        closeAssignmentModal()
+      }
+    }
+
+    if (showAssignmentModal) {
+      document.addEventListener('keydown', handleEscKey)
+      // Prevenir scroll do body quando modal está aberto
+      document.body.style.overflow = 'hidden'
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey)
+      document.body.style.overflow = 'unset'
+    }
+  }, [showAssignmentModal])
+
   const loadInitialData = async () => {
     try {
       setLoading(true)
@@ -74,33 +95,55 @@ export default function JourneyAssignmentsPage() {
       let usersQuery, usersData
 
       if (hasRole('super_admin')) {
-        // Super admin vê todos os usuários
-        const { data, error } = await supabase
+        // Super admin vê todos os usuários com seus company roles (exceto ele mesmo)
+        const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select(`
-            id,
-            email,
-            full_name,
-            role
-          `)
+          .select('id, email, full_name, role')
+          .neq('id', profile.id) // Excluir o usuário atual
           .order('full_name')
 
-        if (error) throw error
-        usersData = data || []
+        if (profilesError) throw profilesError
+
+        // Buscar os company roles para cada usuário
+        const profileIds = (profilesData || []).map(p => p.id)
+        
+        let userCompaniesData = []
+        if (profileIds.length > 0) {
+          const { data: ucData, error: ucError } = await supabase
+            .from('user_companies')
+            .select('user_id, role, company_id')
+            .in('user_id', profileIds)
+            .eq('is_active', true)
+
+          if (!ucError) {
+            userCompaniesData = ucData || []
+          }
+        }
+
+        // Combinar os dados
+        usersData = (profilesData || []).map(profile => {
+          const userCompany = userCompaniesData.find(uc => uc.user_id === profile.id)
+          return {
+            ...profile,
+            company_role: userCompany?.role || null,
+            company_id: userCompany?.company_id || null
+          }
+        })
 
       } else {
-        // Company admin vê apenas usuários da sua empresa
+        // Company admin vê apenas usuários da sua empresa (exceto ele mesmo)
         const activeCompany = profile.user_companies?.find(uc => uc.is_active)
         if (!activeCompany?.company_id) {
           throw new Error('Empresa ativa não encontrada')
         }
 
-        // Primeiro buscar as relações user_companies da empresa
+        // Primeiro buscar as relações user_companies da empresa (excluindo o usuário atual)
         const { data: userCompaniesData, error: ucError } = await supabase
           .from('user_companies')
           .select('user_id, role')
           .eq('company_id', activeCompany.company_id)
           .eq('is_active', true)
+          .neq('user_id', profile.id) // Excluir o usuário atual
 
         if (ucError) throw ucError
         
@@ -353,6 +396,17 @@ export default function JourneyAssignmentsPage() {
   const openAssignmentModal = (user) => {
     setSelectedUser(user)
     setShowAssignmentModal(true)
+    // Pequeno delay para permitir que o modal seja renderizado antes da animação
+    setTimeout(() => setModalAnimating(true), 10)
+  }
+
+  const closeAssignmentModal = () => {
+    setModalAnimating(false)
+    // Aguardar a animação de saída antes de remover o modal
+    setTimeout(() => {
+      setShowAssignmentModal(false)
+      setSelectedUser(null)
+    }, 200)
   }
 
   if (loading) {
@@ -445,7 +499,7 @@ export default function JourneyAssignmentsPage() {
                     
                     <td className="px-8 py-6 whitespace-nowrap">
                       <span className="inline-flex items-center px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/20 text-[#EBA500] border border-[#EBA500]/30">
-                        {getRoleDisplayName(user.role)}
+                        {getRoleDisplayName(user.company_role || user.role)}
                       </span>
                     </td>
                     
@@ -489,15 +543,38 @@ export default function JourneyAssignmentsPage() {
 
       {/* Modal de Atribuição */}
       {showAssignmentModal && selectedUser && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="relative mx-auto p-8 border border-gray-200/50 w-96 shadow-2xl rounded-3xl bg-white">
+        <div 
+          className={`fixed inset-0 bg-gray-900 transition-all duration-200 overflow-y-auto h-full w-full z-50 flex items-center justify-center ${
+            modalAnimating ? 'bg-opacity-60' : 'bg-opacity-0'
+          }`}
+          onClick={closeAssignmentModal}
+        >
+          <div 
+            className={`relative mx-auto p-8 border border-gray-200/50 w-96 shadow-2xl rounded-3xl bg-white transition-all duration-200 transform ${
+              modalAnimating 
+                ? 'scale-100 opacity-100 translate-y-0' 
+                : 'scale-95 opacity-0 translate-y-4'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mt-3">
-              <h3 className="text-lg font-semibold text-[#373435] mb-6">
-                Atribuir Jornadas para {selectedUser.full_name}
-              </h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-[#373435]">
+                  Atribuir Jornadas para {selectedUser.full_name}
+                </h3>
+                <button
+                  onClick={closeAssignmentModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 hover:bg-gray-100 rounded-full"
+                  aria-label="Fechar modal"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
               
               <div className="space-y-4">
-                {journeys.map(journey => {
+                {journeys.map((journey, index) => {
                   const isManuallyAssignedToUser = isManuallyAssigned(selectedUser.id, journey.slug)
                   const IconComponent = journeyIcons[journey.slug] || Settings
                   
@@ -510,7 +587,14 @@ export default function JourneyAssignmentsPage() {
                   return (
                     <div 
                       key={journey.id}
-                      className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-200 ${cardStyle}`}
+                      className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-200 ${cardStyle} ${
+                        modalAnimating 
+                          ? 'transform translate-x-0 opacity-100' 
+                          : 'transform translate-x-4 opacity-0'
+                      }`}
+                      style={{
+                        transitionDelay: modalAnimating ? `${index * 50}ms` : '0ms'
+                      }}
                     >
                       <div className="flex items-center">
                         <IconComponent className={`h-5 w-5 mr-3 ${
@@ -555,7 +639,7 @@ export default function JourneyAssignmentsPage() {
 
               <div className="mt-8 flex justify-end space-x-3">
                 <button
-                  onClick={() => setShowAssignmentModal(false)}
+                  onClick={closeAssignmentModal}
                   className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
                 >
                   Fechar

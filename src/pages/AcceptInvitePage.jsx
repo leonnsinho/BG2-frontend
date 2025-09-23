@@ -138,8 +138,8 @@ const AcceptInvitePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center bg-white shadow-sm border border-gray-200/50 rounded-3xl">
           <Loading size="lg" className="mx-auto mb-4" />
           <p className="text-gray-600">Verificando convite...</p>
         </Card>
@@ -149,12 +149,12 @@ const AcceptInvitePage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center bg-white shadow-sm border border-gray-200/50 rounded-3xl">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-[#373435] mb-2">
             Convite Inválido
           </h1>
           <p className="text-gray-600 mb-6">
@@ -162,7 +162,7 @@ const AcceptInvitePage = () => {
           </p>
           <Button
             onClick={() => navigate('/login')}
-            className="w-full bg-blue-600 hover:bg-blue-700"
+            className="w-full bg-[#EBA500] hover:bg-[#EBA500]/90 text-white"
           >
             <LogIn className="w-4 h-4 mr-2" />
             Ir para Login
@@ -174,12 +174,12 @@ const AcceptInvitePage = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center bg-white shadow-sm border border-gray-200/50 rounded-3xl">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-[#373435] mb-2">
             Convite Aceito!
           </h1>
           <p className="text-gray-600 mb-6">
@@ -196,13 +196,13 @@ const AcceptInvitePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md p-8 bg-white shadow-sm border border-gray-200/50 rounded-3xl">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UserCheck className="w-8 h-8 text-blue-600" />
+            <UserCheck className="w-8 h-8 text-[#EBA500]" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-[#373435] mb-2">
             Convite para se Juntar
           </h1>
           <p className="text-gray-600">
@@ -212,30 +212,30 @@ const AcceptInvitePage = () => {
 
         {/* Detalhes do Convite */}
         <div className="space-y-4 mb-8">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 border border-[#EBA500]/30 rounded-lg p-4">
             <div className="flex items-center space-x-3 mb-3">
-              <Building2 className="w-5 h-5 text-blue-600" />
+              <Building2 className="w-5 h-5 text-[#EBA500]" />
               <div>
-                <p className="font-semibold text-blue-900">{invite.company_name}</p>
-                <p className="text-sm text-blue-700">Empresa</p>
+                <p className="font-semibold text-[#373435]">{invite.company_name}</p>
+                <p className="text-sm text-gray-600">Empresa</p>
               </div>
             </div>
             
             <div className="flex items-center space-x-3 mb-3">
-              <UserCheck className="w-5 h-5 text-blue-600" />
+              <UserCheck className="w-5 h-5 text-[#EBA500]" />
               <div>
-                <p className="font-semibold text-blue-900">{getRoleName(invite.role)}</p>
-                <p className="text-sm text-blue-700">Sua função</p>
+                <p className="font-semibold text-[#373435]">{getRoleName(invite.role)}</p>
+                <p className="text-sm text-gray-600">Sua função</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
-              <Clock className="w-5 h-5 text-blue-600" />
+              <Clock className="w-5 h-5 text-[#EBA500]" />
               <div>
-                <p className="font-semibold text-blue-900">
+                <p className="font-semibold text-[#373435]">
                   {new Date(invite.expires_at).toLocaleDateString('pt-BR')}
                 </p>
-                <p className="text-sm text-blue-700">Expira em</p>
+                <p className="text-sm text-gray-600">Expira em</p>
               </div>
             </div>
           </div>
@@ -268,8 +268,8 @@ const AcceptInvitePage = () => {
         {/* Verificação de Login */}
         {!user ? (
           <div className="space-y-4">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-sm text-yellow-800">
+            <div className="bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 border border-[#EBA500]/30 rounded-lg p-4">
+              <p className="text-sm text-[#373435]">
                 <strong>Faça login primeiro:</strong> Para aceitar este convite, 
                 você precisa fazer login com o email <strong>{invite.email}</strong>
               </p>
@@ -277,7 +277,7 @@ const AcceptInvitePage = () => {
             
             <Button
               onClick={() => navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full bg-[#EBA500] hover:bg-[#EBA500]/90 text-white"
             >
               <LogIn className="w-4 h-4 mr-2" />
               Fazer Login

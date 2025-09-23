@@ -20,8 +20,8 @@ const Layout = ({ children, className }) => {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Verificar se deve mostrar header (não mostrar para gestores)
-  const shouldShowHeader = !permissions.isGestor()
+  // Verificar se deve mostrar header (não mostrar para gestores e super admin)
+  const shouldShowHeader = !permissions.isGestor() && !permissions.isSuperAdmin()
 
   return (
     <div className="min-h-screen bg-background">

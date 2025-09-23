@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { Layout } from '../../components/layout/Layout'
-import { Button } from '../../components/ui/Button'
-import { Input } from '../../components/ui/Input'
-import { Card } from '../../components/ui/Card'
-import { Loading } from '../../components/ui/Loading'
+import { toast } from 'react-hot-toast'
 import { 
   Users, 
   Search, 
@@ -20,11 +17,12 @@ import {
   XCircle,
   AlertCircle,
   Eye,
-  Link,
+  Link as LinkIcon,
   DollarSign,
   Target,
   TrendingUp,
-  Settings
+  Settings,
+  ArrowLeft
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
 
@@ -371,75 +369,55 @@ export default function UsersManagementPage() {
 
   const getRoleInfo = (role) => ROLES[role] || ROLES.user
 
-  // Função para obter as jornadas que um role tem acesso
-  const getJourneyAccess = (role) => {
-    const journeyMap = {
-      'super_admin': ['Todas as jornadas'],
-      'gestor': ['Todas as jornadas'],
-      'gestor_financeiro': ['Financeira'],
-      'gestor_estrategico': ['Estratégica'],
-      'gestor_pessoas_cultura': ['Pessoas & Cultura'],
-      'gestor_vendas_marketing': ['Vendas & Marketing'],
-      'gestor_operacional': ['Operacional'],
-      'company_admin': ['Todas as jornadas'],
-      'user': []
-    }
-    return journeyMap[role] || []
-  }
-
   if (loading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loading />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EBA500]"></div>
+      </div>
     )
   }
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Users className="h-8 w-8 text-blue-600" />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Gerenciamento de Usuários
-              </h1>
-              <p className="text-gray-600">
-                {users.length} usuários cadastrados no sistema
-              </p>
-            </div>
-          </div>
-          
-          <Button
-            onClick={() => window.location.href = '/invites'}
-            className="flex items-center space-x-2"
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Botão para voltar ao dashboard */}
+        <div className="mb-8">
+          <Link
+            to="/"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-[#373435] bg-white hover:bg-gray-50 border border-gray-200 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <UserPlus className="h-4 w-4" />
-            <span>Convidar Usuário</span>
-          </Button>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar ao Dashboard
+          </Link>
+        </div>
+
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-[#373435] mb-3">
+            Gerenciamento de Usuários
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Gerencie usuários, funções e vínculos com empresas no sistema.
+          </p>
         </div>
 
         {/* Filtros */}
-        <Card className="p-6">
+        <div className="bg-white shadow-sm border border-gray-200/50 rounded-3xl p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
+              <input
+                type="text"
                 placeholder="Buscar usuários..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200"
               />
             </div>
             
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200"
             >
               <option value="">Todas as funções</option>
               {Object.entries(ROLES).map(([key, role]) => (
@@ -450,7 +428,7 @@ export default function UsersManagementPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200"
             >
               <option value="">Todos os status</option>
               <option value="active">Ativo</option>
@@ -458,46 +436,50 @@ export default function UsersManagementPage() {
               <option value="pending">Pendente</option>
             </select>
 
-            <Button
-              variant="outline"
+            <button
               onClick={() => {
                 setSearchTerm('')
                 setRoleFilter('')
                 setStatusFilter('')
               }}
+              className="px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
             >
               Limpar Filtros
-            </Button>
+            </button>
           </div>
-        </Card>
+        </div>
 
         {/* Lista de Usuários */}
-        <Card>
+        <div className="bg-white shadow-sm border border-gray-200/50 rounded-3xl overflow-hidden">
+          <div className="px-8 py-6 border-b border-gray-100">
+            <h2 className="text-xl font-semibold text-[#373435] flex items-center">
+              <Users className="h-6 w-6 mr-3 text-[#EBA500]" />
+              Usuários do Sistema ({filteredUsers.length})
+            </h2>
+          </div>
+          
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-100">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Usuário
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Função
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Empresa
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Jornadas
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-8 py-4 text-right text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-50">
                 {filteredUsers.map((user) => {
                   // Usar o role da empresa se existir, senão usar o role global
                   const effectiveRole = user.company_role || user.role
@@ -505,8 +487,8 @@ export default function UsersManagementPage() {
                   const RoleIcon = roleInfo.icon
 
                   return (
-                    <tr key={user.user_id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                    <tr key={user.user_id} className="hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5 transition-all duration-200">
+                      <td className="px-8 py-6 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
                             <span className="text-sm font-medium text-gray-700">
@@ -514,7 +496,7 @@ export default function UsersManagementPage() {
                             </span>
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-semibold text-[#373435]">
                               {user.full_name || 'Nome não informado'}
                             </div>
                             <div className="text-sm text-gray-500 flex items-center">
@@ -525,8 +507,8 @@ export default function UsersManagementPage() {
                         </div>
                       </td>
                       
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${roleInfo.color}-100 text-${roleInfo.color}-800`}>
+                      <td className="px-8 py-6 whitespace-nowrap">
+                        <div className={`inline-flex items-center px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/20 text-[#EBA500] border border-[#EBA500]/30`}>
                           <RoleIcon className="h-3 w-3 mr-1" />
                           {roleInfo.label}
                         </div>
@@ -539,82 +521,51 @@ export default function UsersManagementPage() {
                             <div className="flex items-center gap-2">
                               <span>{user.companies.name}</span>
                               <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                                <button
                                   onClick={() => {
                                     setSelectedUser(user)
                                     setIsLinkModalOpen(true)
                                   }}
-                                  className="text-blue-600 hover:text-blue-800 p-1 h-auto"
+                                  className="text-blue-600 hover:text-blue-800 p-1 h-auto rounded-md hover:bg-blue-50 transition-colors duration-200"
                                   title="Alterar empresa"
                                 >
                                   <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                                </button>
+                                <button
                                   onClick={() => handleUnlinkFromCompany(user.user_id || user.id)}
-                                  className="text-red-600 hover:text-red-800 p-1 h-auto"
+                                  className="text-red-600 hover:text-red-800 p-1 h-auto rounded-md hover:bg-red-50 transition-colors duration-200"
                                   title="Desvincular da empresa"
                                 >
                                   <XCircle className="h-3 w-3" />
-                                </Button>
+                                </button>
                               </div>
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
                               <span className="text-gray-500">Não vinculado</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
+                              <button
                                 onClick={() => {
                                   setSelectedUser(user)
                                   setIsLinkModalOpen(true)
                                 }}
-                                className="text-blue-600 hover:text-blue-800 p-1 h-auto"
+                                className="text-blue-600 hover:text-blue-800 p-1 h-auto rounded-md hover:bg-blue-50 transition-colors duration-200"
                                 title="Vincular à empresa"
                               >
-                                <Link className="h-3 w-3" />
-                              </Button>
+                                <LinkIcon className="h-3 w-3" />
+                              </button>
                             </div>
                           )}
                         </div>
                       </td>
                       
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {(() => {
-                            const journeys = getJourneyAccess(effectiveRole)
-                            if (journeys.length === 0) {
-                              return <span className="text-gray-400">Nenhuma jornada</span>
-                            }
-                            if (journeys.includes('Todas as jornadas')) {
-                              return (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  <Target className="h-3 w-3 mr-1" />
-                                  Todas as jornadas
-                                </span>
-                              )
-                            }
-                            return (
-                              <div className="flex flex-wrap gap-1">
-                                {journeys.map((journey) => (
-                                  <span 
-                                    key={journey}
-                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                                  >
-                                    {journey}
-                                  </span>
-                                ))}
-                              </div>
-                            )
-                          })()}
-                        </div>
-                      </td>
-                      
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${STATUS_COLORS[user.status]}-100 text-${STATUS_COLORS[user.status]}-800`}>
+                      <td className="px-8 py-6 whitespace-nowrap">
+                        <div className={`inline-flex items-center px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r ${
+                          user.status === 'active' 
+                            ? 'from-green-50 to-green-100 text-green-700 border border-green-200'
+                            : user.status === 'inactive'
+                            ? 'from-red-50 to-red-100 text-red-700 border border-red-200'
+                            : 'from-yellow-50 to-yellow-100 text-yellow-700 border border-yellow-200'
+                        }`}>
                           {user.status === 'active' && <CheckCircle className="h-3 w-3 mr-1" />}
                           {user.status === 'inactive' && <XCircle className="h-3 w-3 mr-1" />}
                           {user.status === 'pending' && <AlertCircle className="h-3 w-3 mr-1" />}
@@ -622,42 +573,45 @@ export default function UsersManagementPage() {
                         </div>
                       </td>
                       
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-8 py-6 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                          <button
                             onClick={() => {
                               setSelectedUser(user)
                               setIsViewModalOpen(true)
                             }}
+                            className="text-gray-600 hover:text-gray-800 p-2 rounded-2xl hover:bg-gray-100 transition-all duration-200"
+                            title="Ver detalhes"
                           >
                             <Eye className="h-4 w-4" />
-                          </Button>
+                          </button>
                           
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                          <button
                             onClick={() => {
                               setSelectedUser(user)
                               setIsEditModalOpen(true)
                             }}
+                            className="text-blue-600 hover:text-blue-800 p-2 rounded-2xl hover:bg-blue-50 transition-all duration-200"
+                            title="Editar usuário"
                           >
                             <Edit className="h-4 w-4" />
-                          </Button>
+                          </button>
                           
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                          <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className={user.is_active ? "text-red-600 hover:text-red-900" : "text-green-600 hover:text-green-900"}
+                            className={`p-2 rounded-2xl transition-all duration-200 ${
+                              user.is_active 
+                                ? "text-red-600 hover:text-red-900 hover:bg-red-50" 
+                                : "text-green-600 hover:text-green-900 hover:bg-green-50"
+                            }`}
+                            title={user.is_active ? "Desativar usuário" : "Ativar usuário"}
                           >
                             {user.is_active ? (
                               <Trash2 className="h-4 w-4" />
                             ) : (
                               <CheckCircle className="h-4 w-4" />
                             )}
-                          </Button>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -680,7 +634,7 @@ export default function UsersManagementPage() {
               </p>
             </div>
           )}
-        </Card>
+        </div>
 
         {/* Modal de Visualização */}
         {isViewModalOpen && selectedUser && (
@@ -690,7 +644,7 @@ export default function UsersManagementPage() {
                 <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
               </div>
 
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
                     Detalhes do Usuário
@@ -730,38 +684,6 @@ export default function UsersManagementPage() {
                     </div>
                     
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Jornadas Acessíveis</label>
-                      <div className="mt-1">
-                        {(() => {
-                          const journeys = getJourneyAccess(selectedUser.company_role || selectedUser.role)
-                          if (journeys.length === 0) {
-                            return <span className="text-sm text-gray-500">Nenhuma jornada</span>
-                          }
-                          if (journeys.includes('Todas as jornadas')) {
-                            return (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <Target className="h-3 w-3 mr-1" />
-                                Todas as jornadas
-                              </span>
-                            )
-                          }
-                          return (
-                            <div className="flex flex-wrap gap-1">
-                              {journeys.map((journey) => (
-                                <span 
-                                  key={journey}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                                >
-                                  {journey}
-                                </span>
-                              ))}
-                            </div>
-                          )
-                        })()}
-                      </div>
-                    </div>
-                    
-                    <div>
                       <label className="text-sm font-medium text-gray-700">Data de Criação</label>
                       <p className="text-sm text-gray-900">{formatDate(selectedUser.created_at)}</p>
                     </div>
@@ -769,12 +691,12 @@ export default function UsersManagementPage() {
                 </div>
                 
                 <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <Button
+                  <button
                     onClick={() => setIsViewModalOpen(false)}
-                    variant="outline"
+                    className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
                   >
                     Fechar
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -808,7 +730,7 @@ export default function UsersManagementPage() {
           />
         )}
       </div>
-    </Layout>
+    </div>
   )
 }
 
@@ -831,7 +753,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
           <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
         </div>
 
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <form onSubmit={handleSubmit}>
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
@@ -875,21 +797,20 @@ function EditUserModal({ user, onClose, onSave, loading }) {
             </div>
             
             <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-              <Button
+              <button
                 type="submit"
                 disabled={loading}
-                className="w-full sm:ml-3 sm:w-auto"
+                className="w-full sm:ml-3 sm:w-auto px-6 py-2 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 text-[#EBA500] rounded-2xl hover:from-[#EBA500]/20 hover:to-[#EBA500]/10 border border-[#EBA500]/30 font-medium transition-all duration-200"
               >
                 {loading ? 'Salvando...' : 'Salvar'}
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
-                variant="outline"
                 onClick={onClose}
-                className="mt-3 w-full sm:mt-0 sm:w-auto"
+                className="mt-3 w-full sm:mt-0 sm:w-auto px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
               >
                 Cancelar
-              </Button>
+              </button>
             </div>
           </form>
         </div>
@@ -928,7 +849,7 @@ function LinkUserModal({ user, companies, onClose, onLink, loading }) {
           <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
         </div>
 
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <form onSubmit={handleSubmit}>
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
@@ -1000,24 +921,23 @@ function LinkUserModal({ user, companies, onClose, onLink, loading }) {
             </div>
             
             <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-              <Button
+              <button
                 type="submit"
                 disabled={loading}
-                className="w-full sm:ml-3 sm:w-auto"
+                className="w-full sm:ml-3 sm:w-auto px-6 py-2 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 text-[#EBA500] rounded-2xl hover:from-[#EBA500]/20 hover:to-[#EBA500]/10 border border-[#EBA500]/30 font-medium transition-all duration-200"
               >
                 {loading 
                   ? (isEdit ? 'Alterando...' : 'Vinculando...') 
                   : (isEdit ? 'Alterar' : 'Vincular')
                 }
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
-                variant="outline"
                 onClick={onClose}
-                className="mt-3 w-full sm:mt-0 sm:w-auto"
+                className="mt-3 w-full sm:mt-0 sm:w-auto px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
               >
                 Cancelar
-              </Button>
+              </button>
             </div>
           </form>
         </div>

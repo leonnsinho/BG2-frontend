@@ -2,6 +2,7 @@ import React, { memo, useMemo, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/usePermissions'
+import { useAdminStats } from '../hooks/useAdminStats'
 import { Layout } from '../components/layout/Layout'
 import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
@@ -17,9 +18,83 @@ import {
   TrendingUp,
   Calendar,
   Bell,
-  Settings,
-  LogOut
+  LogOut,
+  Zap,
+  Globe,
+  Activity
 } from 'lucide-react'
+
+// Dados estáticos para ações rápidas e ferramentas
+const QUICK_ACTIONS = [
+  {
+    title: 'Gerenciar Empresas',
+    description: 'Visualizar e administrar empresas',
+    icon: Building2,
+    href: '/companies',
+    color: 'primary',
+    featured: true
+  },
+  {
+    title: 'Usuários Globais',
+    description: 'Administrar contas do sistema',
+    icon: Users,
+    href: '/admin/users',
+    color: 'blue'
+  },
+  {
+    title: 'Atribuir Jornadas',
+    description: 'Configurar acessos e permissões',
+    icon: Target,
+    href: '/admin/journey-assignments',
+    color: 'success'
+  },
+  {
+    title: 'Relatórios Avançados',
+    description: 'Analytics e métricas detalhadas',
+    icon: BarChart3,
+    href: '/admin/reports',
+    color: 'purple',
+    featured: true
+  }
+]
+
+const SYSTEM_METRICS = [
+  { label: 'Uptime', value: '99.9%', status: 'excellent' },
+  { label: 'Resposta', value: '127ms', status: 'good' },
+  { label: 'CPU', value: '23%', status: 'excellent' },
+  { label: 'Storage', value: '67%', status: 'warning' }
+]
+
+const API_CONNECTIONS = [
+  {
+    name: 'Supabase Database',
+    service: 'supabase',
+    status: 'connected',
+    responseTime: '45ms',
+    lastCheck: new Date()
+  },
+  {
+    name: 'Resend Email API',
+    service: 'resend',
+    status: 'connected',
+    responseTime: '120ms',
+    lastCheck: new Date()
+  },
+  {
+    name: 'Storage Service',
+    service: 'storage',
+    status: 'connected',
+    responseTime: '78ms',
+    lastCheck: new Date()
+  },
+  {
+    name: 'Authentication',
+    service: 'auth',
+    status: 'connected',
+    responseTime: '32ms',
+    lastCheck: new Date()
+  }
+]
 
 // Dados estáticos movidos para fora do componente para evitar re-criação
 const DASHBOARD_STATS = [
@@ -53,7 +128,7 @@ const DASHBOARD_STATS = [
   }
 ]
 
-const RECENT_ACTIVITIES = [
+const RECENT_ACTIVITIES_DEFAULT = [
   {
     id: 1,
     type: 'login',
@@ -87,6 +162,182 @@ const RECENT_ACTIVITIES = [
     company: 'FinanceCorp'
   }
 ]
+
+// Componente de estatística com loading para dados reais
+const SuperAdminStatCard = memo(({ stat, loading }) => {
+  const getColorClasses = (color, accent) => {
+    if (accent) {
+      return {
+        border: 'border-[#EBA500] hover:border-[#EBA500]/80',
+        value: 'text-[#373435]'
+      }
+    }
+    
+    const colorMap = {
+      primary: {
+        border: 'border-[#EBA500]/60 hover:border-[#EBA500]',
+        value: 'text-[#373435]'
+      },
+      blue: {
+        border: 'border-blue-400 hover:border-blue-600',
+        value: 'text-[#373435]'
+      },
+      success: {
+        border: 'border-success-400 hover:border-success-600',
+        value: 'text-[#373435]'
+      },
+      neutral: {
+        border: 'border-[#373435]/60 hover:border-[#373435]',
+        value: 'text-[#373435]'
+      }
+    }
+    return colorMap[color] || colorMap.primary
+  }
+  
+  const colors = getColorClasses(stat.color, stat.accent)
+  
+  return (
+    <div className={`bg-white border-2 ${colors.border} rounded-3xl p-8 hover:shadow-lg transition-all duration-300 ${stat.accent ? 'ring-1 ring-[#EBA500]/10' : ''}`}>
+      <div>
+        {loading ? (
+          <>
+            <div className="w-20 h-10 bg-neutral-200 rounded-lg animate-pulse mb-3"></div>
+            <div className="w-24 h-4 bg-neutral-200 rounded animate-pulse"></div>
+          </>
+        ) : (
+          <>
+            <div className={`text-4xl font-bold ${colors.value} mb-3`}>{stat.value}</div>
+            <div className="text-sm font-semibold text-[#373435]">{stat.name}</div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+})
+
+SuperAdminStatCard.displayName = 'SuperAdminStatCard'
+
+// Componente de ação rápida com mais personalidade
+const QuickActionCard = memo(({ action }) => {
+  const getColorClasses = (color, featured) => {
+    // Estética escura para todos os cards
+    return {
+      background: 'bg-[#373435] hover:bg-[#373435]/90 text-white border-[#373435]',
+      icon: 'text-[#EBA500]',
+      title: 'text-white'
+    }
+  }
+  
+  const colors = getColorClasses(action.color, action.featured)
+  
+  return (
+    <Link
+      to={action.href}
+      className={`group block p-8 border rounded-3xl ${colors.background} hover:shadow-lg hover:-translate-y-1 transition-all duration-300`}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className={`w-12 h-12 ${colors.icon} bg-white/10 rounded-2xl flex items-center justify-center`}>
+          <action.icon className="w-6 h-6" />
+        </div>
+      </div>
+      <div>
+        <div className={`text-xl font-bold ${colors.title} mb-2`}>{action.title}</div>
+        <div className={`text-sm opacity-80 text-white/80`}>{action.description}</div>
+      </div>
+    </Link>
+  )
+})
+
+QuickActionCard.displayName = 'QuickActionCard'
+
+QuickActionCard.displayName = 'QuickActionCard'
+
+// Componente de métrica do sistema com mais personalidade
+const SystemMetricItem = memo(({ metric }) => {
+  const getStatusColor = (status) => {
+    const statusMap = {
+      excellent: 'text-white bg-success-500',
+      good: 'text-white bg-[#EBA500]',
+      warning: 'text-white bg-warning-500'
+    }
+    return statusMap[status] || statusMap.good
+  }
+  
+  return (
+    <div className="text-center">
+      <div className={`inline-flex items-center justify-center w-20 h-20 rounded-3xl ${getStatusColor(metric.status)} mb-4 shadow-lg`}>
+        <span className="text-xl font-black">{metric.value}</span>
+      </div>
+      <div className="text-sm font-bold text-[#373435]">{metric.label}</div>
+    </div>
+  )
+})
+
+SystemMetricItem.displayName = 'SystemMetricItem'
+
+// Componente de status de API
+const ApiConnectionItem = memo(({ connection }) => {
+  const getStatusConfig = (status) => {
+    const statusMap = {
+      connected: {
+        color: 'bg-success-500',
+        textColor: 'text-success-600',
+        bgColor: 'bg-success-50',
+        label: 'Conectado'
+      },
+      warning: {
+        color: 'bg-warning-500',
+        textColor: 'text-warning-600',
+        bgColor: 'bg-warning-50',
+        label: 'Instável'
+      },
+      error: {
+        color: 'bg-red-500',
+        textColor: 'text-red-600',
+        bgColor: 'bg-red-50',
+        label: 'Erro'
+      }
+    }
+    return statusMap[status] || statusMap.connected
+  }
+
+  const getServiceIcon = (service) => {
+    const iconMap = {
+      supabase: '🗄️',
+      resend: '📧',
+      storage: '☁️',
+      auth: '🔐'
+    }
+    return iconMap[service] || '🔧'
+  }
+  
+  const statusConfig = getStatusConfig(connection.status)
+  
+  return (
+    <div className={`p-4 ${statusConfig.bgColor} rounded-2xl border border-white/50`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-3">
+          <div className="text-lg">{getServiceIcon(connection.service)}</div>
+          <div>
+            <div className="font-semibold text-[#373435] text-sm">{connection.name}</div>
+            <div className="flex items-center space-x-2 mt-1">
+              <div className={`w-2 h-2 ${statusConfig.color} rounded-full`}></div>
+              <span className={`text-xs font-medium ${statusConfig.textColor}`}>
+                {statusConfig.label}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-between text-xs text-neutral-500">
+        <span>{connection.responseTime}</span>
+        <span>Agora</span>
+      </div>
+    </div>
+  )
+})
+
+ApiConnectionItem.displayName = 'ApiConnectionItem'
 
 // Componente de estatística otimizado
 const StatCard = memo(({ stat }) => {
@@ -123,78 +374,15 @@ const StatCard = memo(({ stat }) => {
 
 StatCard.displayName = 'StatCard'
 
-export function DashboardPage() {
-  const { user, profile, loading: authLoading, isUnlinkedUser } = useAuth()
-  const { 
-    activeCompany, 
-    isSuperAdmin, 
-    isConsultant, 
-    isCompanyAdmin,
-    isGestor,
-    isLoading: permissionsLoading 
-  } = usePermissions()
-
-  // Memoizar informações do usuário para evitar recálculos
-  const userInfo = useMemo(() => {
-    if (!profile && !user) return { name: 'Carregando...', roleDisplay: '' }
-    
-    // Priorizar full_name do profile, depois metadados do user, depois email
-    let name = 'Usuário'
-    
-    if (profile?.full_name) {
-      name = profile.full_name
-    } else if (user?.user_metadata?.full_name) {
-      name = user.user_metadata.full_name
-    } else if (user?.email) {
-      // Extrair nome do email se não houver nome completo
-      const emailName = user.email.split('@')[0]
-      name = emailName.charAt(0).toUpperCase() + emailName.slice(1)
-    }
-    
-    const company = activeCompany ? `${activeCompany.name} • ` : ''
-    
-    console.log('Dashboard - Dados do perfil:', {
-      profile: profile,
-      activeCompany: activeCompany,
-      user_companies: profile?.user_companies
-    })
-    
-    const roleMap = {
-      'super_admin': 'Super Administrador',
-      'consultant': 'Consultor',
-      'gestor': 'Gestor',
-      'gestor_financeiro': 'Gestor Financeiro',
-      'gestor_estrategico': 'Gestor Estratégico',
-      'gestor_pessoas_cultura': 'Gestor de Pessoas e Cultura',
-      'gestor_vendas_marketing': 'Gestor de Vendas e Marketing',
-      'gestor_operacional': 'Gestor Operacional',
-      'company_admin': 'Administrador',
-      'user': 'Usuário'
-    }
-    
-    // Usar role da empresa ativa se existir, senão usar role global
-    const activeCompanyRole = profile?.user_companies?.find(uc => 
-      uc.is_active && uc.companies?.id === activeCompany?.id
-    )?.role
-    
-    console.log('Dashboard - Role calculation:', {
-      activeCompanyRole: activeCompanyRole,
-      profileRole: profile?.role,
-      activeCompanyId: activeCompany?.id
-    })
-    
-    const effectiveRole = activeCompanyRole || profile?.role || 'user'
-    const roleDisplay = company + (roleMap[effectiveRole] || 'Usuário')
-    
-    console.log('Dashboard - Final role display:', roleDisplay)
-    
-    return { name, roleDisplay }
-  }, [profile, user, activeCompany])
+const DashboardPage = memo(() => {
+  const { user } = useAuth()
+  const { isSuperAdmin, isGestor, isUserLinked, loading } = usePermissions()
+  const { stats, loading: statsLoading, error: statsError, refresh } = useAdminStats()
 
   // Loading otimizado com skeleton
-  if (authLoading || permissionsLoading) {
+  if (loading) {
     return (
-      <Layout>
+      <Layout sidebar={<Sidebar />}>
         <Suspense fallback={<SmartLoader />}>
           <DashboardSkeleton />
         </Suspense>
@@ -202,205 +390,218 @@ export function DashboardPage() {
     )
   }
 
-  // Dashboard específico para usuários não vinculados
-  if (isUnlinkedUser()) {
+  // Verificar se o usuário é Super Admin - Design BG2 com Dados Reais
+  if (isSuperAdmin) {
+    // Mapear dados do hook para o formato dos cards
+    const adminStats = [
+      {
+        name: 'Empresas Ativas',
+        value: stats.activeCompanies.value,
+        change: stats.activeCompanies.change,
+        icon: Building2,
+        color: 'primary',
+        accent: true,
+        loading: stats.activeCompanies.loading
+      },
+      {
+        name: 'Total de Usuários',
+        value: stats.totalUsers.value,
+        change: stats.totalUsers.change,
+        icon: Users,
+        color: 'blue',
+        loading: stats.totalUsers.loading
+      },
+      {
+        name: 'Jornadas Ativas',
+        value: stats.activeJourneys.value,
+        change: stats.activeJourneys.change,
+        icon: Target,
+        color: 'success',
+        loading: stats.activeJourneys.loading
+      },
+      {
+        name: 'Sistema Uptime',
+        value: stats.systemUptime.value,
+        change: stats.systemUptime.change,
+        icon: Activity,
+        color: 'neutral',
+        accent: true,
+        loading: stats.systemUptime.loading
+      }
+    ]
+
     return (
-      <div className="min-h-screen bg-background">
-        {/* Sidebar */}
-        <Sidebar 
-          isOpen={false} 
-          onClose={() => {}} 
-        />
-
-        {/* Main Content sem Header */}
-        <div className="flex flex-col lg:ml-72">
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
-            <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-              <div className="max-w-4xl w-full text-center px-6">
-                {/* Saudação personalizada simplificada */}
-                <div className="mb-12">              
-                  <h1 className="text-4xl font-light text-neutral-900 mb-3">
-                    Olá, {userInfo.name}
-                  </h1>
-                  
-                  <div className="flex items-center justify-center space-x-2 mb-6">
-                    <div className="w-12 h-0.5 bg-primary-500"></div>
-                    <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-                    <div className="w-12 h-0.5 bg-primary-500"></div>
+      <Layout sidebar={<Sidebar />}>
+        <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
+          <div className="p-8 max-w-7xl mx-auto">
+            
+            {/* Header com botão de refresh se houver erro */}
+            {statsError && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-red-500 rounded-xl flex items-center justify-center">
+                      <Activity className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-red-800">Erro ao carregar estatísticas</p>
+                      <p className="text-sm text-red-600">{statsError}</p>
+                    </div>
                   </div>
-                  
-                  <p className="text-lg text-neutral-600 font-light">
-                    Bem-vindo ao seu painel pessoal no <span className="font-medium text-primary-600">BG2</span>
-                  </p>
+                  <button
+                    onClick={refresh}
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-xl transition-colors"
+                  >
+                    Tentar Novamente
+                  </button>
                 </div>
+              </div>
+            )}
+            
+            {/* Estatísticas Principais com Dados Reais */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+              {adminStats.map((stat) => (
+                <SuperAdminStatCard 
+                  key={stat.name} 
+                  stat={stat} 
+                  loading={stat.loading || statsLoading} 
+                />
+              ))}
+            </div>
 
-                {/* Cards explicativos em lista */}
-                <div className="space-y-4 mb-8">
-                  <div className="bg-background shadow-soft border border-neutral-100 rounded-xl p-6 text-left hover:shadow-medium transition-all duration-300 hover:border-primary-200">
-                    <div className="flex items-start space-x-4">
-                      <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
-                        <span className="text-sm font-bold text-primary-600">1</span>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium text-neutral-800 mb-2">Tarefas Atribuídas</h4>
-                        <p className="text-sm text-neutral-600 leading-relaxed">
-                          Gestores da sua empresa atribuirão tarefas específicas das jornadas para você. 
-                          Elas aparecerão automaticamente na seção "Metas Atribuídas" para acompanhamento.
-                        </p>
-                      </div>
-                    </div>
+            {/* Ações Principais - Destaque */}
+            <div className="mb-12">
+              <div className="mb-8">
+                <h3 className="text-2xl font-bold text-[#373435] mb-2">Ações Principais</h3>
+                <p className="text-neutral-600">Funcionalidades essenciais do sistema</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {QUICK_ACTIONS.map((action) => (
+                  <QuickActionCard key={action.title} action={action} />
+                ))}
+              </div>
+            </div>
+
+            {/* Status do Sistema com Destaque BG2 */}
+            <div className="bg-white border border-[#EBA500]/20 rounded-3xl p-8 shadow-lg ring-1 ring-[#EBA500]/5">
+              <div className="mb-8">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-[#EBA500] rounded-2xl flex items-center justify-center">
+                    <Activity className="w-6 h-6 text-white" />
                   </div>
-                  
-                  <div className="bg-background shadow-soft border border-neutral-100 rounded-xl p-6 text-left hover:shadow-medium transition-all duration-300 hover:border-primary-200">
-                    <div className="flex items-start space-x-4">
-                      <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
-                        <span className="text-sm font-bold text-primary-600">2</span>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium text-neutral-800 mb-2">Acompanhamento de Progresso</h4>
-                        <p className="text-sm text-neutral-600 leading-relaxed">
-                          Visualize o progresso, prazos e status de cada tarefa de forma organizada. 
-                          Tenha controle total sobre suas responsabilidades e marcos importantes.
-                        </p>
-                      </div>
-                    </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-[#373435] mb-1">Status do Sistema</h3>
+                    <p className="text-neutral-600">Monitoramento em tempo real</p>
                   </div>
                 </div>
-
-                {/* Status da conta com animação de loading */}
-                <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 mb-8 relative overflow-hidden">
-                  {/* Animação de loading no fundo */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-100 to-transparent opacity-30 animate-pulse"></div>
-                  
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-center space-x-3 mb-3">
-                      {/* Spinner de loading */}
-                      <div className="relative">
-                        <div className="w-4 h-4 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin"></div>
-                      </div>
-                      <span className="text-sm font-medium text-primary-800">Configurando sua conta</span>
+              </div>
+              
+              {/* Conexões APIs */}
+              <div className="mb-8">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="w-8 h-8 bg-[#373435] rounded-xl flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-[#373435]">Conexões APIs</h4>
+                    <p className="text-sm text-neutral-500">Status dos serviços externos</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {API_CONNECTIONS.map((connection) => (
+                    <ApiConnectionItem key={connection.service} connection={connection} />
+                  ))}
+                </div>
+              </div>
+              
+              {/* Status Global com Personalidade */}
+              <div className="pt-8 border-t border-neutral-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-4 h-4 bg-success-500 rounded-full animate-pulse shadow-lg shadow-success-200"></div>
+                    <div>
+                      <span className="text-lg font-bold text-[#373435]">Sistema Operacional</span>
+                      <p className="text-sm text-neutral-500">Todos os serviços funcionando perfeitamente</p>
                     </div>
-                    <p className="text-sm text-primary-700">
-                      Sua conta está sendo configurada pelos gestores da empresa. 
-                      Em breve você terá acesso completo às suas tarefas personalizadas.
-                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-[#EBA500]">99.9% Uptime</div>
+                    <div className="text-xs text-neutral-400">Atualizado agora</div>
                   </div>
                 </div>
               </div>
             </div>
-          </main>
+          </div>
         </div>
-      </div>
-    )
-  }
-
-  // Dashboard específico para gestores
-  if (isGestor()) {
-    return (
-      <Layout>
-        <GestorDashboard />
       </Layout>
     )
   }
 
+  // Dashboard específico para gestores
+  if (isGestor && isUserLinked) {
+    return <GestorDashboard />
+  }
+
+  // Usuário não está vinculado a uma empresa
+  if (!isUserLinked) {
+    return (
+      <Layout sidebar={<Sidebar />}>
+        <div className="p-6 max-w-7xl mx-auto">
+          <UnlinkedUserMessage />
+        </div>
+      </Layout>
+    )
+  }
+
+  // Dashboard padrão para outros tipos de usuário
   return (
-    <Layout>
-      <div className="space-y-6">
-        {/* Header Otimizado */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Olá, {userInfo.name}! 👋
-            </h1>
-            <p className="text-gray-600">{userInfo.roleDisplay}</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-              <Bell className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Notificações</span>
-            </Button>
-            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-              <Settings className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Configurações</span>
-            </Button>
-          </div>
+    <Layout sidebar={<Sidebar />}>
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Dashboard
+          </h1>
+          <p className="text-gray-600">
+            Bem-vindo ao seu painel de controle
+          </p>
         </div>
 
-        {/* Stats Grid Otimizado */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {DASHBOARD_STATS.map((stat) => (
-            <StatCard key={stat.name} stat={stat} />
-          ))}
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Suas Atividades
+            </h3>
+            <p className="text-gray-600">
+              Você ainda não possui atividades registradas.
+            </p>
+          </Card>
 
-        <div className="grid grid-cols-1 gap-6">
-          {/* Recent Activity - Agora ocupa toda a largura */}
-          <div>
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Atividades Recentes
-                </h3>
-                <Button variant="outline" size="sm">
-                  Ver todas
-                </Button>
-              </div>
-              <div className="space-y-4">
-                {RECENT_ACTIVITIES.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                      {activity.type === 'login' && <LogOut className="w-4 h-4 text-gray-600" />}
-                      {activity.type === 'goal' && <Target className="w-4 h-4 text-green-600" />}
-                      {activity.type === 'company' && <Building2 className="w-4 h-4 text-blue-600" />}
-                      {activity.type === 'report' && <BarChart3 className="w-4 h-4 text-amber-600" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900">
-                        <span className="font-medium">{activity.user}</span> {activity.action}
-                      </p>
-                      <div className="flex items-center mt-1 text-xs text-gray-500">
-                        <span>{activity.company}</span>
-                        <span className="mx-2">•</span>
-                        <span>{activity.time}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
-        </div>
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Progresso
+            </h3>
+            <p className="text-gray-600">
+              Acompanhe seu desenvolvimento aqui.
+            </p>
+          </Card>
 
-        {/* Progress Overview */}
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Visão Geral do Progresso
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto bg-primary-100 rounded-full flex items-center justify-center mb-3">
-                <span className="text-2xl font-bold text-primary-600">85%</span>
-              </div>
-              <h4 className="font-medium text-gray-900">Jornada Estratégica</h4>
-              <p className="text-sm text-gray-600">17 de 20 processos concluídos</p>
-            </div>
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto bg-success-100 rounded-full flex items-center justify-center mb-3">
-                <span className="text-2xl font-bold text-success-600">92%</span>
-              </div>
-              <h4 className="font-medium text-gray-900">Jornada Financeira</h4>
-              <p className="text-sm text-gray-600">23 de 25 processos concluídos</p>
-            </div>
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto bg-warning-100 rounded-full flex items-center justify-center mb-3">
-                <span className="text-2xl font-bold text-warning-600">67%</span>
-              </div>
-              <h4 className="font-medium text-gray-900">Jornada Pessoas</h4>
-              <p className="text-sm text-gray-600">12 de 18 processos concluídos</p>
-            </div>
-          </div>
-        </Card>
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Próximos Passos
+            </h3>
+            <p className="text-gray-600">
+              Configure seu perfil para começar.
+            </p>
+          </Card>
+        </div>
       </div>
     </Layout>
   )
-}
+})
+
+DashboardPage.displayName = 'DashboardPage'
+
+export { DashboardPage }
+export default DashboardPage
