@@ -376,8 +376,27 @@ StatCard.displayName = 'StatCard'
 
 const DashboardPage = memo(() => {
   const { user } = useAuth()
-  const { isSuperAdmin, isGestor, isUserLinked, loading } = usePermissions()
+  const { isSuperAdmin, isGestor, isUnlinkedUser, loading } = usePermissions()
   const { stats, loading: statsLoading, error: statsError, refresh } = useAdminStats()
+
+  // Debug da lógica de renderização
+  console.log('🎯 Dashboard Debug:', {
+    isSuperAdmin,
+    isGestor, 
+    isUnlinkedUser,
+    loading,
+    user: user ? { email: user.email } : null
+  })
+
+  console.log('🎯 Dashboard Condições:', {
+    'isSuperAdmin()': isSuperAdmin(),
+    'isGestor()': isGestor(),
+    'isUnlinkedUser()': isUnlinkedUser(),
+    'isGestor && !isUnlinkedUser': isGestor() && !isUnlinkedUser(),
+    'qual será renderizado?': isSuperAdmin() ? 'Super Admin' : 
+                              (isGestor() && !isUnlinkedUser()) ? 'Gestor' : 
+                              isUnlinkedUser() ? 'Usuario Desvinculado' : 'Dashboard Padrão'
+  })
 
   // Loading otimizado com skeleton
   if (loading) {
@@ -391,7 +410,8 @@ const DashboardPage = memo(() => {
   }
 
   // Verificar se o usuário é Super Admin - Design BG2 com Dados Reais
-  if (isSuperAdmin) {
+  if (isSuperAdmin()) {
+    console.log('🔴 Renderizando Dashboard Super Admin')
     // Mapear dados do hook para o formato dos cards
     const adminStats = [
       {
@@ -540,12 +560,14 @@ const DashboardPage = memo(() => {
   }
 
   // Dashboard específico para gestores
-  if (isGestor && isUserLinked) {
+  if (isGestor() && !isUnlinkedUser()) {
+    console.log('🟡 Renderizando Dashboard Gestor')
     return <GestorDashboard />
   }
 
   // Usuário não está vinculado a uma empresa
-  if (!isUserLinked) {
+  if (isUnlinkedUser()) {
+    console.log('🟢 Renderizando Dashboard Usuario Desvinculado')
     return (
       <Layout sidebar={<Sidebar />}>
         <div className="p-6 max-w-7xl mx-auto">
@@ -556,6 +578,7 @@ const DashboardPage = memo(() => {
   }
 
   // Dashboard padrão para outros tipos de usuário
+  console.log('🔵 Renderizando Dashboard Padrão')
   return (
     <Layout sidebar={<Sidebar />}>
       <div className="p-6 max-w-7xl mx-auto">

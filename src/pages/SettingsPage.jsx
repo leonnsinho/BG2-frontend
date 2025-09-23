@@ -10,7 +10,6 @@ import {
   Building2, 
   Shield, 
   Key, 
-  Bell, 
   Moon, 
   Sun, 
   Globe,
@@ -58,6 +57,7 @@ const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState('profile')
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // Estados para os formulários
   const [profileForm, setProfileForm] = useState({
@@ -70,13 +70,6 @@ const SettingsPage = () => {
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
-  })
-
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    weeklyReports: true,
-    marketingEmails: false
   })
 
   const [preferences, setPreferences] = useState({
@@ -116,6 +109,13 @@ const SettingsPage = () => {
     e.preventDefault()
     setIsLoading(true)
 
+    // Validações
+    if (!passwordForm.currentPassword) {
+      toast.error('Digite sua senha atual para confirmar')
+      setIsLoading(false)
+      return
+    }
+
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast.error('As senhas não conferem')
       setIsLoading(false)
@@ -128,7 +128,26 @@ const SettingsPage = () => {
       return
     }
 
+    if (passwordForm.currentPassword === passwordForm.newPassword) {
+      toast.error('A nova senha deve ser diferente da senha atual')
+      setIsLoading(false)
+      return
+    }
+
     try {
+      // Primeiro, verificar a senha atual fazendo um re-login
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: passwordForm.currentPassword
+      })
+
+      if (signInError) {
+        toast.error('Senha atual incorreta')
+        setIsLoading(false)
+        return
+      }
+
+      // Se a senha atual estiver correta, atualizar para a nova senha
       const { error } = await supabase.auth.updateUser({
         password: passwordForm.newPassword
       })
@@ -220,7 +239,6 @@ const SettingsPage = () => {
   const tabs = [
     { id: 'profile', name: 'Perfil', icon: User },
     { id: 'password', name: 'Senha', icon: Key },
-    { id: 'notifications', name: 'Notificações', icon: Bell },
     { id: 'preferences', name: 'Preferências', icon: Globe }
   ]
 
@@ -422,7 +440,28 @@ const SettingsPage = () => {
               <form onSubmit={handlePasswordChange} className="space-y-6 max-w-md">
                 <div className="relative">
                   <label className="block text-sm font-medium text-[#373435] mb-2">
-                    Nova Senha
+                    Senha Atual *
+                  </label>
+                  <Input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    placeholder="Digite sua senha atual"
+                    required
+                    className="w-full pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-4 top-10 text-gray-400 hover:text-[#EBA500] transition-colors duration-200"
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
+                    Nova Senha *
                   </label>
                   <Input
                     type={showNewPassword ? 'text' : 'password'}
@@ -442,20 +481,48 @@ const SettingsPage = () => {
                   </button>
                 </div>
 
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-medium text-[#373435] mb-2">
-                    Confirmar Nova Senha
+                    Confirmar Nova Senha *
                   </label>
                   <Input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     value={passwordForm.confirmPassword}
                     onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     placeholder="Confirme sua nova senha"
                     required
                     minLength={6}
-                    className="w-full"
+                    className="w-full pr-12"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-10 text-gray-400 hover:text-[#EBA500] transition-colors duration-200"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
+
+                {/* Indicador de força da senha */}
+                {passwordForm.newPassword && (
+                  <div className="space-y-2">
+                    <div className="text-sm text-[#373435] font-medium">Força da senha:</div>
+                    <div className="flex space-x-1">
+                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 6 ? 'bg-red-400' : 'bg-gray-200'}`}></div>
+                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 8 && /[A-Z]/.test(passwordForm.newPassword) ? 'bg-yellow-400' : 'bg-gray-200'}`}></div>
+                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 8 && /[A-Z]/.test(passwordForm.newPassword) && /[0-9]/.test(passwordForm.newPassword) ? 'bg-[#EBA500]' : 'bg-gray-200'}`}></div>
+                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 10 && /[A-Z]/.test(passwordForm.newPassword) && /[0-9]/.test(passwordForm.newPassword) && /[!@#$%^&*]/.test(passwordForm.newPassword) ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      {passwordForm.newPassword.length < 6 && 'Muito fraca - Mínimo 6 caracteres'}
+                      {passwordForm.newPassword.length >= 6 && passwordForm.newPassword.length < 8 && 'Fraca - Adicione mais caracteres'}
+                      {passwordForm.newPassword.length >= 8 && !/[A-Z]/.test(passwordForm.newPassword) && 'Média - Adicione letras maiúsculas'}
+                      {passwordForm.newPassword.length >= 8 && /[A-Z]/.test(passwordForm.newPassword) && !/[0-9]/.test(passwordForm.newPassword) && 'Boa - Adicione números'}
+                      {passwordForm.newPassword.length >= 8 && /[A-Z]/.test(passwordForm.newPassword) && /[0-9]/.test(passwordForm.newPassword) && !/[!@#$%^&*]/.test(passwordForm.newPassword) && 'Boa - Adicione símbolos para ficar forte'}
+                      {passwordForm.newPassword.length >= 10 && /[A-Z]/.test(passwordForm.newPassword) && /[0-9]/.test(passwordForm.newPassword) && /[!@#$%^&*]/.test(passwordForm.newPassword) && 'Muito forte'}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex justify-end pt-4">
                   <Button 
@@ -477,58 +544,6 @@ const SettingsPage = () => {
                   </Button>
                 </div>
               </form>
-            </div>
-          </Card>
-        )}
-
-        {/* Aba Notificações */}
-        {activeTab === 'notifications' && (
-          <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl transform transition-all duration-500 ease-in-out">
-            <div className="animate-fadeIn">
-              <h3 className="text-xl font-semibold text-[#373435] mb-6 flex items-center gap-2">
-                <Bell className="w-5 h-5 text-[#EBA500]" />
-                Preferências de Notificação
-              </h3>
-              
-              <div className="space-y-6">
-                {Object.entries(notificationSettings).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50/50 transition-all duration-200">
-                    <div>
-                      <h4 className="text-sm font-medium text-[#373435]">
-                        {key === 'emailNotifications' && 'Notificações por Email'}
-                        {key === 'pushNotifications' && 'Notificações Push'}
-                        {key === 'weeklyReports' && 'Relatórios Semanais'}
-                        {key === 'marketingEmails' && 'Emails de Marketing'}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        {key === 'emailNotifications' && 'Receber notificações importantes por email'}
-                        {key === 'pushNotifications' && 'Receber notificações no navegador'}
-                        {key === 'weeklyReports' && 'Receber resumo semanal das atividades'}
-                        {key === 'marketingEmails' && 'Receber novidades e promoções'}
-                      </p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={value}
-                        onChange={(e) => setNotificationSettings(prev => ({
-                          ...prev,
-                          [key]: e.target.checked
-                        }))}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#EBA500]/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#EBA500] hover:shadow-lg transition-all duration-200"></div>
-                    </label>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 flex justify-end">
-                <Button className="bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 text-white transform hover:scale-105 active:scale-95 transition-all duration-200">
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar Preferências
-                </Button>
-              </div>
             </div>
           </Card>
         )}

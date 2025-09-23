@@ -448,17 +448,36 @@ export function AuthProvider({ children }) {
 
   // Verificar se usuário tem role específica
   const hasRole = (roles) => {
-    if (!profile) return false
+    if (!profile) {
+      console.log('🔍 hasRole: sem perfil')
+      return false
+    }
     
     const roleArray = Array.isArray(roles) ? roles : [roles]
     
+    console.log('🔍 hasRole check:', {
+      profile_role: profile.role,
+      roles_to_check: roleArray,
+      profile_user_companies: profile.user_companies?.length || 0
+    })
+    
     // Verificar role global
-    if (roleArray.includes(profile.role)) return true
+    if (roleArray.includes(profile.role)) {
+      console.log('✅ Role encontrado globalmente:', profile.role)
+      return true
+    }
     
     // Verificar roles nas empresas
-    return profile.user_companies?.some(uc => 
-      uc.is_active && roleArray.includes(uc.role)
-    )
+    const companyRoleMatch = profile.user_companies?.some(uc => {
+      const match = uc.is_active && roleArray.includes(uc.role)
+      if (match) {
+        console.log('✅ Role encontrado na empresa:', uc.role, 'empresa:', uc.company_id)
+      }
+      return match
+    })
+    
+    console.log('🔍 Resultado final hasRole:', companyRoleMatch || false)
+    return companyRoleMatch || false
   }
 
   // Obter empresa ativa do usuário
