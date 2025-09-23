@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
+import { usePriorityProcesses } from '../../hooks/usePriorityProcesses2'
 
 const PlanejamentoEstrategico = () => {
   const { profile } = useAuth()
   const { getAccessibleJourneys } = useAuthPermissions()
+  const { priorityProcesses, loading: processesLoading, error: processesError, getProcessesByJourney, debugLogs } = usePriorityProcesses()
+  
   const [jornadas, setJornadas] = useState([])
   const [jornadaSelecionada, setJornadaSelecionada] = useState(null)
   const [processos, setProcessos] = useState([])
@@ -14,6 +17,18 @@ const PlanejamentoEstrategico = () => {
   const [editandoTarefa, setEditandoTarefa] = useState({ id: null, texto: '', responsavel: '' })
   const [jornadasAtribuidas, setJornadasAtribuidas] = useState([])
   const [loading, setLoading] = useState(true)
+  const [debugInfo, setDebugInfo] = useState([])
+
+  // Função para adicionar logs de debug específicos
+  const addDebugLog = (message, type = 'info') => {
+    const timestamp = new Date().toLocaleTimeString()
+    setDebugInfo(prev => [...prev.slice(-10), { // Manter apenas os últimos 10 logs
+      id: Date.now(),
+      timestamp,
+      message,
+      type
+    }])
+  }
 
   // Adicionar CSS customizado para scrollbar
   useEffect(() => {
@@ -41,53 +56,36 @@ const PlanejamentoEstrategico = () => {
     }
   }, [])
 
-  // Mock das 5 jornadas com slugs corretos
+  // Mock das 5 jornadas com slugs corretos - mapeando para IDs do banco
   const jornadasMock = [
     { id: 1, nome: 'Estratégica', slug: 'estrategica', cor: 'bg-blue-500', corTexto: 'text-blue-700' },
     { id: 2, nome: 'Financeira', slug: 'financeira', cor: 'bg-green-500', corTexto: 'text-green-700' },
     { id: 3, nome: 'Pessoas & Cultura', slug: 'pessoas-cultura', cor: 'bg-purple-500', corTexto: 'text-purple-700' },
-    { id: 4, nome: 'Vendas & Marketing', slug: 'vendas-marketing', cor: 'bg-orange-500', corTexto: 'text-orange-700' },
+    { id: 4, nome: 'Receita & CRM', slug: 'receita-crm', cor: 'bg-orange-500', corTexto: 'text-orange-700' },
     { id: 5, nome: 'Operacional', slug: 'operacional', cor: 'bg-red-500', corTexto: 'text-red-700' }
   ]
 
-  // Mock dos processos prioritários por jornada
-  const processosMock = {
-    1: [ // Estratégica
-      { id: 11, nome: 'Análise SWOT', prioridade: 1 },
-      { id: 12, nome: 'Planejamento 2025', prioridade: 2 },
-      { id: 13, nome: 'Definição KPIs', prioridade: 3 },
-      { id: 14, nome: 'Budget Review', prioridade: 4 },
-      { id: 15, nome: 'Market Research', prioridade: 5 }
-    ],
-    2: [ // Financeira
-      { id: 21, nome: 'Fluxo de Caixa', prioridade: 1 },
-      { id: 22, nome: 'Auditoria Q4', prioridade: 2 },
-      { id: 23, nome: 'Cost Center Review', prioridade: 3 },
-      { id: 24, nome: 'Tax Planning', prioridade: 4 },
-      { id: 25, nome: 'Investment Analysis', prioridade: 5 }
-    ],
-    3: [ // Pessoas & Cultura
-      { id: 31, nome: 'Recrutamento Dev', prioridade: 1 },
-      { id: 32, nome: 'Treinamento Equipe', prioridade: 2 },
-      { id: 33, nome: 'Performance Review', prioridade: 3 },
-      { id: 34, nome: 'Engagement Survey', prioridade: 4 },
-      { id: 35, nome: 'Benefits Review', prioridade: 5 }
-    ],
-    4: [ // Vendas & Marketing
-      { id: 41, nome: 'Campanha Q1', prioridade: 1 },
-      { id: 42, nome: 'Lead Generation', prioridade: 2 },
-      { id: 43, nome: 'CRM Update', prioridade: 3 },
-      { id: 44, nome: 'Sales Training', prioridade: 4 },
-      { id: 45, nome: 'Market Expansion', prioridade: 5 }
-    ],
-    5: [ // Operacional
-      { id: 51, nome: 'Process Optimization', prioridade: 1 },
-      { id: 52, nome: 'System Upgrade', prioridade: 2 },
-      { id: 53, nome: 'Quality Assurance', prioridade: 3 },
-      { id: 54, nome: 'Supply Chain Review', prioridade: 4 },
-      { id: 55, nome: 'Capacity Planning', prioridade: 5 }
-    ]
-  }
+  // Debug do estado dos processos
+  useEffect(() => {
+    if (processesError) {
+      addDebugLog(`❌ Erro ao carregar processos: ${processesError}`, 'error')
+    }
+    
+    if (!processesLoading && priorityProcesses) {
+      const totalProcesses = Object.values(priorityProcesses).reduce((acc, processes) => acc + processes.length, 0)
+      addDebugLog(`✅ Processos prioritários carregados: ${totalProcesses} no total`, 'success')
+      
+      Object.entries(priorityProcesses).forEach(([journeyId, processes]) => {
+        if (processes.length > 0) {
+          addDebugLog(`📋 Jornada ${journeyId}: ${processes.length} processos (${processes.map(p => p.nome).join(', ')})`, 'info')
+        }
+      })
+    }
+    
+    if (processesLoading) {
+      addDebugLog('🔍 Carregando processos prioritários da base de dados...', 'info')
+    }
+  }, [processesLoading, priorityProcesses, processesError])
 
   // Usuários mock para responsáveis
   const usuariosMock = [
@@ -96,7 +94,7 @@ const PlanejamentoEstrategico = () => {
   ]
 
   useEffect(() => {
-    const loadData = async () => {
+  const loadData = async () => {
       console.log('🚀 Carregando jornadas para:', profile?.email)
       setLoading(true)
       setJornadas(jornadasMock)
@@ -111,7 +109,9 @@ const PlanejamentoEstrategico = () => {
       // Se for Super Admin, dar acesso a todas as jornadas
       if (profile?.role === 'super_admin') {
         console.log('👑 Super Admin - liberando todas as jornadas')
-        setJornadasAtribuidas(['estrategica', 'financeira', 'pessoas-cultura', 'vendas-marketing', 'operacional'])
+        const todasJornadas = ['estrategica', 'financeira', 'pessoas-cultura', 'receita-crm', 'operacional']
+        setJornadasAtribuidas(todasJornadas)
+        addDebugLog(`👑 Super Admin - todas as jornadas liberadas: ${todasJornadas.join(', ')}`)
         setLoading(false)
         return
       }
@@ -120,10 +120,12 @@ const PlanejamentoEstrategico = () => {
       try {
         const assignedJourneySlugs = await getAccessibleJourneys()
         console.log('✅ Jornadas atribuídas:', assignedJourneySlugs)
+        addDebugLog(`✅ Jornadas atribuídas ao usuário: ${assignedJourneySlugs?.join(', ') || 'nenhuma'}`)
         setJornadasAtribuidas(assignedJourneySlugs || [])
         
       } catch (error) {
         console.error('❌ Erro ao buscar jornadas:', error)
+        addDebugLog(`❌ Erro ao buscar jornadas: ${error.message}`)
         setJornadasAtribuidas([])
       }
 
@@ -141,19 +143,83 @@ const PlanejamentoEstrategico = () => {
     }
   }, [profile?.role]) // Apenas profile.role como dependência para evitar loops
 
+  // Debug das jornadas quando o estado mudar
+  useEffect(() => {
+    if (jornadasAtribuidas.length > 0) {
+      jornadasMock.forEach(jornada => {
+        const isIncluded = jornadasAtribuidas.includes(jornada.slug)
+        addDebugLog(`🎯 ${jornada.nome} (${jornada.slug}): ${isIncluded ? '✅ LIBERADA' : '❌ BLOQUEADA'}`)
+      })
+    }
+  }, [jornadasAtribuidas])
+
   const selecionarJornada = (jornada) => {
     // Só permite selecionar se a jornada estiver atribuída
     if (!isJornadaAtribuida(jornada)) {
-      console.log('🚫 Jornada não atribuída, bloqueando seleção:', jornada.slug)
+      addDebugLog(`🚫 Jornada ${jornada.slug} não atribuída, bloqueando seleção`, 'warning')
       return
     }
     
+    addDebugLog(`✅ Selecionando jornada ${jornada.nome} (ID: ${jornada.id})`, 'success')
     setJornadaSelecionada(jornada)
-    setProcessos(processosMock[jornada.id] || [])
+    
+    // Buscar processos reais da jornada
+    const processosReais = getProcessesByJourney(jornada.id)
+    addDebugLog(`� Processos reais encontrados: ${processosReais?.length || 0}`, 'info')
+    
+    if (processosReais && processosReais.length > 0) {
+      setProcessos(processosReais)
+      addDebugLog(`✅ Usando ${processosReais.length} processos REAIS da base de dados`, 'success')
+      processosReais.forEach((processo, index) => {
+        addDebugLog(`  ${index + 1}. ${processo.nome} (Score: ${processo.priority_score})`, 'info')
+      })
+    } else {
+      // Fallback para dados mock se não houver processos reais
+      addDebugLog('⚠️ Nenhum processo real encontrado, usando dados MOCK', 'warning')
+      const processosMock = {
+        1: [
+          { id: 11, nome: 'Análise SWOT', prioridade: 1 },
+          { id: 12, nome: 'Planejamento 2025', prioridade: 2 },
+          { id: 13, nome: 'Definição KPIs', prioridade: 3 },
+          { id: 14, nome: 'Budget Review', prioridade: 4 },
+          { id: 15, nome: 'Market Research', prioridade: 5 }
+        ],
+        2: [
+          { id: 21, nome: 'Fluxo de Caixa', prioridade: 1 },
+          { id: 22, nome: 'Auditoria Q4', prioridade: 2 },
+          { id: 23, nome: 'Cost Center Review', prioridade: 3 },
+          { id: 24, nome: 'Tax Planning', prioridade: 4 },
+          { id: 25, nome: 'Investment Analysis', prioridade: 5 }
+        ],
+        3: [
+          { id: 31, nome: 'Recrutamento Dev', prioridade: 1 },
+          { id: 32, nome: 'Treinamento Equipe', prioridade: 2 },
+          { id: 33, nome: 'Performance Review', prioridade: 3 },
+          { id: 34, nome: 'Engagement Survey', prioridade: 4 },
+          { id: 35, nome: 'Benefits Review', prioridade: 5 }
+        ],
+        4: [
+          { id: 41, nome: 'Campanha Q1', prioridade: 1 },
+          { id: 42, nome: 'Lead Generation', prioridade: 2 },
+          { id: 43, nome: 'CRM Update', prioridade: 3 },
+          { id: 44, nome: 'Sales Training', prioridade: 4 },
+          { id: 45, nome: 'Market Expansion', prioridade: 5 }
+        ],
+        5: [
+          { id: 51, nome: 'Process Optimization', prioridade: 1 },
+          { id: 52, nome: 'System Upgrade', prioridade: 2 },
+          { id: 53, nome: 'Quality Assurance', prioridade: 3 },
+          { id: 54, nome: 'Supply Chain Review', prioridade: 4 },
+          { id: 55, nome: 'Capacity Planning', prioridade: 5 }
+        ]
+      }
+      setProcessos(processosMock[jornada.id] || [])
+    }
   }
 
   const isJornadaAtribuida = (jornada) => {
-    return jornadasAtribuidas.includes(jornada.slug)
+    const result = jornadasAtribuidas.includes(jornada.slug)
+    return result
   }
 
   // Debug apenas uma vez quando necessário
@@ -335,8 +401,13 @@ const PlanejamentoEstrategico = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {loading ? (
+      {(loading || processesLoading) ? (
         <div className="px-8 py-12">
+          <div className="mb-8 text-center">
+            <div className="w-12 h-12 bg-[#EBA500]/20 rounded-xl mx-auto mb-4 animate-pulse"></div>
+            <div className="h-6 bg-gray-200 rounded w-48 mx-auto mb-2 animate-pulse"></div>
+            <div className="h-4 bg-gray-100 rounded w-32 mx-auto animate-pulse"></div>
+          </div>
           <div className="grid grid-cols-5 gap-6">
             {[1, 2, 3, 4, 5].map((item) => (
               <div key={item} className="bg-gray-100 rounded-3xl p-8 animate-pulse">
@@ -345,6 +416,29 @@ const PlanejamentoEstrategico = () => {
                 <div className="w-20 h-1 bg-gray-200 rounded-full mx-auto"></div>
               </div>
             ))}
+          </div>
+          {processesLoading && (
+            <div className="text-center mt-8">
+              <div className="text-[#373435]/60 text-sm">
+                🔍 Carregando processos prioritários da base de dados...
+              </div>
+            </div>
+          )}
+        </div>
+      ) : processesError ? (
+        <div className="px-8 py-12 text-center">
+          <div className="bg-red-50 border border-red-200 rounded-3xl p-8 max-w-md mx-auto">
+            <div className="w-12 h-12 bg-red-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-bold text-red-800 mb-2">Erro ao carregar processos</h3>
+            <p className="text-red-600 text-sm mb-4">{processesError}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+            >
+              Tentar novamente
+            </button>
           </div>
         </div>
       ) : (
@@ -436,6 +530,72 @@ const PlanejamentoEstrategico = () => {
           )
         })}
       </div>
+
+      {/* Card de Debug - Processos Prioritários */}
+      {(debugInfo.length > 0 || debugLogs.length > 0) && (
+        <div className="bg-white rounded-3xl shadow-lg border border-[#373435]/10 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-[#373435] flex items-center space-x-2">
+              <div className="w-8 h-8 bg-[#EBA500] rounded-xl flex items-center justify-center">
+                <span className="text-white text-sm">🔍</span>
+              </div>
+              <span>Debug - Processos Prioritários</span>
+            </h3>
+            <button 
+              onClick={() => setDebugInfo([])}
+              className="text-[#373435]/60 hover:text-[#373435] px-3 py-1 rounded-lg hover:bg-[#373435]/10 transition-colors text-sm"
+            >
+              Limpar
+            </button>
+          </div>
+          
+          <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+            {/* Logs do Hook */}
+            {debugLogs.map((log, index) => (
+              <div key={`hook-${index}`} className="flex items-start space-x-3 p-3 rounded-xl text-sm bg-purple-50 border border-purple-200">
+                <span className="font-mono text-xs flex-shrink-0 text-purple-600">{log.timestamp}</span>
+                <span className="flex-1 text-purple-800">[HOOK] {log.message}</span>
+              </div>
+            ))}
+            
+            {/* Logs do Componente */}
+            {debugInfo.map((log) => (
+              <div 
+                key={log.id} 
+                className={`flex items-start space-x-3 p-3 rounded-xl text-sm ${
+                  log.type === 'error' ? 'bg-red-50 border border-red-200' :
+                  log.type === 'success' ? 'bg-green-50 border border-green-200' :
+                  log.type === 'warning' ? 'bg-yellow-50 border border-yellow-200' :
+                  'bg-blue-50 border border-blue-200'
+                }`}
+              >
+                <span className={`font-mono text-xs flex-shrink-0 ${
+                  log.type === 'error' ? 'text-red-600' :
+                  log.type === 'success' ? 'text-green-600' :
+                  log.type === 'warning' ? 'text-yellow-600' :
+                  'text-blue-600'
+                }`}>
+                  {log.timestamp}
+                </span>
+                <span className={`flex-1 ${
+                  log.type === 'error' ? 'text-red-800' :
+                  log.type === 'success' ? 'text-green-800' :
+                  log.type === 'warning' ? 'text-yellow-800' :
+                  'text-blue-800'
+                }`}>
+                  [COMP] {log.message}
+                </span>
+              </div>
+            ))}
+            
+            {debugInfo.length === 0 && debugLogs.length === 0 && (
+              <div className="text-center py-4 text-[#373435]/60">
+                Nenhum log de debug disponível
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Processos da jornada selecionada */}
       {jornadaSelecionada && (
@@ -696,7 +856,7 @@ const PlanejamentoEstrategico = () => {
         </div>
       )}
         </div>
-      )}
+        )}
     </div>
   )
 }
