@@ -24,6 +24,42 @@ import {
   Activity
 } from 'lucide-react'
 
+// Estilos CSS para animações
+const styles = `
+  @keyframes drawCircle {
+    from {
+      stroke-dashoffset: 226.19;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  
+  @keyframes pulse-icon {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+  
+  .animate-draw-circle {
+    animation: drawCircle 2s ease-out forwards;
+  }
+  
+  .animate-pulse-icon {
+    animation: pulse-icon 2s infinite;
+  }
+`
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style')
+  styleSheet.textContent = styles
+  document.head.appendChild(styleSheet)
+}
+
 // Dados estáticos para ações rápidas e ferramentas
 const QUICK_ACTIONS = [
   {
@@ -165,51 +201,98 @@ const RECENT_ACTIVITIES_DEFAULT = [
 
 // Componente de estatística com loading para dados reais
 const SuperAdminStatCard = memo(({ stat, loading }) => {
-  const getColorClasses = (color, accent) => {
-    if (accent) {
-      return {
-        border: 'border-[#EBA500] hover:border-[#EBA500]/80',
-        value: 'text-[#373435]'
-      }
-    }
-    
-    const colorMap = {
-      primary: {
-        border: 'border-[#EBA500]/60 hover:border-[#EBA500]',
-        value: 'text-[#373435]'
-      },
-      blue: {
-        border: 'border-blue-400 hover:border-blue-600',
-        value: 'text-[#373435]'
-      },
-      success: {
-        border: 'border-success-400 hover:border-success-600',
-        value: 'text-[#373435]'
-      },
-      neutral: {
-        border: 'border-[#373435]/60 hover:border-[#373435]',
-        value: 'text-[#373435]'
-      }
-    }
-    return colorMap[color] || colorMap.primary
+  // Sempre usar cor amarela BG2 para todos os cards
+  const colors = {
+    bg: 'bg-gradient-to-br from-[#EBA500] to-[#EBA500]/80',
+    ring: 'ring-[#EBA500]/20',
+    progress: 'stroke-[#EBA500]',
+    icon: 'text-white',
+    value: 'text-[#373435]'
   }
   
-  const colors = getColorClasses(stat.color, stat.accent)
-  
   return (
-    <div className={`bg-white border-2 ${colors.border} rounded-3xl p-8 hover:shadow-lg transition-all duration-300 ${stat.accent ? 'ring-1 ring-[#EBA500]/10' : ''}`}>
-      <div>
-        {loading ? (
-          <>
-            <div className="w-20 h-10 bg-neutral-200 rounded-lg animate-pulse mb-3"></div>
-            <div className="w-24 h-4 bg-neutral-200 rounded animate-pulse"></div>
-          </>
-        ) : (
-          <>
-            <div className={`text-4xl font-bold ${colors.value} mb-3`}>{stat.value}</div>
-            <div className="text-sm font-semibold text-[#373435]">{stat.name}</div>
-          </>
-        )}
+    <div className="group">
+      <div className="flex flex-col items-center p-6 bg-white rounded-2xl border border-neutral-100 hover:border-neutral-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        
+        {/* Círculo Principal com Animação */}
+        <div className="relative mb-4">
+          {/* Círculo de Progresso Animado */}
+          <div className="relative w-20 h-20">
+            <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
+              {/* Círculo de fundo */}
+              <circle
+                cx="40"
+                cy="40"
+                r="36"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+                className="text-neutral-200"
+              />
+              {/* Círculo de progresso animado */}
+              <circle
+                cx="40"
+                cy="40"
+                r="36"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+                strokeDasharray={226.19}
+                strokeDashoffset={0}
+                className={`${colors.progress} transition-all duration-1000 ease-out`}
+                strokeLinecap="round"
+                style={{
+                  animation: 'drawCircle 2s ease-out forwards'
+                }}
+              />
+            </svg>
+            
+            {/* Ícone no centro do círculo */}
+            <div className={`absolute inset-0 flex items-center justify-center w-12 h-12 ${colors.bg} rounded-full m-auto shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                stat.icon && React.createElement(stat.icon, { className: `w-5 h-5 ${colors.icon}` })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Informações */}
+        <div className="text-center space-y-2">
+          {loading ? (
+            <>
+              <div className="w-16 h-8 bg-neutral-200 rounded animate-pulse mx-auto"></div>
+              <div className="w-20 h-4 bg-neutral-200 rounded animate-pulse mx-auto"></div>
+            </>
+          ) : (
+            <>
+              <div className={`text-2xl font-bold ${colors.value} group-hover:scale-105 transition-transform duration-300`}>
+                {stat.value}
+              </div>
+              <div className="text-sm font-medium text-neutral-600 px-2">
+                {stat.name}
+              </div>
+            </>
+          )}
+          
+          {/* Indicador de Tendência */}
+          {stat.trend && !loading && (
+            <div className="flex items-center justify-center space-x-1 mt-2">
+              {stat.trend === 'up' && <TrendingUp className="w-3 h-3 text-green-500" />}
+              {stat.trend === 'down' && <TrendingUp className="w-3 h-3 text-red-500 rotate-180" />}
+              {stat.change && (
+                <span className={`text-xs font-medium ${
+                  stat.trend === 'up' ? 'text-green-600' : 
+                  stat.trend === 'down' ? 'text-red-600' : 
+                  'text-neutral-500'
+                }`}>
+                  {stat.change}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -455,6 +538,14 @@ const DashboardPage = memo(() => {
         loading: stats.activeJourneys.loading
       },
       {
+        name: 'Total de Processos',
+        value: stats.totalProcesses.value,
+        change: stats.totalProcesses.change,
+        icon: BarChart3,
+        color: 'primary',
+        loading: stats.totalProcesses.loading
+      },
+      {
         name: 'Sistema Uptime',
         value: stats.systemUptime.value,
         change: stats.systemUptime.change,
@@ -467,7 +558,7 @@ const DashboardPage = memo(() => {
 
     return (
       <Layout sidebar={<Sidebar />}>
-        <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
+        <div className="min-h-screen bg-white">
           <div className="p-8 max-w-7xl mx-auto">
             
             {/* Saudação personalizada */}
@@ -504,14 +595,16 @@ const DashboardPage = memo(() => {
             )}
             
             {/* Estatísticas Principais com Dados Reais */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-              {adminStats.map((stat) => (
-                <SuperAdminStatCard 
-                  key={stat.name} 
-                  stat={stat} 
-                  loading={stat.loading || statsLoading} 
-                />
-              ))}
+            <div className="flex justify-center mb-12">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-6 max-w-5xl">
+                {adminStats.map((stat) => (
+                  <SuperAdminStatCard 
+                    key={stat.name} 
+                    stat={stat} 
+                    loading={stat.loading || statsLoading} 
+                  />
+                ))}
+              </div>
             </div>
 
             {/* Ações Principais - Destaque */}
@@ -594,7 +687,7 @@ const DashboardPage = memo(() => {
 
     return (
       <Layout sidebar={<Sidebar />}>
-        <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
+        <div className="min-h-screen bg-white">
           <div className="p-8 max-w-7xl mx-auto">
             
             {/* Saudação personalizada */}

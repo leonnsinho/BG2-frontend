@@ -187,18 +187,20 @@ const SuperAdminStatCard = memo(({ stat }) => {
   }
   
   return (
-    <div className={`bg-gradient-to-br ${stat.bgGradient} border border-white/50 backdrop-blur-sm rounded-2xl p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}>
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className={`w-12 h-12 ${stat.iconBg} rounded-xl flex items-center justify-center mb-4 shadow-md`}>
-            <stat.icon className="w-6 h-6 text-white" />
+    <div className="bg-white border border-neutral-200 rounded-lg p-4 hover:shadow-sm hover:border-neutral-300 transition-all duration-200">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center flex-shrink-0">
+            <stat.icon className="w-4 h-4 text-white" />
           </div>
-          <p className="text-sm font-medium text-neutral-600 mb-1">{stat.name}</p>
-          <p className="text-3xl font-black text-neutral-900 mb-2">{stat.value}</p>
-          <div className="flex items-center text-xs text-neutral-500">
-            {getTrendIcon(stat.trend)}
-            <span className="ml-1">{stat.change}</span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-neutral-600 truncate">{stat.name}</p>
+            <p className="text-xl font-bold text-neutral-900">{stat.value}</p>
           </div>
+        </div>
+        <div className="flex items-center space-x-1 flex-shrink-0">
+          {getTrendIcon(stat.trend)}
+          <span className="text-xs font-medium text-neutral-500">{stat.change}</span>
         </div>
       </div>
     </div>
@@ -313,7 +315,7 @@ export function DashboardPage() {
   if (isSuperAdmin) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-primary-50/30">
+        <div className="min-h-screen bg-white">
           <div className="space-y-8">
             
             {/* Header BG2 */}
@@ -360,7 +362,7 @@ export function DashboardPage() {
             </div>
 
             {/* Stats Grid BG2 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
               {SUPER_ADMIN_STATS.map((stat) => (
                 <SuperAdminStatCard key={stat.name} stat={stat} />
               ))}
@@ -381,7 +383,7 @@ export function DashboardPage() {
               {/* Recent Activities BG2 */}
               <div className="lg:col-span-2">
                 <div className="bg-white rounded-3xl shadow-sm border border-neutral-100 overflow-hidden">
-                  <div className="p-8 border-b border-neutral-100 bg-gradient-to-r from-neutral-50 to-white">
+                  <div className="p-8 border-b border-neutral-100 bg-white">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xl font-bold text-neutral-900 flex items-center">
                         <Activity className="w-6 h-6 mr-3 text-primary-500" />

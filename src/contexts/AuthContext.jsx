@@ -461,6 +461,12 @@ export function AuthProvider({ children }) {
       profile_user_companies: profile.user_companies?.length || 0
     })
     
+    // Super admin tem todas as permissões de role
+    if (profile.role === 'super_admin') {
+      console.log('✅ Super admin - tem todas as permissões de role')
+      return true
+    }
+    
     // Verificar role global
     if (roleArray.includes(profile.role)) {
       console.log('✅ Role encontrado globalmente:', profile.role)

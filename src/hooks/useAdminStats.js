@@ -6,6 +6,7 @@ export const useAdminStats = () => {
     activeCompanies: { value: '0', change: '+0 este mês', loading: true },
     totalUsers: { value: '0', change: '+0 esta semana', loading: true },
     activeJourneys: { value: '0', change: '+0 hoje', loading: true },
+    totalProcesses: { value: '0', change: '+0 esta semana', loading: true },
     systemUptime: { value: '99.9%', change: '30 dias', loading: false } // Estático por enquanto
   })
   const [loading, setLoading] = useState(true)
@@ -40,6 +41,13 @@ export const useAdminStats = () => {
 
         if (journeysError) throw journeysError
 
+        // Buscar total de processos
+        const { data: processesData, error: processesError } = await supabase
+          .from('processes')
+          .select('id, created_at')
+
+        if (processesError) throw processesError
+
         // Calcular mudanças (exemplo: últimos 30 dias para empresas, 7 dias para usuários, hoje para jornadas)
         const now = new Date()
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
@@ -61,6 +69,11 @@ export const useAdminStats = () => {
           new Date(journey.created_at) >= today
         ).length || 0
 
+        // Calcular processos criados na última semana
+        const newProcessesThisWeek = processesData?.filter(process => 
+          new Date(process.created_at) >= sevenDaysAgo
+        ).length || 0
+
         setStats({
           activeCompanies: {
             value: String(companiesData?.length || 0),
@@ -75,6 +88,11 @@ export const useAdminStats = () => {
           activeJourneys: {
             value: String(journeysData?.length || 0),
             change: newJourneysToday > 0 ? `+${newJourneysToday} hoje` : 'Sem mudanças hoje',
+            loading: false
+          },
+          totalProcesses: {
+            value: String(processesData?.length || 0),
+            change: newProcessesThisWeek > 0 ? `+${newProcessesThisWeek} esta semana` : 'Sem mudanças esta semana',
             loading: false
           },
           systemUptime: {
@@ -93,6 +111,7 @@ export const useAdminStats = () => {
           activeCompanies: { value: 'Erro', change: 'Não foi possível carregar', loading: false },
           totalUsers: { value: 'Erro', change: 'Não foi possível carregar', loading: false },
           activeJourneys: { value: 'Erro', change: 'Não foi possível carregar', loading: false },
+          totalProcesses: { value: 'Erro', change: 'Não foi possível carregar', loading: false },
           systemUptime: { value: '99.9%', change: '30 dias', loading: false }
         })
       } finally {
