@@ -154,26 +154,6 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         ]
       },
       {
-        name: 'Equipe',
-        icon: Users,
-        href: '/team',
-        children: [
-          { name: 'Membros', href: '/team/members' },
-          { name: 'Permissões', href: '/team/permissions' }
-        ]
-      },
-      {
-        name: 'Jornadas',
-        icon: Target,
-        href: '/jornadas',
-        children: getJourneyChildren(['estrategica', 'financeira', 'pessoas-cultura', 'receita-crm', 'operacional'])
-      },
-      {
-        name: 'Gestão de Processos',
-        icon: Settings,
-        href: '/process-management'
-      },
-      {
         name: 'Avaliação de Processos',
         icon: CheckSquare,
         href: '/journey-management/overview'

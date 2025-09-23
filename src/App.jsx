@@ -204,11 +204,11 @@ function AppRoutes() {
         }
       />
       
-      {/* Rotas de Administração (Super Admin) */}
+      {/* Rotas de Administração (Super Admin e Company Admin) */}
       <Route 
         path="/admin/users" 
         element={
-          <ProtectedRoute requiredRole={['super_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <UsersManagementPage />
           </ProtectedRoute>
         }

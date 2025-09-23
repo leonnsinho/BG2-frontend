@@ -81,7 +81,7 @@ const STATUS_COLORS = {
 }
 
 export default function UsersManagementPage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -94,10 +94,29 @@ export default function UsersManagementPage() {
   const [companies, setCompanies] = useState([])
   const [updating, setUpdating] = useState(false)
 
+  // Obter empresa do usuário atual se for company_admin
+  const getCurrentUserCompany = () => {
+    if (!profile?.user_companies) return null
+    return profile.user_companies.find(uc => uc.is_active)?.companies
+  }
+
+  // Verificar se o usuário atual é super_admin
+  const isSuperAdmin = () => {
+    return profile?.role === 'super_admin'
+  }
+
+  // Verificar se o usuário atual é company_admin
+  const isCompanyAdmin = () => {
+    return profile?.role === 'company_admin' || 
+           profile?.user_companies?.some(uc => uc.is_active && uc.role === 'company_admin')
+  }
+
   useEffect(() => {
-    loadUsers()
-    loadCompanies()
-  }, [])
+    if (profile) {
+      loadUsers()
+      loadCompanies()
+    }
+  }, [profile])
 
   const loadUsers = async () => {
     try {
@@ -130,7 +149,7 @@ export default function UsersManagementPage() {
       console.log('Exemplo de userCompanies:', userCompanies?.[0])
 
       // Combinar dados
-      const combinedUsers = profiles.map(profile => {
+      let combinedUsers = profiles.map(profile => {
         // Encontrar vinculação ativa do usuário - usar diferentes campos possíveis
         const possibleUserIds = [profile.user_id, profile.id].filter(Boolean)
         const userCompany = userCompanies?.find(uc => 
@@ -149,6 +168,27 @@ export default function UsersManagementPage() {
           last_sign_in_at: profile.last_login
         }
       })
+
+      // Filtrar usuários baseado no perfil do usuário atual
+      if (isCompanyAdmin() && !isSuperAdmin()) {
+        const currentUserCompany = getCurrentUserCompany()
+        if (currentUserCompany) {
+          console.log('🔍 Filtrando usuários para company_admin da empresa:', currentUserCompany.name)
+          // Filtrar apenas usuários da mesma empresa, excluindo o próprio usuário atual
+          combinedUsers = combinedUsers.filter(user => {
+            const isSameCompany = user.companies?.id === currentUserCompany.id
+            const isNotCurrentUser = user.id !== profile.id && user.user_id !== profile.id
+            return isSameCompany && isNotCurrentUser
+          })
+          console.log('📊 Usuários filtrados:', combinedUsers.length, 'de', profiles.length)
+        }
+      } else if (isSuperAdmin()) {
+        console.log('🔑 Super admin: mostrando todos os usuários, excluindo a si mesmo')
+        // Super admin vê todos, mas não a si mesmo
+        combinedUsers = combinedUsers.filter(user => {
+          return user.id !== profile.id && user.user_id !== profile.id
+        })
+      }
 
       setUsers(combinedUsers)
     } catch (error) {
@@ -369,6 +409,30 @@ export default function UsersManagementPage() {
 
   const getRoleInfo = (role) => ROLES[role] || ROLES.user
 
+  // Verificar permissão de acesso
+  if (!isSuperAdmin() && !isCompanyAdmin()) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+        <div className="text-center">
+          <div className="p-8 bg-white rounded-3xl shadow-sm border border-gray-200/50">
+            <Shield className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-[#373435] mb-2">Acesso Negado</h1>
+            <p className="text-gray-600 mb-6">
+              Você não tem permissão para acessar a gestão de usuários.
+            </p>
+            <Link
+              to="/"
+              className="inline-flex items-center px-6 py-3 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white rounded-2xl font-medium transition-all duration-200"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar ao Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
@@ -454,8 +518,17 @@ export default function UsersManagementPage() {
           <div className="px-8 py-6 border-b border-gray-100">
             <h2 className="text-xl font-semibold text-[#373435] flex items-center">
               <Users className="h-6 w-6 mr-3 text-[#EBA500]" />
-              Usuários do Sistema ({filteredUsers.length})
+              {isSuperAdmin() 
+                ? `Usuários do Sistema (${filteredUsers.length})`
+                : `Usuários da Empresa (${filteredUsers.length})`
+              }
             </h2>
+            {!isSuperAdmin() && getCurrentUserCompany() && (
+              <p className="text-sm text-gray-600 mt-2">
+                <Building2 className="h-4 w-4 inline mr-1" />
+                {getCurrentUserCompany().name}
+              </p>
+            )}
           </div>
           
           <div className="overflow-x-auto">
