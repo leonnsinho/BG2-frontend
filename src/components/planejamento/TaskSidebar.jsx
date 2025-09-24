@@ -13,13 +13,26 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
   const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
   const [tempTitle, setTempTitle] = useState('')
+  const [isVisible, setIsVisible] = useState(false)
+  
+  useEffect(() => {
+    if (isOpen && task) {
+      // Delay para trigger da animação
+      const timer = setTimeout(() => setIsVisible(true), 50)
+      return () => clearTimeout(timer)
+    } else {
+      setIsVisible(false)
+    }
+  }, [isOpen, task])
   
   useEffect(() => {
     if (task) {
       setTempTitle(task.texto || '')
-      loadComments()
+      if (isOpen) {
+        loadComments()
+      }
     }
-  }, [task])
+  }, [task, isOpen])
 
   const loadComments = async () => {
     if (!task?.id) return
@@ -113,23 +126,27 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
     })
   }
 
-  if (!isOpen || !task) return null
+  if (!task) return null
 
   return (
-    <>
+    <div className={`fixed inset-0 z-40 ${isOpen ? 'block' : 'hidden'}`}>
       {/* Overlay */}
       <div 
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity"
+        className={`absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-500 ease-out ${
+          isVisible ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={onClose}
       />
       
       {/* Sidebar */}
-      <div className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-out ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}>
+      <div 
+        className={`fixed top-0 right-0 h-full w-[500px] bg-white shadow-2xl z-10 rounded-l-[40px] transform transition-transform duration-500 ease-out ${
+          isVisible ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
         
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 rounded-tl-[40px]">
           <div className="flex items-center space-x-2">
             {getStatusIcon(task.status)}
             <span className="text-sm font-medium text-gray-600">
@@ -278,7 +295,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
               </div>
 
               {/* Add Comment */}
-              <div className="space-y-3">
+              <div className="space-y-3 rounded-bl-[40px] pb-6">
                 <textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
@@ -301,7 +318,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
