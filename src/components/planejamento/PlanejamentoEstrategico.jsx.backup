@@ -3,24 +3,19 @@ import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
 import { usePriorityProcesses } from '../../hooks/usePriorityProcesses2'
-import { useTasks } from '../../hooks/useTasks'
-import { supabase } from '../../services/supabase'
-import TaskSidebar from './TaskSidebar'
+import TaskModal from './TaskModal'
 
 const PlanejamentoEstrategico = () => {
   const { profile } = useAuth()
   const { getAccessibleJourneys } = useAuthPermissions()
   const { priorityProcesses, loading: processesLoading, error: processesError, getProcessesByJourney, debugLogs } = usePriorityProcesses()
-  const { getTasks, getCompanyUsers, createTask, updateTask, deleteTask, loading: tasksLoading } = useTasks()
   
   const [jornadas, setJornadas] = useState([])
   const [jornadaSelecionada, setJornadaSelecionada] = useState(null)
   const [processos, setProcessos] = useState([])
   const [tarefas, setTarefas] = useState({})
-  const [usuarios, setUsuarios] = useState([]) // Para mapear UUID -> nome
+  const [taskModal, setTaskModal] = useState({ isOpen: false, process: null, journey: null })
   const [editandoTarefa, setEditandoTarefa] = useState({ id: null, texto: '', responsavel: '' })
-  const [adicionandoTarefa, setAdicionandoTarefa] = useState({ processoId: null, titulo: '', descricao: '', responsavel: '', dataLimite: '', status: 'pending' })
-  const [sidebarTask, setSidebarTask] = useState({ isOpen: false, task: null })
   const [jornadasAtribuidas, setJornadasAtribuidas] = useState([])
   const [loading, setLoading] = useState(true)
   const [debugInfo, setDebugInfo] = useState([])
@@ -29,7 +24,7 @@ const PlanejamentoEstrategico = () => {
   const addDebugLog = (message, type = 'info') => {
     const timestamp = new Date().toLocaleTimeString()
     setDebugInfo(prev => [...prev.slice(-10), { // Manter apenas os últimos 10 logs
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: Date.now(),
       timestamp,
       message,
       type
@@ -71,31 +66,6 @@ const PlanejamentoEstrategico = () => {
     { id: 5, nome: 'Operacional', slug: 'operacional', cor: 'bg-red-500', corTexto: 'text-red-700' }
   ]
 
-  // Função para buscar jornadas reais do banco
-  const getJourneyUUIDBySlug = async (slug) => {
-    try {
-      console.log('🔍 Buscando UUID da jornada:', slug)
-      
-      const { data, error } = await supabase
-        .from('journeys')
-        .select('id, name, slug')
-        .eq('slug', slug)
-        .eq('is_active', true)
-        .single()
-
-      if (error) {
-        console.error('❌ Erro ao buscar jornada:', error)
-        return null
-      }
-
-      console.log('✅ Jornada encontrada:', data)
-      return data.id // Retornar apenas o UUID
-    } catch (error) {
-      console.error('❌ Erro ao buscar jornada:', error)
-      return null
-    }
-  }
-
   // Debug do estado dos processos
   useEffect(() => {
     if (processesError) {
@@ -117,6 +87,12 @@ const PlanejamentoEstrategico = () => {
       addDebugLog('🔍 Carregando processos prioritários da base de dados...', 'info')
     }
   }, [processesLoading, priorityProcesses, processesError])
+
+  // Usuários mock para responsáveis
+  const usuariosMock = [
+    'Ana Silva', 'João Santos', 'Maria Oliveira', 'Pedro Costa', 
+    'Laura Ferreira', 'Carlos Lima', 'Sofia Ribeiro', 'Miguel Torres'
+  ]
 
   useEffect(() => {
   const loadData = async () => {
@@ -167,57 +143,6 @@ const PlanejamentoEstrategico = () => {
       loadData()
     }
   }, [profile?.role]) // Apenas profile.role como dependência para evitar loops
-
-  // Função para carregar tarefas do banco de dados
-  const loadTasks = async () => {
-    try {
-      console.log('🔄 Carregando tarefas do banco de dados...')
-      const tasks = await getTasks()
-      
-      // Carregar usuários da empresa para mapear UUIDs para nomes
-      const users = await getCompanyUsers()
-      setUsuarios(users)
-      
-      // Organizar tarefas por processo_id
-      const tarefasOrganizadas = {}
-      tasks.forEach(task => {
-        if (!tarefasOrganizadas[task.process_id]) {
-          tarefasOrganizadas[task.process_id] = []
-        }
-        
-        // Encontrar nome do usuário responsável
-        const usuario = users.find(u => u.id === task.assigned_to)
-        const nomeResponsavel = usuario ? usuario.name : 'Usuário não encontrado'
-        
-        // Adaptar formato da tarefa para o que o componente espera
-        tarefasOrganizadas[task.process_id].push({
-          id: task.id,
-          texto: task.title,
-          responsavel: nomeResponsavel, // Nome do usuário
-          responsavelId: task.assigned_to, // UUID para edições
-          status: task.status || 'pendente',
-          descricao: task.description,
-          dataLimite: task.due_date,
-          criadoEm: task.created_at,
-          criadoPor: 'Sistema', // Pode ser melhorado depois
-          prioridade: task.priority || 3
-        })
-      })
-      
-      console.log('✅ Tarefas carregadas:', tarefasOrganizadas)
-      setTarefas(tarefasOrganizadas)
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar tarefas:', error)
-    }
-  }
-
-  // Carregar tarefas quando uma jornada for selecionada
-  useEffect(() => {
-    if (jornadaSelecionada) {
-      loadTasks()
-    }
-  }, [jornadaSelecionada])
 
   // Debug das jornadas quando o estado mudar
   useEffect(() => {
@@ -303,27 +228,45 @@ const PlanejamentoEstrategico = () => {
     // Log apenas quando há mudanças significativas
   }
 
-  const alterarStatusTarefa = async (processoId, tarefaId, novoStatus) => {
-    try {
-      console.log('🔄 Alterando status da tarefa:', tarefaId, 'para:', novoStatus)
-      
-      // Atualizar no banco de dados
-      await updateTask(tarefaId, { status: novoStatus })
-      
-      // Recarregar tarefas para atualizar a interface
-      await loadTasks()
-      
-    } catch (error) {
-      console.error('❌ Erro ao alterar status:', error)
-      alert('Erro ao alterar status da tarefa')
+  const adicionarTarefa = () => {
+    if (!novaTask.texto.trim() || !novaTask.responsavel || !novaTask.processo) return
+
+    const novaTarefa = {
+      id: Date.now(),
+      texto: novaTask.texto,
+      responsavel: novaTask.responsavel,
+      status: 'em_andamento',
+      criadoEm: new Date().toISOString(),
+      criadoPor: profile?.full_name || 'Gestor'
     }
+
+    const novasTarefas = {
+      ...tarefas,
+      [novaTask.processo]: [...(tarefas[novaTask.processo] || []), novaTarefa]
+    }
+
+    setTarefas(novasTarefas)
+    localStorage.setItem('tarefas_planejamento', JSON.stringify(novasTarefas))
+    
+    setNovaTask({ processo: null, texto: '', responsavel: '', visible: false })
+  }
+
+  const alterarStatusTarefa = (processoId, tarefaId, novoStatus) => {
+    const novasTarefas = {
+      ...tarefas,
+      [processoId]: tarefas[processoId].map(tarefa =>
+        tarefa.id === tarefaId ? { ...tarefa, status: novoStatus } : tarefa
+      )
+    }
+    setTarefas(novasTarefas)
+    localStorage.setItem('tarefas_planejamento', JSON.stringify(novasTarefas))
   }
 
   const iniciarEdicaoTarefa = (tarefa) => {
     setEditandoTarefa({
       id: tarefa.id,
       texto: tarefa.texto,
-      responsavel: tarefa.responsavelId || tarefa.responsavel // Usar UUID se disponível
+      responsavel: tarefa.responsavel
     })
   }
 
@@ -331,115 +274,37 @@ const PlanejamentoEstrategico = () => {
     setEditandoTarefa({ id: null, texto: '', responsavel: '' })
   }
 
-  const salvarEdicaoTarefa = async (processoId) => {
+  const salvarEdicaoTarefa = (processoId) => {
     if (!editandoTarefa.texto.trim() || !editandoTarefa.responsavel) return
 
-    try {
-      console.log('💾 Salvando edição da tarefa:', editandoTarefa.id)
-      
-      // Atualizar no banco de dados
-      await updateTask(editandoTarefa.id, {
-        title: editandoTarefa.texto,
-        assigned_to: editandoTarefa.responsavel
-      })
-      
-      // Recarregar tarefas e cancelar edição
-      await loadTasks()
-      cancelarEdicao()
-      
-    } catch (error) {
-      console.error('❌ Erro ao salvar edição:', error)
-      alert('Erro ao salvar edição da tarefa')
+    const novasTarefas = {
+      ...tarefas,
+      [processoId]: tarefas[processoId].map(tarefa =>
+        tarefa.id === editandoTarefa.id 
+          ? { 
+              ...tarefa, 
+              texto: editandoTarefa.texto,
+              responsavel: editandoTarefa.responsavel,
+              editadoEm: new Date().toISOString(),
+              editadoPor: profile?.full_name || 'Gestor'
+            } 
+          : tarefa
+      )
     }
+    setTarefas(novasTarefas)
+    localStorage.setItem('tarefas_planejamento', JSON.stringify(novasTarefas))
+    cancelarEdicao()
   }
 
-  const apagarTarefa = async (processoId, tarefaId) => {
+  const apagarTarefa = (processoId, tarefaId) => {
     if (!confirm('Tem certeza que deseja apagar esta tarefa?')) return
 
-    try {
-      console.log('🗑️ Apagando tarefa:', tarefaId)
-      
-      // Deletar do banco de dados
-      await deleteTask(tarefaId)
-      
-      // Recarregar tarefas para atualizar a interface
-      await loadTasks()
-      
-    } catch (error) {
-      console.error('❌ Erro ao apagar tarefa:', error)
-      alert('Erro ao apagar tarefa')
+    const novasTarefas = {
+      ...tarefas,
+      [processoId]: tarefas[processoId].filter(tarefa => tarefa.id !== tarefaId)
     }
-  }
-
-  // Funções para adicionar tarefa inline
-  const iniciarAdicaoTarefa = (processoId) => {
-    setAdicionandoTarefa({
-      processoId,
-      titulo: '',
-      descricao: '',
-      responsavel: '',
-      dataLimite: '',
-      status: 'pending'
-    })
-  }
-
-  const cancelarAdicaoTarefa = () => {
-    setAdicionandoTarefa({
-      processoId: null,
-      titulo: '',
-      descricao: '',
-      responsavel: '',
-      dataLimite: '',
-      status: 'pending'
-    })
-  }
-
-  const salvarNovaTarefa = async () => {
-    if (!adicionandoTarefa.titulo.trim() || !adicionandoTarefa.descricao.trim() || !adicionandoTarefa.responsavel) {
-      alert('Por favor, preencha todos os campos obrigatórios')
-      return
-    }
-
-    try {
-      console.log('💾 Salvando nova tarefa')
-      
-      // Buscar UUID da jornada
-      const journeyUUID = await getJourneyUUIDBySlug(jornadaSelecionada.slug)
-      
-      const taskData = {
-        title: adicionandoTarefa.titulo,
-        description: adicionandoTarefa.descricao,
-        assigned_to: adicionandoTarefa.responsavel,
-        process_id: adicionandoTarefa.processoId,
-        journey_id: journeyUUID,
-        status: adicionandoTarefa.status,
-        due_date: adicionandoTarefa.dataLimite || null,
-        priority: 3
-      }
-      
-      await createTask(taskData)
-      await loadTasks()
-      cancelarAdicaoTarefa()
-      
-    } catch (error) {
-      console.error('❌ Erro ao salvar nova tarefa:', error)
-      alert('Erro ao salvar tarefa')
-    }
-  }
-
-  // Funções para controlar o sidebar de tarefa
-  const abrirTaskSidebar = (tarefa) => {
-    setSidebarTask({
-      isOpen: true,
-      task: tarefa
-    })
-  }
-
-  const fecharTaskSidebar = () => {
-    setSidebarTask({
-      isOpen: false,
-      task: null
-    })
+    setTarefas(novasTarefas)
+    localStorage.setItem('tarefas_planejamento', JSON.stringify(novasTarefas))
   }
 
   const getStatusColor = (status) => {
@@ -469,6 +334,28 @@ const PlanejamentoEstrategico = () => {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  // Funções para controlar o modal de tarefas
+  const handleOpenTaskModal = (processo) => {
+    setTaskModal({
+      isOpen: true,
+      process: processo,
+      journey: jornadaSelecionada
+    })
+  }
+
+  const handleCloseTaskModal = () => {
+    setTaskModal({
+      isOpen: false,
+      process: null,
+      journey: null
+    })
+  }
+
+  const handleTaskSaved = (savedTask) => {
+    console.log('✅ Tarefa salva:', savedTask)
+    // Aqui podemos recarregar as tarefas ou fazer outras ações necessárias
   }
 
   const getJornadaIcon = (jornadaId) => {
@@ -787,7 +674,7 @@ const PlanejamentoEstrategico = () => {
                       
                       {/* Botão Adicionar Tarefa Elegante */}
                       <button
-                        onClick={() => iniciarAdicaoTarefa(processo.id)}
+                        onClick={() => handleOpenTaskModal(processo)}
                         className={`w-full ${coresJornada.iconBg} hover:opacity-90 text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs group-hover:scale-[1.02]`}
                       >
                         <Plus className="h-3 w-3 flex-shrink-0" />
@@ -796,99 +683,61 @@ const PlanejamentoEstrategico = () => {
                     </div>
                   </div>
 
-                {/* Lista de Tarefas Elegante */}
-                <div className="p-4 space-y-3 max-h-80 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 flex-1">
-                  {/* Formulário de Nova Tarefa Inline */}
-                  {adicionandoTarefa.processoId === processo.id && (
-                    <div className="border-2 border-dashed border-[#EBA500]/40 rounded-xl p-4 bg-[#EBA500]/10 backdrop-blur-sm">
-                      <div className="flex items-center space-x-2 mb-3">
+                {/* Formulário de Nova Tarefa Elegante */}
+                {novaTask.visible && novaTask.processo === processo.id && (
+                  <div className="relative bg-[#EBA500]/5 border-b border-[#373435]/10 flex-shrink-0">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-white/50"></div>
+                    
+                    <div className="relative z-10 p-4 space-y-3">
+                      <div className="flex items-center space-x-2 mb-2">
                         <div className="w-2 h-2 bg-[#EBA500] rounded-full"></div>
                         <span className="text-[#373435] font-semibold text-xs">Nova Tarefa</span>
                       </div>
                       
-                      <div className="space-y-3">
-                        {/* Título */}
-                        <input
-                          type="text"
-                          placeholder="Título da tarefa..."
-                          value={adicionandoTarefa.titulo}
-                          onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, titulo: e.target.value })}
-                          className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
-                        />
-                        
-                        {/* Descrição */}
-                        <textarea
-                          placeholder="Descrição da tarefa..."
-                          value={adicionandoTarefa.descricao}
-                          onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, descricao: e.target.value })}
-                          className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs resize-none bg-white/90 transition-all duration-300"
-                          rows="2"
-                        />
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                          {/* Responsável */}
-                          <select
-                            value={adicionandoTarefa.responsavel}
-                            onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, responsavel: e.target.value })}
-                            className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
-                          >
-                            <option value="">Selecionar responsável</option>
-                            {usuarios.map(usuario => (
-                              <option key={usuario.id} value={usuario.id}>
-                                {usuario.name}
-                              </option>
-                            ))}
-                          </select>
-                          
-                          {/* Status */}
-                          <select
-                            value={adicionandoTarefa.status}
-                            onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, status: e.target.value })}
-                            className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
-                          >
-                            <option value="pending">Pendente</option>
-                            <option value="in_progress">Em Andamento</option>
-                            <option value="completed">Concluída</option>
-                          </select>
-                        </div>
-                        
-                        {/* Data Limite */}
-                        <input
-                          type="date"
-                          placeholder="Data limite (opcional)"
-                          value={adicionandoTarefa.dataLimite}
-                          onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, dataLimite: e.target.value })}
-                          className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
-                        />
-                        
-                        {/* Botões */}
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={salvarNovaTarefa}
-                            disabled={tasksLoading}
-                            className="flex-1 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1 disabled:opacity-50"
-                          >
-                            <Save className="h-3 w-3" />
-                            <span>{tasksLoading ? 'Salvando...' : 'Salvar'}</span>
-                          </button>
-                          <button
-                            onClick={cancelarAdicaoTarefa}
-                            className="flex-1 bg-[#373435]/60 hover:bg-[#373435]/80 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1"
-                          >
-                            <X className="h-3 w-3" />
-                            <span>Cancelar</span>
-                          </button>
-                        </div>
+                      <textarea
+                        value={novaTask.texto}
+                        onChange={(e) => setNovaTask({ ...novaTask, texto: e.target.value })}
+                        placeholder="Descreva a tarefa..."
+                        className="w-full p-3 border-2 border-[#373435]/10 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs resize-none bg-white/90 backdrop-blur-sm transition-all duration-300 placeholder-[#373435]/40"
+                        rows="2"
+                      />
+                      
+                      <select
+                        value={novaTask.responsavel}
+                        onChange={(e) => setNovaTask({ ...novaTask, responsavel: e.target.value })}
+                        className="w-full p-3 border-2 border-[#373435]/10 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 backdrop-blur-sm transition-all duration-300"
+                      >
+                        <option value="">Selecionar responsável</option>
+                        {usuariosMock.map(usuario => (
+                          <option key={usuario} value={usuario}>{usuario}</option>
+                        ))}
+                      </select>
+                      
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={adicionarTarefa}
+                          className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1"
+                        >
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span className="truncate">Criar</span>
+                        </button>
+                        <button
+                          onClick={() => setNovaTask({ processo: null, texto: '', responsavel: '', visible: false })}
+                          className="flex-1 bg-[#373435]/60 hover:bg-[#373435]/80 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1"
+                        >
+                          <X className="h-3 w-3" />
+                          <span className="truncate">Cancelar</span>
+                        </button>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
+                {/* Lista de Tarefas Elegante */}
+                <div className="p-4 space-y-3 max-h-80 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 flex-1">
                   {(tarefas[processo.id] || []).map((tarefa) => (
-                    <div 
-                      key={tarefa.id} 
-                      className="group border border-[#373435]/10 hover:border-[#EBA500]/30 rounded-xl p-3 bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-md transition-all duration-300 cursor-pointer"
-                      onClick={() => editandoTarefa.id !== tarefa.id && abrirTaskSidebar(tarefa)}
-                    >
+                    <div key={tarefa.id} className="group border border-[#373435]/10 hover:border-[#EBA500]/30 rounded-xl p-3 bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-md transition-all duration-300">
                       {editandoTarefa.id === tarefa.id ? (
                         /* Modo de Edição Elegante */
                         <div className="space-y-3">
@@ -909,10 +758,8 @@ const PlanejamentoEstrategico = () => {
                             className="w-full p-2 border border-[#373435]/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
                           >
                             <option value="">Selecionar responsável</option>
-                            {usuarios.map(usuario => (
-                              <option key={usuario.id} value={usuario.id}>
-                                {usuario.name} - {usuario.email}
-                              </option>
+                            {usuariosMock.map(usuario => (
+                              <option key={usuario} value={usuario}>{usuario}</option>
                             ))}
                           </select>
                           <div className="flex space-x-2">
@@ -939,20 +786,14 @@ const PlanejamentoEstrategico = () => {
                             <p className="text-xs text-[#373435] font-medium flex-1 leading-relaxed break-words pr-2">{tarefa.texto}</p>
                             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0">
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  iniciarEdicaoTarefa(tarefa)
-                                }}
+                                onClick={() => iniciarEdicaoTarefa(tarefa)}
                                 className="p-1 text-blue-600 hover:bg-blue-100 rounded-lg transition-all duration-200 hover:scale-110"
                                 title="Editar tarefa"
                               >
                                 <Edit3 className="h-3 w-3" />
                               </button>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  apagarTarefa(processo.id, tarefa.id)
-                                }}
+                                onClick={() => apagarTarefa(processo.id, tarefa.id)}
                                 className="p-1 text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 hover:scale-110"
                                 title="Apagar tarefa"
                               >
@@ -984,11 +825,7 @@ const PlanejamentoEstrategico = () => {
                           <div className="flex items-center justify-between">
                             <select
                               value={tarefa.status}
-                              onChange={(e) => {
-                                e.stopPropagation()
-                                alterarStatusTarefa(processo.id, tarefa.id, e.target.value)
-                              }}
-                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => alterarStatusTarefa(processo.id, tarefa.id, e.target.value)}
                               className={`text-xs px-2 py-1 rounded-lg border font-semibold transition-all duration-300 ${getStatusColor(tarefa.status)} hover:shadow-md focus:ring-2 focus:ring-[#EBA500]/20`}
                             >
                               <option value="em_andamento">⏳ Em Andamento</option>
@@ -1037,15 +874,14 @@ const PlanejamentoEstrategico = () => {
           </div>
         </div>
       )}
-        </div>
-      )}
 
-      {/* Task Sidebar */}
-      <TaskSidebar
-        isOpen={sidebarTask.isOpen}
-        onClose={fecharTaskSidebar}
-        task={sidebarTask.task}
-        users={usuarios}
+      {/* Modal de Tarefas */}
+      <TaskModal
+        isOpen={taskModal.isOpen}
+        onClose={handleCloseTaskModal}
+        process={taskModal.process}
+        journey={taskModal.journey}
+        onSave={handleTaskSaved}
       />
     </div>
   )
