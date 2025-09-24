@@ -66,22 +66,56 @@ export const usePriorityProcesses = () => {
       for (const [mockId, slug] of Object.entries(mockJourneyMapping)) {
         const journey = journeys?.find(j => j.slug === slug)
         if (journey) {
-          const { data: processes } = await supabase
+          addDebugLog(`🔍 Buscando processos para jornada ${slug} (${journey.id})`)
+          
+          // Primeiro: buscar todos os processos da jornada
+          const { data: allProcesses, error: processError } = await supabase
             .from('processes')
             .select('id, name')
             .eq('journey_id', journey.id)
-            .limit(5)
           
-          if (processes && processes.length > 0) {
-            processesData[mockId] = processes.map((p, index) => ({
-              id: p.id,
-              nome: p.name,
-              prioridade: index + 1,
-              priority_score: 100 - (index * 10),
-              journey_id: journey.id
-            }))
+          if (processError) {
+            addDebugLog(`❌ Erro ao buscar processos: ${processError.message}`)
+            continue
+          }
+          
+          addDebugLog(`📊 Encontrados ${allProcesses?.length || 0} processos na jornada ${slug}`)
+          
+          if (allProcesses && allProcesses.length > 0) {
+            // Segundo: buscar avaliações desses processos
+            const processIds = allProcesses.map(p => p.id)
+            const { data: evaluations } = await supabase
+              .from('process_evaluations')
+              .select('process_id, priority_score')
+              .in('process_id', processIds)
+              .eq('company_id', companyId)
+              .order('priority_score', { ascending: false })
             
-            addDebugLog(`✅ Jornada ${mockId} (${slug}): ${processes.length} processos`)
+            addDebugLog(`📈 Encontradas ${evaluations?.length || 0} avaliações para jornada ${slug}`)
+            
+            // Terceiro: combinar processos com avaliações e ordenar
+            const processesWithScores = allProcesses.map(process => {
+              const evaluation = evaluations?.find(e => e.process_id === process.id)
+              return {
+                id: process.id,
+                name: process.name,
+                priority_score: evaluation?.priority_score || 0
+              }
+            }).sort((a, b) => b.priority_score - a.priority_score)
+            .slice(0, 5) // Top 5
+            
+            if (processesWithScores.length > 0) {
+              processesData[mockId] = processesWithScores.map((p, index) => ({
+                id: p.id,
+                nome: p.name,
+                prioridade: index + 1,
+                priority_score: p.priority_score,
+                journey_id: journey.id
+              }))
+              
+              addDebugLog(`✅ Jornada ${mockId} (${slug}): ${processesWithScores.length} processos prioritários`)
+              addDebugLog(`📋 Scores: ${processesWithScores.map(p => `${p.name}(${p.priority_score})`).join(', ')}`)
+            }
           }
         }
       }
