@@ -234,7 +234,8 @@ export const useTasks = () => {
           id,
           comment,
           created_at,
-          user_id
+          user_id,
+          attachments
         `)
         .eq('task_id', taskId)
         .order('created_at', { ascending: true })
@@ -259,7 +260,7 @@ export const useTasks = () => {
         }
       }
 
-      // Formatar comentários com dados do autor
+      // Formatar comentários com dados do autor e anexos
       const formattedComments = comments?.map(comment => {
         const user = usersData.find(u => u.id === comment.user_id)
         return {
@@ -267,7 +268,8 @@ export const useTasks = () => {
           content: comment.comment,
           created_at: comment.created_at,
           author_id: comment.user_id,
-          author_name: user?.full_name || user?.email || 'Usuário'
+          author_name: user?.full_name || user?.email || 'Usuário',
+          attachments: comment.attachments || []
         }
       }) || []
 
@@ -282,7 +284,7 @@ export const useTasks = () => {
   }
 
   // Adicionar comentário
-  const addComment = async (taskId, content) => {
+  const addComment = async (taskId, content, attachments = []) => {
     try {
       setLoading(true)
       
@@ -295,13 +297,14 @@ export const useTasks = () => {
       const newComment = {
         task_id: taskId,
         comment: content.trim(),
-        user_id: profile.id
+        user_id: profile.id,
+        attachments: attachments
       }
 
       const { data, error: createError } = await supabase
         .from('task_comments')
         .insert([newComment])
-        .select('id, comment, created_at, user_id')
+        .select('id, comment, created_at, user_id, attachments')
         .single()
 
       if (createError) {
@@ -315,7 +318,8 @@ export const useTasks = () => {
         content: data.comment,
         created_at: data.created_at,
         author_id: data.user_id,
-        author_name: profile?.full_name || profile?.email || 'Você'
+        author_name: profile?.full_name || profile?.email || 'Você',
+        attachments: data.attachments || []
       }
 
       console.log('✅ Comentário criado:', formattedComment)

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { X, User, Calendar, MessageCircle, Send, Edit3, Check, Clock, AlertCircle } from 'lucide-react'
+import { X, User, Calendar, MessageCircle, Send, Edit3, Check, Clock, AlertCircle, Paperclip } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useTasks } from '../../hooks/useTasks'
+import { useFileUpload } from '../../hooks/useFileUpload'
+import FileUploadArea from '../common/FileUploadArea'
+import AttachmentList from '../common/AttachmentList'
 
 const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
   const { profile } = useAuth()
   const { updateTask, getTaskComments, addComment } = useTasks()
+  const { uploadFile, uploading, uploadProgress } = useFileUpload()
   
   const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState('')
@@ -14,6 +18,8 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
   const [editingTitle, setEditingTitle] = useState(false)
   const [tempTitle, setTempTitle] = useState('')
   const [isVisible, setIsVisible] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState([])
+  const [showFileUpload, setShowFileUpload] = useState(false)
   
   useEffect(() => {
     if (isOpen && task) {
@@ -49,19 +55,46 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
   }
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return
+    if (!newComment.trim() && selectedFiles.length === 0) return
 
     setIsAddingComment(true)
     try {
-      const savedComment = await addComment(task.id, newComment)
+      let uploadedAttachments = []
+
+      // Upload dos arquivos se houver
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          try {
+            const fileInfo = await uploadFile(file, task.id)
+            uploadedAttachments.push(fileInfo)
+          } catch (error) {
+            console.error('Erro ao fazer upload do arquivo:', file.name, error)
+            alert(`Erro ao enviar arquivo: ${file.name}`)
+            return
+          }
+        }
+      }
+
+      // Adicionar comentário com anexos
+      const savedComment = await addComment(task.id, newComment || '📎 Anexo(s) enviado(s)', uploadedAttachments)
       setComments([...comments, savedComment])
       setNewComment('')
+      setSelectedFiles([])
+      setShowFileUpload(false)
     } catch (error) {
       console.error('Erro ao adicionar comentário:', error)
       alert('Erro ao adicionar comentário')
     } finally {
       setIsAddingComment(false)
     }
+  }
+
+  const handleFileSelect = (file) => {
+    setSelectedFiles(prev => [...prev, file])
+  }
+
+  const handleRemoveFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleUpdateTitle = async () => {
@@ -140,13 +173,13 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
       
       {/* Sidebar */}
       <div 
-        className={`fixed top-0 right-0 h-full w-[500px] bg-white shadow-2xl z-10 rounded-l-[40px] transform transition-transform duration-500 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[500px] bg-white shadow-2xl z-10 rounded-l-[40px] sm:rounded-l-[40px] transform transition-transform duration-500 ease-out ${
           isVisible ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        } flex flex-col`}
       >
         
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 rounded-tl-[40px]">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 rounded-tl-[40px] sm:rounded-tl-[40px] flex-shrink-0">
           <div className="flex items-center space-x-2">
             {getStatusIcon(task.status)}
             <span className="text-sm font-medium text-gray-600">
@@ -161,10 +194,10 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto min-h-0">
           {/* Title Section */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {editingTitle ? (
               <div className="space-y-3">
                 <input
@@ -179,7 +212,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
                       setEditingTitle(false)
                     }
                   }}
-                  className="w-full text-2xl font-bold text-gray-900 bg-transparent border-none outline-none focus:ring-0 p-0"
+                  className="w-full text-xl sm:text-2xl font-bold text-gray-900 bg-transparent border-none outline-none focus:ring-0 p-0"
                   autoFocus
                 />
                 <div className="flex items-center space-x-2 text-xs text-gray-500">
@@ -191,7 +224,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
                 className="group cursor-pointer"
                 onClick={() => setEditingTitle(true)}
               >
-                <h1 className="text-2xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors">
                   {task.texto}
                 </h1>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-1">
@@ -205,17 +238,17 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
           </div>
 
           {/* Task Details */}
-          <div className="px-6 space-y-4">
+          <div className="px-4 sm:px-6 space-y-4">
             {/* Responsible */}
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-[#EBA500]/20 rounded-lg flex items-center justify-center flex-shrink-0">
                 <User className="h-4 w-4 text-[#EBA500]" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="text-xs text-gray-500 uppercase font-semibold tracking-wide">
                   Responsável
                 </div>
-                <div className="text-sm font-medium text-gray-900">
+                <div className="text-sm font-medium text-gray-900 truncate">
                   {task.responsavel || 'Não atribuído'}
                 </div>
               </div>
@@ -226,11 +259,11 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Calendar className="h-4 w-4 text-blue-600" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="text-xs text-gray-500 uppercase font-semibold tracking-wide">
                   Data Limite
                 </div>
-                <div className="text-sm font-medium text-gray-900">
+                <div className="text-sm font-medium text-gray-900 truncate">
                   {formatDate(task.dataLimite)}
                 </div>
               </div>
@@ -250,8 +283,8 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
           </div>
 
           {/* Comments Section */}
-          <div className="mt-8 border-t border-gray-100">
-            <div className="p-6">
+          <div className="mt-6 sm:mt-8 border-t border-gray-100 pb-4 sm:pb-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center space-x-2 mb-4">
                 <MessageCircle className="h-5 w-5 text-gray-400" />
                 <h3 className="font-semibold text-gray-900">
@@ -276,44 +309,103 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
                   comments.map((comment) => (
                     <div key={comment.id} className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-[#EBA500]/20 rounded-full flex items-center justify-center">
+                        <div className="w-6 h-6 bg-[#EBA500]/20 rounded-full flex items-center justify-center flex-shrink-0">
                           <User className="h-3 w-3 text-[#EBA500]" />
                         </div>
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-gray-900 truncate">
                           {comment.author_name}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 flex-shrink-0">
                           {formatDateTime(comment.created_at)}
                         </span>
                       </div>
-                      <div className="ml-8 text-sm text-gray-700 bg-gray-50 rounded-lg p-3">
-                        {comment.content}
+                      <div className="ml-8">
+                        {comment.content && (
+                          <div className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 mb-2">
+                            {comment.content}
+                          </div>
+                        )}
+                        <AttachmentList attachments={comment.attachments} />
                       </div>
                     </div>
                   ))
                 )}
               </div>
+            </div>
+          </div>
+        </div>
 
-              {/* Add Comment */}
-              <div className="space-y-3 rounded-bl-[40px] pb-6">
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Adicione um comentário..."
-                  className="w-full p-3 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-colors"
-                  rows={3}
+        {/* Add Comment - Fixed at bottom */}
+        <div className="border-t border-gray-100 bg-white rounded-bl-[40px] sm:rounded-bl-[40px] flex-shrink-0">
+          <div className="p-4 sm:p-6 space-y-3">
+            {/* File Upload Area */}
+            {showFileUpload && (
+              <div className="border rounded-lg p-3 bg-gray-50">
+                <FileUploadArea
+                  onFileSelect={handleFileSelect}
+                  selectedFiles={selectedFiles}
+                  onRemoveFile={handleRemoveFile}
+                  disabled={isAddingComment}
+                  maxFiles={3}
                 />
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleAddComment}
-                    disabled={!newComment.trim() || isAddingComment}
-                    className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-lg text-sm font-medium hover:bg-[#EBA500]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <Send className="h-4 w-4" />
-                    <span>{isAddingComment ? 'Enviando...' : 'Comentar'}</span>
-                  </button>
+              </div>
+            )}
+
+            {/* Comment Input */}
+            <div className="relative">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Adicione um comentário..."
+                className="w-full p-3 pr-12 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-colors"
+                rows={3}
+              />
+              {/* Attach Files Button */}
+              <button
+                onClick={() => setShowFileUpload(!showFileUpload)}
+                className={`absolute bottom-3 right-3 p-1.5 rounded transition-colors ${
+                  showFileUpload 
+                    ? 'bg-[#EBA500] text-white' 
+                    : 'text-gray-400 hover:text-[#EBA500] hover:bg-[#EBA500]/10'
+                }`}
+                title="Anexar arquivos"
+              >
+                <Paperclip className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Progress bar durante upload */}
+            {uploading && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>Enviando arquivos...</span>
+                  <span>{Math.round(uploadProgress)}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1">
+                  <div 
+                    className="bg-[#EBA500] h-1 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
                 </div>
               </div>
+            )}
+
+            <div className="flex justify-between items-center">
+              <div className="text-xs text-gray-400">
+                {selectedFiles.length > 0 && (
+                  <span>{selectedFiles.length} arquivo(s) selecionado(s)</span>
+                )}
+              </div>
+              <button
+                onClick={handleAddComment}
+                disabled={(!newComment.trim() && selectedFiles.length === 0) || isAddingComment || uploading}
+                className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-lg text-sm font-medium hover:bg-[#EBA500]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Send className="h-4 w-4" />
+                <span>
+                  {isAddingComment || uploading ? 'Enviando...' : 'Comentar'}
+                </span>
+              </button>
             </div>
           </div>
         </div>
