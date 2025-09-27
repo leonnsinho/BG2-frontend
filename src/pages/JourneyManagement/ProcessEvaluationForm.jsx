@@ -166,8 +166,8 @@ const ProcessEvaluationForm = () => {
         [field]: value
       }
       
-      // Se "Não tem/não usa" for selecionado, resetar valores de priorização para valor mínimo
-      if (field === 'has_process' && value === false) {
+      // Se "Tem" for selecionado, resetar valores de priorização para valor mínimo (não entra no cálculo)
+      if (field === 'has_process' && value === true) {
         newData.business_importance = 1
         newData.implementation_urgency = 1
         newData.implementation_ease = 1
@@ -206,9 +206,9 @@ const ProcessEvaluationForm = () => {
         status: formData.status || 'pending',
         has_process: formData.has_process || false,
         observations: formData.observations || '',
-        business_importance: formData.has_process === false ? 1 : (formData.business_importance || 1),
-        implementation_urgency: formData.has_process === false ? 1 : (formData.implementation_urgency || 1),
-        implementation_ease: formData.has_process === false ? 1 : (formData.implementation_ease || 1),
+        business_importance: formData.has_process === true ? 1 : (formData.business_importance || 1),
+        implementation_urgency: formData.has_process === true ? 1 : (formData.implementation_urgency || 1),
+        implementation_ease: formData.has_process === true ? 1 : (formData.implementation_ease || 1),
         responsible_user_id: formData.responsible_user_id || null
       }
 
@@ -418,7 +418,7 @@ const ProcessEvaluationForm = () => {
                         onChange={() => handleInputChange('has_process', true)}
                         className="form-radio h-4 w-4 text-[#EBA500] focus:ring-[#EBA500]/30 border-gray-300"
                       />
-                      <span className="ml-2 text-sm text-[#373435]">Sim, tem/usa</span>
+                      <span className="ml-2 text-sm text-[#373435]">Tem</span>
                     </label>
                     <label className="inline-flex items-center">
                       <input
@@ -429,7 +429,7 @@ const ProcessEvaluationForm = () => {
                         onChange={() => handleInputChange('has_process', false)}
                         className="form-radio h-4 w-4 text-[#EBA500] focus:ring-[#EBA500]/30 border-gray-300"
                       />
-                      <span className="ml-2 text-sm text-[#373435]">Não tem/não usa</span>
+                      <span className="ml-2 text-sm text-[#373435]">Não tem</span>
                     </label>
                   </div>
                 </div>
@@ -454,15 +454,15 @@ const ProcessEvaluationForm = () => {
                     Avaliação de Prioridade
                   </h4>
                   
-                  {formData.has_process === false && (
-                    <div className="bg-orange-50 p-4 rounded-2xl border border-orange-200 mb-6">
-                      <p className="text-orange-800 text-sm">
-                        ⚠️ Como a empresa não tem/usa este processo, a avaliação de prioridade não é aplicável.
+                  {formData.has_process === true && (
+                    <div className="bg-green-50 p-4 rounded-2xl border border-green-200 mb-6">
+                      <p className="text-green-800 text-sm">
+                        ✅ Como a empresa já tem este processo amadurecido, não entra no cálculo de prioridade.
                       </p>
                     </div>
                   )}
                   
-                  <div className={`grid grid-cols-1 gap-8 ${formData.has_process === false ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <div className={`grid grid-cols-1 gap-8 ${formData.has_process === true ? 'opacity-50 pointer-events-none' : ''}`}>
                     {/* Importância para o Negócio */}
                     <div>
                       <label className="block text-sm font-semibold text-[#373435] mb-4">
@@ -480,19 +480,19 @@ const ProcessEvaluationForm = () => {
                             key={option.value}
                             type="button"
                             onClick={() => handleInputChange('business_importance', option.value)}
-                            disabled={formData.has_process === false}
+                            disabled={formData.has_process === true}
                             className={`flex flex-col items-center p-5 rounded-2xl border-2 transition-all duration-200 min-h-[90px] justify-center ${
-                              formData.business_importance === option.value && formData.has_process !== false
+                              formData.business_importance === option.value && formData.has_process !== true
                                 ? 'border-indigo-500 bg-gradient-to-r from-indigo-50 to-indigo-100/50 shadow-md'
-                                : formData.has_process === false
+                                : formData.has_process === true
                                 ? 'border-gray-200 bg-gray-100 cursor-not-allowed'
                                 : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
                             }`}
                           >
                             <span className={`text-xl font-bold mb-2 ${
-                              formData.business_importance === option.value && formData.has_process !== false
+                              formData.business_importance === option.value && formData.has_process !== true
                                 ? 'text-indigo-600' 
-                                : formData.has_process === false 
+                                : formData.has_process === true 
                                 ? 'text-gray-400' 
                                 : 'text-gray-600'
                             }`}>
@@ -525,19 +525,19 @@ const ProcessEvaluationForm = () => {
                             key={option.value}
                             type="button"
                             onClick={() => handleInputChange('implementation_urgency', option.value)}
-                            disabled={formData.has_process === false}
+                            disabled={formData.has_process === true}
                             className={`flex flex-col items-center p-5 rounded-2xl border-2 transition-all duration-200 min-h-[90px] justify-center ${
-                              formData.implementation_urgency === option.value && formData.has_process !== false
+                              formData.implementation_urgency === option.value && formData.has_process !== true
                                 ? 'border-orange-500 bg-gradient-to-r from-orange-50 to-orange-100/50 shadow-md'
-                                : formData.has_process === false
+                                : formData.has_process === true
                                 ? 'border-gray-200 bg-gray-100 cursor-not-allowed'
                                 : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
                             }`}
                           >
                             <span className={`text-xl font-bold mb-2 ${
-                              formData.implementation_urgency === option.value && formData.has_process !== false
+                              formData.implementation_urgency === option.value && formData.has_process !== true
                                 ? 'text-orange-600' 
-                                : formData.has_process === false 
+                                : formData.has_process === true 
                                 ? 'text-gray-400' 
                                 : 'text-gray-600'
                             }`}>
@@ -570,19 +570,19 @@ const ProcessEvaluationForm = () => {
                             key={option.value}
                             type="button"
                             onClick={() => handleInputChange('implementation_ease', option.value)}
-                            disabled={formData.has_process === false}
+                            disabled={formData.has_process === true}
                             className={`flex flex-col items-center p-5 rounded-2xl border-2 transition-all duration-200 min-h-[90px] justify-center ${
-                              formData.implementation_ease === option.value && formData.has_process !== false
+                              formData.implementation_ease === option.value && formData.has_process !== true
                                 ? 'border-green-500 bg-gradient-to-r from-green-50 to-green-100/50 shadow-md'
-                                : formData.has_process === false
+                                : formData.has_process === true
                                 ? 'border-gray-200 bg-gray-100 cursor-not-allowed'
                                 : 'border-gray-200 hover:border-green-300 hover:bg-gray-50'
                             }`}
                           >
                             <span className={`text-xl font-bold mb-2 ${
-                              formData.implementation_ease === option.value && formData.has_process !== false
+                              formData.implementation_ease === option.value && formData.has_process !== true
                                 ? 'text-green-600' 
-                                : formData.has_process === false 
+                                : formData.has_process === true 
                                 ? 'text-gray-400' 
                                 : 'text-gray-600'
                             }`}>
@@ -608,15 +608,12 @@ const ProcessEvaluationForm = () => {
                       </h5>
                     </div>
                     
-                    {formData.has_process === false ? (
+                    {formData.has_process === true ? (
                       <div className="text-center py-8">
-                        <div className="text-gray-500 text-lg mb-2">⚠️</div>
-                        <div className="text-gray-600 font-medium mb-2">Processo Não Utilizado</div>
-                        <div className="text-gray-500 text-sm mb-4">
-                          A empresa não utiliza este processo, portanto não há avaliação de prioridade.
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          Nota: Para fins de banco de dados, valores mínimos (1) serão salvos.
+                        <div className="text-green-500 text-lg mb-2">✅</div>
+                        <div className="text-green-600 font-medium mb-2">Processo Já Amadurecido</div>
+                        <div className="text-green-500 text-sm mb-4">
+                          A empresa já possui este processo amadurecido, não entra no cálculo de prioridade.
                         </div>
                       </div>
                     ) : (
@@ -674,7 +671,7 @@ const ProcessEvaluationForm = () => {
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
                               <div className="text-3xl font-bold text-blue-700 mb-1">
-                                {formData.has_process === false 
+                                {formData.has_process === true 
                                   ? 'N/A'
                                   : formData.business_importance && formData.implementation_urgency && formData.implementation_ease
                                   ? ((formData.business_importance * formData.implementation_urgency) / formData.implementation_ease).toFixed(1)

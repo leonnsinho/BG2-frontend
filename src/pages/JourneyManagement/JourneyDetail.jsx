@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
+import ProcessManagementModal from '../../components/processes/ProcessManagementModal'
 import { 
   Target, 
   Building2, 
@@ -18,7 +19,11 @@ import {
   TrendingUp,
   DollarSign,
   ArrowLeft,
-  Home
+  Home,
+  Plus,
+  Trash2,
+  MoreVertical,
+  EyeOff
 } from 'lucide-react'
 
 const JourneyDetail = () => {
@@ -38,6 +43,11 @@ const JourneyDetail = () => {
   const [usageFilter, setUsageFilter] = useState('all')
   const [selectedProcess, setSelectedProcess] = useState(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [showProcessModal, setShowProcessModal] = useState(false)
+  const [processToEdit, setProcessToEdit] = useState(null)
+  const [showDropdownMenu, setShowDropdownMenu] = useState(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
+  const [showToggleConfirm, setShowToggleConfirm] = useState(null)
 
   // Mapear dados das jornadas com cores BG2
   const journeysData = {
@@ -98,7 +108,6 @@ const JourneyDetail = () => {
     }
   }
 
-  // Carregar dados da jornada e processos
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -141,7 +150,6 @@ const JourneyDetail = () => {
           .from('processes')
           .select('*')
           .eq('journey_id', journeyDbData.id)
-          .eq('is_active', true)
           .order('order_index')
 
         if (processesError) throw processesError
@@ -212,9 +220,127 @@ const JourneyDetail = () => {
     fetchData()
   }, [journeySlug, companyId])
 
+  // Fechar menu dropdown quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showDropdownMenu && !event.target.closest('[data-dropdown]')) {
+        setShowDropdownMenu(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showDropdownMenu])
+
   // Obter status de avaliação para um processo
   const getProcessEvaluation = (processId) => {
     return evaluations.find(evaluation => evaluation.process_id === processId)
+  }
+
+  // Função para recarregar processos
+  const reloadProcesses = async () => {
+    try {
+      const { data: journeyDbData, error: journeyError } = await supabase
+        .from('journeys')
+        .select('id')
+        .eq('slug', journeySlug)
+        .single()
+
+      if (journeyError) return
+
+      const { data: processesData, error: processesError } = await supabase
+        .from('processes')
+        .select('*')
+        .eq('journey_id', journeyDbData.id)
+        .order('order_index')
+
+      if (!processesError) {
+        setProcesses(processesData || [])
+      }
+    } catch (error) {
+      console.error('Erro ao recarregar processos:', error)
+    }
+  }
+
+  // Abrir modal para adicionar processo
+  const handleAddProcess = () => {
+    setProcessToEdit(null)
+    setShowProcessModal(true)
+  }
+
+  // Abrir modal para editar processo
+  const handleEditProcess = (process) => {
+    setProcessToEdit(process)
+    setShowProcessModal(true)
+  }
+
+  // Callback quando processo é salvo
+  const handleProcessSaved = (savedProcess, action) => {
+    if (action === 'created') {
+      setProcesses(prev => [...prev, savedProcess])
+    } else if (action === 'updated') {
+      setProcesses(prev => prev.map(p => p.id === savedProcess.id ? savedProcess : p))
+    }
+    setShowProcessModal(false)
+    setProcessToEdit(null)
+  }
+
+  // Confirmar exclusão de processo
+  const handleDeleteProcess = async (processId) => {
+    if (!showDeleteConfirm) return
+
+    try {
+      const { error } = await supabase
+        .from('processes')
+        .update({ is_active: false })
+        .eq('id', processId)
+
+      if (error) throw error
+
+      // Remover da lista local
+      setProcesses(prev => prev.filter(p => p.id !== processId))
+      setShowDeleteConfirm(null)
+      
+      alert('Processo removido com sucesso!')
+    } catch (error) {
+      console.error('Erro ao remover processo:', error)
+      alert('Erro ao remover processo: ' + error.message)
+    }
+  }
+
+  // Alternar status do processo (ativar/desativar)
+  const handleToggleProcessStatus = async () => {
+    if (!showToggleConfirm) return
+
+    try {
+      const newStatus = !showToggleConfirm.is_active
+      
+      const { error } = await supabase
+        .from('processes')
+        .update({ 
+          is_active: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', showToggleConfirm.id)
+
+      if (error) throw error
+
+      // Atualizar na lista local
+      setProcesses(prev => prev.map(p => 
+        p.id === showToggleConfirm.id 
+          ? { ...p, is_active: newStatus }
+          : p
+      ))
+      
+      setShowToggleConfirm(null)
+      
+      alert(`Processo ${newStatus ? 'ativado' : 'desativado'} com sucesso!`)
+    } catch (error) {
+      console.error('Erro ao alterar status do processo:', error)
+      alert('Erro ao alterar status do processo: ' + error.message)
+    }
   }
 
   // Filtrar processos
@@ -399,12 +525,12 @@ const JourneyDetail = () => {
                 )}
               </div>
               
-              {evaluation.has_process === false ? (
-                <div className="bg-orange-50 p-6 rounded-2xl border border-orange-200 text-center">
-                  <div className="text-orange-500 text-2xl mb-3">⚠️</div>
-                  <h5 className="font-semibold text-orange-800 mb-2">Processo Não Utilizado</h5>
-                  <p className="text-sm text-orange-700">
-                    A empresa não utiliza este processo, portanto não há avaliação de prioridade aplicável.
+              {evaluation.has_process === true ? (
+                <div className="bg-green-50 p-6 rounded-2xl border border-green-200 text-center">
+                  <div className="text-green-500 text-2xl mb-3">✅</div>
+                  <h5 className="font-semibold text-green-800 mb-2">Processo Amadurecido</h5>
+                  <p className="text-sm text-green-700">
+                    A empresa já possui este processo amadurecido, não entra no cálculo de prioridade.
                   </p>
                 </div>
               ) : (
@@ -650,7 +776,7 @@ const JourneyDetail = () => {
               >
                 <option value="all">Todos os processos</option>
                 <option value="utilized">Utilizados</option>
-                <option value="not-utilized">Não utilizados</option>
+                <option value="not-utilized">Em processo</option>
               </select>
             </div>
           </div>
@@ -658,31 +784,17 @@ const JourneyDetail = () => {
 
         {/* Estatísticas */}
         {company && evaluations.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <BarChart3 className="h-8 w-8 text-red-500" />
+                  <EyeOff className="h-8 w-8 text-gray-500" />
                 </div>
                 <div className="ml-4">
                   <div className="text-lg font-medium text-[#373435]">
-                    {evaluations.filter(e => e.business_importance >= 4 && e.has_process !== false).length}
+                    {processes.filter(p => !p.is_active).length}
                   </div>
-                  <div className="text-sm text-gray-500">Alta Importância</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Clock className="h-8 w-8 text-orange-500" />
-                </div>
-                <div className="ml-4">
-                  <div className="text-lg font-medium text-[#373435]">
-                    {evaluations.filter(e => e.implementation_urgency >= 4 && e.has_process !== false).length}
-                  </div>
-                  <div className="text-sm text-gray-500">Urgentes</div>
+                  <div className="text-sm text-gray-500">Desativados</div>
                 </div>
               </div>
             </div>
@@ -694,9 +806,9 @@ const JourneyDetail = () => {
                 </div>
                 <div className="ml-4">
                   <div className="text-lg font-medium text-[#373435]">
-                    {evaluations.filter(e => e.implementation_ease >= 4 && e.has_process !== false).length}
+                    {evaluations.filter(e => e.has_process === true).length}
                   </div>
-                  <div className="text-sm text-gray-500">Fáceis</div>
+                  <div className="text-sm text-gray-500">Amadurecidos</div>
                 </div>
               </div>
             </div>
@@ -710,7 +822,7 @@ const JourneyDetail = () => {
                   <div className="text-lg font-medium text-[#373435]">
                     {evaluations.filter(e => e.has_process === false).length}
                   </div>
-                  <div className="text-sm text-gray-500">Não Utilizados</div>
+                  <div className="text-sm text-gray-500">Em Processo</div>
                 </div>
               </div>
             </div>
@@ -731,12 +843,75 @@ const JourneyDetail = () => {
           </div>
         )}
 
+        {/* Barra de Progresso de Amadurecimento */}
+        {company && processes.filter(p => p.is_active).length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6 mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-[#373435]">Progresso de Amadurecimento</h4>
+                  <p className="text-xs text-gray-500">Processos amadurecidos nesta jornada</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-blue-600">
+                  {processes.filter(p => p.is_active).length > 0 
+                    ? Math.round((evaluations.filter(e => e.has_process === true).length / processes.filter(p => p.is_active).length) * 100)
+                    : 0
+                  }%
+                </div>
+                <div className="text-xs text-gray-500">
+                  {evaluations.filter(e => e.has_process === true).length} de {processes.filter(p => p.is_active).length} processos
+                </div>
+              </div>
+            </div>
+            
+            {/* Barra de Progresso */}
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500 ease-out"
+                style={{ 
+                  width: `${processes.filter(p => p.is_active).length > 0 
+                    ? Math.round((evaluations.filter(e => e.has_process === true).length / processes.filter(p => p.is_active).length) * 100)
+                    : 0
+                  }%` 
+                }}
+              ></div>
+            </div>
+            
+            {/* Detalhamento */}
+            <div className="flex justify-between text-xs text-gray-600 mt-2">
+              <span>0%</span>
+              <span className="text-blue-600 font-medium">
+                {processes.filter(p => p.is_active).length > 0 
+                  ? `${Math.round((evaluations.filter(e => e.has_process === true).length / processes.filter(p => p.is_active).length) * 100)}% amadurecido`
+                  : 'Nenhum processo ativo'
+                }
+              </span>
+              <span>100%</span>
+            </div>
+          </div>
+        )}
+
         {/* Lista de Processos */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50">
-          <div className="px-8 py-6 border-b border-gray-100">
+          <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-[#373435]">
               Processos ({filteredProcesses.length} de {processes.length})
             </h3>
+            
+            {/* Botão Adicionar Processo */}
+            <button
+              onClick={handleAddProcess}
+              className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
+              title="Adicionar novo processo"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Adicionar Processo</span>
+            </button>
           </div>
           
           <div className="divide-y divide-gray-100">
@@ -749,39 +924,53 @@ const JourneyDetail = () => {
                 const evaluation = getProcessEvaluation(process.id)
                 
                 return (
-                  <div key={process.id} className="p-8 hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5 transition-all duration-200">
+                  <div key={process.id} className={`p-8 transition-all duration-200 ${
+                    process.is_active 
+                      ? 'hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5' 
+                      : 'bg-gray-50/30 opacity-60'
+                  }`}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-3">
-                          <span className="inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium bg-gradient-to-r from-[#373435]/10 to-[#373435]/20 text-[#373435] border border-[#373435]/20">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium border ${
+                            process.is_active
+                              ? 'bg-gradient-to-r from-[#373435]/10 to-[#373435]/20 text-[#373435] border-[#373435]/20'
+                              : 'bg-gray-200 text-gray-500 border-gray-300'
+                          }`}>
                             {journey.name.replace('Jornada ', '')}/{process.name}
                           </span>
                           
+                          {!process.is_active && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium bg-red-100 text-red-600 border border-red-200">
+                              Desativado
+                            </span>
+                          )}
+                          
                           {process.category && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium bg-gradient-to-r from-[#EBA500]/20 to-[#EBA500]/30 text-[#EBA500] border border-[#EBA500]/30">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium border ${
+                              process.is_active
+                                ? 'bg-gradient-to-r from-[#EBA500]/20 to-[#EBA500]/30 text-[#EBA500] border-[#EBA500]/30'
+                                : 'bg-gray-200 text-gray-500 border-gray-300'
+                            }`}>
                               {process.category}
                             </span>
                           )}
                         </div>
                         
-                        <h4 className="text-lg font-semibold text-[#373435] mb-3 flex items-center space-x-3">
+                        <h4 className={`text-lg font-semibold mb-3 flex items-center space-x-3 ${
+                          process.is_active ? 'text-[#373435]' : 'text-gray-500'
+                        }`}>
                           <span>{process.description || 'Descrição do processo'}</span>
-                          {evaluation && evaluation.has_process === false && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-2xl text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-300">
-                              <span className="mr-1">⚠️</span>
-                              Não Utilizado
-                            </span>
-                          )}
                         </h4>
                       </div>
                       
                       <div className="flex items-center space-x-4 ml-6">
                         {evaluation ? (
                           <div className="text-right">
-                            {evaluation.has_process === false ? (
-                              <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-orange-100 text-orange-800 border border-orange-300">
-                                <span className="mr-2">⚠️</span>
-                                Processo Não Utilizado
+                            {evaluation.has_process === true ? (
+                              <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-blue-100 text-blue-800 border border-blue-300">
+                                <span className="mr-2">🏆</span>
+                                Processo Amadurecido
                               </div>
                             ) : (
                               <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-green-100 text-green-800 border border-green-200">
@@ -800,16 +989,74 @@ const JourneyDetail = () => {
                         ) : null}
                         
                         <div className="flex space-x-2">
-                          <button
-                            onClick={() => showProcessDetails(process)}
-                            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-[#373435] text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
-                            title="Ver detalhes"
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span>Ver Detalhes</span>
-                          </button>
+                          {/* Botão de Ativar para processos inativos */}
+                          {!process.is_active && (
+                            <button
+                              onClick={() => setShowToggleConfirm(process)}
+                              className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
+                              title="Ativar processo"
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span>Ativar</span>
+                            </button>
+                          )}
                           
-                          {company && (
+                          {/* Botões de Admin - Menu dropdown apenas para processos ativos */}
+                          {process.is_active && (
+                            <div className="relative">
+                              <button
+                                onClick={() => setShowDropdownMenu(showDropdownMenu === process.id ? null : process.id)}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Mais opções"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </button>
+                              
+                              {/* Menu dropdown */}
+                              {showDropdownMenu === process.id && (
+                                <div 
+                                  data-dropdown
+                                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+                                >
+                                  <div className="py-1">
+                                    <button
+                                      onClick={() => {
+                                        handleEditProcess(process)
+                                        setShowDropdownMenu(null)
+                                      }}
+                                      className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                      <span>Editar Processo</span>
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setShowDropdownMenu(null)
+                                        setShowToggleConfirm(process)
+                                      }}
+                                      className="flex items-center space-x-2 px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 w-full text-left"
+                                    >
+                                      <EyeOff className="h-4 w-4" />
+                                      <span>Desativar Processo</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {process.is_active && (
+                            <button
+                              onClick={() => showProcessDetails(process)}
+                              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-[#373435] text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
+                              title="Ver detalhes"
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span>Ver Detalhes</span>
+                            </button>
+                          )}
+                          
+                          {company && process.is_active && (
                             <button
                               onClick={() => navigate(`/journey-management/${journeySlug}/${process.id}/evaluate?company=${companyId}`)}
                               className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
@@ -832,6 +1079,103 @@ const JourneyDetail = () => {
 
       {/* Modal de Detalhes */}
       {showDetailsModal && <ProcessDetailsModal />}
+      
+      {/* Modal de Adicionar/Editar Processo */}
+      {showProcessModal && (
+        <ProcessManagementModal
+          isOpen={showProcessModal}
+          onClose={() => {
+            setShowProcessModal(false)
+            setProcessToEdit(null)
+          }}
+          journey={{ ...journey, id: processes[0]?.journey_id, slug: journeySlug }}
+          company={company}
+          processToEdit={processToEdit}
+          onProcessSaved={handleProcessSaved}
+          existingProcesses={processes}
+        />
+      )}
+      
+      {/* Modal de Confirmação de Exclusão */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <Trash2 className="h-5 w-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Confirmar Remoção</h3>
+            </div>
+            
+            <p className="text-sm text-gray-600 mb-6">
+              Tem certeza que deseja remover este processo? Esta ação não pode ser desfeita.
+            </p>
+            
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDeleteProcess(showDeleteConfirm)}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Remover
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Ativar/Desativar */}
+      {showToggleConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className={`p-2 rounded-lg ${
+                showToggleConfirm.is_active ? 'bg-orange-100' : 'bg-green-100'
+              }`}>
+                {showToggleConfirm.is_active ? (
+                  <EyeOff className="h-5 w-5 text-orange-600" />
+                ) : (
+                  <Eye className="h-5 w-5 text-green-600" />
+                )}
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {showToggleConfirm.is_active ? 'Desativar Processo' : 'Ativar Processo'}
+              </h3>
+            </div>
+            
+            <p className="text-sm text-gray-600 mb-6">
+              {showToggleConfirm.is_active 
+                ? `Tem certeza que deseja desativar o processo "${showToggleConfirm.name}"? Ele ficará visível mas não poderá ser avaliado.`
+                : `Tem certeza que deseja ativar o processo "${showToggleConfirm.name}"? Ele voltará a ficar disponível para avaliação.`
+              }
+            </p>
+            
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={() => setShowToggleConfirm(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleToggleProcessStatus}
+                className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
+                  showToggleConfirm.is_active
+                    ? 'bg-orange-600 hover:bg-orange-700'
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {showToggleConfirm.is_active ? 'Desativar' : 'Ativar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
