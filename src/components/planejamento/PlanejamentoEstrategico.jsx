@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock } from 'lucide-react'
+import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock, CheckCircle, XCircle, Loader } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
 import { usePriorityProcesses } from '../../hooks/usePriorityProcesses2'
@@ -195,7 +195,7 @@ const PlanejamentoEstrategico = () => {
           texto: task.title,
           responsavel: nomeResponsavel, // Nome do usuário
           responsavelId: task.assigned_to, // UUID para edições
-          status: task.status || 'pendente',
+          status: task.status || 'pending', // Manter valores do banco: pending, in_progress, completed, cancelled
           descricao: task.description,
           dataLimite: task.due_date,
           criadoEm: task.created_at,
@@ -444,18 +444,55 @@ const PlanejamentoEstrategico = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'em_andamento': return 'bg-[#EBA500]/20 text-[#EBA500] border-[#EBA500]/40'
-      case 'concluido': return 'bg-green-100 text-green-700 border-green-300'
-      case 'atrasado': return 'bg-red-100 text-red-700 border-red-300'
-      default: return 'bg-[#373435]/10 text-[#373435] border-[#373435]/30'
+      case 'in_progress':
+      case 'em_andamento': 
+        return 'bg-blue-100 text-blue-800 border-blue-300'
+      case 'completed':
+      case 'concluido': 
+        return 'bg-green-100 text-green-800 border-green-300'
+      case 'cancelled':
+      case 'atrasado': 
+        return 'bg-red-100 text-red-800 border-red-300'
+      case 'pending':
+      case 'pendente':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+      default: return 'bg-gray-100 text-gray-800 border-gray-300'
+    }
+  }
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'pending':
+      case 'pendente':
+        return <Clock className="h-3.5 w-3.5" />
+      case 'in_progress':
+      case 'em_andamento':
+        return <Loader className="h-3.5 w-3.5" />
+      case 'completed':
+      case 'concluido':
+        return <CheckCircle className="h-3.5 w-3.5" />
+      case 'cancelled':
+      case 'atrasado':
+        return <XCircle className="h-3.5 w-3.5" />
+      default:
+        return <AlertTriangle className="h-3.5 w-3.5" />
     }
   }
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'em_andamento': return 'Em Andamento'
-      case 'concluido': return 'Concluído'
-      case 'atrasado': return 'Atrasado'
+      case 'in_progress':
+      case 'em_andamento': 
+        return 'Em Andamento'
+      case 'completed':
+      case 'concluido': 
+        return 'Concluído'
+      case 'cancelled':
+      case 'atrasado': 
+        return 'Cancelado'
+      case 'pending':
+      case 'pendente':
+        return 'Pendente'
       default: return 'Indefinido'
     }
   }
@@ -980,8 +1017,8 @@ const PlanejamentoEstrategico = () => {
                             </span>
                           </div>
                           
-                          {/* Status da Tarefa Elegante */}
-                          <div className="flex items-center justify-between">
+                          {/* Status da Tarefa - Badge com Ícone (igual Tarefas em Andamento) */}
+                          <div className="flex items-center gap-2 flex-wrap">
                             <select
                               value={tarefa.status}
                               onChange={(e) => {
@@ -989,11 +1026,19 @@ const PlanejamentoEstrategico = () => {
                                 alterarStatusTarefa(processo.id, tarefa.id, e.target.value)
                               }}
                               onClick={(e) => e.stopPropagation()}
-                              className={`text-xs px-2 py-1 rounded-lg border font-semibold transition-all duration-300 ${getStatusColor(tarefa.status)} hover:shadow-md focus:ring-2 focus:ring-[#EBA500]/20`}
+                              className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border cursor-pointer appearance-none ${getStatusColor(tarefa.status)} hover:shadow-md focus:ring-2 focus:ring-[#EBA500]/20 transition-all duration-300`}
+                              style={{
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                                backgroundPosition: 'right 0.5rem center',
+                                backgroundRepeat: 'no-repeat',
+                                backgroundSize: '1.25em 1.25em',
+                                paddingRight: '2rem'
+                              }}
                             >
-                              <option value="em_andamento">⏳ Em Andamento</option>
-                              <option value="concluido">✅ Concluído</option>
-                              <option value="atrasado">⚠️ Atrasado</option>
+                              <option value="pending">⏱️ Pendente</option>
+                              <option value="in_progress">⏳ Em Andamento</option>
+                              <option value="completed">✅ Concluído</option>
+                              <option value="cancelled">❌ Cancelado</option>
                             </select>
                           </div>
                         </div>
