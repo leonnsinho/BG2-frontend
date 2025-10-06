@@ -609,6 +609,27 @@ export function AuthProvider({ children }) {
               setProfile(userProfile)
             }
           }
+          
+          // Registrar login do usuário de forma assíncrona (não bloqueante)
+          // Usar setTimeout para não bloquear o carregamento do perfil
+          setTimeout(async () => {
+            try {
+              const userAgent = navigator.userAgent
+              const { error: loginError } = await supabase.rpc('register_user_login', {
+                p_user_id: currentUser.id,
+                p_ip_address: null,
+                p_user_agent: userAgent
+              })
+              
+              if (loginError) {
+                console.error('❌ Erro ao registrar login:', loginError)
+              } else {
+                console.log('✅ Login registrado com sucesso')
+              }
+            } catch (error) {
+              console.error('❌ Erro no registro de login:', error)
+            }
+          }, 100) // Delay de 100ms para não interferir no login
         } else if (!currentUser) {
           console.log('👋 Usuário fez logout')
           if (mounted) {
