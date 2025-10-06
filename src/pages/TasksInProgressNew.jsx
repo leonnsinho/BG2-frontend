@@ -45,34 +45,97 @@ function TasksInProgressNew() {
   const fetchTasks = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      
+      // Primeiro, buscar todas as tarefas
+      const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          journey:journeys(id, name),
-          process:processes(id, name),
-          assigned_to_user:profiles!tasks_assigned_to_fkey(id, name),
-          created_by_user:profiles!tasks_created_by_fkey(id, name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (tasksError) {
+        console.error('Erro ao carregar tarefas:', tasksError)
+        setTasks([])
+        return
+      }
 
-      // Buscar contagem de comentários para cada tarefa
-      const tasksWithComments = await Promise.all(
-        (data || []).map(async (task) => {
+      if (!tasksData || tasksData.length === 0) {
+        setTasks([])
+        return
+      }
+
+      // Buscar dados relacionados separadamente
+      const enrichedTasks = await Promise.all(
+        tasksData.map(async (task) => {
+          let enrichedTask = { ...task }
+
+          // Buscar jornada
+          if (task.journey_id) {
+            const { data: journeyData } = await supabase
+              .from('journeys')
+              .select('id, name')
+              .eq('id', task.journey_id)
+              .single()
+            
+            if (journeyData) {
+              enrichedTask.journey = journeyData
+            }
+          }
+
+          // Buscar processo
+          if (task.process_id) {
+            const { data: processData } = await supabase
+              .from('processes')
+              .select('id, name')
+              .eq('id', task.process_id)
+              .single()
+            
+            if (processData) {
+              enrichedTask.process = processData
+            }
+          }
+
+          // Buscar usuário responsável
+          if (task.assigned_to) {
+            const { data: userData } = await supabase
+              .from('profiles')
+              .select('id, name')
+              .eq('id', task.assigned_to)
+              .single()
+            
+            if (userData) {
+              enrichedTask.assigned_to_user = userData
+            }
+          }
+
+          // Buscar criador
+          if (task.created_by) {
+            const { data: creatorData } = await supabase
+              .from('profiles')
+              .select('id, name')
+              .eq('id', task.created_by)
+              .single()
+            
+            if (creatorData) {
+              enrichedTask.created_by_user = creatorData
+            }
+          }
+
+          // Buscar contagem de comentários
           const { count } = await supabase
             .from('task_comments')
             .select('*', { count: 'exact', head: true })
             .eq('task_id', task.id)
 
-          return { ...task, comments_count: count || 0 }
+          enrichedTask.comments_count = count || 0
+
+          return enrichedTask
         })
       )
 
-      setTasks(tasksWithComments)
+      setTasks(enrichedTasks)
     } catch (error) {
       console.error('Erro ao carregar tarefas:', error)
+      setTasks([])
     } finally {
       setLoading(false)
     }
@@ -85,10 +148,16 @@ function TasksInProgressNew() {
         .select('id, name')
         .order('name')
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro ao carregar usuários:', error)
+        setAvailableUsers([])
+        return
+      }
+      
       setAvailableUsers(data || [])
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
+      setAvailableUsers([])
     }
   }
 
