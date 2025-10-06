@@ -6,9 +6,19 @@ import { cn } from '../../utils/cn'
 
 const Layout = ({ children, className }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // Carregar preferência do localStorage
+    const saved = localStorage.getItem('sidebarCollapsed')
+    return saved ? JSON.parse(saved) : false
+  })
+
+  // Salvar preferência no localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed))
+  }, [sidebarCollapsed])
 
   // Fechar sidebar ao redimensionar para desktop
-  React.useEffect(() => {
+  useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
         setSidebarOpen(false)
@@ -24,7 +34,9 @@ const Layout = ({ children, className }) => {
       {/* Sidebar */}
       <Sidebar 
         isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
       {/* Botão flutuante para abrir sidebar no mobile */}
@@ -38,7 +50,10 @@ const Layout = ({ children, className }) => {
       </Button>
 
       {/* Main Content */}
-      <div className="flex flex-col lg:ml-72">
+      <div className={cn(
+        "flex flex-col transition-all duration-300",
+        sidebarCollapsed ? "lg:ml-20" : "lg:ml-72"
+      )}>
         {/* Page Content */}
         <main className={cn(
           "flex-1 p-4 sm:p-6 lg:p-8 lg:pt-6",

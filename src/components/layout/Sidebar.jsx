@@ -24,9 +24,50 @@ import {
   LogOut,
   Calendar,
   Kanban,
-  CheckSquare
+  CheckSquare,
+  ChevronRight,
+  Menu
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
+
+// Injetar animação CSS para o dropdown
+if (typeof document !== 'undefined' && !document.getElementById('sidebar-dropdown-animation')) {
+  const style = document.createElement('style')
+  style.id = 'sidebar-dropdown-animation'
+  style.textContent = `
+    @keyframes dropdown-open {
+      0% {
+        opacity: 0;
+        transform: translateY(-50%) translateX(-10px) scale(0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0) scale(1);
+      }
+    }
+    
+    @keyframes dropdown-close {
+      0% {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-50%) translateX(-10px) scale(0.95);
+      }
+    }
+    
+    .animate-dropdown-open {
+      animation: dropdown-open 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
+    .animate-dropdown-close {
+      animation: dropdown-close 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  `
+  document.head.appendChild(style)
+}
+
 
 // Função para obter itens de navegação baseados no perfil do usuário
 const getNavigationItems = (profile, permissions, accessibleJourneys = [], journeysLoading = true) => {
@@ -304,7 +345,7 @@ const getJourneyDisplayName = (journey) => {
   return journeyNames[journey] || journey
 }
 
-const Sidebar = ({ isOpen, onClose, className }) => {
+const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) => {
   const location = useLocation()
   const { profile, signOut } = useAuth()
   const { getAccessibleJourneys } = useAuthPermissions()
@@ -313,6 +354,9 @@ const Sidebar = ({ isOpen, onClose, className }) => {
   const [accessibleJourneys, setAccessibleJourneys] = React.useState([])
   const [journeysLoading, setJourneysLoading] = React.useState(true)
   const [journeysLoaded, setJourneysLoaded] = React.useState(false)
+  const [hoveredItem, setHoveredItem] = React.useState(null)
+  const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0 })
+  const [isClosing, setIsClosing] = React.useState(false)
 
   // Carregar jornadas acessíveis sempre que o perfil mudar (sistema simplificado)
   React.useEffect(() => {
@@ -401,6 +445,56 @@ const Sidebar = ({ isOpen, onClose, className }) => {
     return children?.some(child => location.pathname === child.href)
   }
 
+  // Handler para abrir dropdown quando colapsado
+  const handleItemClick = (event, item) => {
+    if (isCollapsed && item.children) {
+      event.preventDefault()
+      const rect = event.currentTarget.getBoundingClientRect()
+      
+      // Usar coordenadas absolutas da viewport
+      setDropdownPosition({
+        top: rect.top + (rect.height / 2), // Centro vertical do botão
+        left: rect.right + 12 // Logo após o botão com espaço para seta
+      })
+      
+      if (hoveredItem === item.name) {
+        // Fechar com animação
+        setIsClosing(true)
+        setTimeout(() => {
+          setHoveredItem(null)
+          setIsClosing(false)
+        }, 200)
+      } else {
+        // Abrir
+        setIsClosing(false)
+        setHoveredItem(item.name)
+      }
+    } else if (item.children) {
+      toggleExpanded(item.name)
+    }
+  }
+
+  // Função para fechar dropdown com animação
+  const closeDropdown = () => {
+    setIsClosing(true)
+    setTimeout(() => {
+      setHoveredItem(null)
+      setIsClosing(false)
+    }, 200)
+  }
+
+  // Fechar dropdown ao clicar fora
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (hoveredItem && !event.target.closest('[data-dropdown]') && !event.target.closest('[data-dropdown-trigger]')) {
+        closeDropdown()
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [hoveredItem])
+
   return (
     <>
       {/* Overlay para mobile */}
@@ -414,29 +508,55 @@ const Sidebar = ({ isOpen, onClose, className }) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 w-72 h-full bg-neutral-500 border-r border-neutral-600 rounded-r-[3rem] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:z-10 flex flex-col",
-          isOpen ? "translate-x-0" : "-translate-x-full",
+          "fixed top-0 left-0 z-40 h-full bg-neutral-500 border-r border-neutral-600 rounded-r-[3rem] transform transition-all duration-300 ease-in-out lg:z-10 flex flex-col",
+          // Mobile: slide in/out
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          // Desktop: collapse/expand
+          isCollapsed ? "lg:w-20" : "lg:w-72",
+          "w-72", // Mobile sempre full width
           className
         )}
       >
         {/* Header da Sidebar com Logo e Badge de Role */}
-        <div className="flex items-center justify-between h-24 px-6 flex-shrink-0 pt-4">
-          <div className="flex flex-col items-center justify-center w-full">
-            <img 
-              src="/LOGO 2.png" 
-              alt="BG2 Logo" 
-              className="h-12 w-auto object-contain mb-2"
-            />
-            {/* Badge do tipo de gestor */}
-            {permissions.isAnyManager() && (
-              <div className="bg-primary-500 text-background px-2 py-1 rounded-full text-xs font-semibold">
-                {getManagerBadgeText(permissions)}
+        <div className="flex items-center justify-between h-24 flex-shrink-0 pt-4 relative">
+          {isCollapsed ? (
+            <div className="flex items-center justify-center w-full px-6">
+              {/* Ícone principal - centralizado */}
+              <div className="bg-primary-500 rounded-full p-2">
+                <Building2 className="h-6 w-6 text-background" />
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col items-center justify-center w-full px-6">
+                <img 
+                  src="/LOGO 2.png" 
+                  alt="BG2 Logo" 
+                  className="h-12 w-auto object-contain mb-2"
+                />
+                {/* Badge do tipo de gestor */}
+                {permissions.isAnyManager() && (
+                  <div className="bg-primary-500 text-background px-2 py-1 rounded-full text-xs font-semibold">
+                    {getManagerBadgeText(permissions)}
+                  </div>
+                )}
+              </div>
+              
+              {/* Botão de toggle para desktop - no canto quando expandido */}
+              <button
+                onClick={onToggleCollapse}
+                className="hidden lg:block p-2 rounded-md hover:bg-neutral-600 text-background absolute right-4 top-4 transition-transform duration-300"
+                title="Colapsar sidebar"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            </>
+          )}
+          
+          {/* Botão de fechar para mobile */}
           <button
             onClick={onClose}
-            className="lg:hidden p-1 rounded-md hover:bg-neutral-600 text-background absolute right-4"
+            className="lg:hidden p-1 rounded-md hover:bg-neutral-600 text-background absolute right-4 top-4"
           >
             <X className="h-5 w-5" />
           </button>
@@ -449,7 +569,7 @@ const Sidebar = ({ isOpen, onClose, className }) => {
           <div className="mb-3">
             
             {/* Mensagem para usuários não vinculados */}
-            {permissions.isUnlinkedUser() && (
+            {permissions.isUnlinkedUser() && !isCollapsed && (
               <div className="px-3 mb-3">
                 <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3">
                   <div className="flex items-center mb-2">
@@ -465,7 +585,7 @@ const Sidebar = ({ isOpen, onClose, className }) => {
             )}
 
             {/* Indicador de jornadas acessíveis para gestores específicos */}
-            {permissions.isAnyManager() && !permissions.isGestor() && !permissions.isSuperAdmin() && !permissions.isUnlinkedUser() && (
+            {permissions.isAnyManager() && !permissions.isGestor() && !permissions.isSuperAdmin() && !permissions.isUnlinkedUser() && !isCollapsed && (
               <div className="px-3 mb-3">
                 <div className="bg-neutral-600 rounded-lg p-3 border border-neutral-500">
                   <div className="flex items-center mb-2">
@@ -497,27 +617,38 @@ const Sidebar = ({ isOpen, onClose, className }) => {
             {navigationItems.map((item) => {
               const isActive = isCurrentPath(item.href) || hasActiveChild(item.children)
               const isDashboard = item.name === 'Dashboard'
+              const ItemIcon = item.icon || ChevronLeft
+              const isDropdownOpen = hoveredItem === item.name
               
               return (
                 <div key={item.name}>
                   {item.children ? (
                     <button
-                      onClick={() => toggleExpanded(item.name)}
+                      onClick={(e) => handleItemClick(e, item)}
+                      data-dropdown-trigger
                       className={cn(
-                        "w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-left",
+                        "w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
                         "hover:scale-[1.02] active:scale-[0.98]",
-                        isActive
+                        isActive || isDropdownOpen
                           ? "bg-primary-500 text-background shadow-lg"
-                          : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md"
+                          : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md",
+                        isCollapsed ? "justify-center" : "text-left"
                       )}
+                      title={isCollapsed ? item.name : undefined}
                     >
-                      <ChevronLeft
-                        className={cn(
-                          "mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-300",
-                          expandedItems.includes(item.name) ? "rotate-90" : ""
-                        )}
-                      />
-                      <span className="flex-1">{item.name}</span>
+                      {isCollapsed ? (
+                        <ItemIcon className="h-5 w-5 flex-shrink-0" />
+                      ) : (
+                        <>
+                          <ChevronLeft
+                            className={cn(
+                              "mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-300",
+                              expandedItems.includes(item.name) ? "rotate-90" : ""
+                            )}
+                          />
+                          <span className="flex-1 text-left">{item.name}</span>
+                        </>
+                      )}
                     </button>
                   ) : (
                     <Link
@@ -527,28 +658,36 @@ const Sidebar = ({ isOpen, onClose, className }) => {
                         "hover:scale-[1.02] active:scale-[0.98]",
                         isActive
                           ? "bg-primary-500 text-background shadow-lg"
-                          : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md"
+                          : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md",
+                        isCollapsed ? "justify-center" : "text-left"
                       )}
                       onClick={onClose}
+                      title={isCollapsed ? item.name : undefined}
                     >
-                      {isDashboard ? (
-                        <Home
-                          className={cn(
-                            "mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200",
-                            isActive ? "text-background" : "text-neutral-300 group-hover:text-background"
-                          )}
-                        />
+                      {isCollapsed ? (
+                        <ItemIcon className="h-5 w-5 flex-shrink-0" />
                       ) : (
-                        <ChevronLeft
-                          className="mr-3 h-5 w-5 flex-shrink-0 text-neutral-400 transition-colors duration-200"
-                        />
+                        <>
+                          {isDashboard ? (
+                            <Home
+                              className={cn(
+                                "mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200",
+                                isActive ? "text-background" : "text-neutral-300 group-hover:text-background"
+                              )}
+                            />
+                          ) : (
+                            <ChevronLeft
+                              className="mr-3 h-5 w-5 flex-shrink-0 text-neutral-400 transition-colors duration-200"
+                            />
+                          )}
+                          <span className="flex-1 text-left">{item.name}</span>
+                        </>
                       )}
-                      <span className="flex-1">{item.name}</span>
                     </Link>
                   )}
 
-                  {/* Subitens com animação suave */}
-                  {item.children && (
+                  {/* Subitens com animação suave - apenas quando não colapsado */}
+                  {item.children && !isCollapsed && (
                     <div 
                       className={cn(
                         "overflow-hidden transition-all duration-300 ease-in-out",
@@ -563,7 +702,7 @@ const Sidebar = ({ isOpen, onClose, className }) => {
                             key={subItem.name}
                             to={subItem.href}
                             className={cn(
-                              "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                              "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-left",
                               "hover:scale-[1.02] active:scale-[0.98]",
                               isCurrentPath(subItem.href)
                                 ? "text-background bg-primary-500 shadow-lg"
@@ -577,7 +716,7 @@ const Sidebar = ({ isOpen, onClose, className }) => {
                                 isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
                               )}
                             ></span>
-                            {subItem.name}
+                            <span className="flex-1 text-left">{subItem.name}</span>
                           </Link>
                         ))}
                       </div>
@@ -591,18 +730,36 @@ const Sidebar = ({ isOpen, onClose, className }) => {
 
         {/* Footer da Sidebar */}
         <div className="flex-shrink-0 p-4 border-t border-neutral-600 space-y-2">
+          {/* Botão de toggle para desktop quando colapsado - acima do botão Sair */}
+          {isCollapsed && (
+            <button
+              onClick={onToggleCollapse}
+              className="hidden lg:flex items-center justify-center w-full p-2 rounded-md hover:bg-neutral-600 text-background transition-transform duration-300"
+              title="Expandir sidebar"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          )}
+          
           {/* Botão de Logout */}
           <button
             onClick={async () => {
               await signOut()
               onClose()
             }}
-            className="group flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-neutral-100 hover:text-background hover:bg-red-500/80 hover:shadow-md active:scale-[0.98]"
+            className={cn(
+              "group flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-neutral-100 hover:text-background hover:bg-red-500/80 hover:shadow-md active:scale-[0.98]",
+              isCollapsed ? "justify-center" : "text-left"
+            )}
+            title={isCollapsed ? "Sair" : undefined}
           >
             <LogOut 
-              className="mr-3 h-5 w-5 text-neutral-300 group-hover:text-background transition-colors duration-200"
+              className={cn(
+                "h-5 w-5 text-neutral-300 group-hover:text-background transition-colors duration-200",
+                !isCollapsed && "mr-3"
+              )}
             />
-            Sair
+            {!isCollapsed && <span className="flex-1 text-left">Sair</span>}
           </button>
 
           {/* Link de Configurações do Perfil */}
@@ -613,20 +770,97 @@ const Sidebar = ({ isOpen, onClose, className }) => {
               "hover:scale-[1.02] active:scale-[0.98]",
               isCurrentPath('/settings')
                 ? "bg-primary-500 text-background shadow-lg"
-                : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md"
+                : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md",
+              isCollapsed ? "justify-center" : "text-left"
             )}
             onClick={onClose}
+            title={isCollapsed ? "Configurações" : undefined}
           >
             <Settings 
               className={cn(
-                "mr-3 h-5 w-5 transition-colors duration-200",
-                isCurrentPath('/settings') ? "text-background" : "text-neutral-300 group-hover:text-background"
+                "h-5 w-5 transition-colors duration-200",
+                isCurrentPath('/settings') ? "text-background" : "text-neutral-300 group-hover:text-background",
+                !isCollapsed && "mr-3"
               )}
             />
-            Configurações
+            {!isCollapsed && <span className="flex-1 text-left">Configurações</span>}
           </Link>
         </div>
       </aside>
+
+      {/* Dropdown Menu Flutuante para itens com subitens quando colapsado */}
+      {isCollapsed && hoveredItem && (
+        <>
+          {/* Backdrop sutil */}
+          <div 
+            className="fixed inset-0 z-35 bg-transparent"
+            onClick={closeDropdown}
+          />
+          
+          {/* Menu Dropdown */}
+          {navigationItems
+            .filter(item => item.name === hoveredItem && item.children)
+            .map(item => {
+              const ItemIcon = item.icon || ChevronLeft
+              return (
+                <div
+                  key={item.name}
+                  data-dropdown
+                  className={cn(
+                    "fixed z-50",
+                    isClosing ? "animate-dropdown-close" : "animate-dropdown-open"
+                  )}
+                  style={{
+                    top: `${dropdownPosition.top}px`,
+                    left: `${dropdownPosition.left}px`
+                  }}
+                >
+                  {/* Seta conectora - ANTES do conteúdo */}
+                  <div 
+                    className="absolute top-1/2 -translate-y-1/2 -left-2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[8px] border-r-neutral-600"
+                  />
+                  
+                  <div className="bg-neutral-500 rounded-2xl shadow-2xl border border-neutral-600 overflow-hidden min-w-[200px] relative">
+                    {/* Header do Dropdown */}
+                    <div className="px-4 py-3 bg-neutral-600/50 border-b border-neutral-600 flex items-center gap-3">
+                      <ItemIcon className="h-5 w-5 text-primary-400" />
+                      <span className="text-sm font-semibold text-background">{item.name}</span>
+                    </div>
+                    
+                    {/* Lista de Subitens */}
+                    <div className="py-2">
+                      {item.children.map((subItem) => (
+                        <Link
+                          key={subItem.name}
+                          to={subItem.href}
+                          onClick={() => {
+                            closeDropdown()
+                            onClose()
+                          }}
+                          className={cn(
+                            "flex items-center px-4 py-2.5 text-sm font-medium transition-all duration-200",
+                            "hover:bg-primary-500/80 hover:text-background",
+                            isCurrentPath(subItem.href)
+                              ? "bg-primary-500 text-background"
+                              : "text-neutral-100"
+                          )}
+                        >
+                          <span 
+                            className={cn(
+                              "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
+                              isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
+                            )}
+                          />
+                          {subItem.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+        </>
+      )}
     </>
   )
 }

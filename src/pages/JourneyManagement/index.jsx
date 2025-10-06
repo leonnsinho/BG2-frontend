@@ -12,7 +12,6 @@ import {
   DollarSign,
   Settings,
   BarChart3,
-  ArrowLeft,
   Home
 } from 'lucide-react'
 
@@ -189,22 +188,11 @@ const JourneyManagementOverview = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-8">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                {/* Botão Voltar ao Dashboard */}
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="flex items-center space-x-2 px-4 py-2 text-[#373435] bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-[#EBA500]/30 transition-all duration-200 shadow-sm"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="text-sm font-medium">Voltar</span>
-                </button>
-                
-                <div>
-                  <h1 className="text-3xl font-bold text-[#373435]">Avaliação de Processos</h1>
-                  <p className="mt-2 text-base text-gray-600">
-                    Gerencie as 5 jornadas da metodologia Bossa Focus
-                  </p>
-                </div>
+              <div>
+                <h1 className="text-3xl font-bold text-[#373435]">Avaliação de Processos</h1>
+                <p className="mt-2 text-base text-gray-600">
+                  Gerencie as 5 jornadas da metodologia Bossa Focus
+                </p>
               </div>
               
               <div className="flex items-center space-x-4">

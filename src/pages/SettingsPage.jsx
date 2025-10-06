@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/useAuth'
-import { Layout } from '../components/layout/Layout'
 import { supabase } from '../services/supabase'
 import toast from 'react-hot-toast'
 import { 
@@ -247,9 +246,8 @@ const SettingsPage = () => {
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
-        <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
+      <div className="max-w-6xl mx-auto">
           
           {/* Header */}
           <div className="mb-8">
@@ -629,7 +627,6 @@ const SettingsPage = () => {
           </div>
         </div>
       </div>
-    </Layout>
   )
 }
 
