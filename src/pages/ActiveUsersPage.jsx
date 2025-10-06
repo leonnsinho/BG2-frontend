@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { Users, Search, CheckCircle, XCircle, Clock, Calendar, Mail, Phone, Shield } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { Layout } from '../components/layout/Layout'
 
 const ActiveUsersPage = () => {
   const { profile } = useAuth()
@@ -238,10 +237,9 @@ const ActiveUsersPage = () => {
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
-        {/* Debug Panel - Remover em produção */}
-        <div className="mb-6 bg-gray-900 text-white rounded-xl p-4 shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+      {/* Debug Panel - Remover em produção */}
+      <div className="mb-6 bg-gray-900 text-white rounded-xl p-4 shadow-lg">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-yellow-400">🔍 Debug Logs - ActiveUsersPage</h3>
             <button
@@ -455,12 +453,11 @@ const ActiveUsersPage = () => {
           )}
         </div>
 
-        {/* Footer com resumo */}
-        <div className="mt-6 text-center text-sm text-gray-600">
-          Mostrando {filteredUsers.length} de {users.length} usuários
-        </div>
+      {/* Footer com resumo */}
+      <div className="mt-6 text-center text-sm text-gray-600">
+        Mostrando {filteredUsers.length} de {users.length} usuários
       </div>
-    </Layout>
+    </div>
   )
 }
 

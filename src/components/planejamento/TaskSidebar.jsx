@@ -198,7 +198,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
         <div className="flex-1 overflow-y-auto min-h-0">
           {/* Title Section */}
           <div className="p-4 sm:p-6">
-            {editingTitle ? (
+            {editingTitle && profile?.role !== 'user' ? (
               <div className="space-y-3">
                 <input
                   type="text"
@@ -221,18 +221,20 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
               </div>
             ) : (
               <div 
-                className="group cursor-pointer"
-                onClick={() => setEditingTitle(true)}
+                className={profile?.role !== 'user' ? "group cursor-pointer" : ""}
+                onClick={() => profile?.role !== 'user' && setEditingTitle(true)}
               >
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors">
                   {task.texto}
                 </h1>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-1">
-                  <div className="flex items-center space-x-1 text-xs text-gray-400">
-                    <Edit3 className="h-3 w-3" />
-                    <span>Clique para editar</span>
+                {profile?.role !== 'user' && (
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-1">
+                    <div className="flex items-center space-x-1 text-xs text-gray-400">
+                      <Edit3 className="h-3 w-3" />
+                      <span>Clique para editar</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>

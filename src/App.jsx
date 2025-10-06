@@ -29,7 +29,7 @@ import ProcessEvaluationForm from './pages/JourneyManagement/ProcessEvaluationFo
 import UsersManagementPage from './pages/admin/UsersManagementPage'
 import JourneyAssignmentsPage from './pages/admin/JourneyAssignmentsPage'
 import CompaniesManagementPage from './pages/admin/CompaniesManagementPage'
-import TasksInProgress from './pages/TasksInProgress'
+import TasksInProgressNew from './pages/TasksInProgressNew'
 import ActiveUsersPage from './pages/ActiveUsersPage'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
@@ -114,7 +114,7 @@ function AppRoutes() {
         path="/tarefas-andamento" 
         element={
           <ProtectedRoute>
-            <TasksInProgress />
+            <TasksInProgressNew />
           </ProtectedRoute>
         }
       />

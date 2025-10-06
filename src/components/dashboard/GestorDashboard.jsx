@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Users, CheckCircle2, Clock, BarChart3, TrendingUp, Filter } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { Layout } from '../layout/Layout'
-import { Sidebar } from '../layout/Sidebar'
 
 const GestorDashboard = () => {
   const { profile } = useAuth()
@@ -75,11 +73,10 @@ const GestorDashboard = () => {
   )
 
   return (
-    <Layout sidebar={<Sidebar />}>
-      <div className="min-h-screen bg-white">
-        <div className="space-y-8">
-          {/* Cabeçalho do Gestor com estética BG2 */}
-          <div className="bg-white border-2 border-[#EBA500]/20 rounded-3xl p-8 ring-1 ring-[#EBA500]/5">
+    <div className="min-h-screen bg-white">
+      <div className="space-y-8">
+        {/* Cabeçalho do Gestor com estética BG2 */}
+        <div className="bg-white border-2 border-[#EBA500]/20 rounded-3xl p-8 ring-1 ring-[#EBA500]/5">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-bold text-[#373435] mb-2">
@@ -163,7 +160,6 @@ const GestorDashboard = () => {
           </div>
         </div>
       </div>
-    </Layout>
   )
 }
 

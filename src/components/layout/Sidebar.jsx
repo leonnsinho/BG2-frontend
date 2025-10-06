@@ -202,23 +202,9 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     ]
   }
 
-  // Usuário comum - Acesso limitado
+  // Usuário comum - Acesso limitado (apenas dashboard)
   return [
-    ...baseItems,
-    {
-      name: 'CRM',
-      icon: Users,
-      href: '/crm'
-    },
-    {
-      name: 'Relatórios',
-      icon: BarChart3,
-      href: '/reports',
-      children: [
-        { name: 'Minhas Vendas', href: '/reports/my-sales' },
-        { name: 'Meu Desempenho', href: '/reports/my-performance' }
-      ]
-    }
+    ...baseItems
   ]
 }
 

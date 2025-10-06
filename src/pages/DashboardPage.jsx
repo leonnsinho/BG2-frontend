@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button'
 import { DashboardSkeleton, SmartLoader } from '../components/ui/DashboardLoaders'
 import UnlinkedUserMessage from '../components/common/UnlinkedUserMessage'
 import { GestorDashboard } from '../components/dashboard/GestorDashboard'
+import { UserDashboard } from '../components/dashboard/UserDashboard'
 import { ProgressMetric } from '../components/dashboard/ProgressMetric'
 import { 
   Users, 
@@ -813,8 +814,14 @@ const DashboardPage = memo(() => {
     )
   }
 
+  // Dashboard específico para usuários comuns (role 'user')
+  if (profile?.role === 'user' && !isUnlinkedUser()) {
+    console.log('🔵 Renderizando Dashboard Usuario Comum')
+    return <UserDashboard />
+  }
+
   // Dashboard padrão para outros tipos de usuário
-  console.log('🔵 Renderizando Dashboard Padrão')
+  console.log('� Renderizando Dashboard Padrão')
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
