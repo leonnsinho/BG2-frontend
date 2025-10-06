@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/usePermissions'
-import { Layout } from '../components/layout/Layout'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
@@ -53,25 +52,23 @@ export default function CreateCompanyPage() {
   // Verificar permissão
   if (!isSuperAdmin) {
     return (
-      <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-[#373435] mb-2">Acesso Negado</h3>
-                <p className="text-gray-600 mb-4">
-                  Apenas Super Administradores podem criar empresas.
-                </p>
-                <Button onClick={() => navigate('/dashboard')}>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Voltar ao Dashboard
-                </Button>
-              </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-[#373435] mb-2">Acesso Negado</h3>
+              <p className="text-gray-600 mb-4">
+                Apenas Super Administradores podem criar empresas.
+              </p>
+              <Button onClick={() => navigate('/dashboard')}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar ao Dashboard
+              </Button>
             </div>
           </div>
         </div>
-      </Layout>
+      </div>
     )
   }
 
@@ -287,12 +284,11 @@ export default function CreateCompanyPage() {
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
-        <div className="max-w-4xl mx-auto">
-          
-          {/* Header */}
-          <div className="mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* Header */}
+        <div className="mb-8">
             
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10">
@@ -612,9 +608,7 @@ export default function CreateCompanyPage() {
               </Button>
             </div>
           </form>
-
         </div>
       </div>
-    </Layout>
   )
 }

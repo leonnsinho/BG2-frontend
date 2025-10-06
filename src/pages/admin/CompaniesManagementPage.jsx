@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { Layout } from '../../components/layout/Layout'
-import { Sidebar } from '../../components/layout/Sidebar'
 import { 
   Building2, 
   Search, 
@@ -17,7 +15,6 @@ import {
   Phone,
   Eye,
   BarChart3,
-  ArrowLeft,
   List,
   Grid3X3
 } from 'lucide-react'
@@ -323,17 +320,16 @@ export default function CompaniesManagementPage() {
   }
 
   return (
-    <Layout sidebar={<Sidebar />}>
-      <div className="min-h-screen bg-white p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-[#373435] mb-3">
-              Gerenciamento de Empresas
-            </h1>
-            <p className="text-gray-600 text-lg">
-              {companies.length} empresas cadastradas no sistema
-            </p>
-          </div>
+    <div className="min-h-screen bg-white p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-[#373435] mb-3">
+            Gerenciamento de Empresas
+          </h1>
+          <p className="text-gray-600 text-lg">
+            {companies.length} empresas cadastradas no sistema
+          </p>
+        </div>
 
         {/* Estatísticas Rápidas */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

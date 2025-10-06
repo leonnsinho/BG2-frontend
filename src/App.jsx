@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
 import { UserProvider } from './contexts/UserContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { ProtectedLayout } from './components/ProtectedLayout'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -64,40 +65,41 @@ function RootRedirect() {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Rotas públicas */}
+      {/* Rotas públicas (sem Layout/Sidebar) */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
       
-      {/* Rotas protegidas */}
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route 
-        path="/settings" 
-        element={
-          <ProtectedRoute>
-            <SettingsPage />
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route 
-        path="/goals/assigned" 
-        element={
-          <ProtectedRoute>
-            <AssignedGoalsPage />
-          </ProtectedRoute>
-        }
-      />
+      {/* Rotas protegidas com Layout/Sidebar persistente */}
+      <Route element={<ProtectedLayout />}>
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route 
+          path="/settings" 
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route 
+          path="/goals/assigned" 
+          element={
+            <ProtectedRoute>
+              <AssignedGoalsPage />
+            </ProtectedRoute>
+          }
+        />
       
       <Route 
         path="/planejamento-estrategico" 
@@ -283,6 +285,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      </Route>
       
       {/* Redirecionar raiz baseado no estado de auth */}
       <Route path="/" element={<RootRedirect />} />

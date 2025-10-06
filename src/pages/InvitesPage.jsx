@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { sendInviteEmail as sendInviteEmailService, getEmailConfig } from '../services/emailService'
-import { Layout } from '../components/layout/Layout'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
@@ -283,32 +282,29 @@ export default function InvitesPage() {
 
   if (!canInvite) {
     return (
-      <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-[#373435] mb-2">Acesso Negado</h3>
-                <p className="text-gray-600">
-                  Você não tem permissão para convidar usuários.
-                </p>
-              </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-[#373435] mb-2">Acesso Negado</h3>
+              <p className="text-gray-600">
+                Você não tem permissão para convidar usuários.
+              </p>
             </div>
           </div>
         </div>
-      </Layout>
+      </div>
     )
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
-        <div className="max-w-6xl mx-auto">
-          
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10">
                 <UserPlus className="w-6 h-6 text-[#EBA500]" />
               </div>
@@ -581,10 +577,8 @@ export default function InvitesPage() {
                 </div>
               )}
             </Card>
-
           </div>
         </div>
       </div>
-    </Layout>
   )
 }

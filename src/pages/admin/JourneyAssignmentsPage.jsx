@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { Layout } from '../../components/layout/Layout'
-import { Sidebar } from '../../components/layout/Sidebar'
 import { toast } from 'react-hot-toast'
 import { 
   Users,
@@ -11,8 +9,7 @@ import {
   BarChart3,
   Heart,
   Megaphone,
-  Settings,
-  ArrowLeft
+  Settings
 } from 'lucide-react'
 
 export default function JourneyAssignmentsPage() {
@@ -420,17 +417,16 @@ export default function JourneyAssignmentsPage() {
   }
 
   return (
-    <Layout sidebar={<Sidebar />}>
-      <div className="min-h-screen bg-white p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-[#373435] mb-3">
-              Atribuição de Jornadas
-            </h1>
-            <p className="text-gray-600 text-lg">
-              Gerencie as atribuições manuais de jornadas para usuários além do acesso baseado em seus roles.
-            </p>
-          </div>
+    <div className="min-h-screen bg-white p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-[#373435] mb-3">
+            Atribuição de Jornadas
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Gerencie as atribuições manuais de jornadas para usuários além do acesso baseado em seus roles.
+          </p>
+        </div>
 
         {/* Lista de usuários */}
         {users.length === 0 && !loading ? (
@@ -641,8 +637,7 @@ export default function JourneyAssignmentsPage() {
           </div>
         </div>
       )}
-        </div>
       </div>
-    </Layout>
+    </div>
   )
 }

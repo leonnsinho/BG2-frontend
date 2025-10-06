@@ -4,8 +4,6 @@ import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/usePermissions'
 import { useAdminStats } from '../hooks/useAdminStats'
 import { useSuperAdminMetrics } from '../hooks/useSuperAdminMetrics'
-import { Layout } from '../components/layout/Layout'
-import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { DashboardSkeleton, SmartLoader } from '../components/ui/DashboardLoaders'
@@ -506,11 +504,9 @@ const DashboardPage = memo(() => {
   // Loading otimizado com skeleton
   if (loading) {
     return (
-      <Layout sidebar={<Sidebar />}>
-        <Suspense fallback={<SmartLoader />}>
-          <DashboardSkeleton />
-        </Suspense>
-      </Layout>
+      <Suspense fallback={<SmartLoader />}>
+        <DashboardSkeleton />
+      </Suspense>
     )
   }
 
@@ -565,19 +561,18 @@ const DashboardPage = memo(() => {
     ]
 
     return (
-      <Layout sidebar={<Sidebar />}>
-        <div className="min-h-screen bg-white">
-          <div className="p-8 max-w-7xl mx-auto">
-            
-            {/* Saudação personalizada */}
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold text-[#373435] mb-2">
-                {getGreeting()}, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin'}!
-              </h1>
-              <p className="text-lg text-neutral-600">
-                Bem-vindo ao painel administrativo do sistema
-              </p>
-            </div>
+      <div className="min-h-screen bg-white">
+        <div className="p-8 max-w-7xl mx-auto">
+          
+          {/* Saudação personalizada */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-[#373435] mb-2">
+              {getGreeting()}, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin'}!
+            </h1>
+            <p className="text-lg text-neutral-600">
+              Bem-vindo ao painel administrativo do sistema
+            </p>
+          </div>
             
             {/* Header com botão de refresh se houver erro */}
             {statsError && (
@@ -715,7 +710,6 @@ const DashboardPage = memo(() => {
             </div>
           </div>
         </div>
-      </Layout>
     )
   }
 
@@ -728,19 +722,18 @@ const DashboardPage = memo(() => {
     const companyId = activeCompany?.company_id
 
     return (
-      <Layout sidebar={<Sidebar />}>
-        <div className="min-h-screen bg-white">
-          <div className="p-8 max-w-7xl mx-auto">
-            
-            {/* Saudação personalizada */}
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold text-[#373435] mb-2">
-                {getGreeting()}, {user?.user_metadata?.full_name || profile?.full_name || user?.email?.split('@')[0] || 'Admin'}!
-              </h1>
-              <p className="text-lg text-neutral-600">
-                Painel administrativo - {activeCompany?.companies?.name || activeCompany?.name || 'Sua Empresa'}
-              </p>
-            </div>
+      <div className="min-h-screen bg-white">
+        <div className="p-8 max-w-7xl mx-auto">
+          
+          {/* Saudação personalizada */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-[#373435] mb-2">
+              {getGreeting()}, {user?.user_metadata?.full_name || profile?.full_name || user?.email?.split('@')[0] || 'Admin'}!
+            </h1>
+            <p className="text-lg text-neutral-600">
+              Painel administrativo - {activeCompany?.companies?.name || activeCompany?.name || 'Sua Empresa'}
+            </p>
+          </div>
 
             {/* Status da Empresa */}
             <div className="bg-white border border-[#EBA500]/20 rounded-3xl p-8 shadow-lg ring-1 ring-[#EBA500]/5">
@@ -801,7 +794,6 @@ const DashboardPage = memo(() => {
             </div>
           </div>
         </div>
-      </Layout>
     )
   }
 
@@ -815,27 +807,24 @@ const DashboardPage = memo(() => {
   if (isUnlinkedUser()) {
     console.log('🟢 Renderizando Dashboard Usuario Desvinculado')
     return (
-      <Layout sidebar={<Sidebar />}>
-        <div className="p-6 max-w-7xl mx-auto">
-          <UnlinkedUserMessage />
-        </div>
-      </Layout>
+      <div className="p-6 max-w-7xl mx-auto">
+        <UnlinkedUserMessage />
+      </div>
     )
   }
 
   // Dashboard padrão para outros tipos de usuário
   console.log('🔵 Renderizando Dashboard Padrão')
   return (
-    <Layout sidebar={<Sidebar />}>
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Dashboard
-          </h1>
-          <p className="text-gray-600">
-            Bem-vindo ao seu painel de controle
-          </p>
-        </div>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Dashboard
+        </h1>
+        <p className="text-gray-600">
+          Bem-vindo ao seu painel de controle
+        </p>
+      </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card className="p-6">
@@ -866,8 +855,7 @@ const DashboardPage = memo(() => {
           </Card>
         </div>
       </div>
-    </Layout>
-  )
+    )
 })
 
 DashboardPage.displayName = 'DashboardPage'

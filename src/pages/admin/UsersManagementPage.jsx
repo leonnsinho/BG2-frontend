@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { Layout } from '../../components/layout/Layout'
-import { Sidebar } from '../../components/layout/Sidebar'
 import { toast } from 'react-hot-toast'
 import { 
   Users, 
@@ -23,8 +21,7 @@ import {
   DollarSign,
   Target,
   TrendingUp,
-  Settings,
-  ArrowLeft
+  Settings
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
 
@@ -414,7 +411,7 @@ export default function UsersManagementPage() {
   // Verificar permissão de acesso
   if (!isSuperAdmin() && !isCompanyAdmin()) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+      <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="text-center">
           <div className="p-8 bg-white rounded-3xl shadow-sm border border-gray-200/50">
             <Shield className="h-16 w-16 text-red-500 mx-auto mb-4" />
@@ -422,13 +419,6 @@ export default function UsersManagementPage() {
             <p className="text-gray-600 mb-6">
               Você não tem permissão para acessar a gestão de usuários.
             </p>
-            <Link
-              to="/"
-              className="inline-flex items-center px-6 py-3 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white rounded-2xl font-medium transition-all duration-200"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar ao Dashboard
-            </Link>
           </div>
         </div>
       </div>
@@ -437,17 +427,16 @@ export default function UsersManagementPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+      <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EBA500]"></div>
       </div>
     )
   }
 
   return (
-    <Layout sidebar={<Sidebar />}>
-      <div className="min-h-screen bg-white p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
+    <div className="min-h-screen bg-white p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
             <h1 className="text-3xl font-bold text-[#373435] mb-3">
               Gerenciamento de Usuários
             </h1>
@@ -794,9 +783,8 @@ export default function UsersManagementPage() {
             loading={updating}
           />
         )}
-        </div>
       </div>
-    </Layout>
+    </div>
   )
 }
 
