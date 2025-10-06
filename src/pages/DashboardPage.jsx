@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/usePermissions'
 import { useAdminStats } from '../hooks/useAdminStats'
+import { useSuperAdminMetrics } from '../hooks/useSuperAdminMetrics'
 import { Layout } from '../components/layout/Layout'
 import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
@@ -10,6 +11,7 @@ import { Button } from '../components/ui/Button'
 import { DashboardSkeleton, SmartLoader } from '../components/ui/DashboardLoaders'
 import UnlinkedUserMessage from '../components/common/UnlinkedUserMessage'
 import { GestorDashboard } from '../components/dashboard/GestorDashboard'
+import { ProgressMetric } from '../components/dashboard/ProgressMetric'
 import { 
   Users, 
   Building2, 
@@ -21,7 +23,9 @@ import {
   LogOut,
   Zap,
   Globe,
-  Activity
+  Activity,
+  UserPlus,
+  CheckSquare
 } from 'lucide-react'
 
 // Estilos CSS para animações
@@ -461,6 +465,9 @@ const DashboardPage = memo(() => {
   const { user, profile } = useAuth()
   const { isSuperAdmin, isGestor, isCompanyAdmin, isUnlinkedUser, loading } = usePermissions()
   const { stats, loading: statsLoading, error: statsError, refresh } = useAdminStats()
+  
+  // Hook para métricas com progress bars - DEVE estar no topo, antes de condicionais
+  const { metrics } = useSuperAdminMetrics()
 
   // Função para obter saudação baseada no horário
   const getGreeting = () => {
@@ -510,6 +517,7 @@ const DashboardPage = memo(() => {
   // Verificar se o usuário é Super Admin - Design BG2 com Dados Reais
   if (isSuperAdmin()) {
     console.log('🔴 Renderizando Dashboard Super Admin')
+    
     // Mapear dados do hook para o formato dos cards
     const adminStats = [
       {
@@ -594,16 +602,50 @@ const DashboardPage = memo(() => {
               </div>
             )}
             
-            {/* Estatísticas Principais com Dados Reais */}
-            <div className="flex justify-center mb-12">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-6 max-w-5xl">
-                {adminStats.map((stat) => (
-                  <SuperAdminStatCard 
-                    key={stat.name} 
-                    stat={stat} 
-                    loading={stat.loading || statsLoading} 
-                  />
-                ))}
+            {/* Métricas com Progress Bars - Estilo Minimalista */}
+            <div className="mb-12">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-[#373435] mb-2">Progresso Semanal</h3>
+                <p className="text-[#373435]/60">Acompanhe as métricas dos últimos 7 dias</p>
+              </div>
+
+              {/* Container com espaçamento vertical, sem grid */}
+              <div className="bg-white border-2 border-[#EBA500]/20 rounded-3xl p-8 space-y-6">
+                {/* Logins na última semana */}
+                <ProgressMetric
+                  title="Logins na Última Semana"
+                  current={metrics.loginsWeek.current}
+                  target={metrics.loginsWeek.total}
+                  color="blue"
+                  loading={metrics.loginsWeek.loading}
+                />
+
+                {/* Novas contas */}
+                <ProgressMetric
+                  title="Novas Contas Criadas (meta: 50)"
+                  current={metrics.newAccounts.current}
+                  target={metrics.newAccounts.target}
+                  color="success"
+                  loading={metrics.newAccounts.loading}
+                />
+
+                {/* Novas tarefas */}
+                <ProgressMetric
+                  title="Novas Tarefas Criadas (meta: 50)"
+                  current={metrics.newTasks.current}
+                  target={metrics.newTasks.target}
+                  color="primary"
+                  loading={metrics.newTasks.loading}
+                />
+
+                {/* Novas empresas */}
+                <ProgressMetric
+                  title="Empresas Cadastradas (meta: 25)"
+                  current={metrics.newCompanies.current}
+                  target={metrics.newCompanies.target}
+                  color="purple"
+                  loading={metrics.newCompanies.loading}
+                />
               </div>
             </div>
 

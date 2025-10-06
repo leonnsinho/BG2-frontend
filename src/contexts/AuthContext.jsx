@@ -102,11 +102,11 @@ export function AuthProvider({ children }) {
             .eq('id', userId)
             .single()
           
-          // Timeout ultrarrápido: 3 segundos para login rápido
+          // Timeout mais generoso: 10 segundos
           return await Promise.race([
             profilePromise,
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Profile timeout')), 3000)
+              setTimeout(() => reject(new Error('Profile timeout')), 10000)
             )
           ])
         })

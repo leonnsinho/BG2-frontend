@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { Layout } from '../../components/layout/Layout'
+import { Sidebar } from '../../components/layout/Sidebar'
 import { toast } from 'react-hot-toast'
 import { 
   Users, 
@@ -442,27 +444,17 @@ export default function UsersManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Botão para voltar ao dashboard */}
-        <div className="mb-8">
-          <Link
-            to="/"
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-[#373435] bg-white hover:bg-gray-50 border border-gray-200 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar ao Dashboard
-          </Link>
-        </div>
-
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#373435] mb-3">
-            Gerenciamento de Usuários
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Gerencie usuários, funções e vínculos com empresas no sistema.
-          </p>
-        </div>
+    <Layout sidebar={<Sidebar />}>
+      <div className="min-h-screen bg-white p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-[#373435] mb-3">
+              Gerenciamento de Usuários
+            </h1>
+            <p className="text-gray-600 text-lg">
+              Gerencie usuários, funções e vínculos com empresas no sistema.
+            </p>
+          </div>
 
         {/* Filtros */}
         <div className="bg-white shadow-sm border border-gray-200/50 rounded-3xl p-6 mb-6">
@@ -802,8 +794,9 @@ export default function UsersManagementPage() {
             loading={updating}
           />
         )}
+        </div>
       </div>
-    </div>
+    </Layout>
   )
 }
 
