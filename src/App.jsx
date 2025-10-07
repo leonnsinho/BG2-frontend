@@ -31,6 +31,9 @@ import JourneyAssignmentsPage from './pages/admin/JourneyAssignmentsPage'
 import CompaniesManagementPage from './pages/admin/CompaniesManagementPage'
 import TasksInProgressNew from './pages/TasksInProgressNew'
 import ActiveUsersPage from './pages/ActiveUsersPage'
+import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage'
+import DrePage from './pages/financeiro/DrePage'
+import DfcPage from './pages/financeiro/DfcPage'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
 import { useUserContext } from './contexts/UserContext'
@@ -282,6 +285,32 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <ProcessEvaluationForm />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Rotas Financeiras - Gestor Financeiro e gestores com jornada financeira */}
+      <Route 
+        path="/financeiro/fluxo-caixa" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'gestor', 'gestor_financeiro', 'gestor_estrategico', 'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional']}>
+            <FluxoCaixaPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/financeiro/dre" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'gestor', 'gestor_financeiro', 'gestor_estrategico', 'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional']}>
+            <DrePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/financeiro/dfc" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'gestor', 'gestor_financeiro', 'gestor_estrategico', 'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional']}>
+            <DfcPage />
           </ProtectedRoute>
         }
       />

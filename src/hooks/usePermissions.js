@@ -186,10 +186,19 @@ export function usePermissions() {
 
   // Verificar se é qualquer tipo de gestor
   const isAnyManager = () => {
-    return hasRole([
+    const result = hasRole([
       'gestor', 'gestor_financeiro', 'gestor_estrategico', 
       'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional'
     ])
+    
+    console.log('🔍 isAnyManager check:', {
+      profile_role: profile?.role,
+      user_companies_count: profile?.user_companies?.length || 0,
+      user_companies_roles: profile?.user_companies?.map(uc => uc.role),
+      result
+    })
+    
+    return result
   }
 
   // Obter todos os roles do usuário
