@@ -71,19 +71,6 @@ if (typeof document !== 'undefined' && !document.getElementById('sidebar-dropdow
 
 // Função para obter itens de navegação baseados no perfil do usuário
 const getNavigationItems = (profile, permissions, accessibleJourneys = [], journeysLoading = true) => {
-  console.log('🧭 Navigation Debug:', {
-    role: profile?.role,
-    user_companies: profile?.user_companies,
-    user_companies_roles: profile?.user_companies?.map(uc => ({
-      company_id: uc.company_id,
-      role: uc.role,
-      is_active: uc.is_active
-    })),
-    isSuperAdmin: permissions.isSuperAdmin(),
-    isCompanyAdmin: permissions.isCompanyAdmin(),
-    isAnyManager: permissions.isAnyManager(),
-    accessibleJourneys
-  })
   const baseItems = [
     {
       name: 'Dashboard',
@@ -137,12 +124,8 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
 
   // Gestor Geral (antigo consultant) - Múltiplas empresas, todas as jornadas
   if (permissions.isGestor()) {
-    console.log('📍 Entrou no bloco isGestor()')
-    console.log('📋 accessibleJourneys no bloco isGestor:', accessibleJourneys)
-    
     // Obter itens específicos baseados nas jornadas atribuídas
     const managerSpecificItems = getManagerSpecificItems(accessibleJourneys)
-    console.log('📋 managerSpecificItems no isGestor:', managerSpecificItems)
     
     return [
       ...baseItems,
@@ -168,11 +151,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
 
   // Gestores Específicos - Acesso apenas às suas jornadas
   if (permissions.isAnyManager()) {
-    console.log('✅ Usuário é gestor - montando menu de gestor')
-    console.log('📋 accessibleJourneys recebidas:', accessibleJourneys)
-    
     const managerSpecificItems = getManagerSpecificItems(accessibleJourneys)
-    console.log('📋 managerSpecificItems retornados:', managerSpecificItems)
     
     return [
       ...baseItems,
@@ -228,8 +207,6 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
   
   // Se o usuário tem jornadas atribuídas, adicionar funcionalidades específicas
   if (accessibleJourneys && accessibleJourneys.length > 0) {
-    console.log('👤 Usuário comum com jornadas atribuídas:', accessibleJourneys)
-    
     // Adicionar itens específicos baseados nas jornadas (como Financeiro)
     const specialItems = getManagerSpecificItems(accessibleJourneys)
     userItems.push(...specialItems)
@@ -256,14 +233,9 @@ const getJourneyChildren = (accessibleJourneys) => {
 // Função para obter itens específicos baseados nas jornadas atribuídas
 const getManagerSpecificItems = (accessibleJourneys = []) => {
   const items = []
-  
-  console.log('🔍 getManagerSpecificItems:', {
-    accessibleJourneys
-  })
 
   // Se tem jornada financeira - Acesso ao menu Financeiro
   if (accessibleJourneys.includes('financeira')) {
-    console.log('✅ Adicionando menu Financeiro (Jornada Atribuída)')
     items.push({
       name: 'Financeiro',
       icon: DollarSign,
@@ -278,7 +250,6 @@ const getManagerSpecificItems = (accessibleJourneys = []) => {
 
   // Se tem jornada de receita/CRM - Acesso ao CRM
   if (accessibleJourneys.includes('receita-crm')) {
-    console.log('✅ Adicionando menu CRM (Jornada Atribuída)')
     items.push({
       name: 'CRM & Vendas',
       icon: Users,
@@ -295,7 +266,6 @@ const getManagerSpecificItems = (accessibleJourneys = []) => {
 
   // Se tem jornada de pessoas & cultura - Acesso a RH
   if (accessibleJourneys.includes('pessoas-cultura')) {
-    console.log('✅ Adicionando menu RH (Jornada Atribuída)')
     items.push({
       name: 'Pessoas & RH',
       icon: Users,
@@ -311,7 +281,6 @@ const getManagerSpecificItems = (accessibleJourneys = []) => {
 
   // Se tem jornada operacional - Acesso a operações
   if (accessibleJourneys.includes('operacional')) {
-    console.log('✅ Adicionando menu Operações (Jornada Atribuída)')
     items.push({
       name: 'Operações',
       icon: Settings,
@@ -373,10 +342,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     let isMounted = true
     
     const loadAccessibleJourneys = async () => {
-      console.log('🔍 Sidebar: Carregando jornadas para usuário:', profile?.id)
-      
       if (!profile?.id) {
-        console.log('❌ Sidebar: Sem perfil - definindo jornadas vazias')
         if (isMounted) {
           // Sistema simplificado: sem perfil = sem jornadas
           setAccessibleJourneys([])
@@ -388,17 +354,13 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
       // SISTEMA SIMPLIFICADO: Sempre recarregar jornadas (sem cache)
       try {
         if (isMounted) setJourneysLoading(true)
-        console.log('🔄 Sidebar: Chamando getAccessibleJourneys...')
         const journeys = await getAccessibleJourneys()
-        console.log('📊 Sidebar: Jornadas recebidas:', journeys)
         
         if (isMounted) {
           setAccessibleJourneys(journeys)
           setJourneysLoaded(true)
-          console.log('✅ Sidebar: Jornadas definidas no estado:', journeys)
         }
       } catch (error) {
-        console.error('❌ Sidebar: Erro ao carregar jornadas:', error)
         if (isMounted) {
           // Sistema simplificado: erro = sem jornadas (não usa fallback de role)
           setAccessibleJourneys([])
@@ -419,15 +381,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
 
   // Obter itens de navegação baseados no usuário atual
   const navigationItems = React.useMemo(() => {
-    console.log('📋 Sidebar navigationItems memo:', {
-      profile_role: profile?.role,
-      profile_user_companies_length: profile?.user_companies?.length,
-      accessibleJourneys,
-      journeysLoading,
-      isUnlinkedUser: permissions.isUnlinkedUser(),
-      isAnyManager: permissions.isAnyManager()
-    })
-    
     // USUÁRIOS NÃO VINCULADOS: Interface simplificada
     if (permissions.isUnlinkedUser()) {
       return [
@@ -446,7 +399,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     
     // Usuários vinculados: interface normal
     const items = getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading)
-    console.log('📋 Sidebar: Items gerados:', items)
     return items
   }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading])
 

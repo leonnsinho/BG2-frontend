@@ -14,7 +14,9 @@ import SettingsPage from './pages/SettingsPage'
 import AssignedGoalsPage from './pages/AssignedGoalsPage'
 import { PlanejamentoEstrategicoPage } from './pages/PlanejamentoEstrategicoPage'
 import InvitesPage from './pages/InvitesPage'
-import AcceptInvitePage from './pages/AcceptInvitePage'
+import ConvitesSimples from './pages/ConvitesSimples'
+import AcceptInviteNova from './pages/AcceptInviteNova'
+import CompleteSignupPage from './pages/CompleteSignupPage'
 import { SystemTestPage } from './pages/SystemTestPage'
 import MatrizBossaPage from './pages/MatrizBossaPage'
 import JourneyProcessesPage from './pages/JourneyProcessesPage'
@@ -73,7 +75,8 @@ function AppRoutes() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/accept-invite" element={<AcceptInvitePage />} />
+      <Route path="/accept-invite" element={<AcceptInviteNova />} />
+      <Route path="/complete-signup" element={<CompleteSignupPage />} />
       
       {/* Rotas protegidas com Layout/Sidebar persistente */}
       <Route element={<ProtectedLayout />}>
@@ -162,7 +165,7 @@ function AppRoutes() {
         path="/invites" 
         element={
           <ProtectedRoute requiredRole={['super_admin', 'consultant', 'company_admin']}>
-            <InvitesPage />
+            <ConvitesSimples />
           </ProtectedRoute>
         }
       />
@@ -180,7 +183,7 @@ function AppRoutes() {
       {/* Página de aceitar convite (pública) */}
       <Route 
         path="/accept-invite" 
-        element={<AcceptInvitePage />} 
+        element={<AcceptInviteNova />} 
       />
       
       {/* Rotas das Jornadas de Negócio */}

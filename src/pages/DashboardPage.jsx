@@ -481,27 +481,6 @@ const DashboardPage = memo(() => {
     }
   }
 
-  // Debug da lógica de renderização
-  console.log('🎯 Dashboard Debug:', {
-    isSuperAdmin,
-    isGestor, 
-    isUnlinkedUser,
-    loading,
-    user: user ? { email: user.email } : null
-  })
-
-  console.log('🎯 Dashboard Condições:', {
-    'isSuperAdmin()': isSuperAdmin(),
-    'isCompanyAdmin()': isCompanyAdmin(),
-    'isGestor()': isGestor(),
-    'isUnlinkedUser()': isUnlinkedUser(),
-    'isGestor && !isUnlinkedUser': isGestor() && !isUnlinkedUser(),
-    'qual será renderizado?': isSuperAdmin() ? 'Super Admin' : 
-                              isCompanyAdmin() ? 'Company Admin' :
-                              (isGestor() && !isUnlinkedUser()) ? 'Gestor' : 
-                              isUnlinkedUser() ? 'Usuario Desvinculado' : 'Dashboard Padrão'
-  })
-
   // Loading otimizado com skeleton
   if (loading) {
     return (
@@ -513,8 +492,6 @@ const DashboardPage = memo(() => {
 
   // Verificar se o usuário é Super Admin - Design BG2 com Dados Reais
   if (isSuperAdmin()) {
-    console.log('🔴 Renderizando Dashboard Super Admin')
-    
     // Mapear dados do hook para o formato dos cards
     const adminStats = [
       {
@@ -716,8 +693,6 @@ const DashboardPage = memo(() => {
 
   // Dashboard específico para Company Admin
   if (isCompanyAdmin() && !isUnlinkedUser()) {
-    console.log('🟠 Renderizando Dashboard Company Admin')
-    
     // Obter empresa ativa
     const activeCompany = profile?.user_companies?.find(uc => uc.is_active)
     const companyId = activeCompany?.company_id
@@ -800,13 +775,11 @@ const DashboardPage = memo(() => {
 
   // Dashboard específico para gestores
   if (isGestor() && !isUnlinkedUser()) {
-    console.log('🟡 Renderizando Dashboard Gestor')
     return <GestorDashboard />
   }
 
   // Usuário não está vinculado a uma empresa
   if (isUnlinkedUser()) {
-    console.log('🟢 Renderizando Dashboard Usuario Desvinculado')
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <UnlinkedUserMessage />
@@ -816,12 +789,10 @@ const DashboardPage = memo(() => {
 
   // Dashboard específico para usuários comuns (role 'user')
   if (profile?.role === 'user' && !isUnlinkedUser()) {
-    console.log('🔵 Renderizando Dashboard Usuario Comum')
     return <UserDashboard />
   }
 
   // Dashboard padrão para outros tipos de usuário
-  console.log('� Renderizando Dashboard Padrão')
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">

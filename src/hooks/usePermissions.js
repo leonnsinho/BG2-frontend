@@ -119,15 +119,7 @@ export function usePermissions() {
   }
 
   // Verificações de role
-  const isSuperAdmin = () => {
-    const result = hasRole('super_admin')
-    console.log('🔒 isSuperAdmin check:', {
-      profile_role: profile?.role,
-      result,
-      hasRole_function: typeof hasRole
-    })
-    return result
-  }
+  const isSuperAdmin = () => hasRole('super_admin')
   const isConsultant = () => hasRole(['super_admin', 'consultant'])
   const isCompanyAdmin = () => {
     return hasRole(['super_admin', 'consultant', 'company_admin'])
@@ -143,12 +135,6 @@ export function usePermissions() {
   const isUnlinkedUser = () => {
     if (!profile) return false
     
-    console.log('🔍 Verificando se usuário está desvinculado:', {
-      email: profile.email,
-      role: profile.role,
-      user_companies: profile.user_companies
-    })
-    
     // Super admins e consultants nunca são considerados "não vinculados"
     if (['super_admin', 'consultant'].includes(profile.role)) {
       console.log('🔒 Usuário é super admin ou consultant - não está desvinculado')
@@ -157,48 +143,25 @@ export function usePermissions() {
 
     // Se tem role global diferente de 'user', não está desvinculado
     if (profile.role && profile.role !== 'user') {
-      console.log('🔒 Usuário tem role global:', profile.role, '- não está desvinculado')
       return false
     }
 
     // Se não tem user_companies ou está vazio, é desvinculado
     if (!profile.user_companies || profile.user_companies.length === 0) {
-      console.log('❌ Usuário não tem empresas vinculadas - está desvinculado')
       return true
     }
 
     // Se tem user_companies mas nenhuma está ativa, é desvinculado
     const hasActiveCompany = profile.user_companies.some(uc => uc.is_active)
-    const isUnlinked = !hasActiveCompany
-    
-    console.log('🏢 Verificação de empresa ativa:', {
-      hasActiveCompany,
-      isUnlinked,
-      companies: profile.user_companies.map(uc => ({
-        company_id: uc.company_id,
-        is_active: uc.is_active,
-        role: uc.role
-      }))
-    })
-    
-    return isUnlinked
+    return !hasActiveCompany
   }
 
   // Verificar se é qualquer tipo de gestor
   const isAnyManager = () => {
-    const result = hasRole([
+    return hasRole([
       'gestor', 'gestor_financeiro', 'gestor_estrategico', 
       'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional'
     ])
-    
-    console.log('🔍 isAnyManager check:', {
-      profile_role: profile?.role,
-      user_companies_count: profile?.user_companies?.length || 0,
-      user_companies_roles: profile?.user_companies?.map(uc => uc.role),
-      result
-    })
-    
-    return result
   }
 
   // Obter todos os roles do usuário

@@ -90,8 +90,11 @@ export default function UsersManagementPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
   const [companies, setCompanies] = useState([])
   const [updating, setUpdating] = useState(false)
+  const [newUserEmail, setNewUserEmail] = useState('')
+  const [creatingUser, setCreatingUser] = useState(false)
 
   // Obter empresa do usuário atual se for company_admin
   const getCurrentUserCompany = () => {
@@ -391,6 +394,62 @@ export default function UsersManagementPage() {
     }
   }
 
+  // Criar novo usuário
+  const handleCreateUser = async (e) => {
+    e.preventDefault()
+    
+    if (!newUserEmail || !newUserEmail.includes('@')) {
+      toast.error('Digite um email válido')
+      return
+    }
+
+    setCreatingUser(true)
+    
+    try {
+      console.log('🚀 Criando novo usuário:', newUserEmail)
+      
+      // Gerar senha temporária segura
+      const tempPassword = 'temp' + Math.random().toString(36).slice(-8) + '123!'
+      
+      // Criar usuário no Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: newUserEmail,
+        password: tempPassword,
+        options: {
+          data: {
+            role: 'user', // Role padrão
+            needs_completion: true, // Marca que precisa completar cadastro
+            created_via: 'admin_panel',
+            created_at: new Date().toISOString()
+          },
+          emailRedirectTo: `${window.location.origin}/complete-signup`
+        }
+      })
+
+      if (error) {
+        console.error('❌ Erro ao criar usuário:', error)
+        throw error
+      }
+
+      console.log('✅ Usuário criado:', data)
+      
+      toast.success(`✅ Convite enviado para ${newUserEmail}! O usuário receberá um email para completar o cadastro.`)
+      
+      // Limpar e fechar modal
+      setNewUserEmail('')
+      setIsCreateUserModalOpen(false)
+      
+      // Recarregar lista de usuários
+      await loadUsers()
+      
+    } catch (error) {
+      console.error('❌ Erro:', error)
+      toast.error(`Erro: ${error.message}`)
+    } finally {
+      setCreatingUser(false)
+    }
+  }
+
   // Filtrar usuários
   const filteredUsers = users.filter(user => {
     const matchesSearch = !searchTerm || 
@@ -436,7 +495,8 @@ export default function UsersManagementPage() {
   return (
     <div className="min-h-screen bg-white p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
             <h1 className="text-3xl font-bold text-[#373435] mb-3">
               Gerenciamento de Usuários
             </h1>
@@ -444,6 +504,14 @@ export default function UsersManagementPage() {
               Gerencie usuários, funções e vínculos com empresas no sistema.
             </p>
           </div>
+          <button
+            onClick={() => setIsCreateUserModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#EBA500] text-white rounded-lg hover:bg-[#d49400] transition-colors"
+          >
+            <UserPlus className="h-5 w-5" />
+            Criar Usuário
+          </button>
+        </div>
 
         {/* Filtros */}
         <div className="bg-white shadow-sm border border-gray-200/50 rounded-3xl p-6 mb-6">
@@ -769,6 +837,65 @@ export default function UsersManagementPage() {
             onLink={handleLinkToCompany}
             loading={updating}
           />
+        )}
+
+        {/* Modal de Criar Usuário */}
+        {isCreateUserModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-xl font-bold text-[#373435] mb-4">Criar Novo Usuário</h3>
+              
+              <form onSubmit={handleCreateUser} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email do Usuário
+                  </label>
+                  <input
+                    type="email"
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    placeholder="usuario@empresa.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]"
+                    required
+                    disabled={creatingUser}
+                  />
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Como funciona:</strong>
+                  </p>
+                  <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
+                    <li>Usuário receberá email de confirmação</li>
+                    <li>Ao clicar, será direcionado para completar cadastro</li>
+                    <li>Preencherá nome e senha</li>
+                    <li>Será criado com role "Usuário" (sem empresa)</li>
+                  </ul>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreateUserModalOpen(false)
+                      setNewUserEmail('')
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    disabled={creatingUser}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-[#EBA500] text-white rounded-lg hover:bg-[#d49400] disabled:opacity-50"
+                    disabled={creatingUser}
+                  >
+                    {creatingUser ? 'Enviando...' : 'Enviar Convite'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
 
         {/* Modal de Edição */}

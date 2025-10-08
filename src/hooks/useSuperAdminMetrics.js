@@ -99,13 +99,6 @@ export const useSuperAdminMetrics = () => {
         }
       })
 
-      console.log('📊 Métricas carregadas:', {
-        logins: `${usersWithLogins}/${totalUsers}`,
-        newAccounts: newAccountsCount,
-        newTasks: newTasksCount,
-        newCompanies: newCompaniesCount
-      })
-
     } catch (error) {
       console.error('Erro ao carregar métricas:', error)
       

@@ -204,15 +204,11 @@ export function usePermissions() {
   
   // Função para obter jornadas efetivas (apenas atribuições manuais no sistema simplificado)
   const getAccessibleJourneys = async () => {
-    console.log('🔍 getAccessibleJourneys chamada para usuário:', profile?.id, profile?.email)
-    
     try {
       if (!profile?.id) {
-        console.log('❌ Sem perfil - retornando array vazio')
-        return [] // No sistema simplificado, sem perfil = sem jornadas
+        return []
       }
 
-      console.log('🔄 Chamando get_user_effective_journeys...')
       const { data, error } = await supabase
         .rpc('get_user_effective_journeys', {
           p_user_id: profile.id
@@ -220,19 +216,15 @@ export function usePermissions() {
 
       if (error) {
         console.error('❌ Erro ao buscar jornadas efetivas:', error)
-        return [] // No sistema simplificado, erro = sem jornadas
+        return []
       }
-
-      console.log('📊 Dados retornados da SQL:', data)
       
       // Retornar apenas jornadas ativas (sistema simplificado)
       const journeySlugs = data?.map(journey => journey.journey_slug) || []
-      console.log('✅ Jornadas finais para usuário:', journeySlugs)
-      
       return journeySlugs
     } catch (error) {
       console.error('❌ Erro ao buscar jornadas:', error)
-      return [] // No sistema simplificado, erro = sem jornadas
+      return []
     }
   }
   

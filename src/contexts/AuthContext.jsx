@@ -5,9 +5,9 @@ const AuthContext = createContext({})
 
 // Cache global de perfis para evitar recarregamentos desnecessários
 const globalProfileCache = new Map()
-const CACHE_TIMEOUT = 30000 // 30 segundos (otimizado)
-const CRITICAL_CACHE_TIMEOUT = 60000 // 1 minuto para perfis críticos
-const MAX_RETRY_ATTEMPTS = 1 // Reduzido para login mais rápido
+const CACHE_TIMEOUT = 60000 // 60 segundos (mais longo para evitar reloads)
+const CRITICAL_CACHE_TIMEOUT = 120000 // 2 minutos para perfis críticos
+const MAX_RETRY_ATTEMPTS = 0 // SEM retry - falha rápido e usa cache
 
 // Função para verificar se é um perfil crítico (gestor, admin, etc.)
 const isCriticalProfile = (profileData) => {
@@ -73,7 +73,6 @@ export function AuthProvider({ children }) {
     
     // Evitar múltiplas chamadas simultâneas para o mesmo usuário
     if (pendingFetches.current[userId]) {
-      console.log('⏳ Aguardando fetch em andamento para:', userId)
       return pendingFetches.current[userId]
     }
     
@@ -84,40 +83,35 @@ export function AuthProvider({ children }) {
     if (useCache && cachedData) {
       const timeout = isCriticalProfile(cachedData.data) ? CRITICAL_CACHE_TIMEOUT : CACHE_TIMEOUT
       if (Date.now() - cachedData.timestamp < timeout) {
-        console.log('📋 Perfil carregado do cache global:', cachedData.data?.email)
         return cachedData.data
       }
     }
     
-    console.log('🔄 Buscando perfil do usuário:', userId)
-    
     // Criar promise e armazenar para evitar chamadas duplicadas
     const fetchPromise = (async () => {
       try {
-        // Buscar perfil básico com retry automático
-        const profileResult = await retryOperation(async () => {
-          const profilePromise = supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single()
-          
-          // Timeout mais generoso: 10 segundos
-          return await Promise.race([
-            profilePromise,
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Profile timeout')), 10000)
-            )
-          ])
-        })
+        // Buscar perfil básico
+        const profilePromise = supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single()
+        
+        // Timeout: 5 segundos
+        const profileResult = await Promise.race([
+          profilePromise,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Profile timeout')), 5000)
+          )
+        ])
 
-        if (profileResult.error) {
+        // Verificar erro
+        if (profileResult?.error) {
           if (profileResult.error.code === 'PGRST116') {
             console.warn('⚠️ Perfil não encontrado, criando perfil básico')
-            // Retornar perfil básico com dados do auth.users
             const basicProfile = {
               id: userId,
-              email: 'usuário@sistema.com', // Será substituído depois
+              email: user?.email || 'usuário@sistema.com',
               full_name: null,
               role: 'user',
               user_companies: []
@@ -129,38 +123,34 @@ export function AuthProvider({ children }) {
         }
 
         const profileData = profileResult.data
-        console.log('✅ Perfil básico carregado:', profileData.email)
 
-        // Segundo: buscar empresas em background com retry
+        // Segundo: buscar empresas em background
         setTimeout(async () => {
           try {
-            console.log('🏢 Carregando dados de empresas em background...')
+            const { data: userCompaniesData, error: ucError } = await supabase
+              .from('user_companies')
+              .select('id, role, is_active, permissions, company_id')
+              .eq('user_id', userId)
+              .eq('is_active', true)
             
-            const userCompaniesData = await retryOperation(async () => {
-              const result = await supabase
-                .from('user_companies')
-                .select('id, role, is_active, permissions, company_id')
-                .eq('user_id', userId)
-                .eq('is_active', true)
-              
-              if (result.error) throw result.error
-              return result.data
-            })
+            if (ucError) {
+              console.warn('⚠️ Erro ao buscar user_companies:', ucError.message)
+              return
+            }
 
             let enrichedUserCompanies = []
             
             if (userCompaniesData?.length > 0) {
               const companyIds = userCompaniesData.map(uc => uc.company_id)
               
-              const companiesData = await retryOperation(async () => {
-                const result = await supabase
-                  .from('companies')
-                  .select('id, name')
-                  .in('id', companyIds)
-                
-                if (result.error) throw result.error
-                return result.data
-              })
+              const { data: companiesData, error: compError } = await supabase
+                .from('companies')
+                .select('id, name')
+                .in('id', companyIds)
+              
+              if (compError) {
+                console.warn('⚠️ Erro ao buscar companies:', compError.message)
+              }
               
               if (companiesData) {
                 enrichedUserCompanies = userCompaniesData.map(uc => ({
@@ -183,8 +173,7 @@ export function AuthProvider({ children }) {
               timestamp: Date.now()
             })
             
-            setProfile(fullProfile) // Atualizar estado
-            console.log('🏢 Dados de empresas carregados em background')
+            setProfile(fullProfile)
 
           } catch (error) {
             console.warn('⚠️ Erro ao carregar empresas em background:', error.message)
@@ -206,23 +195,23 @@ export function AuthProvider({ children }) {
         return basicProfile
 
       } catch (error) {
-        console.warn('⚠️ Erro ao buscar perfil, usando fallback:', error.message)
+        console.warn('⚠️ Erro ao buscar perfil:', error.message)
         
-        // Sempre tentar usar o perfil do cache global para preservar role e dados corretos
+        // SEMPRE tentar usar o perfil do cache primeiro
         const existingCache = globalProfileCache.get(cacheKey)
         if (existingCache && existingCache.data) {
-          console.log('📋 Usando perfil do cache global devido a timeout:', existingCache.data?.email, existingCache.data?.role)
+          console.log('✅ Usando perfil do cache devido a erro:', existingCache.data?.email)
+          // Retornar cache sem tentar recarregar (evita loops)
           return existingCache.data
         }
         
-        // Verificar se há dados básicos do usuário Supabase para preservar email
-        const userEmail = user?.email || 'carregando@sistema.com'
+        // Se não tem cache, tentar buscar pelo email (último recurso)
+        const userEmail = user?.email
         
-        // Tentar buscar perfil pelo email como fallback
-        if (userEmail !== 'carregando@sistema.com') {
+        if (userEmail) {
           try {
-            console.log('🔍 Tentando buscar perfil pelo email:', userEmail)
-            const { data: profileByEmail, error: emailError } = await supabase
+            console.log('🔍 Tentando buscar perfil pelo email como fallback:', userEmail)
+            const { data: profileByEmail } = await supabase
               .from('profiles')
               .select(`
                 id,
@@ -236,18 +225,16 @@ export function AuthProvider({ children }) {
                   role,
                   companies (
                     id,
-                    name,
-                    domain
+                    name
                   )
                 )
               `)
               .eq('email', userEmail)
-              .single()
+              .maybeSingle() // Usa maybeSingle para não dar erro se não encontrar
             
-            if (profileByEmail && !emailError) {
-              console.log('✅ Perfil encontrado pelo email:', profileByEmail.email, profileByEmail.role)
-              // Atualizar cache com o perfil correto
-              const cacheKey = `profile_${userId}`
+            if (profileByEmail) {
+              console.log('✅ Perfil encontrado pelo email')
+              // Salvar no cache
               globalProfileCache.set(cacheKey, {
                 data: profileByEmail,
                 timestamp: Date.now()
@@ -255,34 +242,13 @@ export function AuthProvider({ children }) {
               return profileByEmail
             }
           } catch (emailError) {
-            console.warn('❌ Falha ao buscar por email:', emailError.message)
+            console.warn('⚠️ Erro ao buscar por email:', emailError.message)
           }
         }
         
-        // Só criar perfil mínimo se não houver nada no cache
-        console.warn('⚠️ Criando perfil fallback temporário (sem cache)')
-        const fallbackProfile = {
-          id: userId,
-          email: userEmail,
-          full_name: null,
-          role: 'user', // Será atualizado quando conseguir carregar
-          user_companies: []
-        }
-        
-        // Tentar novamente em 2 segundos para recuperar o perfil real
-        setTimeout(() => {
-          console.log('🔄 Tentando recarregar perfil após timeout...')
-          fetchProfile(userId, false) // false = não usar cache
-            .then(updatedProfile => {
-              if (updatedProfile && updatedProfile.role !== 'user') {
-                console.log('✅ Perfil recuperado após timeout:', updatedProfile.email, updatedProfile.role)
-                setProfile(updatedProfile)
-              }
-            })
-            .catch(err => console.warn('❌ Falha ao recarregar perfil:', err.message))
-        }, 2000) // Reduzido de 5s para 2s
-        
-        return fallbackProfile
+        // Último recurso: retornar null e deixar a UI decidir
+        console.warn('❌ Não foi possível carregar perfil, retornando null')
+        return null
       } finally {
         // Remover da lista de fetches pendentes
         delete pendingFetches.current[userId]
@@ -449,40 +415,26 @@ export function AuthProvider({ children }) {
   // Verificar se usuário tem role específica
   const hasRole = (roles) => {
     if (!profile) {
-      console.log('🔍 hasRole: sem perfil')
       return false
     }
     
     const roleArray = Array.isArray(roles) ? roles : [roles]
     
-    console.log('🔍 hasRole check:', {
-      profile_role: profile.role,
-      roles_to_check: roleArray,
-      profile_user_companies: profile.user_companies?.length || 0
-    })
-    
     // Super admin tem todas as permissões de role
     if (profile.role === 'super_admin') {
-      console.log('✅ Super admin - tem todas as permissões de role')
       return true
     }
     
     // Verificar role global
     if (roleArray.includes(profile.role)) {
-      console.log('✅ Role encontrado globalmente:', profile.role)
       return true
     }
     
     // Verificar roles nas empresas
     const companyRoleMatch = profile.user_companies?.some(uc => {
-      const match = uc.is_active && roleArray.includes(uc.role)
-      if (match) {
-        console.log('✅ Role encontrado na empresa:', uc.role, 'empresa:', uc.company_id)
-      }
-      return match
+      return uc.is_active && roleArray.includes(uc.role)
     })
     
-    console.log('🔍 Resultado final hasRole:', companyRoleMatch || false)
     return companyRoleMatch || false
   }
 
@@ -517,23 +469,16 @@ export function AuthProvider({ children }) {
     return !hasActiveCompany
   }
 
-  // Debug: monitorar cache e fetches pendentes
+  // Monitoramento limpo de cache (sem logs excessivos)
   useEffect(() => {
     const interval = setInterval(() => {
-      const cacheSize = globalProfileCache.size
-      const pendingSize = Object.keys(pendingFetches.current).length
-      
-      if (cacheSize > 0 || pendingSize > 0) {
-        console.log('📊 Status Auth - Cache Global:', cacheSize, 'Pending:', pendingSize)
-        
-        // Debug detalhado do cache
-        if (cacheSize > 0) {
-          for (const [key, value] of globalProfileCache.entries()) {
-            console.log(`🔍 Cache ${key}:`, value.data?.email, value.data?.role)
-          }
+      // Limpar entradas antigas do cache
+      for (const [key, value] of globalProfileCache.entries()) {
+        if (Date.now() - value.timestamp > 60000) { // 1 minuto
+          globalProfileCache.delete(key)
         }
       }
-    }, 10000) // A cada 10 segundos
+    }, 30000) // A cada 30 segundos
     
     return () => clearInterval(interval)
   }, [])
@@ -541,8 +486,6 @@ export function AuthProvider({ children }) {
   // Efeito para monitorar mudanças de autenticação  
   useEffect(() => {
     let mounted = true
-    
-    console.log('🚀 Inicializando autenticação')
     
     // Verificar sessão atual de forma otimizada
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -552,27 +495,41 @@ export function AuthProvider({ children }) {
       setUser(currentUser)
       
       if (currentUser) {
-        console.log('👤 Usuário encontrado:', currentUser.email)
+        // Verificar cache primeiro para loading instantâneo
+        const cacheKey = `profile_${currentUser.id}`
+        const cachedProfile = globalProfileCache.get(cacheKey)
         
-        // Buscar perfil de forma não-bloqueante
-        fetchProfile(currentUser.id)
-          .then((profile) => {
-            if (mounted) {
-              setProfile(profile)
-              console.log('✅ Perfil carregado para:', profile?.email || currentUser.email)
-            }
-          })
-          .catch((error) => {
-            console.warn('⚠️ Erro ao carregar perfil:', error.message)
-            if (mounted) {
-              setProfile(null)
-            }
-          })
-          .finally(() => {
-            if (mounted) {
-              setLoading(false)
-            }
-          })
+        if (cachedProfile?.data) {
+          console.log('⚡ Perfil carregado do cache instantaneamente')
+          setProfile(cachedProfile.data)
+          setLoading(false)
+          
+          // Atualizar em background se necessário
+          if (Date.now() - cachedProfile.timestamp > 30000) {
+            fetchProfile(currentUser.id, false).catch(err => 
+              console.warn('⚠️ Erro ao atualizar cache:', err.message)
+            )
+          }
+        } else {
+          // Buscar perfil de forma não-bloqueante
+          fetchProfile(currentUser.id)
+            .then((profile) => {
+              if (mounted) {
+                setProfile(profile)
+              }
+            })
+            .catch((error) => {
+              console.warn('⚠️ Erro ao carregar perfil:', error.message)
+              if (mounted) {
+                setProfile(null)
+              }
+            })
+            .finally(() => {
+              if (mounted) {
+                setLoading(false)
+              }
+            })
+        }
       } else {
         console.log('❌ Nenhum usuário autenticado')
         if (mounted) {
@@ -585,53 +542,66 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return
-        
-        console.log('🔄 Mudança de auth:', event)
-        
         const currentUser = session?.user ?? null
         
-        // Evitar recarregamentos desnecessários
-        if (currentUser?.id === user?.id && event === 'SIGNED_IN') {
-          console.log('🔄 Mesmo usuário, ignorando recarregamento:', currentUser.email)
+        // Ignorar eventos de renovação de token que não mudam o usuário
+        if (event === 'TOKEN_REFRESHED' && currentUser?.id === user?.id) {
+          console.log('🔄 Token renovado, mantendo perfil atual')
           return
         }
         
-        setUser(currentUser)
+        // Evitar recarregamentos desnecessários para SIGNED_IN repetidos
+        if (currentUser?.id === user?.id && event === 'SIGNED_IN') {
+          console.log('✅ Usuário já está logado, ignorando SIGNED_IN duplicado')
+          return
+        }
         
-        // Só recarregar o perfil se o usuário mudou realmente
-        if (currentUser && currentUser.id !== user?.id) {
-          console.log('🆕 Novo usuário, carregando perfil:', currentUser.email)
-          
+        // Atualizar usuário apenas se mudou
+        if (currentUser?.id !== user?.id) {
+          setUser(currentUser)
+        }
+        
+        // Só recarregar o perfil se o usuário mudou realmente OU se não temos perfil
+        if (currentUser && (currentUser.id !== user?.id || !profile)) {
           // Evitar chamar fetchProfile se já está sendo chamado
           if (!pendingFetches.current[currentUser.id]) {
             const userProfile = await fetchProfile(currentUser.id)
-            if (mounted) {
+            if (mounted && userProfile) {
               setProfile(userProfile)
+            }
+          } else {
+            console.log('⏳ Fetch de perfil já em andamento, aguardando...')
+            // Aguardar o fetch pendente
+            try {
+              const userProfile = await pendingFetches.current[currentUser.id]
+              if (mounted && userProfile) {
+                setProfile(userProfile)
+              }
+            } catch (error) {
+              console.warn('⚠️ Erro ao aguardar fetch pendente:', error.message)
             }
           }
           
           // Registrar login do usuário de forma assíncrona (não bloqueante)
-          // Usar setTimeout para não bloquear o carregamento do perfil
-          setTimeout(async () => {
-            try {
-              const userAgent = navigator.userAgent
-              const { error: loginError } = await supabase.rpc('register_user_login', {
-                p_user_id: currentUser.id,
-                p_ip_address: null,
-                p_user_agent: userAgent
-              })
-              
-              if (loginError) {
-                console.error('❌ Erro ao registrar login:', loginError)
-              } else {
-                console.log('✅ Login registrado com sucesso')
+          if (event === 'SIGNED_IN') {
+            setTimeout(async () => {
+              try {
+                const userAgent = navigator.userAgent
+                const { error: loginError } = await supabase.rpc('register_user_login', {
+                  p_user_id: currentUser.id,
+                  p_ip_address: null,
+                  p_user_agent: userAgent
+                })
+                
+                if (loginError) {
+                  console.error('❌ Erro ao registrar login:', loginError)
+                }
+              } catch (error) {
+                console.error('❌ Erro ao registrar login:', error)
               }
-            } catch (error) {
-              console.error('❌ Erro no registro de login:', error)
-            }
-          }, 100) // Delay de 100ms para não interferir no login
+            }, 100)
+          }
         } else if (!currentUser) {
-          console.log('👋 Usuário fez logout')
           if (mounted) {
             setProfile(null)
             globalProfileCache.clear() // Limpar cache no logout
@@ -656,101 +626,42 @@ export function AuthProvider({ children }) {
     if (!user?.id) return null
     
     try {
-      console.log('🔄 Recarregando perfil devido a degradação...')
-      
       // Limpar cache global antes de buscar novamente
       const cacheKey = `profile_${user.id}`
       globalProfileCache.delete(cacheKey)
       
       // Buscar perfil atualizado forçando bypass do cache
-      const updatedProfile = await fetchProfile(user.id, false) // false = não usar cache
+      const updatedProfile = await fetchProfile(user.id, false)
       
       if (updatedProfile && updatedProfile.email !== 'carregando@sistema.com') {
         setProfile(updatedProfile)
-        console.log('✅ Perfil recarregado com sucesso:', updatedProfile?.email, updatedProfile?.role)
         return updatedProfile
-      } else {
-        console.warn('⚠️ Perfil recarregado ainda está degradado, tentando novamente...')
-        return null
       }
+      return null
     } catch (error) {
       console.error('❌ Erro ao recarregar perfil:', error)
       return null
     }
   }
 
-  // Sistema preventivo contra degradação de perfil
-  const profileRecoveryAttempts = useRef(0)
-  const lastRecoveryTime = useRef(0)
-  const maxRecoveryAttempts = 2 // Reduzido para menos tentativas
-  const minRecoveryInterval = 500 // Reduzido para 500ms
+  // Sistema preventivo contra degradação de perfil (DESABILITADO - causando loops)
+  // COMENTADO: Este sistema estava causando re-renders infinitos e lentidão
+  // A degradação temporária durante carregamento é aceitável
+  
+  // const profileRecoveryAttempts = useRef(0)
+  // const lastRecoveryTime = useRef(0)
 
-  // Detectar e prevenir degradação imediatamente
-  React.useEffect(() => {
-    if (!profile || !user) return
-
-    const now = Date.now()
-    
-    // Verificar múltiplas condições de degradação
-    const isDegraded = 
-      profile.email === 'carregando@sistema.com' || 
-      (profile.role === 'user' && user.email && user.email !== profile.email) ||
-      (!profile.user_companies && user.email && !user.email.includes('carregando')) ||
-      (profile.id && profile.email && profile.email.includes('carregando'))
-
-    if (isDegraded) {
-      console.warn('🚨 Perfil degradado detectado, tentando recuperar...')
-      
-      // Verificar se já não estamos tentando recuperar muito frequentemente
-      if (now - lastRecoveryTime.current < minRecoveryInterval) {
-        console.warn('⏸️ Aguardando intervalo mínimo para próxima tentativa...')
-        return
-      }
-
-      // Verificar limite de tentativas
-      if (profileRecoveryAttempts.current >= maxRecoveryAttempts) {
-        console.error('🚫 Limite de tentativas de recuperação atingido')
-        return
-      }
-
-      profileRecoveryAttempts.current++
-      lastRecoveryTime.current = now
-      
-      // Recuperar imediatamente sem delay
-      refreshProfile().then((recovered) => {
-        if (recovered && recovered.email !== 'carregando@sistema.com') {
-          console.log('🎉 Perfil recuperado com sucesso!')
-          profileRecoveryAttempts.current = 0 // Reset contador
-        }
-      })
-    } else {
-      // Reset contador se perfil está saudável
-      profileRecoveryAttempts.current = 0
-    }
-  }, [profile, user])
-
-  // Sistema de cache preventivo - recarregar antes de expirar
-  React.useEffect(() => {
-    if (!user?.id || !profile) return
-
-    const preventiveRefresh = setInterval(() => {
-      const cacheKey = `profile_${user.id}`
-      const cachedData = globalProfileCache.get(cacheKey)
-      
-      if (cachedData) {
-        const age = Date.now() - cachedData.timestamp
-        const maxAge = 20000 // Reduzido para 20 segundos
-        
-        // Se o cache está próximo de expirar, renovar preventivamente
-        if (age > maxAge * 0.7) { // 70% da idade máxima
-          console.log('🔄 Renovação preventiva do perfil iniciada...')
-          fetchProfile(user.id, false) // Refresh em background
-        }
-      }
-    }, 3000) // Verificar a cada 3 segundos (reduzido de 5s)
-
-    return () => clearInterval(preventiveRefresh)
-  }, [user, profile])
+  // Sistema de cache preventivo (DESABILITADO - causando queries excessivas)
+  // COMENTADO: Renovação a cada 3s estava causando muitas queries desnecessárias
+  // O cache atual de 30s é suficiente
+  
+  // React.useEffect(() => {
+  //   if (!user?.id || !profile) return
+  //   const preventiveRefresh = setInterval(() => {
+  //     fetchProfile(user.id, false)
+  //   }, 30000)
+  //   return () => clearInterval(preventiveRefresh)
+  // }, [user, profile])
 
   const value = {
     user,

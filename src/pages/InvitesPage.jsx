@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { sendInviteEmail as sendInviteEmailService, getEmailConfig } from '../services/emailService'
+import { sendInviteEmail as sendInviteEmailService, getEmailConfig, testEmailConfiguration } from '../services/emailService'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
@@ -18,7 +18,8 @@ import {
   AlertCircle,
   Users,
   Settings,
-  Send
+  Send,
+  TestTube
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -34,12 +35,14 @@ export default function InvitesPage() {
   const [companies, setCompanies] = useState([])
   const [selectedCompany, setSelectedCompany] = useState('')
   const [emailConfig, setEmailConfig] = useState(null)
+  const [showTestModal, setShowTestModal] = useState(false)
+  const [testEmail, setTestEmail] = useState('')
+  const [testingEmail, setTestingEmail] = useState(false)
 
   // Carregar configuração de email
   useEffect(() => {
     const config = getEmailConfig()
     setEmailConfig(config)
-    console.log('📧 Configuração de email:', config)
   }, [])
 
   // Carregar empresas do usuário
@@ -118,19 +121,19 @@ export default function InvitesPage() {
       if (error) throw error
 
       if (data.success) {
-        toast.success(`Convite enviado para ${inviteForm.email}!`)
-        setInviteForm({ email: '', role: 'user', message: '' })
+        toast.success(`Convite criado para ${inviteForm.email}!`)
         
         // Enviar email de convite
         try {
           await sendInviteEmailService(data)
-          toast.success('Email enviado com sucesso!')
+          toast.success('📧 Email enviado com sucesso!')
         } catch (emailError) {
-          console.warn('Email não pôde ser enviado:', emailError.message)
-          toast.success('Convite criado (Email será enviado posteriormente)')
+          console.error('Erro ao enviar email:', emailError)
+          toast.error(`⚠️ Convite criado, mas email não foi enviado: ${emailError.message}`)
         }
         
-        // Recarregar lista
+        // Limpar formulário e recarregar lista
+        setInviteForm({ email: '', role: 'user', message: '' })
         loadInvites()
       } else {
         toast.error(data.error || 'Erro ao criar convite')
@@ -145,30 +148,29 @@ export default function InvitesPage() {
 
   const sendInviteEmail = async (inviteData) => {
     try {
-      console.log('📧 Enviando email de convite para:', inviteData.email)
-      
       // Buscar informações adicionais necessárias
       const company = companies.find(c => c.id === inviteData.company_id)
       
-      // Preparar dados completos para o email
+      // Preparar dados para o serviço Supabase Auth nativo
       const emailData = {
-        email: inviteData.email,
-        company_name: company?.name || 'Empresa',
+        to: inviteData.email,
+        inviterName: profile?.full_name || 'Administrador',
+        companyName: company?.name || 'Empresa',
         role: inviteData.role,
-        message: inviteData.message,
-        token: inviteData.token,
-        invited_by_name: profile?.full_name || 'Administrador',
-        invited_by_email: profile?.email || user?.email
+        metadata: {
+          company_id: inviteData.company_id,
+          invite_message: inviteData.message,
+          token: inviteData.token,
+          invited_by_email: profile?.email || user?.email
+        }
       }
       
-      // Enviar email usando o serviço
+      // Enviar convite usando Supabase Auth (envia email automaticamente)
       const result = await sendInviteEmailService(emailData)
       
       if (result.success) {
-        console.log('✅ Email enviado com sucesso!')
         return result
       } else {
-        console.error('❌ Erro no envio:', result.message)
         throw new Error(result.message)
       }
     } catch (error) {
@@ -177,25 +179,99 @@ export default function InvitesPage() {
     }
   }
 
+  const testEmailSending = async () => {
+    if (!testEmail) {
+      toast.error('Digite um email para teste')
+      return
+    }
+
+    try {
+      setTestingEmail(true)
+      toast.loading('Enviando email de teste...', { id: 'test-email' })
+      
+      const result = await testEmailConfiguration(testEmail)
+      
+      if (result.success) {
+        toast.success('Email de teste enviado com sucesso! Verifique a caixa de entrada.', { id: 'test-email' })
+        setShowTestModal(false)
+        setTestEmail('')
+      } else {
+        toast.error(`Erro ao enviar: ${result.message}`, { id: 'test-email' })
+      }
+    } catch (error) {
+      toast.error('Erro ao testar envio de email', { id: 'test-email' })
+    } finally {
+      setTestingEmail(false)
+    }
+  }
+
   const cancelInvite = async (inviteId) => {
     if (!confirm('Tem certeza que deseja cancelar este convite?')) return
 
     try {
-      const { error } = await supabase
+      setLoading(true)
+      
+      console.log('🗑️ Cancelando convite:', inviteId)
+      
+      // Primeiro tenta UPDATE para 'cancelled'
+      const { data: updateData, error: updateError } = await supabase
         .from('invites')
-        .update({ 
-          status: 'cancelled', 
-          updated_at: new Date().toISOString() 
-        })
+        .update({ status: 'cancelled' })
         .eq('id', inviteId)
+        .select()
 
-      if (error) throw error
-
-      toast.success('Convite cancelado')
-      loadInvites()
+      if (updateError) {
+        console.error('❌ Erro ao atualizar status:', updateError)
+        
+        // Se falhar por constraint, tenta DELETE direto
+        console.log('🔄 Tentando DELETE direto...')
+        const { data: deleteData, error: deleteError } = await supabase
+          .from('invites')
+          .delete()
+          .eq('id', inviteId)
+          .select()
+        
+        if (deleteError) {
+          console.error('❌ Erro ao deletar:', deleteError)
+          throw deleteError
+        }
+        
+        if (!deleteData || deleteData.length === 0) {
+          throw new Error('Não foi possível deletar o convite. Verifique suas permissões.')
+        }
+        
+        console.log('✅ Convite deletado (após falha no UPDATE):', deleteData)
+      } else {
+        if (!updateData || updateData.length === 0) {
+          throw new Error('Não foi possível cancelar o convite. Verifique suas permissões.')
+        }
+        console.log('✅ Convite cancelado (UPDATE):', updateData)
+      }
+      
+      toast.success('✅ Convite cancelado com sucesso!')
+      
+      // Recarregar lista de convites
+      await loadInvites()
+      
     } catch (err) {
-      console.error('Erro ao cancelar convite:', err)
-      toast.error('Erro ao cancelar convite')
+      console.error('❌ Erro ao cancelar convite:', err)
+      
+      // Mensagens de erro mais específicas
+      let errorMessage = 'Erro ao cancelar convite'
+      
+      if (err.message?.includes('permission') || err.message?.includes('permissões')) {
+        errorMessage = 'Você não tem permissão para cancelar este convite'
+      } else if (err.message?.includes('not found')) {
+        errorMessage = 'Convite não encontrado'
+      } else if (err.message?.includes('policy')) {
+        errorMessage = 'Acesso negado pela política de segurança. Entre em contato com o administrador.'
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+      
+      toast.error(`❌ ${errorMessage}`)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -203,16 +279,21 @@ export default function InvitesPage() {
     try {
       setLoading(true)
       
-      // Reenviar email
+      // Reenviar convite via Supabase Auth
       const company = companies.find(c => c.id === invite.company_id)
       const emailData = {
-        email: invite.email,
-        company_name: company?.name || invite.company_name,
+        to: invite.email,
+        inviterName: profile?.full_name || 'Administrador',
+        companyName: company?.name || invite.company_name,
         role: invite.role,
-        message: invite.invite_message,
-        token: invite.token,
-        invited_by_name: profile?.full_name || 'Administrador',
-        invited_by_email: profile?.email || user?.email
+        metadata: {
+          company_id: invite.company_id,
+          invite_message: invite.invite_message,
+          token: invite.token,
+          invited_by_email: profile?.email || user?.email,
+          is_resend: true,
+          resent_at: new Date().toISOString()
+        }
       }
       
       const result = await sendInviteEmailService(emailData)
@@ -224,6 +305,69 @@ export default function InvitesPage() {
       }
     } catch (err) {
       toast.error('Erro ao reenviar convite')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const clearHistory = async () => {
+    const cancelledInvites = invites.filter(inv => 
+      inv.status === 'cancelled' || inv.status === 'expired' || inv.status === 'accepted'
+    )
+    
+    if (cancelledInvites.length === 0) {
+      toast.error('Não há convites finalizados para limpar')
+      return
+    }
+    
+    if (!confirm(`Deseja limpar ${cancelledInvites.length} convite(s) do histórico? Esta ação não pode ser desfeita.`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      const ids = cancelledInvites.map(inv => inv.id)
+      console.log('🗑️ Limpando histórico de', ids.length, 'convites:', ids)
+      
+      // Tentar deletar um por um para identificar quais falharam
+      let successCount = 0
+      let failCount = 0
+      
+      for (const id of ids) {
+        const { data, error } = await supabase
+          .from('invites')
+          .delete()
+          .eq('id', id)
+          .select()
+
+        if (error) {
+          console.error(`❌ Erro ao deletar convite ${id}:`, error)
+          failCount++
+        } else if (data && data.length > 0) {
+          console.log(`✅ Convite ${id} deletado`)
+          successCount++
+        } else {
+          console.warn(`⚠️ Convite ${id} não pôde ser deletado (sem permissão ou não existe)`)
+          failCount++
+        }
+      }
+
+      console.log(`📊 Resultado: ${successCount} deletados, ${failCount} falhas`)
+      
+      if (successCount > 0) {
+        toast.success(`✅ ${successCount} convite(s) removido(s) do histórico!`)
+      }
+      
+      if (failCount > 0) {
+        toast.error(`⚠️ ${failCount} convite(s) não puderam ser removidos. Verifique suas permissões.`)
+      }
+      
+      await loadInvites()
+      
+    } catch (err) {
+      console.error('❌ Erro ao limpar histórico:', err)
+      toast.error(`❌ Erro ao limpar histórico: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -377,18 +521,29 @@ export default function InvitesPage() {
           {/* Status do Email Service */}
           {emailConfig && (
             <Card className="p-4 bg-gradient-to-r from-blue-50/80 to-blue-100/50 border border-blue-200/50 rounded-3xl mb-6">
-              <div className="flex items-center space-x-3">
-                <Settings className="w-5 h-5 text-blue-600" />
-                <div>
-                  <p className="font-medium text-blue-900">
-                    Status do Email: {emailConfig.configured ? '✅ Configurado' : '❌ Não configurado'}
-                  </p>
-                  <p className="text-sm text-blue-700">
-                    Serviço: {emailConfig.service} • 
-                    API: {emailConfig.apiKey} • 
-                    From: {emailConfig.fromEmail}
-                  </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Settings className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="font-medium text-blue-900">
+                      {emailConfig.configured ? '✅ Email Configurado' : '❌ Email Não Configurado'}
+                    </p>
+                    <p className="text-sm text-blue-700">
+                      {emailConfig.service} • {emailConfig.fromEmail} • Domínio: {emailConfig.domain}
+                    </p>
+                  </div>
                 </div>
+                {emailConfig.configured && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowTestModal(true)}
+                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                  >
+                    <TestTube className="w-4 h-4 mr-2" />
+                    Testar Email
+                  </Button>
+                )}
               </div>
             </Card>
           )}
@@ -486,17 +641,35 @@ export default function InvitesPage() {
                 <div className="flex items-center">
                   <Users className="w-5 h-5 text-[#EBA500] mr-2" />
                   <h2 className="text-xl font-semibold text-[#373435]">Convites Enviados</h2>
+                  {invites.length > 0 && (
+                    <span className="ml-2 px-2 py-1 bg-[#EBA500]/10 text-[#EBA500] text-xs font-medium rounded-full">
+                      {invites.length}
+                    </span>
+                  )}
                 </div>
-                <Button
-                  variant="outline"
-                  onClick={loadInvites}
-                  disabled={loading}
-                  size="sm"
-                  className="border-[#EBA500]/30 text-[#EBA500] hover:bg-[#EBA500]/10"
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  Atualizar
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={clearHistory}
+                    disabled={loading || !invites.some(inv => ['cancelled', 'expired', 'accepted'].includes(inv.status))}
+                    size="sm"
+                    className="border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Limpar convites cancelados, expirados e aceitos"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Limpar Histórico
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={loadInvites}
+                    disabled={loading}
+                    size="sm"
+                    className="border-[#EBA500]/30 text-[#EBA500] hover:bg-[#EBA500]/10"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                    Atualizar
+                  </Button>
+                </div>
               </div>
 
               {loading && invites.length === 0 ? (
@@ -579,6 +752,88 @@ export default function InvitesPage() {
             </Card>
           </div>
         </div>
+
+        {/* Modal de Teste de Email */}
+        {showTestModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="bg-white p-6 rounded-3xl max-w-md w-full shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100">
+                    <TestTube className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#373435]">Testar Envio de Email</h3>
+                </div>
+                <button
+                  onClick={() => setShowTestModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4">
+                Digite seu email para receber um convite de teste e verificar se o sistema 
+                de envio está funcionando corretamente.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
+                    <Mail className="w-4 h-4 inline mr-1" />
+                    Seu Email
+                  </label>
+                  <Input
+                    type="email"
+                    placeholder="seu-email@exemplo.com"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    disabled={testingEmail}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-3">
+                  <p className="text-xs text-yellow-800">
+                    ⚠️ <strong>Atenção:</strong> Um email de teste será enviado para o endereço fornecido. 
+                    Verifique sua caixa de entrada e spam.
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowTestModal(false)
+                      setTestEmail('')
+                    }}
+                    disabled={testingEmail}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={testEmailSending}
+                    disabled={testingEmail || !testEmail}
+                    className="flex-1 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 text-white"
+                  >
+                    {testingEmail ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Enviar Teste
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
   )
 }
