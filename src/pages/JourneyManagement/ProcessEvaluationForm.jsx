@@ -80,21 +80,14 @@ const ProcessEvaluationForm = () => {
     5: 'Urgentíssimo'
   }
 
-  // Labels para facilidade de implementação
+  // Labels para dificuldade de implementação
   const implementationEaseLabels = {
-    1: 'Difícil implementação',
-    2: 'Muito esforço',
+    1: 'Sem esforço',
+    2: 'Pouco esforço',
     3: 'Esforço mediano',
-    4: 'Pouco esforço',
-    5: 'Sem esforço'
+    4: 'Muito esforço',
+    5: 'Difícil implementação'
   }
-
-  const statusOptions = [
-    { value: 'pending', label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
-    { value: 'in_progress', label: 'Em Progresso', color: 'bg-blue-100 text-blue-800' },
-    { value: 'completed', label: 'Concluído', color: 'bg-green-100 text-green-800' },
-    { value: 'blocked', label: 'Bloqueado', color: 'bg-red-100 text-red-800' }
-  ]
 
   // Carregar dados
   useEffect(() => {
@@ -385,24 +378,6 @@ const ProcessEvaluationForm = () => {
               </h3>
               
               <form className="space-y-8">
-                {/* Status */}
-                <div>
-                  <label className="block text-sm font-semibold text-[#373435] mb-3">
-                    Status
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => handleInputChange('status', e.target.value)}
-                    className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 bg-white"
-                  >
-                    {statusOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 {/* Tem/não tem processo */}
                 <div>
                   <label className="block text-sm font-semibold text-[#373435] mb-3">
@@ -553,18 +528,18 @@ const ProcessEvaluationForm = () => {
                       </div>
                     </div>
 
-                    {/* Facilidade para Implementar */}
+                    {/* Dificuldade para implementar */}
                     <div>
                       <label className="block text-sm font-semibold text-[#373435] mb-4">
-                        Facilidade para Implementar
+                        Dificuldade para implementar
                       </label>
                       <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
                         {[
-                          { value: 1, label: 'Difícil implementação' },
-                          { value: 2, label: 'Muito esforço' },
+                          { value: 1, label: 'Sem esforço' },
+                          { value: 2, label: 'Pouco esforço' },
                           { value: 3, label: 'Esforço mediano' },
-                          { value: 4, label: 'Pouco esforço' },
-                          { value: 5, label: 'Sem esforço' }
+                          { value: 4, label: 'Muito esforço' },
+                          { value: 5, label: 'Difícil implementação' }
                         ].map(option => (
                           <button
                             key={option.value}
@@ -649,10 +624,10 @@ const ProcessEvaluationForm = () => {
                             </div>
                           </div>
                           
-                          {/* Facilidade */}
+                          {/* Dificuldade */}
                           <div className="bg-white p-4 rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-green-100/30 min-h-[100px] flex flex-col justify-between">
                             <div className="text-xs text-green-600 font-semibold mb-2 uppercase tracking-wide">
-                              Facilidade
+                              Dificuldade
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
                               <div className="text-2xl font-bold text-green-700 mb-1">
@@ -688,7 +663,7 @@ const ProcessEvaluationForm = () => {
                         {/* Fórmula */}
                         <div className="mt-4 p-3 bg-white/50 rounded-xl border border-gray-200/50">
                           <div className="text-xs text-gray-600 text-center font-medium">
-                            📊 Fórmula: (Importância × Urgência) ÷ Facilidade
+                            📊 Fórmula: (Importância × Urgência) ÷ Dificuldade
                           </div>
                         </div>
                       </>

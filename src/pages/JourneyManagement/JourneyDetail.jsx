@@ -47,6 +47,7 @@ const JourneyDetail = () => {
   const [processToEdit, setProcessToEdit] = useState(null)
   const [showDropdownMenu, setShowDropdownMenu] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
+  const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState(null)
   const [showToggleConfirm, setShowToggleConfirm] = useState(null)
 
   // Mapear dados das jornadas com cores BG2
@@ -113,6 +114,9 @@ const JourneyDetail = () => {
       try {
         setLoading(true)
         
+        // Limpar avaliações ao mudar de jornada
+        setEvaluations([])
+        
         // Obter dados da jornada
         const journeyData = journeysData[journeySlug]
         if (!journeyData) {
@@ -158,7 +162,10 @@ const JourneyDetail = () => {
         // Carregar avaliações se uma empresa está selecionada
         if (companyId && processesData?.length > 0) {
           try {
-            // Carregar todas as avaliações desta empresa
+            // Pegar IDs dos processos desta jornada
+            const processIds = processesData.map(p => p.id)
+            
+            // Carregar APENAS avaliações dos processos desta jornada específica
             const { data: evaluationsData, error: evaluationsError } = await supabase
               .from('process_evaluations')
               .select(`
@@ -177,12 +184,15 @@ const JourneyDetail = () => {
                 updated_at
               `)
               .eq('company_id', companyId)
+              .in('process_id', processIds) // FILTRO CRÍTICO: só processos desta jornada
 
             if (evaluationsError) {
               console.warn('Erro ao carregar avaliações:', evaluationsError)
               setProcesses(processesData || [])
             } else {
               setEvaluations(evaluationsData || [])
+              
+              console.log(`✅ Jornada ${journeySlug}: ${evaluationsData?.length || 0} avaliações carregadas para ${processesData.length} processos`)
               
               // Enriquecer os processos com dados de avaliação
               const enrichedProcesses = processesData?.map(process => {
@@ -303,10 +313,45 @@ const JourneyDetail = () => {
       setProcesses(prev => prev.filter(p => p.id !== processId))
       setShowDeleteConfirm(null)
       
-      alert('Processo removido com sucesso!')
+      alert('Processo desativado com sucesso!')
     } catch (error) {
-      console.error('Erro ao remover processo:', error)
-      alert('Erro ao remover processo: ' + error.message)
+      console.error('Erro ao desativar processo:', error)
+      alert('Erro ao desativar processo: ' + error.message)
+    }
+  }
+
+  // Apagar processo permanentemente
+  const handlePermanentDeleteProcess = async (processId) => {
+    if (!showPermanentDeleteConfirm) return
+
+    try {
+      // Usar RPC para deletar processo com todas as dependências
+      const { data, error: rpcError } = await supabase.rpc('delete_process_permanent', {
+        p_process_id: processId
+      })
+
+      if (rpcError) {
+        throw new Error(`Erro ao executar função de deleção: ${rpcError.message}`)
+      }
+
+      // Verificar se a função retornou sucesso
+      if (data && !data.success) {
+        throw new Error(data.error || 'Erro desconhecido ao deletar processo')
+      }
+
+      // Remover da lista local
+      setProcesses(prev => prev.filter(p => p.id !== processId))
+      setShowPermanentDeleteConfirm(null)
+      
+      // Mostrar mensagem de sucesso com detalhes
+      const deletedInfo = data 
+        ? `\n- ${data.evaluations_deleted} avaliações deletadas\n- ${data.history_deleted} registros de histórico deletados`
+        : ''
+      
+      alert(`Processo apagado permanentemente com sucesso!${deletedInfo}`)
+    } catch (error) {
+      console.error('Erro ao apagar processo:', error)
+      alert('Erro ao apagar processo: ' + error.message)
     }
   }
 
@@ -859,8 +904,8 @@ const JourneyDetail = () => {
               <div className="text-right">
                 <div className="text-2xl font-bold text-blue-600">
                   {processes.filter(p => p.is_active).length > 0 
-                    ? Math.round((evaluations.filter(e => e.has_process === true).length / processes.filter(p => p.is_active).length) * 100)
-                    : 0
+                    ? ((evaluations.filter(e => e.has_process === true).length / processes.filter(p => p.is_active).length) * 100).toFixed(2)
+                    : '0.00'
                   }%
                 </div>
                 <div className="text-xs text-gray-500">
@@ -875,7 +920,7 @@ const JourneyDetail = () => {
                 className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500 ease-out"
                 style={{ 
                   width: `${processes.filter(p => p.is_active).length > 0 
-                    ? Math.round((evaluations.filter(e => e.has_process === true).length / processes.filter(p => p.is_active).length) * 100)
+                    ? ((evaluations.filter(e => e.has_process === true).length / processes.filter(p => p.is_active).length) * 100).toFixed(2)
                     : 0
                   }%` 
                 }}
@@ -887,7 +932,7 @@ const JourneyDetail = () => {
               <span>0%</span>
               <span className="text-blue-600 font-medium">
                 {processes.filter(p => p.is_active).length > 0 
-                  ? `${Math.round((evaluations.filter(e => e.has_process === true).length / processes.filter(p => p.is_active).length) * 100)}% amadurecido`
+                  ? `${((evaluations.filter(e => e.has_process === true).length / processes.filter(p => p.is_active).length) * 100).toFixed(2)}% amadurecido`
                   : 'Nenhum processo ativo'
                 }
               </span>
@@ -1039,6 +1084,16 @@ const JourneyDetail = () => {
                                       <EyeOff className="h-4 w-4" />
                                       <span>Desativar Processo</span>
                                     </button>
+                                    <button
+                                      onClick={() => {
+                                        setShowDropdownMenu(null)
+                                        setShowPermanentDeleteConfirm(process)
+                                      }}
+                                      className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left border-t border-gray-100"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      <span>Apagar Permanentemente</span>
+                                    </button>
                                   </div>
                                 </div>
                               )}
@@ -1123,6 +1178,47 @@ const JourneyDetail = () => {
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
               >
                 Remover
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Deleção Permanente */}
+      {showPermanentDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <Trash2 className="h-5 w-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">⚠️ Apagar Permanentemente</h3>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-sm text-gray-900 font-medium mb-2">
+                Esta ação irá remover permanentemente o processo "{showPermanentDeleteConfirm.name}" do banco de dados.
+              </p>
+              <p className="text-sm text-red-600 font-medium">
+                ⚠️ ATENÇÃO: Esta ação NÃO PODE ser desfeita!
+              </p>
+              <p className="text-sm text-gray-600 mt-2">
+                Todas as avaliações associadas a este processo também serão removidas.
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={() => setShowPermanentDeleteConfirm(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handlePermanentDeleteProcess(showPermanentDeleteConfirm.id)}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-lg"
+              >
+                Sim, Apagar Permanentemente
               </button>
             </div>
           </div>
