@@ -100,11 +100,6 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/journey-management/overview'
       },
       {
-        name: 'Convites',
-        icon: UserPlus,
-        href: '/invites'
-      },
-      {
         name: 'Criar Empresa',
         icon: Building2,
         href: '/companies/new'
@@ -159,11 +154,6 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         name: 'Planejamento Estratégico',
         icon: Kanban,
         href: '/planejamento-estrategico'
-      },
-      {
-        name: 'Convites',
-        icon: UserPlus,
-        href: '/invites'
       },
       {
         name: 'Jornadas',

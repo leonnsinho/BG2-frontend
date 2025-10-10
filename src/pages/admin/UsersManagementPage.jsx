@@ -204,19 +204,54 @@ export default function UsersManagementPage() {
     try {
       setUpdating(true)
       
-      const { error } = await supabase
+      console.log('🔄 Tentando atualizar usuário...')
+      console.log('   - User ID:', userId)
+      console.log('   - Updates:', updates)
+      console.log('   - Campo full_name:', updates.full_name)
+      
+      // Verificar se o registro existe antes de atualizar
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
-        .update(updates)
+        .select('*')
         .eq('id', userId)
+        .single()
+      
+      if (checkError) {
+        console.error('❌ Erro ao buscar profile:', checkError)
+        throw checkError
+      }
+      
+      console.log('📋 Profile atual:', existingProfile)
+      
+      // Atualizar com timestamp
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString()
+      }
+      
+      console.log('📝 Dados para atualizar:', updateData)
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', userId)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Erro ao atualizar no Supabase:', error)
+        throw error
+      }
+      
+      console.log('✅ Resposta do Supabase:', data)
+      console.log('✅ Novo full_name:', data?.[0]?.full_name)
 
       await loadUsers()
       setIsEditModalOpen(false)
       setSelectedUser(null)
+      alert('Nome do usuário atualizado com sucesso!')
     } catch (error) {
-      console.error('Erro ao atualizar usuário:', error)
-      alert('Erro ao atualizar usuário')
+      console.error('❌ ERRO COMPLETO:', error)
+      alert('Erro ao atualizar usuário: ' + error.message)
     } finally {
       setUpdating(false)
     }
@@ -917,14 +952,20 @@ export default function UsersManagementPage() {
 
 // Componente Modal de Edição
 function EditUserModal({ user, onClose, onSave, loading }) {
-  const [formData, setFormData] = useState({
-    full_name: user.full_name || '',
-    role: user.role || 'user'
-  })
+  const [fullName, setFullName] = useState(user.full_name || '')
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    onSave(user.user_id, formData)
+    
+    if (!fullName.trim()) {
+      alert('Por favor, preencha o nome do usuário')
+      return
+    }
+    
+    console.log('📝 Enviando atualização - User ID:', user.id, 'Nome:', fullName)
+    
+    // Enviar apenas o nome para atualização
+    onSave(user.id, { full_name: fullName.trim() })
   }
 
   return (
@@ -938,7 +979,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
           <form onSubmit={handleSubmit}>
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                Editar Usuário
+                Editar Nome do Usuário
               </h3>
               
               <div className="space-y-4">
@@ -946,33 +987,29 @@ function EditUserModal({ user, onClose, onSave, loading }) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nome Completo
                   </label>
-                  <Input
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     placeholder="Nome completo do usuário"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#EBA500]"
+                    autoFocus
+                    required
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Função
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {Object.entries(ROLES).map(([key, role]) => (
-                      <option key={key} value={key}>{role.label}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Email (não editável)
-                  </label>
-                  <p className="text-sm text-gray-500 mt-1">{user.email}</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-sm text-gray-600">
+                    <strong>Email:</strong> {user.email}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    <strong>Função:</strong> {user.role || 'user'}
+                  </p>
+                  {user.companies?.name && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      <strong>Empresa:</strong> {user.companies.name}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

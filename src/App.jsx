@@ -13,7 +13,6 @@ import { DashboardPage } from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
 import AssignedGoalsPage from './pages/AssignedGoalsPage'
 import { PlanejamentoEstrategicoPage } from './pages/PlanejamentoEstrategicoPage'
-import InvitesPage from './pages/InvitesPage'
 import ConvitesSimples from './pages/ConvitesSimples'
 import AcceptInviteNova from './pages/AcceptInviteNova'
 import CompleteSignupPage from './pages/CompleteSignupPage'
@@ -157,15 +156,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ProcessEvaluationPage />
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route 
-        path="/invites" 
-        element={
-          <ProtectedRoute requiredRole={['super_admin', 'consultant', 'company_admin']}>
-            <ConvitesSimples />
           </ProtectedRoute>
         }
       />
