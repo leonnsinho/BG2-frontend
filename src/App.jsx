@@ -30,6 +30,7 @@ import ProcessEvaluationForm from './pages/JourneyManagement/ProcessEvaluationFo
 import UsersManagementPage from './pages/admin/UsersManagementPage'
 import JourneyAssignmentsPage from './pages/admin/JourneyAssignmentsPage'
 import CompaniesManagementPage from './pages/admin/CompaniesManagementPage'
+import ProcessRequestsPage from './pages/ProcessRequestsPage'
 import TasksInProgressNew from './pages/TasksInProgressNew'
 import ActiveUsersPage from './pages/ActiveUsersPage'
 import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage'
@@ -236,6 +237,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <JourneyAssignmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/admin/process-requests" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <ProcessRequestsPage />
           </ProtectedRoute>
         }
       />

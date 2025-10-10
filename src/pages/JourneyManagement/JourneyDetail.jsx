@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
 import ProcessManagementModal from '../../components/processes/ProcessManagementModal'
+import RequestProcessModal from '../../components/processes/RequestProcessModal'
 import { 
   Target, 
   Building2, 
@@ -23,7 +24,8 @@ import {
   Plus,
   Trash2,
   MoreVertical,
-  EyeOff
+  EyeOff,
+  FileText
 } from 'lucide-react'
 
 const JourneyDetail = () => {
@@ -49,6 +51,7 @@ const JourneyDetail = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
   const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState(null)
   const [showToggleConfirm, setShowToggleConfirm] = useState(null)
+  const [showRequestProcessModal, setShowRequestProcessModal] = useState(false)
 
   // Mapear dados das jornadas com cores BG2
   const journeysData = {
@@ -295,6 +298,47 @@ const JourneyDetail = () => {
     }
     setShowProcessModal(false)
     setProcessToEdit(null)
+  }
+
+  // Verificar se o usuário é company admin
+  const isCompanyAdmin = () => {
+    if (!profile || !companyId) return false
+    
+    // Verificar se tem role de company_admin na tabela user_companies
+    return profile.user_companies?.some(uc => 
+      uc.company_id === companyId && 
+      uc.role === 'company_admin' && 
+      uc.is_active === true
+    )
+  }
+
+  // Enviar solicitação de novo processo
+  const handleRequestProcess = async (requestData) => {
+    try {
+      const { data, error } = await supabase
+        .from('process_requests')
+        .insert([{
+          company_id: companyId,
+          journey_slug: journeySlug,
+          requested_by: profile.id,
+          process_name: requestData.process_name,
+          process_description: requestData.process_description,
+          category: requestData.category,
+          justification: requestData.justification,
+          status: 'pending'
+        }])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      console.log('✅ Solicitação enviada:', data)
+      alert('Solicitação enviada com sucesso! O Super Admin será notificado.')
+      setShowRequestProcessModal(false)
+    } catch (error) {
+      console.error('Erro ao enviar solicitação:', error)
+      throw error
+    }
   }
 
   // Confirmar exclusão de processo
@@ -948,15 +992,31 @@ const JourneyDetail = () => {
               Processos ({filteredProcesses.length} de {processes.length})
             </h3>
             
-            {/* Botão Adicionar Processo */}
-            <button
-              onClick={handleAddProcess}
-              className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
-              title="Adicionar novo processo"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Adicionar Processo</span>
-            </button>
+            <div className="flex items-center space-x-3">
+              {/* Botão Adicionar Processo - Apenas para Super Admin */}
+              {profile?.role === 'super_admin' && (
+                <button
+                  onClick={handleAddProcess}
+                  className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  title="Adicionar novo processo"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Adicionar Processo</span>
+                </button>
+              )}
+
+              {/* Botão Solicitar Processo - Apenas para Company Admin */}
+              {isCompanyAdmin() && profile?.role !== 'super_admin' && (
+                <button
+                  onClick={() => setShowRequestProcessModal(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  title="Solicitar criação de novo processo"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Solicitar Processo</span>
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="divide-y divide-gray-100">
@@ -1148,6 +1208,17 @@ const JourneyDetail = () => {
           processToEdit={processToEdit}
           onProcessSaved={handleProcessSaved}
           existingProcesses={processes}
+        />
+      )}
+
+      {/* Modal de Solicitar Processo */}
+      {showRequestProcessModal && (
+        <RequestProcessModal
+          isOpen={showRequestProcessModal}
+          onClose={() => setShowRequestProcessModal(false)}
+          journey={journey}
+          company={company}
+          onRequestSubmitted={handleRequestProcess}
         />
       )}
       
