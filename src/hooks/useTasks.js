@@ -96,6 +96,7 @@ export const useTasks = () => {
           title,
           description,
           assigned_to,
+          assigned_to_name,
           process_id,
           journey_id,
           status,

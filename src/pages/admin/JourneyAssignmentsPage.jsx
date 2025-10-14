@@ -94,7 +94,7 @@ export default function JourneyAssignmentsPage() {
       let usersQuery, usersData
 
       if (hasRole('super_admin')) {
-        // Super admin vê todos os usuários com seus company roles (exceto ele mesmo)
+        // Super admin vê todos os GESTORES com seus company roles (exceto ele mesmo)
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, email, full_name, role')
@@ -113,36 +113,41 @@ export default function JourneyAssignmentsPage() {
             .select('user_id, role, company_id')
             .in('user_id', profileIds)
             .eq('is_active', true)
+            .like('role', '%gestor%') // NOVO: Apenas gestores
 
           if (!ucError) {
             userCompaniesData = ucData || []
           }
         }
 
-        // Combinar os dados
-        usersData = (profilesData || []).map(profile => {
-          const userCompany = userCompaniesData.find(uc => uc.user_id === profile.id)
-          return {
-            ...profile,
-            company_role: userCompany?.role || null,
-            company_id: userCompany?.company_id || null
-          }
-        })
+        // Combinar os dados - FILTRAR para mostrar apenas usuários que são gestores
+        usersData = (profilesData || [])
+          .map(profile => {
+            const userCompany = userCompaniesData.find(uc => uc.user_id === profile.id)
+            return {
+              ...profile,
+              company_role: userCompany?.role || null,
+              company_id: userCompany?.company_id || null
+            }
+          })
+          .filter(user => user.company_role !== null) // NOVO: Apenas usuários com role de gestor
 
       } else {
-        // Company admin vê apenas usuários da sua empresa (exceto ele mesmo)
+        // Company admin vê apenas GESTORES da sua empresa (exceto ele mesmo)
         const activeCompany = profile.user_companies?.find(uc => uc.is_active)
         if (!activeCompany?.company_id) {
           throw new Error('Empresa ativa não encontrada')
         }
 
-        // Primeiro buscar as relações user_companies da empresa (excluindo o usuário atual)
+        // Primeiro buscar as relações user_companies da empresa
+        // Filtrando apenas roles que contém "gestor" (excluindo o usuário atual)
         const { data: userCompaniesData, error: ucError } = await supabase
           .from('user_companies')
           .select('user_id, role')
           .eq('company_id', activeCompany.company_id)
           .eq('is_active', true)
           .neq('user_id', profile.id) // Excluir o usuário atual
+          .like('role', '%gestor%') // NOVO: Apenas gestores
 
         if (ucError) throw ucError
         
@@ -421,10 +426,10 @@ export default function JourneyAssignmentsPage() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#373435] mb-3">
-            Atribuição de Jornadas
+            Atribuição de Jornadas para Gestores
           </h1>
           <p className="text-gray-600 text-lg">
-            Gerencie as atribuições manuais de jornadas para usuários além do acesso baseado em seus roles.
+            Atribua jornadas manualmente aos gestores da sua empresa além do acesso baseado em seus roles.
           </p>
         </div>
 
@@ -432,12 +437,12 @@ export default function JourneyAssignmentsPage() {
         {users.length === 0 && !loading ? (
           <div className="bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 border border-[#EBA500]/30 rounded-3xl p-8 text-center">
             <h3 className="text-lg font-semibold text-[#373435] mb-3">
-              Nenhum usuário encontrado
+              Nenhum gestor encontrado
             </h3>
             <p className="text-gray-600">
               {profile.role === 'super_admin' 
-                ? 'Como super admin, você tem acesso global mas não há usuários com empresa definida.'
-                : 'Não há usuários registrados na sua empresa.'
+                ? 'Não há gestores cadastrados no sistema.'
+                : 'Não há gestores registrados na sua empresa.'
               }
             </p>
           </div>
@@ -446,17 +451,17 @@ export default function JourneyAssignmentsPage() {
           <div className="px-8 py-6 border-b border-gray-100">
             <h2 className="text-xl font-semibold text-[#373435] flex items-center">
               <Users className="h-6 w-6 mr-3 text-[#EBA500]" />
-              Usuários e Acessos às Jornadas
+              Gestores e Acessos às Jornadas
             </h2>
           </div>        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
               <tr>
                 <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
-                  Usuário
+                  Gestor
                 </th>
                 <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
-                  Role
+                  Tipo de Gestor
                 </th>
                 <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Jornadas Atribuídas

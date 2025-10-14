@@ -18,8 +18,11 @@ const PlanejamentoEstrategico = () => {
   const [processos, setProcessos] = useState([])
   const [tarefas, setTarefas] = useState({})
   const [usuarios, setUsuarios] = useState([]) // Para mapear UUID -> nome
-  const [editandoTarefa, setEditandoTarefa] = useState({ id: null, texto: '', responsavel: '' })
+  const [editandoTarefa, setEditandoTarefa] = useState({ id: null, texto: '', responsavel: '', dataLimite: '' })
+  const [tipoResponsavelEdicao, setTipoResponsavelEdicao] = useState('usuario') // Para edição: 'usuario' ou 'manual'
   const [adicionandoTarefa, setAdicionandoTarefa] = useState({ processoId: null, titulo: '', descricao: '', responsavel: '', dataLimite: '', status: 'pending' })
+  const [tipoResponsavel, setTipoResponsavel] = useState('usuario') // 'usuario' ou 'manual'
+  const [responsavelManual, setResponsavelManual] = useState('') // Para responsáveis não cadastrados
   const [sidebarTask, setSidebarTask] = useState({ isOpen: false, task: null })
   const [jornadasAtribuidas, setJornadasAtribuidas] = useState([])
   const [loading, setLoading] = useState(true)
@@ -173,6 +176,7 @@ const PlanejamentoEstrategico = () => {
     try {
       console.log('🔄 Carregando tarefas do banco de dados...')
       const tasks = await getTasks()
+      console.log('📦 Tarefas retornadas do banco:', tasks)
       
       // Carregar usuários da empresa para mapear UUIDs para nomes
       const users = await getCompanyUsers()
@@ -181,20 +185,37 @@ const PlanejamentoEstrategico = () => {
       // Organizar tarefas por processo_id
       const tarefasOrganizadas = {}
       tasks.forEach(task => {
+        console.log('🔍 Processando tarefa:', {
+          id: task.id,
+          assigned_to: task.assigned_to,
+          assigned_to_name: task.assigned_to_name
+        })
+        
         if (!tarefasOrganizadas[task.process_id]) {
           tarefasOrganizadas[task.process_id] = []
         }
         
-        // Encontrar nome do usuário responsável
-        const usuario = users.find(u => u.id === task.assigned_to)
-        const nomeResponsavel = usuario ? usuario.name : 'Usuário não encontrado'
+        // Determinar nome do responsável
+        let nomeResponsavel
+        if (task.assigned_to_name) {
+          // Se tem assigned_to_name, é um responsável manual
+          nomeResponsavel = task.assigned_to_name
+          console.log('✅ Responsável manual encontrado:', nomeResponsavel)
+        } else if (task.assigned_to) {
+          // Se tem assigned_to, buscar o nome do usuário
+          const usuario = users.find(u => u.id === task.assigned_to)
+          nomeResponsavel = usuario ? usuario.name : 'Usuário não encontrado'
+        } else {
+          nomeResponsavel = 'Sem responsável'
+        }
         
         // Adaptar formato da tarefa para o que o componente espera
         tarefasOrganizadas[task.process_id].push({
           id: task.id,
           texto: task.title,
-          responsavel: nomeResponsavel, // Nome do usuário
-          responsavelId: task.assigned_to, // UUID para edições
+          responsavel: nomeResponsavel, // Nome do usuário ou nome manual
+          responsavelId: task.assigned_to, // UUID para edições (pode ser NULL)
+          responsavelManual: task.assigned_to_name, // Nome manual (pode ser NULL)
           status: task.status || 'pending', // Manter valores do banco: pending, in_progress, completed, cancelled
           descricao: task.description,
           dataLimite: task.due_date,
@@ -320,15 +341,31 @@ const PlanejamentoEstrategico = () => {
   }
 
   const iniciarEdicaoTarefa = (tarefa) => {
-    setEditandoTarefa({
-      id: tarefa.id,
-      texto: tarefa.texto,
-      responsavel: tarefa.responsavelId || tarefa.responsavel // Usar UUID se disponível
-    })
+    // Determinar se é usuário cadastrado ou nome manual
+    if (tarefa.responsavelManual) {
+      // É um nome manual
+      setTipoResponsavelEdicao('manual')
+      setEditandoTarefa({
+        id: tarefa.id,
+        texto: tarefa.texto,
+        responsavel: tarefa.responsavelManual,
+        dataLimite: tarefa.dataLimite || ''
+      })
+    } else {
+      // É um usuário cadastrado
+      setTipoResponsavelEdicao('usuario')
+      setEditandoTarefa({
+        id: tarefa.id,
+        texto: tarefa.texto,
+        responsavel: tarefa.responsavelId || tarefa.responsavel,
+        dataLimite: tarefa.dataLimite || ''
+      })
+    }
   }
 
   const cancelarEdicao = () => {
-    setEditandoTarefa({ id: null, texto: '', responsavel: '' })
+    setEditandoTarefa({ id: null, texto: '', responsavel: '', dataLimite: '' })
+    setTipoResponsavelEdicao('usuario')
   }
 
   const salvarEdicaoTarefa = async (processoId) => {
@@ -337,11 +374,17 @@ const PlanejamentoEstrategico = () => {
     try {
       console.log('💾 Salvando edição da tarefa:', editandoTarefa.id)
       
-      // Atualizar no banco de dados
-      await updateTask(editandoTarefa.id, {
+      // Atualizar no banco de dados com lógica condicional
+      const updateData = {
         title: editandoTarefa.texto,
-        assigned_to: editandoTarefa.responsavel
-      })
+        assigned_to: tipoResponsavelEdicao === 'manual' ? null : editandoTarefa.responsavel,
+        assigned_to_name: tipoResponsavelEdicao === 'manual' ? editandoTarefa.responsavel : null,
+        due_date: editandoTarefa.dataLimite || null
+      }
+      
+      console.log('📋 Dados da atualização:', updateData)
+      
+      await updateTask(editandoTarefa.id, updateData)
       
       // Recarregar tarefas e cancelar edição
       await loadTasks()
@@ -392,10 +435,15 @@ const PlanejamentoEstrategico = () => {
       dataLimite: '',
       status: 'pending'
     })
+    setTipoResponsavel('usuario')
+    setResponsavelManual('')
   }
 
   const salvarNovaTarefa = async () => {
-    if (!adicionandoTarefa.titulo.trim() || !adicionandoTarefa.descricao.trim() || !adicionandoTarefa.responsavel) {
+    // Validar campos obrigatórios
+    const responsavelFinal = tipoResponsavel === 'manual' ? responsavelManual : adicionandoTarefa.responsavel
+    
+    if (!adicionandoTarefa.titulo.trim() || !adicionandoTarefa.descricao.trim() || !responsavelFinal) {
       alert('Por favor, preencha todos os campos obrigatórios')
       return
     }
@@ -409,7 +457,9 @@ const PlanejamentoEstrategico = () => {
       const taskData = {
         title: adicionandoTarefa.titulo,
         description: adicionandoTarefa.descricao,
-        assigned_to: adicionandoTarefa.responsavel,
+        // Se for manual, assigned_to fica NULL e usamos assigned_to_name
+        assigned_to: tipoResponsavel === 'manual' ? null : responsavelFinal,
+        assigned_to_name: tipoResponsavel === 'manual' ? responsavelFinal : null,
         process_id: adicionandoTarefa.processoId,
         journey_id: journeyUUID,
         status: adicionandoTarefa.status,
@@ -417,13 +467,15 @@ const PlanejamentoEstrategico = () => {
         priority: 3
       }
       
+      console.log('📋 Dados da tarefa:', taskData)
+      
       await createTask(taskData)
       await loadTasks()
       cancelarAdicaoTarefa()
       
     } catch (error) {
       console.error('❌ Erro ao salvar nova tarefa:', error)
-      alert('Erro ao salvar tarefa')
+      alert('Erro ao salvar tarefa: ' + (error.message || 'Erro desconhecido'))
     }
   }
 
@@ -499,12 +551,10 @@ const PlanejamentoEstrategico = () => {
 
   const formatarData = (dataISO) => {
     const data = new Date(dataISO)
-    return data.toLocaleString('pt-BR', {
+    return data.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric'
     })
   }
 
@@ -862,21 +912,65 @@ const PlanejamentoEstrategico = () => {
                           rows="2"
                         />
                         
-                        <div className="grid grid-cols-2 gap-2">
-                          {/* Responsável */}
-                          <select
-                            value={adicionandoTarefa.responsavel}
-                            onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, responsavel: e.target.value })}
-                            className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
-                          >
-                            <option value="">Selecionar responsável</option>
-                            {usuarios.map(usuario => (
-                              <option key={usuario.id} value={usuario.id}>
-                                {usuario.name}
-                              </option>
-                            ))}
-                          </select>
+                        <div className="space-y-2">
+                          {/* Tipo de Responsável */}
+                          <div className="flex items-center space-x-4 text-xs">
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="tipoResponsavel"
+                                value="usuario"
+                                checked={tipoResponsavel === 'usuario'}
+                                onChange={(e) => {
+                                  setTipoResponsavel(e.target.value)
+                                  setResponsavelManual('')
+                                }}
+                                className="text-[#EBA500] focus:ring-[#EBA500]"
+                              />
+                              <span className="text-[#373435]">Selecionar usuário</span>
+                            </label>
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="tipoResponsavel"
+                                value="manual"
+                                checked={tipoResponsavel === 'manual'}
+                                onChange={(e) => {
+                                  setTipoResponsavel(e.target.value)
+                                  setAdicionandoTarefa({ ...adicionandoTarefa, responsavel: '' })
+                                }}
+                                className="text-[#EBA500] focus:ring-[#EBA500]"
+                              />
+                              <span className="text-[#373435]">Digitar nome</span>
+                            </label>
+                          </div>
                           
+                          {/* Campo de Responsável */}
+                          {tipoResponsavel === 'usuario' ? (
+                            <select
+                              value={adicionandoTarefa.responsavel}
+                              onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, responsavel: e.target.value })}
+                              className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                            >
+                              <option value="">Selecionar responsável</option>
+                              {usuarios.map(usuario => (
+                                <option key={usuario.id} value={usuario.id}>
+                                  {usuario.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              placeholder="Digite o nome do responsável"
+                              value={responsavelManual}
+                              onChange={(e) => setResponsavelManual(e.target.value)}
+                              className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                            />
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
                           {/* Status */}
                           <select
                             value={adicionandoTarefa.status}
@@ -887,16 +981,16 @@ const PlanejamentoEstrategico = () => {
                             <option value="in_progress">Em Andamento</option>
                             <option value="completed">Concluída</option>
                           </select>
+                          
+                          {/* Data Limite */}
+                          <input
+                            type="date"
+                            placeholder="Data limite (opcional)"
+                            value={adicionandoTarefa.dataLimite}
+                            onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, dataLimite: e.target.value })}
+                            className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                          />
                         </div>
-                        
-                        {/* Data Limite */}
-                        <input
-                          type="date"
-                          placeholder="Data limite (opcional)"
-                          value={adicionandoTarefa.dataLimite}
-                          onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, dataLimite: e.target.value })}
-                          className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
-                        />
                         
                         {/* Botões */}
                         <div className="flex space-x-2">
@@ -940,18 +1034,78 @@ const PlanejamentoEstrategico = () => {
                             className="w-full p-2 border border-[#373435]/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs resize-none bg-white/90 transition-all duration-300"
                             rows="2"
                           />
-                          <select
-                            value={editandoTarefa.responsavel}
-                            onChange={(e) => setEditandoTarefa({ ...editandoTarefa, responsavel: e.target.value })}
-                            className="w-full p-2 border border-[#373435]/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
-                          >
-                            <option value="">Selecionar responsável</option>
-                            {usuarios.map(usuario => (
-                              <option key={usuario.id} value={usuario.id}>
-                                {usuario.name} - {usuario.email}
-                              </option>
-                            ))}
-                          </select>
+                          
+                          <div className="space-y-2">
+                            {/* Tipo de Responsável */}
+                            <div className="flex items-center space-x-4 text-xs">
+                              <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="tipoResponsavelEdicao"
+                                  value="usuario"
+                                  checked={tipoResponsavelEdicao === 'usuario'}
+                                  onChange={(e) => {
+                                    setTipoResponsavelEdicao(e.target.value)
+                                    setEditandoTarefa({ ...editandoTarefa, responsavel: '' })
+                                  }}
+                                  className="text-blue-500 focus:ring-blue-500"
+                                />
+                                <span className="text-[#373435]">Selecionar usuário</span>
+                              </label>
+                              <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="tipoResponsavelEdicao"
+                                  value="manual"
+                                  checked={tipoResponsavelEdicao === 'manual'}
+                                  onChange={(e) => {
+                                    setTipoResponsavelEdicao(e.target.value)
+                                    setEditandoTarefa({ ...editandoTarefa, responsavel: '' })
+                                  }}
+                                  className="text-blue-500 focus:ring-blue-500"
+                                />
+                                <span className="text-[#373435]">Digitar nome</span>
+                              </label>
+                            </div>
+                            
+                            {/* Campo de Responsável */}
+                            {tipoResponsavelEdicao === 'usuario' ? (
+                              <select
+                                value={editandoTarefa.responsavel}
+                                onChange={(e) => setEditandoTarefa({ ...editandoTarefa, responsavel: e.target.value })}
+                                className="w-full p-2 border border-[#373435]/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                              >
+                                <option value="">Selecionar responsável</option>
+                                {usuarios.map(usuario => (
+                                  <option key={usuario.id} value={usuario.id}>
+                                    {usuario.name} - {usuario.email}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                placeholder="Digite o nome do responsável"
+                                value={editandoTarefa.responsavel}
+                                onChange={(e) => setEditandoTarefa({ ...editandoTarefa, responsavel: e.target.value })}
+                                className="w-full p-2 border border-[#373435]/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                              />
+                            )}
+                          </div>
+                          
+                          {/* Data Limite */}
+                          <div>
+                            <label className="block text-xs text-[#373435] font-medium mb-1">
+                              Data Limite (opcional)
+                            </label>
+                            <input
+                              type="date"
+                              value={editandoTarefa.dataLimite}
+                              onChange={(e) => setEditandoTarefa({ ...editandoTarefa, dataLimite: e.target.value })}
+                              className="w-full p-2 border border-[#373435]/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                            />
+                          </div>
+                          
                           <div className="flex space-x-2">
                             <button
                               onClick={() => salvarEdicaoTarefa(processo.id)}
@@ -1008,7 +1162,7 @@ const PlanejamentoEstrategico = () => {
                           <div className="flex items-center space-x-2 text-xs text-[#373435]/60">
                             <Clock className="h-2 w-2 flex-shrink-0" />
                             <span className="truncate">
-                              {formatarData(tarefa.criadoEm)} por {tarefa.criadoPor}
+                              Criado em {formatarData(tarefa.criadoEm)} por {tarefa.criadoPor}
                               {tarefa.editadoEm && (
                                 <span className="ml-1 text-blue-500 font-medium">
                                   • Editado
@@ -1016,6 +1170,16 @@ const PlanejamentoEstrategico = () => {
                               )}
                             </span>
                           </div>
+                          
+                          {/* Data Limite */}
+                          {tarefa.dataLimite && (
+                            <div className="flex items-center space-x-2 text-xs text-[#EBA500] font-medium">
+                              <Calendar className="h-2 w-2 flex-shrink-0" />
+                              <span className="truncate">
+                                Prazo: {formatarData(tarefa.dataLimite)}
+                              </span>
+                            </div>
+                          )}
                           
                           {/* Status da Tarefa - Badge com Ícone (igual Tarefas em Andamento) */}
                           <div className="flex items-center gap-2 flex-wrap">
