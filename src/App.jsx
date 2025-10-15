@@ -33,6 +33,7 @@ import CompaniesManagementPage from './pages/admin/CompaniesManagementPage'
 import ProcessRequestsPage from './pages/ProcessRequestsPage'
 import TasksInProgressNew from './pages/TasksInProgressNew'
 import ActiveUsersPage from './pages/ActiveUsersPage'
+import UserActivityPage from './pages/UserActivityPage'
 import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage'
 import DrePage from './pages/financeiro/DrePage'
 import DfcPage from './pages/financeiro/DfcPage'
@@ -253,6 +254,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin']}>
             <CompaniesManagementPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rotas de Relatórios (Super Admin) */}
+      <Route 
+        path="/reports/user-activity" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <UserActivityPage />
           </ProtectedRoute>
         }
       />
