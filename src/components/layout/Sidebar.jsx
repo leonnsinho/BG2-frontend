@@ -106,13 +106,13 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/companies/new'
       },
       {
-        name: 'Relatórios Globais',
+        name: 'Relatórios de Uso',
         icon: BarChart3,
         href: '/reports',
         children: [
-          { name: 'Por Empresa', href: '/reports/companies' },
-          { name: 'Por Usuário', href: '/reports/users' },
-          { name: 'Métricas Sistema', href: '/reports/system' }
+          { name: 'Atividade de Usuários', href: '/reports/user-activity' },
+          { name: 'Uso por Empresa', href: '/reports/company-usage' },
+          { name: 'Métricas da Plataforma', href: '/reports/platform-metrics' }
         ]
       }
     ]
