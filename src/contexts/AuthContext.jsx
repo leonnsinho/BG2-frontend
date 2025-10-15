@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { supabase } from '../services/supabase'
+import { updateUserActivity } from './updateUserActivity'
+
+console.log('%%%%%%%%%%% AUTHCONTEXT CARREGADO - VERSAO 15/10/2025 - 10:00 %%%%%%%%%%%')
 
 const AuthContext = createContext({})
 
@@ -261,58 +264,9 @@ export function AuthProvider({ children }) {
     return fetchPromise
   }
 
-  // Atualizar dados de atividade do usuário (login tracking)
-  const updateUserActivity = async (userId) => {
-    try {
-      console.log('📊 Registrando login para usuário:', userId)
-      
-      // Primeiro, buscar o login_count atual
-      const { data: currentProfile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('login_count, first_login_at')
-        .eq('id', userId)
-        .single()
-
-      if (fetchError) {
-        console.error('❌ Erro ao buscar perfil atual:', fetchError)
-        throw fetchError
-      }
-
-      const now = new Date().toISOString()
-      const newLoginCount = (currentProfile?.login_count || 0) + 1
-      const firstLogin = currentProfile?.first_login_at || now
-
-      console.log('📊 Atualizando:', {
-        login_count: newLoginCount,
-        first_login_at: firstLogin,
-        last_login_at: now
-      })
-
-      // Atualizar os campos
-      const { data: updateData, error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          last_login_at: now,
-          login_count: newLoginCount,
-          first_login_at: firstLogin,
-          last_activity_at: now
-        })
-        .eq('id', userId)
-        .select()
-
-      if (updateError) {
-        console.error('❌ Erro ao atualizar atividade:', updateError.message, updateError)
-        throw updateError
-      } else {
-        console.log('✅ Login registrado com sucesso:', updateData)
-      }
-    } catch (error) {
-      console.error('❌ Erro ao registrar login:', error.message || error)
-    }
-  }
-
   // Login com email e senha
   const signIn = async (email, password) => {
+    console.log('@@@@@@@@@ SIGNIN CHAMADO - VERSAO NOVA @@@@@@@@@')
     try {
       setLoading(true)
       setError(null)
@@ -324,10 +278,14 @@ export function AuthProvider({ children }) {
 
       if (error) throw error
 
+      console.log('@@@@@@@@@ LOGIN BEM SUCEDIDO, user.id:', data.user?.id)
+
       // Buscar perfil após login bem-sucedido
       if (data.user) {
-        // Atualizar dados de atividade (login tracking)
-        updateUserActivity(data.user.id)
+        console.log('>>> ANTES DE CHAMAR updateUserActivity, userId:', data.user.id)
+        // Atualizar dados de atividade (login tracking) - usando função externa
+        updateUserActivity(supabase, data.user.id)
+        console.log('>>> DEPOIS DE CHAMAR updateUserActivity')
         
         const userProfile = await fetchProfile(data.user.id)
         setProfile(userProfile)
@@ -635,24 +593,10 @@ export function AuthProvider({ children }) {
             }
           }
           
-          // Registrar login do usuário de forma assíncrona (não bloqueante)
-          if (event === 'SIGNED_IN') {
-            setTimeout(async () => {
-              try {
-                const userAgent = navigator.userAgent
-                const { error: loginError } = await supabase.rpc('register_user_login', {
-                  p_user_id: currentUser.id,
-                  p_ip_address: null,
-                  p_user_agent: userAgent
-                })
-                
-                if (loginError) {
-                  console.error('❌ Erro ao registrar login:', loginError)
-                }
-              } catch (error) {
-                console.error('❌ Erro ao registrar login:', error)
-              }
-            }, 100)
+          // Registrar login quando usuário faz sign in
+          if (event === 'SIGNED_IN' && currentUser) {
+            console.log('✅ SIGNED_IN event - registrando login para userId:', currentUser.id)
+            updateUserActivity(supabase, currentUser.id)
           }
         } else if (!currentUser) {
           if (mounted) {
