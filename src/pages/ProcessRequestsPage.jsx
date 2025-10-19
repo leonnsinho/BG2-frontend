@@ -11,7 +11,8 @@ import {
   Clock,
   MessageSquare,
   Eye,
-  Target
+  Target,
+  Edit
 } from 'lucide-react'
 import { formatDate } from '../utils/dateUtils'
 
@@ -58,10 +59,19 @@ export default function ProcessRequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [reviewData, setReviewData] = useState({
     status: 'approved',
     admin_notes: ''
   })
+  const [editData, setEditData] = useState({
+    process_name: '',
+    process_description: '',
+    category: ''
+  })
+  const [availableCategories, setAvailableCategories] = useState([])
+  const [isNewCategory, setIsNewCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
   const [updating, setUpdating] = useState(false)
 
   useEffect(() => {
@@ -184,6 +194,96 @@ export default function ProcessRequestsPage() {
     } catch (error) {
       console.error('Erro ao revisar solicitação:', error)
       alert('Erro ao revisar solicitação: ' + error.message)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleOpenEdit = async (request) => {
+    setSelectedRequest(request)
+    setEditData({
+      process_name: request.process_name,
+      process_description: request.process_description || '',
+      category: request.category || ''
+    })
+    
+    // Resetar estado de nova categoria
+    setIsNewCategory(false)
+    setNewCategoryName('')
+    
+    // Carregar categorias da jornada
+    await loadCategoriesForJourney(request.journey_slug)
+    
+    setShowEditModal(true)
+  }
+
+  const loadCategoriesForJourney = async (journeySlug) => {
+    try {
+      // Buscar o journey_id pelo slug
+      const { data: journeyData, error: journeyError } = await supabase
+        .from('journeys')
+        .select('id')
+        .eq('slug', journeySlug)
+        .single()
+
+      if (journeyError) throw journeyError
+
+      // Buscar todas as categorias únicas dos processos dessa jornada
+      const { data, error } = await supabase
+        .from('processes')
+        .select('category')
+        .eq('journey_id', journeyData.id)
+        .not('category', 'is', null)
+        .order('category')
+
+      if (error) throw error
+
+      // Extrair categorias únicas e ordenadas
+      const categories = [...new Set(data?.map(p => p.category).filter(Boolean))].sort()
+      setAvailableCategories(categories)
+
+      console.log(`📂 Categorias carregadas para jornada ${journeySlug}:`, categories)
+
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error)
+      setAvailableCategories([])
+    }
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editData.process_name.trim()) {
+      alert('Nome do processo é obrigatório')
+      return
+    }
+
+    setUpdating(true)
+    try {
+      const { error } = await supabase
+        .from('process_requests')
+        .update({
+          process_name: editData.process_name.trim(),
+          process_description: editData.process_description.trim(),
+          category: editData.category.trim()
+        })
+        .eq('id', selectedRequest.id)
+
+      if (error) throw error
+
+      // Atualiza a lista local
+      setRequests(requests.map(req => 
+        req.id === selectedRequest.id 
+          ? { ...req, ...editData }
+          : req
+      ))
+
+      // Atualiza o selectedRequest com os novos dados
+      setSelectedRequest({ ...selectedRequest, ...editData })
+      
+      setShowEditModal(false)
+      alert('Processo atualizado com sucesso!')
+    } catch (error) {
+      console.error('Erro ao salvar edição:', error)
+      alert('Erro ao salvar edição: ' + error.message)
     } finally {
       setUpdating(false)
     }
@@ -408,16 +508,27 @@ export default function ProcessRequestsPage() {
                       </button>
 
                       {request.status === 'pending' && (
-                        <button
-                          onClick={() => {
-                            setSelectedRequest(request)
-                            setReviewData({ status: 'approved', admin_notes: '' })
-                            setShowReviewModal(true)
-                          }}
-                          className="px-4 py-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white rounded-lg font-medium transition-colors"
-                        >
-                          Revisar
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleOpenEdit(request)}
+                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                            title="Editar processo"
+                          >
+                            <Edit className="h-4 w-4" />
+                            Editar
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              setSelectedRequest(request)
+                              setReviewData({ status: 'approved', admin_notes: '' })
+                              setShowReviewModal(true)
+                            }}
+                            className="px-4 py-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white rounded-lg font-medium transition-colors"
+                          >
+                            Revisar
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -674,6 +785,179 @@ export default function ProcessRequestsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição */}
+      {showEditModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-[#373435]">
+                  Editar Processo
+                </h2>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XCircle className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Nome do Processo */}
+                <div>
+                  <label htmlFor="edit_process_name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Nome do Processo *
+                  </label>
+                  <input
+                    type="text"
+                    id="edit_process_name"
+                    value={editData.process_name}
+                    onChange={(e) => setEditData(prev => ({ ...prev, process_name: e.target.value }))}
+                    maxLength={200}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Ex: Análise de Fornecedores"
+                    required
+                  />
+                  <span className="text-xs text-gray-500 mt-1 block">
+                    {editData.process_name.length}/200
+                  </span>
+                </div>
+
+                {/* Descrição */}
+                <div>
+                  <label htmlFor="edit_process_description" className="block text-sm font-medium text-gray-700 mb-2">
+                    Descrição
+                  </label>
+                  <textarea
+                    id="edit_process_description"
+                    value={editData.process_description}
+                    onChange={(e) => setEditData(prev => ({ ...prev, process_description: e.target.value }))}
+                    rows={5}
+                    maxLength={1000}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    placeholder="Descreva o objetivo e escopo deste processo..."
+                  />
+                  <span className="text-xs text-gray-500 mt-1 block">
+                    {editData.process_description.length}/1000
+                  </span>
+                </div>
+
+                {/* Categoria */}
+                <div>
+                  <label htmlFor="edit_category" className="block text-sm font-medium text-gray-700 mb-2">
+                    Categoria
+                  </label>
+                  
+                  {!isNewCategory ? (
+                    <>
+                      <select
+                        id="edit_category"
+                        value={editData.category}
+                        onChange={(e) => {
+                          if (e.target.value === '__new__') {
+                            setIsNewCategory(true)
+                            setNewCategoryName('')
+                            setEditData(prev => ({ ...prev, category: '' }))
+                          } else {
+                            setEditData(prev => ({ ...prev, category: e.target.value }))
+                          }
+                        }}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Selecione uma categoria</option>
+                        {availableCategories.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                        <option value="__new__" className="font-semibold text-blue-600">
+                          + Criar nova categoria
+                        </option>
+                      </select>
+                      {availableCategories.length === 0 && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Nenhuma categoria disponível nesta jornada ainda
+                        </p>
+                      )}
+                      {availableCategories.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {availableCategories.length} categoria(s) disponível(is) nesta jornada
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newCategoryName}
+                          onChange={(e) => {
+                            setNewCategoryName(e.target.value)
+                            setEditData(prev => ({ ...prev, category: e.target.value }))
+                          }}
+                          maxLength={100}
+                          className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Digite o nome da nova categoria"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsNewCategory(false)
+                            setNewCategoryName('')
+                            setEditData(prev => ({ ...prev, category: '' }))
+                          }}
+                          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {newCategoryName.length}/100 caracteres
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                {/* Info da Jornada */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <Target className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">
+                        Jornada: {selectedRequest.journey_slug}
+                      </p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Este processo será criado nesta jornada após aprovação
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  disabled={updating}
+                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  disabled={updating || !editData.process_name.trim()}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {updating ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
