@@ -106,7 +106,8 @@ export default function ProcessRequestsPage() {
     setUpdating(true)
 
     try {
-      const { error } = await supabase
+      // 1. Atualizar status da solicitação
+      const { error: updateError } = await supabase
         .from('process_requests')
         .update({
           status: reviewData.status,
@@ -116,9 +117,66 @@ export default function ProcessRequestsPage() {
         })
         .eq('id', selectedRequest.id)
 
-      if (error) throw error
+      if (updateError) throw updateError
 
-      alert(`Solicitação ${reviewData.status === 'approved' ? 'aprovada' : 'rejeitada'} com sucesso!`)
+      // 2. Se aprovado, criar o processo na jornada
+      if (reviewData.status === 'approved') {
+        console.log('📝 Criando processo na jornada:', selectedRequest.journey_slug)
+        
+        // Primeiro, buscar o journey_id a partir do journey_slug
+        const { data: journeyData, error: journeyError } = await supabase
+          .from('journeys')
+          .select('id')
+          .eq('slug', selectedRequest.journey_slug)
+          .single()
+
+        if (journeyError || !journeyData) {
+          console.error('Erro ao buscar jornada:', journeyError)
+          throw new Error('Solicitação aprovada, mas não foi possível encontrar a jornada: ' + (journeyError?.message || 'Jornada não encontrada'))
+        }
+
+        console.log('✅ Jornada encontrada, ID:', journeyData.id)
+
+        // Buscar o próximo order_index disponível
+        const { data: lastProcess } = await supabase
+          .from('processes')
+          .select('order_index')
+          .eq('journey_id', journeyData.id)
+          .order('order_index', { ascending: false })
+          .limit(1)
+          .single()
+
+        const nextOrderIndex = (lastProcess?.order_index || 0) + 1
+
+        // Gerar um code único para o processo
+        const processCode = selectedRequest.process_name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+          .replace(/[^a-z0-9]+/g, '-') // Substitui caracteres especiais por hífen
+          .replace(/^-|-$/g, '') // Remove hífens do início e fim
+          .substring(0, 50) // Limita a 50 caracteres
+
+        // Criar o processo usando função RPC para evitar conflitos com triggers
+        const { data: processId, error: processError } = await supabase
+          .rpc('create_process_from_request', {
+            p_journey_id: journeyData.id,
+            p_code: processCode,
+            p_name: selectedRequest.process_name,
+            p_description: selectedRequest.process_description,
+            p_category: selectedRequest.category || 'Geral',
+            p_order_index: nextOrderIndex
+          })
+
+        if (processError) {
+          console.error('Erro ao criar processo:', processError)
+          throw new Error('Solicitação aprovada, mas houve erro ao criar o processo: ' + processError.message)
+        }
+
+        console.log('✅ Processo criado com sucesso na jornada! ID:', processId)
+      }
+
+      alert(`Solicitação ${reviewData.status === 'approved' ? 'aprovada e processo criado' : 'rejeitada'} com sucesso!`)
       setShowReviewModal(false)
       setSelectedRequest(null)
       setReviewData({ status: 'approved', admin_notes: '' })
