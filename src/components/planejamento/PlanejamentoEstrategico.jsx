@@ -26,18 +26,6 @@ const PlanejamentoEstrategico = () => {
   const [sidebarTask, setSidebarTask] = useState({ isOpen: false, task: null })
   const [jornadasAtribuidas, setJornadasAtribuidas] = useState([])
   const [loading, setLoading] = useState(true)
-  const [debugInfo, setDebugInfo] = useState([])
-
-  // Função para adicionar logs de debug específicos
-  const addDebugLog = (message, type = 'info') => {
-    const timestamp = new Date().toLocaleTimeString()
-    setDebugInfo(prev => [...prev.slice(-10), { // Manter apenas os últimos 10 logs
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp,
-      message,
-      type
-    }])
-  }
 
   // Adicionar CSS customizado para scrollbar
   useEffect(() => {
@@ -102,22 +90,22 @@ const PlanejamentoEstrategico = () => {
   // Debug do estado dos processos
   useEffect(() => {
     if (processesError) {
-      addDebugLog(`❌ Erro ao carregar processos: ${processesError}`, 'error')
+      console.error('❌ Erro ao carregar processos:', processesError)
     }
     
     if (!processesLoading && priorityProcesses) {
       const totalProcesses = Object.values(priorityProcesses).reduce((acc, processes) => acc + processes.length, 0)
-      addDebugLog(`✅ Processos prioritários carregados: ${totalProcesses} no total`, 'success')
+      console.log(`✅ Processos prioritários carregados: ${totalProcesses} no total`)
       
       Object.entries(priorityProcesses).forEach(([journeyId, processes]) => {
         if (processes.length > 0) {
-          addDebugLog(`📋 Jornada ${journeyId}: ${processes.length} processos (${processes.map(p => p.nome).join(', ')})`, 'info')
+          console.log(`📋 Jornada ${journeyId}: ${processes.length} processos (${processes.map(p => p.nome).join(', ')})`)
         }
       })
     }
     
     if (processesLoading) {
-      addDebugLog('🔍 Carregando processos prioritários da base de dados...', 'info')
+      console.log('🔍 Carregando processos prioritários da base de dados...')
     }
   }, [processesLoading, priorityProcesses, processesError])
 
@@ -139,7 +127,7 @@ const PlanejamentoEstrategico = () => {
         console.log('👑 Super Admin - liberando todas as jornadas')
         const todasJornadas = ['estrategica', 'financeira', 'pessoas-cultura', 'receita-crm', 'operacional']
         setJornadasAtribuidas(todasJornadas)
-        addDebugLog(`👑 Super Admin - todas as jornadas liberadas: ${todasJornadas.join(', ')}`)
+        console.log(`👑 Super Admin - todas as jornadas liberadas: ${todasJornadas.join(', ')}`)
         setLoading(false)
         return
       }
@@ -148,12 +136,12 @@ const PlanejamentoEstrategico = () => {
       try {
         const assignedJourneySlugs = await getAccessibleJourneys()
         console.log('✅ Jornadas atribuídas:', assignedJourneySlugs)
-        addDebugLog(`✅ Jornadas atribuídas ao usuário: ${assignedJourneySlugs?.join(', ') || 'nenhuma'}`)
+        console.log(`✅ Jornadas atribuídas ao usuário: ${assignedJourneySlugs?.join(', ') || 'nenhuma'}`)
         setJornadasAtribuidas(assignedJourneySlugs || [])
         
       } catch (error) {
         console.error('❌ Erro ao buscar jornadas:', error)
-        addDebugLog(`❌ Erro ao buscar jornadas: ${error.message}`)
+        console.error(`❌ Erro ao buscar jornadas: ${error.message}`)
         setJornadasAtribuidas([])
       }
 
@@ -245,7 +233,7 @@ const PlanejamentoEstrategico = () => {
     if (jornadasAtribuidas.length > 0) {
       jornadasMock.forEach(jornada => {
         const isIncluded = jornadasAtribuidas.includes(jornada.slug)
-        addDebugLog(`🎯 ${jornada.nome} (${jornada.slug}): ${isIncluded ? '✅ LIBERADA' : '❌ BLOQUEADA'}`)
+        console.log(`🎯 ${jornada.nome} (${jornada.slug}): ${isIncluded ? '✅ LIBERADA' : '❌ BLOQUEADA'}`)
       })
     }
   }, [jornadasAtribuidas])
@@ -253,26 +241,26 @@ const PlanejamentoEstrategico = () => {
   const selecionarJornada = (jornada) => {
     // Só permite selecionar se a jornada estiver atribuída
     if (!isJornadaAtribuida(jornada)) {
-      addDebugLog(`🚫 Jornada ${jornada.slug} não atribuída, bloqueando seleção`, 'warning')
+      console.warn(`🚫 Jornada ${jornada.slug} não atribuída, bloqueando seleção`)
       return
     }
     
-    addDebugLog(`✅ Selecionando jornada ${jornada.nome} (ID: ${jornada.id})`, 'success')
+    console.log(`✅ Selecionando jornada ${jornada.nome} (ID: ${jornada.id})`)
     setJornadaSelecionada(jornada)
     
     // Buscar processos reais da jornada
     const processosReais = getProcessesByJourney(jornada.id)
-    addDebugLog(`� Processos reais encontrados: ${processosReais?.length || 0}`, 'info')
+    console.log(`🔍 Processos reais encontrados: ${processosReais?.length || 0}`)
     
     if (processosReais && processosReais.length > 0) {
       setProcessos(processosReais)
-      addDebugLog(`✅ Usando ${processosReais.length} processos REAIS da base de dados`, 'success')
+      console.log(`✅ Usando ${processosReais.length} processos REAIS da base de dados`)
       processosReais.forEach((processo, index) => {
-        addDebugLog(`  ${index + 1}. ${processo.nome} (Score: ${processo.priority_score})`, 'info')
+        console.log(`  ${index + 1}. ${processo.nome} (Score: ${processo.priority_score})`)
       })
     } else {
       // Fallback para dados mock se não houver processos reais
-      addDebugLog('⚠️ Nenhum processo real encontrado, usando dados MOCK', 'warning')
+      console.warn('⚠️ Nenhum processo real encontrado, usando dados MOCK')
       const processosMock = {
         1: [
           { id: 11, nome: 'Análise SWOT', prioridade: 1 },
@@ -753,72 +741,6 @@ const PlanejamentoEstrategico = () => {
           )
         })}
       </div>
-
-      {/* Card de Debug - Processos Prioritários */}
-      {(debugInfo.length > 0 || debugLogs.length > 0) && (
-        <div className="bg-white rounded-3xl shadow-lg border border-[#373435]/10 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-[#373435] flex items-center space-x-2">
-              <div className="w-8 h-8 bg-[#EBA500] rounded-xl flex items-center justify-center">
-                <span className="text-white text-sm">🔍</span>
-              </div>
-              <span>Debug - Processos Prioritários</span>
-            </h3>
-            <button 
-              onClick={() => setDebugInfo([])}
-              className="text-[#373435]/60 hover:text-[#373435] px-3 py-1 rounded-lg hover:bg-[#373435]/10 transition-colors text-sm"
-            >
-              Limpar
-            </button>
-          </div>
-          
-          <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-            {/* Logs do Hook */}
-            {debugLogs.map((log, index) => (
-              <div key={`hook-${index}`} className="flex items-start space-x-3 p-3 rounded-xl text-sm bg-purple-50 border border-purple-200">
-                <span className="font-mono text-xs flex-shrink-0 text-purple-600">{log.timestamp}</span>
-                <span className="flex-1 text-purple-800">[HOOK] {log.message}</span>
-              </div>
-            ))}
-            
-            {/* Logs do Componente */}
-            {debugInfo.map((log) => (
-              <div 
-                key={log.id} 
-                className={`flex items-start space-x-3 p-3 rounded-xl text-sm ${
-                  log.type === 'error' ? 'bg-red-50 border border-red-200' :
-                  log.type === 'success' ? 'bg-green-50 border border-green-200' :
-                  log.type === 'warning' ? 'bg-yellow-50 border border-yellow-200' :
-                  'bg-blue-50 border border-blue-200'
-                }`}
-              >
-                <span className={`font-mono text-xs flex-shrink-0 ${
-                  log.type === 'error' ? 'text-red-600' :
-                  log.type === 'success' ? 'text-green-600' :
-                  log.type === 'warning' ? 'text-yellow-600' :
-                  'text-blue-600'
-                }`}>
-                  {log.timestamp}
-                </span>
-                <span className={`flex-1 ${
-                  log.type === 'error' ? 'text-red-800' :
-                  log.type === 'success' ? 'text-green-800' :
-                  log.type === 'warning' ? 'text-yellow-800' :
-                  'text-blue-800'
-                }`}>
-                  [COMP] {log.message}
-                </span>
-              </div>
-            ))}
-            
-            {debugInfo.length === 0 && debugLogs.length === 0 && (
-              <div className="text-center py-4 text-[#373435]/60">
-                Nenhum log de debug disponível
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Processos da jornada selecionada */}
       {jornadaSelecionada && (
