@@ -124,13 +124,26 @@ export default function UsersManagementPage() {
     try {
       setLoading(true)
       
+      console.log('🔍 DIAGNÓSTICO: Iniciando carregamento de usuários')
+      console.log('👤 Usuário atual:', {
+        id: profile?.id,
+        email: profile?.email,
+        role: profile?.role
+      })
+      
       // Buscar usuários da tabela profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (profilesError) throw profilesError
+      if (profilesError) {
+        console.error('❌ Erro ao buscar profiles:', profilesError)
+        throw profilesError
+      }
+
+      console.log('✅ Profiles carregados:', profiles?.length)
+      console.log('📋 Primeiros 3 profiles:', profiles?.slice(0, 3))
 
       // Buscar vinculações de usuários com empresas
       const { data: userCompanies, error: userCompaniesError } = await supabase
@@ -144,25 +157,25 @@ export default function UsersManagementPage() {
         `)
         .eq('is_active', true)
 
-      if (userCompaniesError) throw userCompaniesError
+      if (userCompaniesError) {
+        console.error('❌ Erro ao buscar user_companies:', userCompaniesError)
+        throw userCompaniesError
+      }
 
-      console.log('Profiles carregados:', profiles?.length)
-      console.log('Vinculações carregadas:', userCompanies?.length)
-      console.log('Exemplo de userCompanies:', userCompanies?.[0])
+      console.log('✅ Vinculações carregadas:', userCompanies?.length)
+      console.log('📋 Primeiros 3 user_companies:', userCompanies?.slice(0, 3))
 
       // Combinar dados
       let combinedUsers = profiles.map(profile => {
-        // Encontrar vinculação ativa do usuário - usar diferentes campos possíveis
-        const possibleUserIds = [profile.user_id, profile.id].filter(Boolean)
+        // Encontrar vinculação ativa do usuário
         const userCompany = userCompanies?.find(uc => 
-          possibleUserIds.includes(uc.user_id)
+          uc.user_id === profile.id
         )
         
-        console.log(`Usuário ${profile.email}: IDs possíveis [${possibleUserIds.join(', ')}], empresa encontrada:`, userCompany?.companies?.name || 'nenhuma', 'Role global:', profile.role, 'Role na empresa:', userCompany?.role)
+        console.log(`Usuário ${profile.email}: ID=${profile.id}, empresa encontrada:`, userCompany?.companies?.name || 'nenhuma', 'Role global:', profile.role, 'Role na empresa:', userCompany?.role)
         
         return {
           ...profile,
-          user_id: profile.user_id || profile.id, // Para manter compatibilidade
           email: profile.email,
           status: profile.is_active ? 'active' : 'inactive',
           companies: userCompany?.companies, // Empresa vinculada através de user_companies
@@ -171,27 +184,46 @@ export default function UsersManagementPage() {
         }
       })
 
+      console.log('📊 Usuários combinados (antes de filtrar):', combinedUsers.length)
+      
       // Filtrar usuários baseado no perfil do usuário atual
       if (isCompanyAdmin() && !isSuperAdmin()) {
         const currentUserCompany = getCurrentUserCompany()
+        console.log('👤 É Company Admin (não super admin)')
+        console.log('🏢 Empresa atual:', currentUserCompany?.name || 'nenhuma')
+        
         if (currentUserCompany) {
           console.log('🔍 Filtrando usuários para company_admin da empresa:', currentUserCompany.name)
           // Filtrar apenas usuários da mesma empresa, excluindo o próprio usuário atual
+          const beforeFilter = combinedUsers.length
           combinedUsers = combinedUsers.filter(user => {
             const isSameCompany = user.companies?.id === currentUserCompany.id
-            const isNotCurrentUser = user.id !== profile.id && user.user_id !== profile.id
+            const isNotCurrentUser = user.id !== profile.id
+            
+            console.log(`  - ${user.email}: empresa=${user.companies?.name}, mesmaEmpresa=${isSameCompany}, naoEuMesmo=${isNotCurrentUser}, incluir=${isSameCompany && isNotCurrentUser}`)
+            
             return isSameCompany && isNotCurrentUser
           })
-          console.log('📊 Usuários filtrados:', combinedUsers.length, 'de', profiles.length)
+          console.log('📊 Usuários filtrados:', combinedUsers.length, 'de', beforeFilter)
+        } else {
+          console.log('⚠️ Company admin sem empresa vinculada!')
         }
       } else if (isSuperAdmin()) {
         console.log('🔑 Super admin: mostrando todos os usuários, excluindo a si mesmo')
+        const beforeFilter = combinedUsers.length
         // Super admin vê todos, mas não a si mesmo
         combinedUsers = combinedUsers.filter(user => {
-          return user.id !== profile.id && user.user_id !== profile.id
+          const isNotCurrentUser = user.id !== profile.id
+          console.log(`  - ${user.email}: naoEuMesmo=${isNotCurrentUser}`)
+          return isNotCurrentUser
         })
+        console.log('📊 Usuários visíveis:', combinedUsers.length, 'de', beforeFilter)
+      } else {
+        console.log('⚠️ Usuário não é nem super_admin nem company_admin!')
+        console.log('   Role:', profile?.role)
       }
 
+      console.log('✅ Usuários finais para exibir:', combinedUsers.length)
       setUsers(combinedUsers)
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
@@ -378,7 +410,7 @@ export default function UsersManagementPage() {
       setSelectedUser(null)
       
       // Verificar se o usuário já tinha empresa para determinar a mensagem
-      const currentUser = users.find(u => (u.user_id || u.id) === userId)
+      const currentUser = users.find(u => u.id === userId)
       const wasEdit = Boolean(currentUser?.companies?.id)
       
       alert(wasEdit 
@@ -644,7 +676,7 @@ export default function UsersManagementPage() {
                   const RoleIcon = roleInfo.icon
 
                   return (
-                    <tr key={user.user_id} className="hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5 transition-all duration-200">
+                    <tr key={user.id} className="hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5 transition-all duration-200">
                       <td className="px-8 py-6 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
@@ -689,7 +721,7 @@ export default function UsersManagementPage() {
                                   <Edit className="h-3 w-3" />
                                 </button>
                                 <button
-                                  onClick={() => handleUnlinkFromCompany(user.user_id || user.id)}
+                                  onClick={() => handleUnlinkFromCompany(user.id)}
                                   className="text-red-600 hover:text-red-800 p-1 h-auto rounded-md hover:bg-red-50 transition-colors duration-200"
                                   title="Desvincular da empresa"
                                 >
@@ -1050,9 +1082,8 @@ function LinkUserModal({ user, companies, onClose, onLink, loading }) {
       return
     }
     
-    const userId = user.user_id || user.id
+    const userId = user.id
     console.log('Modal: Tentando vincular usuário ID:', userId, 'Dados do usuário:', {
-      user_id: user.user_id,
       id: user.id,
       email: user.email
     })
