@@ -32,6 +32,7 @@ import JourneyAssignmentsPage from './pages/admin/JourneyAssignmentsPage'
 import CompaniesManagementPage from './pages/admin/CompaniesManagementPage'
 import ProcessRequestsPage from './pages/ProcessRequestsPage'
 import AllProcessesPage from './pages/AllProcessesPage'
+import OperationalPoliciesPage from './pages/OperationalPoliciesPage'
 import TasksInProgressNew from './pages/TasksInProgressNew'
 import ActiveUsersPage from './pages/ActiveUsersPage'
 import UserActivityPage from './pages/UserActivityPage'
@@ -255,6 +256,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin']}>
             <AllProcessesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/operational-policies" 
+        element={
+          <ProtectedRoute requiredRole={['company_admin']}>
+            <OperationalPoliciesPage />
           </ProtectedRoute>
         }
       />

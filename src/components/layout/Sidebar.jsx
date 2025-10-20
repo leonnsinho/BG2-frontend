@@ -190,6 +190,11 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         name: 'Avaliação de Processos',
         icon: CheckSquare,
         href: '/journey-management/overview'
+      },
+      {
+        name: 'Políticas Operacionais',
+        icon: FileText,
+        href: '/operational-policies'
       }
     ]
   }
