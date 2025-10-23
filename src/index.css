@@ -160,4 +160,72 @@
     transform: translateY(0);
     box-shadow: 0 5px 15px -3px rgba(234, 165, 0, 0.2);
   }
+
+  /* Animações suaves para expansão de blocos */
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      max-height: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      max-height: 2000px;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 1;
+      max-height: 2000px;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      max-height: 0;
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out forwards;
+  }
+
+  .animate-fade-in-scale {
+    animation: fadeInScale 0.2s ease-out forwards;
+  }
+
+  /* Transições suaves para elementos expansíveis */
+  .expandable-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out, transform 0.3s ease-out;
+  }
+
+  .expandable-content-enter {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  .expandable-content-enter-active {
+    max-height: 2000px;
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

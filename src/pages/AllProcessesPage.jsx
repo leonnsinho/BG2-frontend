@@ -14,7 +14,9 @@ import {
   Building2,
   Layers,
   ArrowUpDown,
-  MoreVertical
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { formatDate } from '../utils/dateUtils'
 
@@ -43,6 +45,10 @@ export default function AllProcessesPage() {
   const [availableCategories, setAvailableCategories] = useState([])
   const [deleting, setDeleting] = useState(false)
   const [updating, setUpdating] = useState(false)
+  
+  // Estados de paginação
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 50
 
   useEffect(() => {
     if (profile?.role === 'super_admin') {
@@ -249,6 +255,52 @@ export default function AllProcessesPage() {
   // Extrair categorias únicas para o filtro
   const allCategories = [...new Set(processes.map(p => p.category).filter(Boolean))].sort()
 
+  // Calcular paginação
+  const totalPages = Math.ceil(filteredProcesses.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const paginatedProcesses = filteredProcesses.slice(startIndex, endIndex)
+
+  // Resetar para página 1 quando filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, selectedJourney, selectedCategory, sortBy, sortOrder])
+
+  // Gerar array de números de página para exibir
+  const getPageNumbers = () => {
+    const pages = []
+    const maxPagesToShow = 7 // Mostrar no máximo 7 botões de página
+    
+    if (totalPages <= maxPagesToShow) {
+      // Se tem poucas páginas, mostra todas
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      // Lógica para muitas páginas
+      if (currentPage <= 4) {
+        // Início: 1 2 3 4 5 ... last
+        for (let i = 1; i <= 5; i++) pages.push(i)
+        pages.push('...')
+        pages.push(totalPages)
+      } else if (currentPage >= totalPages - 3) {
+        // Fim: 1 ... last-4 last-3 last-2 last-1 last
+        pages.push(1)
+        pages.push('...')
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i)
+      } else {
+        // Meio: 1 ... current-1 current current+1 ... last
+        pages.push(1)
+        pages.push('...')
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i)
+        pages.push('...')
+        pages.push(totalPages)
+      }
+    }
+    
+    return pages
+  }
+
   const toggleSort = (field) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
@@ -438,7 +490,7 @@ export default function AllProcessesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredProcesses.length === 0 ? (
+                {paginatedProcesses.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-12 text-center">
                       <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
@@ -451,7 +503,7 @@ export default function AllProcessesPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredProcesses.map(process => {
+                  paginatedProcesses.map(process => {
                     const journey = journeys[process.journey_id]
                     return (
                       <tr key={process.id} className="hover:bg-gray-50 transition-colors">
@@ -544,6 +596,95 @@ export default function AllProcessesPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Paginação */}
+          {filteredProcesses.length > 0 && (
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                {/* Info de registros */}
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>
+                    Mostrando <span className="font-medium text-gray-900">{startIndex + 1}</span> até{' '}
+                    <span className="font-medium text-gray-900">
+                      {Math.min(endIndex, filteredProcesses.length)}
+                    </span>{' '}
+                    de <span className="font-medium text-gray-900">{filteredProcesses.length}</span> processos
+                  </span>
+                </div>
+
+                {/* Navegação de páginas */}
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    {/* Botão Anterior */}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Página anterior"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+
+                    {/* Números de página */}
+                    <div className="flex items-center gap-1">
+                      {getPageNumbers().map((pageNum, index) => {
+                        if (pageNum === '...') {
+                          return (
+                            <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-500">
+                              ...
+                            </span>
+                          )
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`min-w-[40px] px-3 py-2 rounded-lg font-medium transition-colors ${
+                              currentPage === pageNum
+                                ? 'bg-[#EBA500] text-white shadow-sm'
+                                : 'text-gray-700 hover:bg-gray-100 border border-gray-300'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {/* Botão Próxima */}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Próxima página"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+
+                    {/* Ir para página específica */}
+                    <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-300">
+                      <span className="text-sm text-gray-600">Ir para:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max={totalPages}
+                        value={currentPage}
+                        onChange={(e) => {
+                          const page = parseInt(e.target.value)
+                          if (page >= 1 && page <= totalPages) {
+                            setCurrentPage(page)
+                          }
+                        }}
+                        className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
+                      />
+                      <span className="text-sm text-gray-600">de {totalPages}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
