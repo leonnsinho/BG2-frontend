@@ -276,11 +276,11 @@ function AppRoutes() {
         }
       />
 
-      {/* Rotas de Relatórios (Super Admin) */}
+      {/* Rotas de Relatórios (Super Admin e Company Admin) */}
       <Route 
         path="/reports/user-activity" 
         element={
-          <ProtectedRoute requiredRole={['super_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <UserActivityPage />
           </ProtectedRoute>
         }

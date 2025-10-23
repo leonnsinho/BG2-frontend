@@ -195,6 +195,14 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         name: 'Políticas Operacionais',
         icon: FileText,
         href: '/operational-policies'
+      },
+      {
+        name: 'Relatórios',
+        icon: BarChart3,
+        href: '/reports',
+        children: [
+          { name: 'Atividade de Usuários', href: '/reports/user-activity' }
+        ]
       }
     ]
   }

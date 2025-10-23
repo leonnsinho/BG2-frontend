@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../services/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import {
   Users,
   Activity,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react'
 
 function UserActivityPage() {
+  const { profile } = useAuth()
   const [users, setUsers] = useState([])
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -26,6 +28,23 @@ function UserActivityPage() {
   const [roleFilter, setRoleFilter] = useState('all')
   const [companyFilter, setCompanyFilter] = useState('all')
   const [companies, setCompanies] = useState([])
+
+  // Verificar se é super_admin
+  const isSuperAdmin = () => {
+    return profile?.role === 'super_admin'
+  }
+
+  // Verificar se é company_admin
+  const isCompanyAdmin = () => {
+    return profile?.role === 'company_admin' || 
+           profile?.user_companies?.some(uc => uc.is_active && uc.role === 'company_admin')
+  }
+
+  // Obter empresa do company_admin
+  const getCurrentUserCompany = () => {
+    if (!profile?.user_companies) return null
+    return profile.user_companies.find(uc => uc.is_active)?.companies
+  }
 
   useEffect(() => {
     fetchUserActivity()
@@ -50,11 +69,28 @@ function UserActivityPage() {
     try {
       setLoading(true)
       console.log('📊 Carregando atividade de usuários...')
+      console.log('👤 Perfil do usuário:', {
+        role: profile?.role,
+        isSuperAdmin: isSuperAdmin(),
+        isCompanyAdmin: isCompanyAdmin()
+      })
 
-      // Buscar dados da view
-      const { data: usersData, error: usersError } = await supabase
+      // Obter empresa atual se for company_admin
+      const currentCompany = getCurrentUserCompany()
+      console.log('🏢 Empresa atual:', currentCompany?.name || 'nenhuma')
+
+      // Buscar dados da view com filtro por empresa se necessário
+      let query = supabase
         .from('user_activity_summary')
         .select('*')
+
+      // Se for company_admin (e não super_admin), filtrar por empresa
+      if (isCompanyAdmin() && !isSuperAdmin() && currentCompany) {
+        console.log('🔍 Filtrando por empresa:', currentCompany.id)
+        query = query.eq('company_id', currentCompany.id)
+      }
+
+      const { data: usersData, error: usersError } = await query
         .order('last_login_at', { ascending: false, nullsFirst: false })
 
       if (usersError) {
@@ -67,14 +103,37 @@ function UserActivityPage() {
 
       // Buscar estatísticas
       console.log('📊 Carregando estatísticas...')
-      const { data: statsData, error: statsError } = await supabase
-        .rpc('get_user_activity_stats')
+      
+      // Se for company_admin, calcular estatísticas apenas da empresa
+      if (isCompanyAdmin() && !isSuperAdmin() && currentCompany && usersData) {
+        const filteredUsers = usersData
+        const totalUsers = filteredUsers.length
+        const activeUsers = filteredUsers.filter(u => u.activity_status === 'active').length
+        const totalLogins = filteredUsers.reduce((sum, u) => sum + (u.login_count || 0), 0)
+        const inactiveUsers = filteredUsers.filter(u => u.activity_status === 'inactive' || u.activity_status === 'very_inactive').length
+        const neverAccessedUsers = filteredUsers.filter(u => u.activity_status === 'never_accessed').length
 
-      if (statsError) {
-        console.error('❌ Erro ao carregar estatísticas:', statsError.message, statsError)
-      } else if (statsData && statsData.length > 0) {
-        console.log('✅ Estatísticas carregadas:', statsData[0])
-        setStats(statsData[0])
+        setStats({
+          total_users: totalUsers,
+          active_users: activeUsers,
+          active_percentage: totalUsers > 0 ? (activeUsers / totalUsers) * 100 : 0,
+          total_logins: totalLogins,
+          avg_login_count: totalUsers > 0 ? totalLogins / totalUsers : 0,
+          inactive_users: inactiveUsers,
+          never_accessed_users: neverAccessedUsers
+        })
+        console.log('✅ Estatísticas da empresa calculadas')
+      } else {
+        // Super admin - usar RPC para estatísticas globais
+        const { data: statsData, error: statsError } = await supabase
+          .rpc('get_user_activity_stats')
+
+        if (statsError) {
+          console.error('❌ Erro ao carregar estatísticas:', statsError.message, statsError)
+        } else if (statsData && statsData.length > 0) {
+          console.log('✅ Estatísticas globais carregadas:', statsData[0])
+          setStats(statsData[0])
+        }
       }
     } catch (error) {
       console.error('❌ Erro ao carregar atividade de usuários:', error.message || error)
@@ -233,8 +292,19 @@ function UserActivityPage() {
           <div>
             <h1 className="text-3xl font-bold text-[#373435] mb-1">Atividade de Usuários</h1>
             <p className="mt-2 text-base text-gray-600">
-              Monitore o engajamento e uso da plataforma por todos os usuários
+              {isCompanyAdmin() && !isSuperAdmin() 
+                ? `Monitore o engajamento dos usuários da ${getCurrentUserCompany()?.name || 'sua empresa'}`
+                : 'Monitore o engajamento e uso da plataforma por todos os usuários'
+              }
             </p>
+            {isCompanyAdmin() && !isSuperAdmin() && (
+              <div className="mt-3 inline-flex items-center px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
+                <Building2 className="h-4 w-4 text-blue-600 mr-2" />
+                <span className="text-sm font-medium text-blue-700">
+                  Visualizando apenas usuários de: {getCurrentUserCompany()?.name}
+                </span>
+              </div>
+            )}
           </div>
 
           <button
@@ -376,28 +446,30 @@ function UserActivityPage() {
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all appearance-none bg-white"
             >
               <option value="all">Todas as funções</option>
-              <option value="super_admin">Super Admin</option>
+              {isSuperAdmin() && <option value="super_admin">Super Admin</option>}
               <option value="company_admin">Admin da Empresa</option>
               <option value="gestor">Gestor</option>
               <option value="user">Usuário</option>
             </select>
           </div>
 
-          {/* Filtro de Empresa */}
-          <div className="relative">
-            <select
-              value={companyFilter}
-              onChange={(e) => setCompanyFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all appearance-none bg-white"
-            >
-              <option value="all">Todas as empresas</option>
-              {companies.map(company => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Filtro de Empresa - Apenas para Super Admin */}
+          {isSuperAdmin() && (
+            <div className="relative">
+              <select
+                value={companyFilter}
+                onChange={(e) => setCompanyFilter(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all appearance-none bg-white"
+              >
+                <option value="all">Todas as empresas</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
