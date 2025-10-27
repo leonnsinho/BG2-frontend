@@ -112,6 +112,8 @@ const PlanejamentoEstrategico = () => {
   useEffect(() => {
   const loadData = async () => {
       console.log('🚀 Carregando jornadas para:', profile?.email)
+      console.log('👤 Role Global:', profile?.role)
+      console.log('🏢 User Companies:', profile?.user_companies)
       setLoading(true)
       setJornadas(jornadasMock)
       
@@ -122,17 +124,21 @@ const PlanejamentoEstrategico = () => {
         return
       }
       
-      // Se for Super Admin, dar acesso a todas as jornadas
-      if (profile?.role === 'super_admin') {
-        console.log('👑 Super Admin - liberando todas as jornadas')
+      // Verificar se é Company Admin (pode estar em user_companies)
+      const isCompanyAdmin = profile?.role === 'company_admin' || 
+                            profile?.user_companies?.some(uc => uc.is_active && uc.role === 'company_admin')
+      
+      // Se for Super Admin ou Company Admin, dar acesso a todas as jornadas
+      if (profile?.role === 'super_admin' || isCompanyAdmin) {
+        console.log(`👑 ${profile?.role === 'super_admin' ? 'Super Admin' : 'Company Admin'} - liberando todas as jornadas`)
         const todasJornadas = ['estrategica', 'financeira', 'pessoas-cultura', 'receita-crm', 'operacional']
         setJornadasAtribuidas(todasJornadas)
-        console.log(`👑 Super Admin - todas as jornadas liberadas: ${todasJornadas.join(', ')}`)
+        console.log(`✅ Todas as jornadas liberadas: ${todasJornadas.join(', ')}`)
         setLoading(false)
         return
       }
       
-      // Buscar jornadas atribuídas ao usuário
+      // Buscar jornadas atribuídas ao usuário (apenas para gestores)
       try {
         const assignedJourneySlugs = await getAccessibleJourneys()
         console.log('✅ Jornadas atribuídas:', assignedJourneySlugs)
@@ -157,7 +163,7 @@ const PlanejamentoEstrategico = () => {
     if (profile?.email) {
       loadData()
     }
-  }, [profile?.role]) // Apenas profile.role como dependência para evitar loops
+  }, [profile?.role, profile?.user_companies]) // Adicionar user_companies como dependência
 
   // Função para carregar tarefas do banco de dados
   const loadTasks = async () => {

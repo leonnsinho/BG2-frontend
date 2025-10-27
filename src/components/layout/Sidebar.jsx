@@ -92,6 +92,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
           { name: 'Usuários', href: '/admin/users' },
           { name: 'Atribuição de Jornadas', href: '/admin/journey-assignments' },
           { name: 'Empresas', href: '/admin/companies' },
+          { name: 'Categorias', href: '/admin/categories' },
           { name: 'Solicitações de Processos', href: '/admin/process-requests' },
           { name: 'Todos os Processos', href: '/admin/all-processes' }
         ]
@@ -185,6 +186,11 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
           { name: 'Usuários', href: '/admin/users' },
           { name: 'Atribuição de Jornadas', href: '/admin/journey-assignments' }
         ]
+      },
+      {
+        name: 'Planejamento Estratégico',
+        icon: Kanban,
+        href: '/planejamento-estrategico'
       },
       {
         name: 'Avaliação de Processos',

@@ -317,6 +317,109 @@ function UserActivityPage() {
         </div>
       </div>
 
+      {/* Seção Explicativa dos Estados de Usuários */}
+      <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-2xl shadow-sm border border-blue-200/50 p-6">
+        <div className="flex items-start space-x-3 mb-4">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <AlertCircle className="h-5 w-5 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-[#373435] mb-1">
+              Entendendo os Estados de Atividade
+            </h3>
+            <p className="text-sm text-gray-600">
+              A plataforma classifica automaticamente os usuários com base em seu padrão de uso
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-6">
+          {/* Ativo */}
+          <div className="bg-white rounded-xl p-4 border-2 border-green-200 hover:shadow-md transition-all">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <h4 className="font-bold text-green-800">Ativo</h4>
+            </div>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Usuário logou <span className="font-semibold text-green-700">nos últimos 7 dias</span>. 
+              Demonstra engajamento regular com a plataforma.
+            </p>
+          </div>
+
+          {/* Moderado */}
+          <div className="bg-white rounded-xl p-4 border-2 border-yellow-200 hover:shadow-md transition-all">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-yellow-600" />
+              </div>
+              <h4 className="font-bold text-yellow-800">Moderado</h4>
+            </div>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Último login entre <span className="font-semibold text-yellow-700">8 e 30 dias atrás</span>. 
+              Uso ocasional, pode necessitar re-engajamento.
+            </p>
+          </div>
+
+          {/* Inativo */}
+          <div className="bg-white rounded-xl p-4 border-2 border-orange-200 hover:shadow-md transition-all">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Clock className="h-5 w-5 text-orange-600" />
+              </div>
+              <h4 className="font-bold text-orange-800">Inativo</h4>
+            </div>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Último login entre <span className="font-semibold text-orange-700">31 e 60 dias atrás</span>. 
+              Requer atenção para reativar o uso.
+            </p>
+          </div>
+
+          {/* Muito Inativo */}
+          <div className="bg-white rounded-xl p-4 border-2 border-red-200 hover:shadow-md transition-all">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <XCircle className="h-5 w-5 text-red-600" />
+              </div>
+              <h4 className="font-bold text-red-800">Muito Inativo</h4>
+            </div>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Último login <span className="font-semibold text-red-700">há mais de 60 dias</span>. 
+              Usuário pode estar desengajado ou não necessitar mais do acesso.
+            </p>
+          </div>
+
+          {/* Nunca Acessou */}
+          <div className="bg-white rounded-xl p-4 border-2 border-gray-300 hover:shadow-md transition-all">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <XCircle className="h-5 w-5 text-gray-600" />
+              </div>
+              <h4 className="font-bold text-gray-700">Nunca Acessou</h4>
+            </div>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Usuário foi convidado mas <span className="font-semibold text-gray-700">ainda não realizou o primeiro login</span>. 
+              Verifique se recebeu o convite.
+            </p>
+          </div>
+        </div>
+
+        {/* Dica de Ação */}
+        <div className="mt-5 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="flex items-start space-x-3">
+            <TrendingUp className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h5 className="text-sm font-semibold text-blue-900 mb-1">💡 Dica de Engajamento</h5>
+              <p className="text-xs text-blue-700 leading-relaxed">
+                Usuários com status <span className="font-semibold">Inativo</span> ou <span className="font-semibold">Muito Inativo</span> podem 
+                se beneficiar de comunicação direta, treinamento adicional ou verificação se ainda necessitam do acesso à plataforma.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Cards de Estatísticas */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

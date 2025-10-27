@@ -19,11 +19,13 @@ import {
   ChevronRight
 } from 'lucide-react'
 import { formatDate } from '../utils/dateUtils'
+import { getActiveCategories, createCategoriesMap } from '../services/categoryService'
 
 export default function AllProcessesPage() {
   const { profile } = useAuth()
   const [processes, setProcesses] = useState([])
   const [journeys, setJourneys] = useState({})
+  const [categories, setCategories] = useState({}) // Mapa de categorias por ID
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedJourney, setSelectedJourney] = useState('all')
@@ -37,12 +39,12 @@ export default function AllProcessesPage() {
   const [editData, setEditData] = useState({
     name: '',
     description: '',
-    category: '',
+    category_id: '', // MUDOU: category → category_id
     order_index: 0,
     weight: 0,
     is_active: true
   })
-  const [availableCategories, setAvailableCategories] = useState([])
+  const [availableCategories, setAvailableCategories] = useState([]) // Array de objetos de categoria
   const [deleting, setDeleting] = useState(false)
   const [updating, setUpdating] = useState(false)
   
@@ -59,6 +61,13 @@ export default function AllProcessesPage() {
   const loadData = async () => {
     setLoading(true)
     try {
+      // Carregar categorias primeiro
+      const categoriesData = await getActiveCategories()
+      const categoriesMap = createCategoriesMap(categoriesData)
+      setCategories(categoriesMap)
+      setAvailableCategories(categoriesData) // Array para dropdowns
+      console.log('📂 Categorias carregadas:', categoriesData.length)
+
       // Carregar jornadas
       const { data: journeysData, error: journeysError } = await supabase
         .from('journeys')
@@ -75,9 +84,9 @@ export default function AllProcessesPage() {
       })
       setJourneys(journeysMap)
 
-      // Carregar todos os processos
+      // Carregar processos usando a view que já inclui dados da categoria
       const { data: processesData, error: processesError } = await supabase
-        .from('processes')
+        .from('processes_with_category')
         .select('*')
         .order('name')
 
@@ -123,40 +132,13 @@ export default function AllProcessesPage() {
     setEditData({
       name: process.name || '',
       description: process.description || '',
-      category: process.category || '',
+      category_id: process.category_id || '', // MUDOU: category → category_id
       order_index: process.order_index || 0,
       weight: process.weight || 0,
       is_active: process.is_active !== false
     })
 
-    // Carregar categorias da jornada do processo
-    await loadCategoriesForProcess(process.journey_id)
-
     setShowEditModal(true)
-  }
-
-  const loadCategoriesForProcess = async (journeyId) => {
-    try {
-      // Buscar todas as categorias únicas dos processos dessa jornada
-      const { data, error } = await supabase
-        .from('processes')
-        .select('category')
-        .eq('journey_id', journeyId)
-        .not('category', 'is', null)
-        .order('category')
-
-      if (error) throw error
-
-      // Extrair categorias únicas e ordenadas
-      const categories = [...new Set(data?.map(p => p.category).filter(Boolean))].sort()
-      setAvailableCategories(categories)
-
-      console.log(`📂 Categorias carregadas para edição:`, categories)
-
-    } catch (error) {
-      console.error('Erro ao carregar categorias:', error)
-      setAvailableCategories([])
-    }
   }
 
   const handleSaveEdit = async () => {
@@ -172,7 +154,7 @@ export default function AllProcessesPage() {
         .update({
           name: editData.name.trim(),
           description: editData.description.trim(),
-          category: editData.category.trim(),
+          category_id: editData.category_id || null, // MUDOU: category → category_id
           order_index: parseInt(editData.order_index) || 0,
           weight: parseFloat(editData.weight) || 0,
           is_active: editData.is_active,
@@ -203,7 +185,7 @@ export default function AllProcessesPage() {
         const matchName = p.name?.toLowerCase().includes(search)
         const matchCode = p.code?.toLowerCase().includes(search)
         const matchDescription = p.description?.toLowerCase().includes(search)
-        const matchCategory = p.category?.toLowerCase().includes(search)
+        const matchCategory = p.category_name?.toLowerCase().includes(search) // MUDOU: usa category_name da view
         if (!matchName && !matchCode && !matchDescription && !matchCategory) {
           return false
         }
@@ -215,7 +197,7 @@ export default function AllProcessesPage() {
       }
 
       // Filtro de categoria
-      if (selectedCategory !== 'all' && p.category !== selectedCategory) {
+      if (selectedCategory !== 'all' && p.category_id !== selectedCategory) { // MUDOU: category → category_id
         return false
       }
 
@@ -234,8 +216,8 @@ export default function AllProcessesPage() {
           compareB = journeys[b.journey_id]?.name?.toLowerCase() || ''
           break
         case 'category':
-          compareA = a.category?.toLowerCase() || ''
-          compareB = b.category?.toLowerCase() || ''
+          compareA = a.category_name?.toLowerCase() || '' // MUDOU: usa category_name da view
+          compareB = b.category_name?.toLowerCase() || ''
           break
         case 'created_at':
           compareA = new Date(a.created_at || 0)
@@ -252,8 +234,9 @@ export default function AllProcessesPage() {
       }
     })
 
-  // Extrair categorias únicas para o filtro
-  const allCategories = [...new Set(processes.map(p => p.category).filter(Boolean))].sort()
+  // Extrair categorias únicas para o filtro (já temos no estado availableCategories)
+  // Mas podemos usar diretamente os processos para ver quais estão em uso
+  const allCategories = availableCategories // Usa o array de categorias carregado
 
   // Calcular paginação
   const totalPages = Math.ceil(filteredProcesses.length / ITEMS_PER_PAGE)
@@ -432,7 +415,7 @@ export default function AllProcessesPage() {
               >
                 <option value="all">Todas as Categorias</option>
                 {allCategories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
             </div>
@@ -539,9 +522,9 @@ export default function AllProcessesPage() {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          {process.category && (
+                          {process.category_name && (
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                              {process.category}
+                              {process.category_name}
                             </span>
                           )}
                         </td>
@@ -727,7 +710,7 @@ export default function AllProcessesPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Categoria
                     </label>
-                    <p className="text-gray-900">{selectedProcess.category || '-'}</p>
+                    <p className="text-gray-900">{selectedProcess.category_name || '-'}</p>
                   </div>
 
                   <div>
@@ -934,14 +917,14 @@ export default function AllProcessesPage() {
                     </label>
                     <select
                       id="edit_category"
-                      value={editData.category}
-                      onChange={(e) => setEditData(prev => ({ ...prev, category: e.target.value }))}
+                      value={editData.category_id}
+                      onChange={(e) => setEditData(prev => ({ ...prev, category_id: e.target.value }))}
                       className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
                       <option value="">Selecione...</option>
                       {availableCategories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
                         </option>
                       ))}
                     </select>

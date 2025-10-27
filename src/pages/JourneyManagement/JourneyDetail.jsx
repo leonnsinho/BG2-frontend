@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
 import ProcessManagementModal from '../../components/processes/ProcessManagementModal'
 import RequestProcessModal from '../../components/processes/RequestProcessModal'
+import { getActiveCategories, createCategoriesMap } from '../../services/categoryService'
 import { 
   Target, 
   Building2, 
@@ -38,6 +39,8 @@ const JourneyDetail = () => {
   const [journey, setJourney] = useState(null)
   const [company, setCompany] = useState(null)
   const [processes, setProcesses] = useState([])
+  const [categories, setCategories] = useState({}) // Mapa de categorias
+  const [availableCategories, setAvailableCategories] = useState([]) // Array para dropdowns
   const [evaluations, setEvaluations] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -128,6 +131,13 @@ const JourneyDetail = () => {
         }
         setJourney(journeyData)
 
+        // Carregar categorias primeiro
+        const categoriesData = await getActiveCategories()
+        const categoriesMap = createCategoriesMap(categoriesData)
+        setCategories(categoriesMap)
+        setAvailableCategories(categoriesData)
+        console.log('📂 Categorias carregadas:', categoriesData.length)
+
         // Carregar empresa se especificada
         if (companyId) {
           const { data: companyData, error: companyError } = await supabase
@@ -152,9 +162,9 @@ const JourneyDetail = () => {
           return
         }
 
-        // Carregar processos da jornada
+        // Carregar processos da jornada usando a view com dados da categoria
         const { data: processesData, error: processesError } = await supabase
-          .from('processes')
+          .from('processes_with_category')
           .select('*')
           .eq('journey_id', journeyDbData.id)
           .order('order_index')
@@ -438,7 +448,7 @@ const JourneyDetail = () => {
                          process.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          process.description?.toLowerCase().includes(searchTerm.toLowerCase())
     
-    const matchesCategory = selectedCategory === 'all' || process.category === selectedCategory
+    const matchesCategory = selectedCategory === 'all' || process.category_id === selectedCategory // MUDOU: category → category_id
     
     const evaluation = getProcessEvaluation(process.id)
     const hasProcess = evaluation?.has_process ?? true
@@ -448,9 +458,6 @@ const JourneyDetail = () => {
     
     return matchesSearch && matchesCategory && matchesUsage
   })
-
-  // Obter categorias únicas
-  const categories = [...new Set(processes.map(p => p.category).filter(Boolean))]
 
   // Função para obter label da importância para o negócio
   const getBusinessImportanceLabel = (score) => {
@@ -576,9 +583,9 @@ const JourneyDetail = () => {
                   <span className="inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium bg-gradient-to-r from-[#373435]/10 to-[#373435]/20 text-[#373435] border border-[#373435]/20">
                     {journey.name.replace('Jornada ', '')}/{selectedProcess.name}
                   </span>
-                  {selectedProcess.category && (
+                  {selectedProcess.category_name && (
                     <span className="inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium bg-gradient-to-r from-[#EBA500]/20 to-[#EBA500]/30 text-[#EBA500] border border-[#EBA500]/30">
-                      {selectedProcess.category}
+                      {selectedProcess.category_name}
                     </span>
                   )}
                 </div>
@@ -853,8 +860,8 @@ const JourneyDetail = () => {
                 className="block w-full pl-4 pr-10 py-3 text-base border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm rounded-2xl transition-all duration-200"
               >
                 <option value="all">Todas as categorias</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
+                {availableCategories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
 
@@ -1029,44 +1036,47 @@ const JourneyDetail = () => {
                 const evaluation = getProcessEvaluation(process.id)
                 
                 return (
-                  <div key={process.id} className={`p-8 transition-all duration-200 ${
+                  <div key={process.id} className={`p-6 transition-all duration-200 ${
                     process.is_active 
                       ? 'hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5' 
                       : 'bg-gray-50/30 opacity-60'
                   }`}>
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-6">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium border ${
-                            process.is_active
-                              ? 'bg-gradient-to-r from-[#373435]/10 to-[#373435]/20 text-[#373435] border-[#373435]/20'
-                              : 'bg-gray-200 text-gray-500 border-gray-300'
-                          }`}>
-                            {journey.name.replace('Jornada ', '')}/{process.name}
-                          </span>
-                          
-                          {!process.is_active && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium bg-red-100 text-red-600 border border-red-200">
-                              Desativado
-                            </span>
-                          )}
-                          
-                          {process.category && (
-                            <span className={`inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium border ${
+                        {/* Badges no topo */}
+                        <div className="flex items-center gap-2 mb-3">
+                          {process.category_name && (
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
                               process.is_active
                                 ? 'bg-gradient-to-r from-[#EBA500]/20 to-[#EBA500]/30 text-[#EBA500] border-[#EBA500]/30'
                                 : 'bg-gray-200 text-gray-500 border-gray-300'
                             }`}>
-                              {process.category}
+                              {process.category_name}
+                            </span>
+                          )}
+                          
+                          {!process.is_active && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-600 border border-red-200">
+                              Desativado
                             </span>
                           )}
                         </div>
                         
-                        <h4 className={`text-lg font-semibold mb-3 flex items-center space-x-3 ${
+                        {/* Título do Processo (name) em destaque */}
+                        <h4 className={`text-2xl font-bold mb-2 ${
                           process.is_active ? 'text-[#373435]' : 'text-gray-500'
                         }`}>
-                          <span>{process.description || 'Descrição do processo'}</span>
+                          {process.name}
                         </h4>
+                        
+                        {/* Descrição menor */}
+                        {process.description && (
+                          <p className={`text-sm leading-relaxed ${
+                            process.is_active ? 'text-gray-600' : 'text-gray-400'
+                          }`}>
+                            {process.description}
+                          </p>
+                        )}
                       </div>
                       
                       <div className="flex items-center space-x-4 ml-6">
