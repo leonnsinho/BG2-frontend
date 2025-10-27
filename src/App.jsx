@@ -37,6 +37,7 @@ import OperationalPoliciesPage from './pages/OperationalPoliciesPage'
 import TasksInProgressNew from './pages/TasksInProgressNew'
 import ActiveUsersPage from './pages/ActiveUsersPage'
 import UserActivityPage from './pages/UserActivityPage'
+import MaturityApprovalsPage from './pages/MaturityApprovalsPage'
 import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage'
 import DrePage from './pages/financeiro/DrePage'
 import DfcPage from './pages/financeiro/DfcPage'
@@ -291,6 +292,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <UserActivityPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rota de Aprovações de Amadurecimento (Company Admin) */}
+      <Route 
+        path="/maturity-approvals" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+            <MaturityApprovalsPage />
           </ProtectedRoute>
         }
       />

@@ -6,7 +6,7 @@ import { useFileUpload } from '../../hooks/useFileUpload'
 import FileUploadArea from '../common/FileUploadArea'
 import AttachmentList from '../common/AttachmentList'
 
-const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
+const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
   const { profile } = useAuth()
   const { updateTask, getTaskComments, addComment } = useTasks()
   const { uploadFile, uploading, uploadProgress } = useFileUpload()
@@ -106,7 +106,11 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [] }) => {
     try {
       await updateTask(task.id, { title: tempTitle })
       setEditingTitle(false)
-      // Aqui idealmente recarregaríamos a tarefa ou atualizaríamos via callback
+      
+      // 🔥 NOVO: Notificar componente pai sobre atualização
+      if (onTaskUpdate && task.processoId) {
+        onTaskUpdate(task.processoId)
+      }
     } catch (error) {
       console.error('Erro ao atualizar título:', error)
       setTempTitle(task.texto)

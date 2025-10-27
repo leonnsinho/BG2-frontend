@@ -3,6 +3,8 @@ import { useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
 import { usePermissions } from '../../hooks/usePermissions'
+import { useMaturityApprovals } from '../../hooks/useMaturityApprovals'
+import NotificationBadge from '../common/NotificationBadge'
 import { 
   BarChart3, 
   Users, 
@@ -26,7 +28,8 @@ import {
   Kanban,
   CheckSquare,
   ChevronRight,
-  Menu
+  Menu,
+  ThumbsUp
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -70,7 +73,7 @@ if (typeof document !== 'undefined' && !document.getElementById('sidebar-dropdow
 
 
 // Função para obter itens de navegação baseados no perfil do usuário
-const getNavigationItems = (profile, permissions, accessibleJourneys = [], journeysLoading = true) => {
+const getNavigationItems = (profile, permissions, accessibleJourneys = [], journeysLoading = true, pendingApprovalsCount = 0) => {
   const baseItems = [
     {
       name: 'Dashboard',
@@ -196,6 +199,12 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         name: 'Avaliação de Processos',
         icon: CheckSquare,
         href: '/journey-management/overview'
+      },
+      {
+        name: 'Aprovações de Amadurecimento',
+        icon: ThumbsUp,
+        href: '/maturity-approvals',
+        badge: pendingApprovalsCount // 🔥 NOVO: Badge com contador
       },
       {
         name: 'Políticas Operacionais',
@@ -340,6 +349,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const { profile, signOut } = useAuth()
   const { getAccessibleJourneys } = useAuthPermissions()
   const permissions = usePermissions()
+  const { pendingCount } = useMaturityApprovals() // 🔥 NOVO: Hook de aprovações pendentes
   const [expandedItems, setExpandedItems] = React.useState(['Jornadas'])
   const [accessibleJourneys, setAccessibleJourneys] = React.useState([])
   const [journeysLoading, setJourneysLoading] = React.useState(true)
@@ -409,9 +419,9 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     }
     
     // Usuários vinculados: interface normal
-    const items = getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading)
+    const items = getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading, pendingCount)
     return items
-  }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading])
+  }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading, pendingCount])
 
   const toggleExpanded = (itemName) => {
     setExpandedItems(prev => 
@@ -649,7 +659,17 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                       title={isCollapsed ? item.name : undefined}
                     >
                       {isCollapsed ? (
-                        <ItemIcon className="h-5 w-5 flex-shrink-0" />
+                        <div className="relative">
+                          <ItemIcon className="h-5 w-5 flex-shrink-0" />
+                          {item.badge && item.badge > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center text-[8px] font-bold text-white">
+                                {item.badge > 9 ? '9+' : item.badge}
+                              </span>
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <>
                           {isDashboard ? (
@@ -665,6 +685,9 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                             />
                           )}
                           <span className="flex-1 text-left">{item.name}</span>
+                          {item.badge && item.badge > 0 && (
+                            <NotificationBadge count={item.badge} size="sm" pulse={true} />
+                          )}
                         </>
                       )}
                     </Link>

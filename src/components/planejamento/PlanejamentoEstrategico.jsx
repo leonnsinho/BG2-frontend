@@ -6,6 +6,8 @@ import { usePriorityProcesses } from '../../hooks/usePriorityProcesses2'
 import { useTasks } from '../../hooks/useTasks'
 import { supabase } from '../../services/supabase'
 import TaskSidebar from './TaskSidebar'
+import ProcessProgressBar from '../process/ProcessProgressBar'
+import MaturityConfirmationModal from '../process/MaturityConfirmationModal'
 
 const PlanejamentoEstrategico = () => {
   const { profile } = useAuth()
@@ -13,8 +15,18 @@ const PlanejamentoEstrategico = () => {
   const { priorityProcesses, loading: processesLoading, error: processesError, getProcessesByJourney, debugLogs } = usePriorityProcesses()
   const { getTasks, getCompanyUsers, createTask, updateTask, deleteTask, loading: tasksLoading } = useTasks()
   
+  // Extrair company_id do perfil de forma segura
+  const companyId = profile?.user_companies?.[0]?.company_id || null
+  
+  // Debug: log do companyId
+  useEffect(() => {
+    console.log('🏢 Company ID extraído:', companyId)
+    console.log('👤 Profile completo:', profile)
+  }, [companyId, profile?.id])
+  
   const [jornadas, setJornadas] = useState([])
   const [jornadaSelecionada, setJornadaSelecionada] = useState(null)
+  const [jornadaUUID, setJornadaUUID] = useState(null) // 🔥 NOVO: UUID real da jornada do banco
   const [processos, setProcessos] = useState([])
   const [tarefas, setTarefas] = useState({})
   const [usuarios, setUsuarios] = useState([]) // Para mapear UUID -> nome
@@ -26,6 +38,12 @@ const PlanejamentoEstrategico = () => {
   const [sidebarTask, setSidebarTask] = useState({ isOpen: false, task: null })
   const [jornadasAtribuidas, setJornadasAtribuidas] = useState([])
   const [loading, setLoading] = useState(true)
+  
+  // Estados do sistema de amadurecimento
+  const [processProgressMap, setProcessProgressMap] = useState({}) // Map de processo.id -> { total, completed, percentage }
+  const [maturityModalOpen, setMaturityModalOpen] = useState(false)
+  const [selectedProcessForMaturity, setSelectedProcessForMaturity] = useState(null)
+  const [progressRefreshTrigger, setProgressRefreshTrigger] = useState(0) // 🔥 NOVO: Trigger para forçar refresh
 
   // Adicionar CSS customizado para scrollbar
   useEffect(() => {
@@ -244,7 +262,7 @@ const PlanejamentoEstrategico = () => {
     }
   }, [jornadasAtribuidas])
 
-  const selecionarJornada = (jornada) => {
+  const selecionarJornada = async (jornada) => {
     // Só permite selecionar se a jornada estiver atribuída
     if (!isJornadaAtribuida(jornada)) {
       console.warn(`🚫 Jornada ${jornada.slug} não atribuída, bloqueando seleção`)
@@ -253,6 +271,16 @@ const PlanejamentoEstrategico = () => {
     
     console.log(`✅ Selecionando jornada ${jornada.nome} (ID: ${jornada.id})`)
     setJornadaSelecionada(jornada)
+    
+    // 🔥 NOVO: Buscar UUID real da jornada
+    const uuid = await getJourneyUUIDBySlug(jornada.slug)
+    if (uuid) {
+      console.log(`✅ UUID da jornada obtido: ${uuid}`)
+      setJornadaUUID(uuid)
+    } else {
+      console.error('❌ Não foi possível obter UUID da jornada')
+      setJornadaUUID(null)
+    }
     
     // Buscar processos reais da jornada
     const processosReais = getProcessesByJourney(jornada.id)
@@ -328,6 +356,9 @@ const PlanejamentoEstrategico = () => {
       // Recarregar tarefas para atualizar a interface
       await loadTasks()
       
+      // 🔥 NOVO: Recarregar progresso do processo para atualizar a barra
+      await reloadProcessProgress(processoId)
+      
     } catch (error) {
       console.error('❌ Erro ao alterar status:', error)
       alert('Erro ao alterar status da tarefa')
@@ -382,6 +413,10 @@ const PlanejamentoEstrategico = () => {
       
       // Recarregar tarefas e cancelar edição
       await loadTasks()
+      
+      // 🔥 NOVO: Recarregar progresso após editar tarefa
+      await reloadProcessProgress(processoId)
+      
       cancelarEdicao()
       
     } catch (error) {
@@ -402,9 +437,96 @@ const PlanejamentoEstrategico = () => {
       // Recarregar tarefas para atualizar a interface
       await loadTasks()
       
+      // 🔥 NOVO: Recarregar progresso após deletar tarefa
+      await reloadProcessProgress(processoId)
+      
     } catch (error) {
       console.error('❌ Erro ao apagar tarefa:', error)
       alert('Erro ao apagar tarefa')
+    }
+  }
+
+  // ====== Funções do Sistema de Amadurecimento ======
+  
+  const handleProgressUpdate = (processId, progressData) => {
+    console.log(`📊 Progresso atualizado para processo ${processId}:`, progressData)
+    setProcessProgressMap(prev => ({
+      ...prev,
+      [processId]: progressData
+    }))
+  }
+
+  const handleRequestMaturityApproval = (processo) => {
+    const progress = processProgressMap[processo.id]
+    
+    console.log('🔍 Validando solicitação de amadurecimento:', {
+      processo: processo,
+      processId: processo.id,
+      companyId: companyId,
+      journeyUUID: jornadaUUID,
+      gestorId: profile?.id,
+      progress: progress
+    })
+    
+    // Validar IDs antes de abrir modal
+    if (!processo.id) {
+      alert('❌ Erro: ID do processo não encontrado')
+      return
+    }
+    
+    if (!jornadaUUID) {
+      alert('❌ Erro: UUID da jornada não disponível. Tente selecionar a jornada novamente.')
+      return
+    }
+    
+    if (!companyId) {
+      alert('❌ Erro: ID da empresa não encontrado')
+      return
+    }
+    
+    if (progress?.percentage === 100) {
+      setSelectedProcessForMaturity(processo)
+      setMaturityModalOpen(true)
+    } else {
+      alert('O processo precisa estar 100% completo para solicitar validação.')
+    }
+  }
+
+  const handleMaturityApprovalSuccess = () => {
+    alert('✅ Solicitação enviada com sucesso! O admin receberá uma notificação.')
+    setMaturityModalOpen(false)
+    setSelectedProcessForMaturity(null)
+    // Recarregar processos para atualizar status
+    if (jornadaSelecionada) {
+      carregarProcessos(jornadaSelecionada.id)
+    }
+  }
+
+  // Função para recarregar progresso de um processo específico
+  const reloadProcessProgress = async (processId) => {
+    if (!processId || !companyId) {
+      console.warn('⚠️ ProcessId ou CompanyId não disponível para reload')
+      return
+    }
+
+    try {
+      console.log('🔄 Recarregando progresso do processo:', processId)
+      
+      // Incrementar o trigger para forçar refresh do componente
+      setProgressRefreshTrigger(prev => prev + 1)
+      
+      const { calculateProcessProgress } = await import('../../services/processMaturityService')
+      const progressData = await calculateProcessProgress(processId, companyId)
+      
+      console.log('✅ Progresso recarregado:', progressData)
+      
+      // Atualizar o mapa de progresso
+      setProcessProgressMap(prev => ({
+        ...prev,
+        [processId]: progressData
+      }))
+    } catch (error) {
+      console.error('❌ Erro ao recarregar progresso:', error)
     }
   }
 
@@ -465,6 +587,10 @@ const PlanejamentoEstrategico = () => {
       
       await createTask(taskData)
       await loadTasks()
+      
+      // 🔥 NOVO: Recarregar progresso após criar tarefa
+      await reloadProcessProgress(adicionandoTarefa.processoId)
+      
       cancelarAdicaoTarefa()
       
     } catch (error) {
@@ -808,6 +934,28 @@ const PlanejamentoEstrategico = () => {
                         <Plus className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">Adicionar Tarefa</span>
                       </button>
+
+                      {/* Barra de Progresso de Amadurecimento */}
+                      <div className="mt-3">
+                        <ProcessProgressBar 
+                          processId={processo.id}
+                          companyId={companyId}
+                          onProgressUpdate={(progress) => handleProgressUpdate(processo.id, progress)}
+                          showDetails={false}
+                          refreshTrigger={progressRefreshTrigger}
+                        />
+                      </div>
+
+                      {/* Botão de Solicitar Validação (apenas quando 100%) */}
+                      {processProgressMap[processo.id]?.percentage === 100 && (
+                        <button
+                          onClick={() => handleRequestMaturityApproval(processo)}
+                          className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs"
+                        >
+                          <CheckCircle className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">Solicitar Validação</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1183,7 +1331,27 @@ const PlanejamentoEstrategico = () => {
         onClose={fecharTaskSidebar}
         task={sidebarTask.task}
         users={usuarios}
+        onTaskUpdate={(processId) => {
+          loadTasks()
+          reloadProcessProgress(processId)
+        }}
       />
+
+      {/* Modal de Confirmação de Amadurecimento */}
+      {selectedProcessForMaturity && (
+        <MaturityConfirmationModal
+          isOpen={maturityModalOpen}
+          onClose={() => {
+            setMaturityModalOpen(false)
+            setSelectedProcessForMaturity(null)
+          }}
+          process={selectedProcessForMaturity}
+          companyId={companyId}
+          journeyId={jornadaUUID}
+          gestorId={profile?.id}
+          onSuccess={handleMaturityApprovalSuccess}
+        />
+      )}
     </div>
   )
 }
