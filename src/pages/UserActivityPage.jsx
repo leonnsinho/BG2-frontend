@@ -112,6 +112,7 @@ function UserActivityPage() {
         const totalLogins = filteredUsers.reduce((sum, u) => sum + (u.login_count || 0), 0)
         const inactiveUsers = filteredUsers.filter(u => u.activity_status === 'inactive' || u.activity_status === 'very_inactive').length
         const neverAccessedUsers = filteredUsers.filter(u => u.activity_status === 'never_accessed').length
+        const totalOverdueTasks = filteredUsers.reduce((sum, u) => sum + (u.tasks_overdue || 0), 0)
 
         setStats({
           total_users: totalUsers,
@@ -120,7 +121,8 @@ function UserActivityPage() {
           total_logins: totalLogins,
           avg_login_count: totalUsers > 0 ? totalLogins / totalUsers : 0,
           inactive_users: inactiveUsers,
-          never_accessed_users: neverAccessedUsers
+          never_accessed_users: neverAccessedUsers,
+          total_overdue_tasks: totalOverdueTasks
         })
         console.log('✅ Estatísticas da empresa calculadas')
       } else {
@@ -242,6 +244,7 @@ function UserActivityPage() {
       'Primeiro Login',
       'Tarefas Atribuídas',
       'Tarefas Concluídas',
+      'Tarefas Atrasadas',
       'Taxa de Conclusão (%)',
       'Comentários'
     ]
@@ -257,6 +260,7 @@ function UserActivityPage() {
       formatDate(user.first_login_at),
       user.tasks_created || 0,
       user.tasks_completed || 0,
+      user.tasks_overdue || 0,
       user.task_completion_rate || 0,
       user.comments_made || 0
     ])
@@ -422,7 +426,7 @@ function UserActivityPage() {
 
       {/* Cards de Estatísticas */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-all duration-200">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -466,6 +470,23 @@ function UserActivityPage() {
                 <div className="text-xs text-gray-500 font-medium mt-0.5">Total de Logins</div>
                 <div className="text-xs text-[#EBA500] font-semibold mt-1">
                   ~{stats.avg_login_count?.toFixed(1)} por usuário
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-white to-orange-50/30 rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-all duration-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="p-3 bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl shadow-sm">
+                  <Clock className="h-6 w-6 text-orange-600" />
+                </div>
+              </div>
+              <div className="ml-4">
+                <div className="text-2xl font-bold text-[#373435]">{stats.total_overdue_tasks || 0}</div>
+                <div className="text-xs text-gray-500 font-medium mt-0.5">Tarefas em Atraso</div>
+                <div className="text-xs text-orange-600 font-semibold mt-1">
+                  Total na empresa
                 </div>
               </div>
             </div>
@@ -665,11 +686,15 @@ function UserActivityPage() {
                         <div className="flex items-center space-x-3">
                           <div className="text-center">
                             <div className="font-semibold text-blue-600">{user.tasks_created || 0}</div>
-                            <div className="text-xs text-gray-500">Tarefas</div>
+                            <div className="text-xs text-gray-500">Total</div>
                           </div>
                           <div className="text-center">
                             <div className="font-semibold text-green-600">{user.tasks_completed || 0}</div>
                             <div className="text-xs text-gray-500">Concluídas</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-semibold text-red-600">{user.tasks_overdue || 0}</div>
+                            <div className="text-xs text-gray-500">Atrasadas</div>
                           </div>
                           <div className="text-center">
                             <div className="font-semibold text-purple-600">{user.comments_made || 0}</div>
