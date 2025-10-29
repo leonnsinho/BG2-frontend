@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock, CheckCircle, XCircle, Loader } from 'lucide-react'
+import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock, CheckCircle, XCircle, Loader, Award } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
 import { usePriorityProcesses } from '../../hooks/usePriorityProcesses2'
@@ -8,11 +8,12 @@ import { supabase } from '../../services/supabase'
 import TaskSidebar from './TaskSidebar'
 import ProcessProgressBar from '../process/ProcessProgressBar'
 import MaturityConfirmationModal from '../process/MaturityConfirmationModal'
+import { calculateProcessProgress } from '../../services/processMaturityService'
 
 const PlanejamentoEstrategico = () => {
   const { profile } = useAuth()
   const { getAccessibleJourneys } = useAuthPermissions()
-  const { priorityProcesses, loading: processesLoading, error: processesError, getProcessesByJourney, debugLogs } = usePriorityProcesses()
+  const { priorityProcesses, loading: processesLoading, error: processesError, getProcessesByJourney, refetch, debugLogs } = usePriorityProcesses()
   const { getTasks, getCompanyUsers, createTask, updateTask, deleteTask, loading: tasksLoading } = useTasks()
   
   // Extrair company_id do perfil de forma segura
@@ -262,6 +263,17 @@ const PlanejamentoEstrategico = () => {
     }
   }, [jornadasAtribuidas])
 
+  // 🔥 NOVO: Atualizar processos automaticamente quando priorityProcesses mudar
+  useEffect(() => {
+    if (jornadaSelecionada && priorityProcesses) {
+      const processosAtualizados = getProcessesByJourney(jornadaSelecionada.id)
+      if (processosAtualizados && processosAtualizados.length > 0) {
+        console.log('🔄 Atualizando processos automaticamente:', processosAtualizados.length)
+        setProcessos(processosAtualizados)
+      }
+    }
+  }, [priorityProcesses, jornadaSelecionada])
+
   const selecionarJornada = async (jornada) => {
     // Só permite selecionar se a jornada estiver atribuída
     if (!isJornadaAtribuida(jornada)) {
@@ -499,6 +511,95 @@ const PlanejamentoEstrategico = () => {
     // Recarregar processos para atualizar status
     if (jornadaSelecionada) {
       carregarProcessos(jornadaSelecionada.id)
+    }
+  }
+
+  // Verificar se usuário é Company Admin
+  const isCompanyAdmin = () => {
+    return profile?.role === 'company_admin' || 
+           profile?.user_companies?.some(uc => uc.is_active && uc.role === 'company_admin')
+  }
+
+  // Função para Company Admin confirmar amadurecimento direto (sem passar por solicitação)
+  const handleDirectMaturityConfirmation = async (processo) => {
+    const progress = processProgressMap[processo.id]
+
+    if (progress?.percentage !== 100) {
+      alert('❌ O processo precisa estar 100% completo para confirmar amadurecimento.')
+      return
+    }
+
+    const confirmacao = window.confirm(
+      `🎯 Confirmar Amadurecimento do Processo?\n\n` +
+      `Processo: ${processo.nome || processo.name}\n` +
+      `Progresso: 100% completo\n\n` +
+      `Esta ação irá:\n` +
+      `✅ Marcar o processo como AMADURECIDO\n` +
+      `✅ Remover da lista de Processos Prioritários\n` +
+      `✅ Registrar em Journey Management/Overview\n\n` +
+      `Deseja confirmar?`
+    )
+
+    if (!confirmacao) return
+
+    try {
+      console.log('🎯 Company Admin confirmando amadurecimento direto:', {
+        processId: processo.id,
+        journeyUUID: jornadaUUID,
+        companyId: companyId
+      })
+
+      // Validações
+      if (!processo.id || !jornadaUUID || !companyId) {
+        throw new Error('Dados incompletos para confirmar amadurecimento')
+      }
+
+      // Verificar se o progresso está realmente em 100%
+      const progressData = await calculateProcessProgress(processo.id, companyId)
+      
+      if (progressData.percentage !== 100) {
+        throw new Error(`Progresso atual: ${progressData.percentage}%. O processo precisa estar 100% completo.`)
+      }
+
+      // Atualizar process_evaluations para marcar has_process = true
+      const { data: evaluationData, error: evaluationError } = await supabase
+        .from('process_evaluations')
+        .update({ 
+          has_process: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('process_id', processo.id)
+        .eq('company_id', companyId)
+        .select()
+
+      if (evaluationError) {
+        console.error('❌ Erro ao atualizar process_evaluations:', evaluationError)
+        throw new Error('Erro ao registrar amadurecimento: ' + evaluationError.message)
+      }
+
+      console.log('✅ Process evaluation atualizada:', evaluationData)
+
+      // 🔥 ATUALIZAR EM TEMPO REAL
+      console.log('🔄 Atualizando lista de processos...')
+      
+      // 1. Remover o processo da lista local imediatamente (feedback visual instantâneo)
+      setProcessos(prevProcessos => 
+        prevProcessos.filter(p => p.id !== processo.id)
+      )
+
+      // 2. Disparar evento para atualizar badges/notificações
+      window.dispatchEvent(new CustomEvent('maturity-approval-changed'))
+
+      // 3. Forçar reload completo do hook (useEffect vai atualizar automaticamente)
+      if (refetch) {
+        refetch()
+      }
+
+      alert('✅ Processo amadurecido com sucesso!\n\nO processo foi marcado como amadurecido e removido da lista de processos prioritários.')
+
+    } catch (error) {
+      console.error('❌ Erro ao confirmar amadurecimento:', error)
+      alert('❌ Erro ao confirmar amadurecimento: ' + error.message)
     }
   }
 
@@ -946,15 +1047,29 @@ const PlanejamentoEstrategico = () => {
                         />
                       </div>
 
-                      {/* Botão de Solicitar Validação (apenas quando 100%) */}
+                      {/* Botões de Ação baseados no papel do usuário (apenas quando 100%) */}
                       {processProgressMap[processo.id]?.percentage === 100 && (
-                        <button
-                          onClick={() => handleRequestMaturityApproval(processo)}
-                          className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs"
-                        >
-                          <CheckCircle className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">Solicitar Validação</span>
-                        </button>
+                        <>
+                          {/* Company Admin: Botão de Confirmar Amadurecimento Direto */}
+                          {isCompanyAdmin() ? (
+                            <button
+                              onClick={() => handleDirectMaturityConfirmation(processo)}
+                              className="w-full mt-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs"
+                            >
+                              <Award className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">Confirmar Amadurecimento</span>
+                            </button>
+                          ) : (
+                            /* Gestor: Botão de Solicitar Validação */
+                            <button
+                              onClick={() => handleRequestMaturityApproval(processo)}
+                              className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs"
+                            >
+                              <CheckCircle className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">Solicitar Validação</span>
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

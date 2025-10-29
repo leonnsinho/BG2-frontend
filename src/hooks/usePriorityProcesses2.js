@@ -82,27 +82,34 @@ export const usePriorityProcesses = () => {
           addDebugLog(`📊 Encontrados ${allProcesses?.length || 0} processos na jornada ${slug}`)
           
           if (allProcesses && allProcesses.length > 0) {
-            // Segundo: buscar avaliações desses processos
+            // Segundo: buscar avaliações desses processos (EXCLUIR processos amadurecidos)
             const processIds = allProcesses.map(p => p.id)
             const { data: evaluations } = await supabase
               .from('process_evaluations')
-              .select('process_id, priority_score')
+              .select('process_id, priority_score, has_process')
               .in('process_id', processIds)
               .eq('company_id', companyId)
+              .eq('has_process', false) // 🔥 FILTRAR: apenas processos NÃO amadurecidos
               .order('priority_score', { ascending: false })
             
-            addDebugLog(`📈 Encontradas ${evaluations?.length || 0} avaliações para jornada ${slug}`)
+            addDebugLog(`📈 Encontradas ${evaluations?.length || 0} avaliações (não amadurecidos) para jornada ${slug}`)
             
             // Terceiro: combinar processos com avaliações e ordenar
-            const processesWithScores = allProcesses.map(process => {
-              const evaluation = evaluations?.find(e => e.process_id === process.id)
-              return {
-                id: process.id,
-                name: process.name,
-                priority_score: evaluation?.priority_score || 0
-              }
-            }).sort((a, b) => b.priority_score - a.priority_score)
-            .slice(0, 5) // Top 5
+            const processesWithScores = allProcesses
+              .filter(process => {
+                // Incluir apenas processos que têm avaliação E não estão amadurecidos
+                return evaluations?.some(e => e.process_id === process.id)
+              })
+              .map(process => {
+                const evaluation = evaluations?.find(e => e.process_id === process.id)
+                return {
+                  id: process.id,
+                  name: process.name,
+                  priority_score: evaluation?.priority_score || 0
+                }
+              })
+              .sort((a, b) => b.priority_score - a.priority_score)
+              .slice(0, 5) // Top 5
             
             if (processesWithScores.length > 0) {
               processesData[mockId] = processesWithScores.map((p, index) => ({
