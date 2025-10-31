@@ -35,8 +35,8 @@ const ProcessEvaluationForm = () => {
       shortName: 'Pessoas e Cultura'
     },
     'receita-crm': {
-      name: 'Jornada Receita/CRM',
-      shortName: 'Receita/CRM'
+      name: 'Jornada Receita',
+      shortName: 'Receita'
     },
     'operacional': {
       name: 'Jornada Operacional',

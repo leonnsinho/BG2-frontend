@@ -29,6 +29,7 @@ export default function CreateCompanyPage() {
   const { user } = useAuth()
   const { isSuperAdmin } = usePermissions()
   const [loading, setLoading] = useState(false)
+  const [isInternational, setIsInternational] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     cnpj: '',
@@ -151,6 +152,7 @@ export default function CreateCompanyPage() {
     const randomNumber = Math.floor(Math.random() * 9999) + 1
     const randomId = Math.floor(Math.random() * 999) + 100
     
+    setIsInternational(false)
     setFormData({
       name: randomCompany,
       cnpj: `12.345.${randomId}/0001-90`,
@@ -171,6 +173,136 @@ export default function CreateCompanyPage() {
       }
     })
     toast.success('🎲 Dados aleatórios gerados!')
+  }
+
+  // Função para gerar dados de empresa internacional
+  const generateInternationalData = () => {
+    const internationalCompanies = [
+      {
+        name: 'TechVision Inc.',
+        taxId: '12-3456789',
+        email: 'contact@techvision.com',
+        phone: '+1 (555) 123-4567',
+        website: 'https://www.techvision.com',
+        industry: 'Software Development',
+        address: {
+          street: '123 Silicon Valley Blvd',
+          number: 'Suite 500',
+          complement: 'Building A',
+          neighborhood: 'Downtown',
+          city: 'San Francisco',
+          state: 'CA',
+          zip: '94102',
+          country: 'United States'
+        }
+      },
+      {
+        name: 'Global Solutions Ltd',
+        taxId: 'GB123456789',
+        email: 'info@globalsolutions.co.uk',
+        phone: '+44 20 7123 4567',
+        website: 'https://www.globalsolutions.co.uk',
+        industry: 'Business Consulting',
+        address: {
+          street: '45 Oxford Street',
+          number: 'Floor 3',
+          complement: '',
+          neighborhood: 'Westminster',
+          city: 'London',
+          state: 'England',
+          zip: 'W1D 1BS',
+          country: 'United Kingdom'
+        }
+      },
+      {
+        name: 'Innovare Technologies SRL',
+        taxId: 'IT12345678901',
+        email: 'contatto@innovare.it',
+        phone: '+39 02 1234 5678',
+        website: 'https://www.innovare.it',
+        industry: 'Manufacturing',
+        address: {
+          street: 'Via Milano',
+          number: '15',
+          complement: 'Piano 2',
+          neighborhood: 'Centro Storico',
+          city: 'Milano',
+          state: 'Lombardia',
+          zip: '20121',
+          country: 'Italy'
+        }
+      },
+      {
+        name: 'TechnoPort Unipessoal Lda',
+        taxId: '123456789',
+        email: 'geral@technoport.pt',
+        phone: '+351 21 123 4567',
+        website: 'https://www.technoport.pt',
+        industry: 'Technology Services',
+        address: {
+          street: 'Avenida da Liberdade',
+          number: '123',
+          complement: '4º Andar',
+          neighborhood: 'Baixa',
+          city: 'Lisboa',
+          state: 'Lisboa',
+          zip: '1250-096',
+          country: 'Portugal'
+        }
+      },
+      {
+        name: 'Soluciones Digitales SA',
+        taxId: '30-12345678-9',
+        email: 'contacto@solucionesdigitales.com.ar',
+        phone: '+54 11 1234-5678',
+        website: 'https://www.solucionesdigitales.com.ar',
+        industry: 'Digital Marketing',
+        address: {
+          street: 'Avenida Corrientes',
+          number: '1500',
+          complement: 'Piso 8',
+          neighborhood: 'San Nicolás',
+          city: 'Buenos Aires',
+          state: 'CABA',
+          zip: 'C1042',
+          country: 'Argentina'
+        }
+      },
+      {
+        name: 'Innovation GmbH',
+        taxId: 'DE123456789',
+        email: 'kontakt@innovation.de',
+        phone: '+49 30 12345678',
+        website: 'https://www.innovation.de',
+        industry: 'Engineering',
+        address: {
+          street: 'Friedrichstraße',
+          number: '200',
+          complement: 'Etage 5',
+          neighborhood: 'Mitte',
+          city: 'Berlin',
+          state: 'Berlin',
+          zip: '10117',
+          country: 'Germany'
+        }
+      }
+    ]
+    
+    const selectedCompany = internationalCompanies[Math.floor(Math.random() * internationalCompanies.length)]
+    const randomSize = ['micro', 'pequena', 'media', 'grande'][Math.floor(Math.random() * 4)]
+    
+    setIsInternational(true)
+    setFormData({
+      name: selectedCompany.name,
+      cnpj: selectedCompany.taxId,
+      email: selectedCompany.email,
+      phone: selectedCompany.phone,
+      website: selectedCompany.website,
+      industry: selectedCompany.industry,
+      size: randomSize,
+      address: selectedCompany.address
+    })
+    toast.success('🌍 Dados de empresa internacional gerados!')
   }
 
   // Função para limpar formulário
@@ -213,7 +345,8 @@ export default function CreateCompanyPage() {
       return false
     }
 
-    if (formData.cnpj && !/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(formData.cnpj)) {
+    // Validar CNPJ apenas se não for empresa internacional e o campo estiver preenchido
+    if (!isInternational && formData.cnpj && !/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(formData.cnpj)) {
       toast.error('CNPJ deve estar no formato XX.XXX.XXX/XXXX-XX')
       return false
     }
@@ -317,7 +450,16 @@ export default function CreateCompanyPage() {
                   className="bg-green-50 border-green-200 text-green-800 hover:bg-green-100"
                 >
                   <Shuffle className="w-4 h-4 mr-2" />
-                  Gerar Aleatório
+                  Brasil
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={generateInternationalData}
+                  className="bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100"
+                >
+                  <Globe className="w-4 h-4 mr-2" />
+                  Internacional
                 </Button>
                 <Button
                   type="button"
@@ -337,10 +479,54 @@ export default function CreateCompanyPage() {
             
             {/* Informações Básicas */}
             <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl">
-              <h2 className="text-xl font-semibold text-[#373435] mb-4 flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-[#EBA500]" />
-                Informações Básicas
-              </h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-[#373435] flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-[#EBA500]" />
+                  Informações Básicas
+                </h2>
+                
+                {/* Toggle Empresa Internacional */}
+                <div className="flex items-center gap-3">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isInternational}
+                      onChange={(e) => {
+                        setIsInternational(e.target.checked)
+                        if (e.target.checked) {
+                          // Limpar campos brasileiros ao ativar modo internacional
+                          handleInputChange('cnpj', '')
+                          handleInputChange('address.zip', '')
+                          handleInputChange('address.country', '')
+                        } else {
+                          handleInputChange('address.country', 'Brasil')
+                        }
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#EBA500]/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#EBA500]"></div>
+                    <span className="ms-3 text-sm font-medium text-[#373435]">
+                      🌍 Empresa Internacional
+                    </span>
+                  </label>
+                </div>
+              </div>
+              
+              {/* Mensagem informativa quando modo internacional ativado */}
+              {isInternational && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+                  <div className="flex items-start gap-3">
+                    <Globe className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-blue-900 mb-1">Modo Internacional Ativado</h4>
+                      <p className="text-sm text-blue-700">
+                        Os campos de documentos, telefone e CEP aceitarão formatos internacionais. 
+                        Você pode inserir os dados no formato do país de origem da empresa.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
@@ -359,15 +545,18 @@ export default function CreateCompanyPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-[#373435] mb-2">
-                    CNPJ
+                    {isInternational ? 'Documento Fiscal (Tax ID, EIN, etc.)' : 'CNPJ'}
                   </label>
                   <Input
                     type="text"
                     value={formData.cnpj}
                     onChange={(e) => handleInputChange('cnpj', e.target.value)}
-                    placeholder="00.000.000/0000-00"
+                    placeholder={isInternational ? 'Ex: 12-3456789 ou formato local' : '00.000.000/0000-00'}
                     className="w-full"
                   />
+                  {!isInternational && (
+                    <p className="mt-1 text-xs text-gray-500">Formato: XX.XXX.XXX/XXXX-XX</p>
+                  )}
                 </div>
 
                 <div>
@@ -433,9 +622,12 @@ export default function CreateCompanyPage() {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="(11) 99999-9999"
+                    placeholder={isInternational ? '+1 234 567-8900 ou formato local' : '(11) 99999-9999'}
                     className="w-full"
                   />
+                  {!isInternational && (
+                    <p className="mt-1 text-xs text-gray-500">Formato brasileiro: (XX) XXXXX-XXXX</p>
+                  )}
                 </div>
 
                 <div className="md:col-span-2">
@@ -462,6 +654,21 @@ export default function CreateCompanyPage() {
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                {/* Campo País - sempre visível */}
+                <div>
+                  <label className="block text-sm font-medium text-[#373435] mb-2">
+                    País
+                  </label>
+                  <Input
+                    type="text"
+                    value={formData.address.country}
+                    onChange={(e) => handleInputChange('address.country', e.target.value)}
+                    placeholder={isInternational ? 'Ex: Portugal, EUA, Argentina' : 'Brasil'}
+                    className="w-full"
+                  />
+                </div>
+                
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-[#373435] mb-2">
                     Logradouro
@@ -529,28 +736,31 @@ export default function CreateCompanyPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-[#373435] mb-2">
-                    Estado
+                    {isInternational ? 'Estado/Região/Província' : 'Estado'}
                   </label>
                   <Input
                     type="text"
                     value={formData.address.state}
                     onChange={(e) => handleInputChange('address.state', e.target.value)}
-                    placeholder="SP"
+                    placeholder={isInternational ? 'Ex: California, Lisboa' : 'SP'}
                     className="w-full"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[#373435] mb-2">
-                    CEP
+                    {isInternational ? 'Código Postal / ZIP' : 'CEP'}
                   </label>
                   <Input
                     type="text"
                     value={formData.address.zip}
                     onChange={(e) => handleInputChange('address.zip', e.target.value)}
-                    placeholder="00000-000"
+                    placeholder={isInternational ? 'Ex: 90210, 1000-001' : '00000-000'}
                     className="w-full"
                   />
+                  {!isInternational && (
+                    <p className="mt-1 text-xs text-gray-500">Formato: XXXXX-XXX</p>
+                  )}
                 </div>
               </div>
             </Card>

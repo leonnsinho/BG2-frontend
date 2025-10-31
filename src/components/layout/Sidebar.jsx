@@ -241,7 +241,7 @@ const getJourneyChildren = (accessibleJourneys) => {
     { key: 'estrategica', name: 'Estratégica', href: '/jornadas/estrategica' },
     { key: 'financeira', name: 'Financeira', href: '/jornadas/financeira' },
     { key: 'pessoas-cultura', name: 'Pessoas & Cultura', href: '/jornadas/pessoas' },
-    { key: 'receita-crm', name: 'Receita/CRM', href: '/jornadas/receita' },
+    { key: 'receita-crm', name: 'Receita', href: '/jornadas/receita' },
     { key: 'operacional', name: 'Operacional', href: '/jornadas/operacional' }
   ]
 
@@ -338,7 +338,7 @@ const getJourneyDisplayName = (journey) => {
     'estrategica': 'Estratégica',
     'financeira': 'Financeira', 
     'pessoas-cultura': 'Pessoas & Cultura',
-    'receita-crm': 'Receita/CRM',
+    'receita-crm': 'Receita',
     'operacional': 'Operacional'
   }
   return journeyNames[journey] || journey

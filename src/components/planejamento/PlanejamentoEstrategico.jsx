@@ -77,7 +77,7 @@ const PlanejamentoEstrategico = () => {
     { id: 1, nome: 'Estratégica', slug: 'estrategica', cor: 'bg-blue-500', corTexto: 'text-blue-700' },
     { id: 2, nome: 'Financeira', slug: 'financeira', cor: 'bg-green-500', corTexto: 'text-green-700' },
     { id: 3, nome: 'Pessoas & Cultura', slug: 'pessoas-cultura', cor: 'bg-purple-500', corTexto: 'text-purple-700' },
-    { id: 4, nome: 'Receita & CRM', slug: 'receita-crm', cor: 'bg-orange-500', corTexto: 'text-orange-700' },
+    { id: 4, nome: 'Receita', slug: 'receita-crm', cor: 'bg-orange-500', corTexto: 'text-orange-700' },
     { id: 5, nome: 'Operacional', slug: 'operacional', cor: 'bg-red-500', corTexto: 'text-red-700' }
   ]
 

@@ -740,7 +740,7 @@ function CompanyViewModal({ company, onClose, animating }) {
             </div>
             
             <div>
-              <label className="text-sm font-semibold text-[#373435] mb-2 block">CNPJ</label>
+              <label className="text-sm font-semibold text-[#373435] mb-2 block">Documento Fiscal</label>
               <p className="text-gray-700 bg-gray-50 p-3 rounded-2xl">{company.cnpj || 'Não informado'}</p>
             </div>
             
@@ -872,12 +872,12 @@ function CompanyEditModal({ company, onClose, onSave, loading, animating }) {
             
             <div>
               <label className="block text-sm font-semibold text-[#373435] mb-3">
-                CNPJ
+                Documento Fiscal (CNPJ, Tax ID, etc.)
               </label>
               <input
                 value={formData.cnpj}
                 onChange={(e) => setFormData({...formData, cnpj: e.target.value})}
-                placeholder="00.000.000/0000-00"
+                placeholder="Ex: 00.000.000/0000-00 ou formato internacional"
                 className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200"
               />
             </div>

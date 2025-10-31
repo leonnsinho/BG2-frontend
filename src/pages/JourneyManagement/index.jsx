@@ -71,7 +71,7 @@ const JourneyManagementOverview = () => {
     },
     {
       id: 'receita-crm',
-      name: 'Jornada Receita/CRM',
+      name: 'Jornada Receita',
       slug: 'receita-crm',
       description: 'Gestão comercial, vendas, relacionamento com clientes e geração de receita',
       icon: TrendingUp,

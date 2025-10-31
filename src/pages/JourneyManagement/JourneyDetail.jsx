@@ -92,7 +92,7 @@ const JourneyDetail = () => {
       categories: ['Recrutamento e Seleção', 'Desenvolvimento', 'Performance', 'Cultura Organizacional']
     },
     'receita-crm': {
-      name: 'Jornada Receita/CRM',
+      name: 'Jornada Receita',
       description: 'Gestão comercial, vendas, relacionamento com clientes e geração de receita',
       icon: TrendingUp,
       color: '#373435',
@@ -151,25 +151,111 @@ const JourneyDetail = () => {
         }
 
         // Carregar jornada do banco para obter o ID
-        const { data: journeyDbData, error: journeyError } = await supabase
+        console.log('🔍 Buscando jornada com slug:', journeySlug)
+        
+        // Primeiro, vamos listar todas as jornadas para debug
+        const { data: allJourneys, error: listError } = await supabase
           .from('journeys')
-          .select('id')
+          .select('id, name, slug')
+          .order('name')
+        
+        if (!listError && allJourneys) {
+          console.log('📋 Todas as jornadas no banco:', allJourneys)
+        }
+        
+        // Tentar buscar com o slug original primeiro
+        let journeyDbData = null
+        const { data: originalJourney, error: journeyError } = await supabase
+          .from('journeys')
+          .select('id, name, slug')
           .eq('slug', journeySlug)
-          .single()
+          .maybeSingle()
 
-        if (journeyError) {
-          console.warn('Jornada não encontrada no banco:', journeyError)
-          return
+        if (originalJourney) {
+          journeyDbData = originalJourney
+          console.log('✅ Jornada encontrada (slug exato):', journeyDbData)
+        } else {
+          console.warn('❌ Jornada não encontrada com slug exato:', journeySlug)
+          
+          // Tentar encontrar por correspondência aproximada
+          // Ex: "receita-crm" deve encontrar "receita"
+          if (allJourneys && allJourneys.length > 0) {
+            // Tentar encontrar uma jornada onde o slug do banco seja parte do slug da URL
+            const matchedJourney = allJourneys.find(j => 
+              journeySlug.startsWith(j.slug) || 
+              journeySlug.replace(/-/g, '_') === j.slug ||
+              journeySlug.replace(/_/g, '-') === j.slug
+            )
+            
+            if (matchedJourney) {
+              journeyDbData = matchedJourney
+              console.log('✅ Jornada encontrada (correspondência aproximada):', journeyDbData)
+            } else {
+              console.error('❌ Nenhuma jornada corresponde ao slug:', journeySlug)
+              console.log('💡 Slugs disponíveis:', allJourneys.map(j => j.slug).join(', '))
+              return
+            }
+          } else {
+            console.error('❌ Nenhuma jornada encontrada no banco de dados')
+            return
+          }
         }
 
-        // Carregar processos da jornada usando a view com dados da categoria
-        const { data: processesData, error: processesError } = await supabase
+        // Carregar processos da jornada
+        console.log('🔍 Buscando processos para journey_id:', journeyDbData.id)
+        
+        let processesData = []
+        
+        // Tentar buscar da view primeiro
+        const { data: viewProcesses, error: processesError } = await supabase
           .from('processes_with_category')
           .select('*')
           .eq('journey_id', journeyDbData.id)
           .order('order_index')
 
-        if (processesError) throw processesError
+        if (processesError) {
+          console.error('❌ Erro ao buscar processos da view:', processesError)
+          
+          // Fallback: buscar diretamente da tabela processes
+          console.log('🔄 Tentando buscar diretamente da tabela processes...')
+          const { data: directProcesses, error: directError } = await supabase
+            .from('processes')
+            .select(`
+              *,
+              categories (
+                name,
+                description,
+                color,
+                icon
+              )
+            `)
+            .eq('journey_id', journeyDbData.id)
+            .order('order_index')
+          
+          if (directError) {
+            console.error('❌ Erro ao buscar processos diretamente:', directError)
+            throw directError
+          }
+          
+          // Mapear dados para o formato esperado
+          processesData = directProcesses?.map(p => ({
+            ...p,
+            category_name: p.categories?.name,
+            category_description: p.categories?.description,
+            category_color: p.categories?.color,
+            category_icon: p.categories?.icon
+          })) || []
+          
+          console.log('✅ Processos carregados diretamente:', processesData.length)
+        } else {
+          processesData = viewProcesses || []
+        }
+        
+        console.log('📊 Total de processos encontrados:', processesData?.length || 0)
+        if (processesData?.length > 0) {
+          console.log('📋 Primeiros 3 processos:', processesData.slice(0, 3))
+        }
+        
         setProcesses(processesData || [])
 
         // Carregar avaliações se uma empresa está selecionada
