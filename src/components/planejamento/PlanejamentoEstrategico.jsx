@@ -8,22 +8,30 @@ import { supabase } from '../../services/supabase'
 import TaskSidebar from './TaskSidebar'
 import ProcessProgressBar from '../process/ProcessProgressBar'
 import MaturityConfirmationModal from '../process/MaturityConfirmationModal'
+import SuperAdminBanner from '../SuperAdminBanner'
 import { calculateProcessProgress } from '../../services/processMaturityService'
+import { useSearchParams } from 'react-router-dom' // 🔥 NOVO: Para ler query params
 
 const PlanejamentoEstrategico = () => {
   const { profile } = useAuth()
   const { getAccessibleJourneys } = useAuthPermissions()
-  const { priorityProcesses, loading: processesLoading, error: processesError, getProcessesByJourney, refetch, debugLogs } = usePriorityProcesses()
-  const { getTasks, getCompanyUsers, createTask, updateTask, deleteTask, loading: tasksLoading } = useTasks()
+  const [searchParams] = useSearchParams() // 🔥 NOVO: Hook para ler URL
   
-  // Extrair company_id do perfil de forma segura
-  const companyId = profile?.user_companies?.[0]?.company_id || null
+  // 🔥 NOVO: Verificar se há companyId na URL (Super Admin) ou usar do perfil
+  const urlCompanyId = searchParams.get('companyId')
+  const companyId = urlCompanyId || profile?.user_companies?.[0]?.company_id || null
+  
+  // 🔥 NOVO: Passar urlCompanyId para os hooks (tem prioridade sobre profile)
+  const { priorityProcesses, loading: processesLoading, error: processesError, getProcessesByJourney, refetch, debugLogs } = usePriorityProcesses(urlCompanyId)
+  const { getTasks, getCompanyUsers, createTask, updateTask, deleteTask, loading: tasksLoading } = useTasks(urlCompanyId)
   
   // Debug: log do companyId
   useEffect(() => {
     console.log('🏢 Company ID extraído:', companyId)
+    console.log('🔗 URL Company ID:', urlCompanyId)
+    console.log('👤 Profile Company ID:', profile?.user_companies?.[0]?.company_id)
     console.log('👤 Profile completo:', profile)
-  }, [companyId, profile?.id])
+  }, [companyId, urlCompanyId, profile?.id])
   
   const [jornadas, setJornadas] = useState([])
   const [jornadaSelecionada, setJornadaSelecionada] = useState(null)
@@ -187,9 +195,10 @@ const PlanejamentoEstrategico = () => {
   // Função para carregar tarefas do banco de dados
   const loadTasks = async () => {
     try {
-      console.log('🔄 Carregando tarefas do banco de dados...')
+      console.log('🔄 Carregando tarefas...')
+      
       const tasks = await getTasks()
-      console.log('📦 Tarefas retornadas do banco:', tasks)
+      console.log('📦 Tarefas retornadas:', tasks?.length || 0)
       
       // Carregar usuários da empresa para mapear UUIDs para nomes
       const users = await getCompanyUsers()
@@ -197,12 +206,8 @@ const PlanejamentoEstrategico = () => {
       
       // Organizar tarefas por processo_id
       const tarefasOrganizadas = {}
+      
       tasks.forEach(task => {
-        console.log('🔍 Processando tarefa:', {
-          id: task.id,
-          assigned_to: task.assigned_to,
-          assigned_to_name: task.assigned_to_name
-        })
         
         if (!tarefasOrganizadas[task.process_id]) {
           tarefasOrganizadas[task.process_id] = []
@@ -238,7 +243,7 @@ const PlanejamentoEstrategico = () => {
         })
       })
       
-      console.log('✅ Tarefas carregadas:', tarefasOrganizadas)
+      console.log('✅ Tarefas organizadas por processo:', Object.keys(tarefasOrganizadas).length, 'processos com tarefas')
       setTarefas(tarefasOrganizadas)
       
     } catch (error) {
@@ -269,6 +274,7 @@ const PlanejamentoEstrategico = () => {
       const processosAtualizados = getProcessesByJourney(jornadaSelecionada.id)
       if (processosAtualizados && processosAtualizados.length > 0) {
         console.log('🔄 Atualizando processos automaticamente:', processosAtualizados.length)
+        console.log('📋 IDs dos processos exibidos:', processosAtualizados.map(p => ({ id: p.id, nome: p.nome })))
         setProcessos(processosAtualizados)
       }
     }
@@ -633,6 +639,7 @@ const PlanejamentoEstrategico = () => {
 
   // Funções para adicionar tarefa inline
   const iniciarAdicaoTarefa = (processoId) => {
+    console.log('🎯 Iniciando adição de tarefa para processo:', processoId)
     setAdicionandoTarefa({
       processoId,
       titulo: '',
@@ -671,13 +678,19 @@ const PlanejamentoEstrategico = () => {
       // Buscar UUID da jornada
       const journeyUUID = await getJourneyUUIDBySlug(jornadaSelecionada.slug)
       
+      // 🔥 CORREÇÃO: O campo 'id' da tabela processes JÁ É UM UUID, não um número serial
+      // Usamos diretamente o processoId que vem do hook
+      const processUUID = adicionandoTarefa.processoId
+      
+      console.log('🔍 ProcessoId:', processUUID, 'Type:', typeof processUUID)
+      
       const taskData = {
         title: adicionandoTarefa.titulo,
         description: adicionandoTarefa.descricao,
         // Se for manual, assigned_to fica NULL e usamos assigned_to_name
         assigned_to: tipoResponsavel === 'manual' ? null : responsavelFinal,
         assigned_to_name: tipoResponsavel === 'manual' ? responsavelFinal : null,
-        process_id: adicionandoTarefa.processoId,
+        process_id: processUUID,
         journey_id: journeyUUID,
         status: adicionandoTarefa.status,
         due_date: adicionandoTarefa.dataLimite || null,
@@ -845,8 +858,11 @@ const PlanejamentoEstrategico = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Banner Super Admin */}
+      <SuperAdminBanner />
+      
       {(loading || processesLoading) ? (
-        <div className="px-8 py-12">
+        <div className="px-8 py-12 mt-8">
           <div className="mb-8 text-center">
             <div className="w-12 h-12 bg-[#EBA500]/20 rounded-xl mx-auto mb-4 animate-pulse"></div>
             <div className="h-6 bg-gray-200 rounded w-48 mx-auto mb-2 animate-pulse"></div>
@@ -870,7 +886,7 @@ const PlanejamentoEstrategico = () => {
           )}
         </div>
       ) : processesError ? (
-        <div className="px-8 py-12 text-center">
+        <div className="px-8 py-12 mt-8 text-center">
           <div className="bg-red-50 border border-red-200 rounded-3xl p-8 max-w-md mx-auto">
             <div className="w-12 h-12 bg-red-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
               <AlertTriangle className="h-6 w-6 text-red-600" />
@@ -886,9 +902,9 @@ const PlanejamentoEstrategico = () => {
           </div>
         </div>
       ) : (
-        <div className="px-8 space-y-8">
+        <div className="px-8 py-8 space-y-8">
         {/* Jornadas - 5 quadrados horizontais elegantes */}
-        <div className="grid grid-cols-5 gap-6">
+        <div className="grid grid-cols-5 gap-6 mt-8">
         {jornadas.map((jornada) => {
           const cores = getJornadaCores(jornada.id)
           const isAtribuida = isJornadaAtribuida(jornada)
@@ -1029,7 +1045,11 @@ const PlanejamentoEstrategico = () => {
                       
                       {/* Botão Adicionar Tarefa Elegante */}
                       <button
-                        onClick={() => iniciarAdicaoTarefa(processo.id)}
+                        onClick={() => {
+                          // ✅ processo.id JÁ É UUID na tabela processes
+                          console.log('📝 Clicou adicionar tarefa:', { processo: processo.nome, id: processo.id, idType: typeof processo.id })
+                          iniciarAdicaoTarefa(processo.id)
+                        }}
                         className={`w-full ${coresJornada.iconBg} hover:opacity-90 text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs group-hover:scale-[1.02]`}
                       >
                         <Plus className="h-3 w-3 flex-shrink-0" />
@@ -1077,7 +1097,21 @@ const PlanejamentoEstrategico = () => {
                 {/* Lista de Tarefas Elegante */}
                 <div className="p-4 space-y-3 max-h-80 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 flex-1">
                   {/* Formulário de Nova Tarefa Inline */}
-                  {adicionandoTarefa.processoId === processo.id && (
+                  {(() => {
+                    // ✅ processo.id JÁ É UUID
+                    const shouldShow = adicionandoTarefa.processoId === processo.id
+                    if (adicionandoTarefa.processoId) {
+                      console.log('🔍 Verificando modal:', {
+                        processoNome: processo.nome,
+                        processoID: processo.id,
+                        processoIDType: typeof processo.id,
+                        adicionandoProcessoId: adicionandoTarefa.processoId,
+                        adicionandoProcessoIdType: typeof adicionandoTarefa.processoId,
+                        shouldShow
+                      })
+                    }
+                    return shouldShow
+                  })() && (
                     <div className="border-2 border-dashed border-[#EBA500]/40 rounded-xl p-4 bg-[#EBA500]/10 backdrop-blur-sm">
                       <div className="flex items-center space-x-2 mb-3">
                         <div className="w-2 h-2 bg-[#EBA500] rounded-full"></div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { 
@@ -16,7 +16,9 @@ import {
   Eye,
   BarChart3,
   List,
-  Grid3X3
+  Grid3X3,
+  Target,
+  FileText
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
 
@@ -30,7 +32,7 @@ const COMPANY_TYPES = {
   const getTypeInfo = (type) => COMPANY_TYPES[type] || { label: type || 'Não definido', color: 'gray' }
 
   // Componente para Card do Grid
-  const CompanyGridCard = ({ company, onView, onEdit, onDelete }) => {
+  const CompanyGridCard = ({ company, onView, onEdit, onDelete, onNavigateToPlanejamento, onNavigateToPolicies }) => {
     const typeInfo = getTypeInfo(company.size)
     
     return (
@@ -51,7 +53,7 @@ const COMPANY_TYPES = {
             </div>
           </div>
           
-          <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="flex flex-wrap gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={() => onView(company)}
               className="text-blue-600 hover:text-blue-800 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 p-2 rounded-xl transition-all duration-200 border border-blue-200"
@@ -66,6 +68,22 @@ const COMPANY_TYPES = {
               title="Editar empresa"
             >
               <Edit className="h-4 w-4" />
+            </button>
+            
+            <button
+              onClick={() => onNavigateToPlanejamento(company)}
+              className="text-purple-600 hover:text-purple-800 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 p-2 rounded-xl transition-all duration-200 border border-purple-200"
+              title="Planejamento Estratégico"
+            >
+              <Target className="h-4 w-4" />
+            </button>
+            
+            <button
+              onClick={() => onNavigateToPolicies(company)}
+              className="text-green-600 hover:text-green-800 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 p-2 rounded-xl transition-all duration-200 border border-green-200"
+              title="Políticas Operacionais"
+            >
+              <FileText className="h-4 w-4" />
             </button>
             
             <button
@@ -129,6 +147,7 @@ const COMPANY_TYPES = {
 
 export default function CompaniesManagementPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -274,6 +293,31 @@ export default function CompaniesManagementPage() {
     setSelectedCompany(company)
     setIsViewModalOpen(true)
     setTimeout(() => setModalAnimating(true), 10)
+  }
+
+  // Funções de navegação para Super Admin
+  const handleNavigateToPlanejamento = (company) => {
+    // Salvar contexto no sessionStorage
+    sessionStorage.setItem('superAdminContext', JSON.stringify({
+      companyId: company.id,
+      companyName: company.name,
+      returnUrl: '/admin/companies'
+    }))
+    
+    // Navegar para planejamento estratégico
+    navigate(`/planejamento-estrategico?companyId=${company.id}&from=admin`)
+  }
+
+  const handleNavigateToPolicies = (company) => {
+    // Salvar contexto no sessionStorage
+    sessionStorage.setItem('superAdminContext', JSON.stringify({
+      companyId: company.id,
+      companyName: company.name,
+      returnUrl: '/admin/companies'
+    }))
+    
+    // Navegar para políticas operacionais
+    navigate(`/operational-policies?companyId=${company.id}&from=admin`)
   }
 
   const handleDeleteCompany = async (companyId) => {
@@ -498,6 +542,8 @@ export default function CompaniesManagementPage() {
                   onView={openViewModal}
                   onEdit={openEditModal}
                   onDelete={handleDeleteCompany}
+                  onNavigateToPlanejamento={handleNavigateToPlanejamento}
+                  onNavigateToPolicies={handleNavigateToPolicies}
                 />
               ))}
             </div>
@@ -655,6 +701,22 @@ export default function CompaniesManagementPage() {
                               title="Editar empresa"
                             >
                               <Edit className="h-4 w-4" />
+                            </button>
+                            
+                            <button
+                              onClick={() => handleNavigateToPlanejamento(company)}
+                              className="text-purple-600 hover:text-purple-800 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 p-2 rounded-xl transition-all duration-200 border border-purple-200"
+                              title="Planejamento Estratégico"
+                            >
+                              <Target className="h-4 w-4" />
+                            </button>
+                            
+                            <button
+                              onClick={() => handleNavigateToPolicies(company)}
+                              className="text-green-600 hover:text-green-800 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 p-2 rounded-xl transition-all duration-200 border border-green-200"
+                              title="Políticas Operacionais"
+                            >
+                              <FileText className="h-4 w-4" />
                             </button>
                             
                             <button

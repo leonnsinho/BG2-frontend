@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import SuperAdminBanner from '../components/SuperAdminBanner'
+import { useSearchParams } from 'react-router-dom' // 🔥 NOVO: Para ler query params
 import { 
   FileText, 
   FolderOpen,
@@ -24,6 +26,7 @@ import { formatDate } from '../utils/dateUtils'
 
 export default function OperationalPoliciesPage() {
   const { profile } = useAuth()
+  const [searchParams] = useSearchParams() // 🔥 NOVO: Hook para ler URL
   const [journeys, setJourneys] = useState([])
   const [selectedJourney, setSelectedJourney] = useState(null)
   const [blocks, setBlocks] = useState([])
@@ -67,19 +70,21 @@ export default function OperationalPoliciesPage() {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // Obter company_id do usuário
-  const userCompanyId = profile?.user_companies?.find(uc => 
+  // 🔥 NOVO: Verificar se há companyId na URL (Super Admin) ou usar do perfil
+  const urlCompanyId = searchParams.get('companyId')
+  const userCompanyId = urlCompanyId || profile?.user_companies?.find(uc => 
     uc.role === 'company_admin' && uc.is_active
   )?.company_id
 
   useEffect(() => {
     console.log('🔍 Profile carregado:', profile)
     console.log('🏢 Company ID:', userCompanyId)
+    console.log('🔗 URL Company ID:', urlCompanyId)
     
     if (userCompanyId) {
       loadJourneys()
     }
-  }, [profile, userCompanyId])
+  }, [profile, userCompanyId, urlCompanyId])
 
   useEffect(() => {
     if (selectedJourney && userCompanyId) {
@@ -600,10 +605,14 @@ export default function OperationalPoliciesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header Modernizado */}
-        <div className="mb-10">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+      {/* Banner Super Admin */}
+      <SuperAdminBanner />
+      
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header Modernizado */}
+          <div className="mb-10">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-3 bg-gradient-to-br from-[#EBA500] to-[#d99500] rounded-2xl shadow-lg shadow-[#EBA500]/20">
               <FileText className="h-7 w-7 text-white" />
@@ -1531,6 +1540,7 @@ export default function OperationalPoliciesPage() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   )

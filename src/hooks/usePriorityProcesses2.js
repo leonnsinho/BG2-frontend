@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
-export const usePriorityProcesses = () => {
+// 🔥 NOVO: Hook agora aceita companyId opcional (para Super Admin)
+export const usePriorityProcesses = (overrideCompanyId = null) => {
   const { profile } = useAuth()
   const [priorityProcesses, setPriorityProcesses] = useState({})
   const [loading, setLoading] = useState(true)
@@ -16,6 +17,12 @@ export const usePriorityProcesses = () => {
   }
 
   const getCompanyId = () => {
+    // 🔥 PRIORIDADE: overrideCompanyId (Super Admin) > profile company
+    if (overrideCompanyId) {
+      addDebugLog(`🔑 Usando companyId override (Super Admin): ${overrideCompanyId}`)
+      return overrideCompanyId
+    }
+    
     if (profile?.company_id) return profile.company_id
     if (profile?.user_companies && profile.user_companies.length > 0) {
       return profile.user_companies[0].company_id
@@ -81,6 +88,11 @@ export const usePriorityProcesses = () => {
           
           addDebugLog(`📊 Encontrados ${allProcesses?.length || 0} processos na jornada ${slug}`)
           
+          // Debug: ver os IDs dos processos (que JÁ SÃO UUIDs)
+          if (allProcesses && allProcesses.length > 0) {
+            console.log('🔍 DEBUG Processos (ID já é UUID):', allProcesses.map(p => ({ id: p.id, name: p.name, idType: typeof p.id })))
+          }
+          
           if (allProcesses && allProcesses.length > 0) {
             // Segundo: buscar avaliações desses processos (EXCLUIR processos amadurecidos)
             const processIds = allProcesses.map(p => p.id)
@@ -103,7 +115,7 @@ export const usePriorityProcesses = () => {
               .map(process => {
                 const evaluation = evaluations?.find(e => e.process_id === process.id)
                 return {
-                  id: process.id,
+                  id: process.id, // ID já é UUID
                   name: process.name,
                   priority_score: evaluation?.priority_score || 0
                 }
@@ -113,7 +125,7 @@ export const usePriorityProcesses = () => {
             
             if (processesWithScores.length > 0) {
               processesData[mockId] = processesWithScores.map((p, index) => ({
-                id: p.id,
+                id: p.id, // ID é UUID, não precisamos de campo separado
                 nome: p.name,
                 prioridade: index + 1,
                 priority_score: p.priority_score,
@@ -147,7 +159,15 @@ export const usePriorityProcesses = () => {
       addDebugLog(`🔍 Profile: id=${profile.id}, company_id=${profile.company_id}, user_companies=${profile.user_companies?.length || 0}`)
     }
     
-    if (profile && companyId) {
+    // 🔥 NOVO: Se há overrideCompanyId, carregar mesmo sem profile completo
+    if (overrideCompanyId) {
+      addDebugLog(`🔑 Super Admin mode: carregando para company ${overrideCompanyId}`)
+      loadProcesses().then(() => {
+        if (mounted) {
+          addDebugLog('🎯 Carregamento concluído (Super Admin)')
+        }
+      })
+    } else if (profile && companyId) {
       loadProcesses().then(() => {
         if (mounted) {
           addDebugLog('🎯 Carregamento concluído')
@@ -161,7 +181,7 @@ export const usePriorityProcesses = () => {
     return () => {
       mounted = false
     }
-  }, [profile?.id, profile?.company_id, profile?.user_companies?.length])
+  }, [profile?.id, profile?.company_id, profile?.user_companies?.length, overrideCompanyId]) // 🔥 NOVO: Dependência do overrideCompanyId
 
   const getProcessesByJourney = (journeyId) => {
     return priorityProcesses[journeyId] || []

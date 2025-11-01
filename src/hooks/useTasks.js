@@ -2,13 +2,20 @@ import { useState } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
-export const useTasks = () => {
+// 🔥 NOVO: Hook agora aceita companyId opcional (para Super Admin)
+export const useTasks = (overrideCompanyId = null) => {
   const { profile } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   // Pegar company_id do perfil do usuário
   const getCompanyId = () => {
+    // 🔥 PRIORIDADE: overrideCompanyId (Super Admin) > profile company
+    if (overrideCompanyId) {
+      console.log(`🔑 useTasks: Usando companyId override (Super Admin): ${overrideCompanyId}`)
+      return overrideCompanyId
+    }
+    
     if (profile?.company_id) return profile.company_id
     if (profile?.user_companies && profile.user_companies.length > 0) {
       return profile.user_companies[0].company_id
@@ -83,11 +90,11 @@ export const useTasks = () => {
       const companyId = getCompanyId()
       
       if (!companyId) {
-        console.log('❌ Company ID não encontrado')
+        console.log('❌ getTasks: Company ID não encontrado')
         return []
       }
 
-      console.log('🔍 Buscando tarefas da empresa:', companyId)
+      console.log('🔍 getTasks: Buscando tarefas da empresa:', companyId)
 
       const { data: tasks, error: tasksError } = await supabase
         .from('tasks')
@@ -103,7 +110,8 @@ export const useTasks = () => {
           priority,
           due_date,
           created_at,
-          created_by
+          created_by,
+          company_id
         `)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
@@ -113,7 +121,7 @@ export const useTasks = () => {
         throw tasksError
       }
 
-      console.log('✅ Tarefas encontradas:', tasks)
+      console.log('✅ getTasks: Tarefas encontradas:', tasks?.length || 0)
       return tasks || []
 
     } catch (err) {
@@ -131,7 +139,12 @@ export const useTasks = () => {
       setLoading(true)
       const companyId = getCompanyId()
       
+      console.log('🔑 createTask: companyId obtido:', companyId)
+      console.log('👤 createTask: profile.id:', profile?.id)
+      
       if (!companyId || !profile?.id) {
+        const errorMsg = `Dados faltando: companyId=${companyId}, userId=${profile?.id}`
+        console.error('❌ createTask:', errorMsg)
         throw new Error('Dados de usuário ou empresa não encontrados')
       }
 
@@ -141,7 +154,7 @@ export const useTasks = () => {
         created_by: profile.id
       }
 
-      console.log('💾 Criando tarefa:', newTask)
+      console.log('💾 Criando tarefa com dados:', JSON.stringify(newTask, null, 2))
 
       const { data, error: createError } = await supabase
         .from('tasks')
@@ -150,15 +163,23 @@ export const useTasks = () => {
         .single()
 
       if (createError) {
-        console.error('❌ Erro ao criar tarefa:', createError)
+        console.error('❌ Erro Supabase ao criar tarefa:', {
+          message: createError.message,
+          details: createError.details,
+          hint: createError.hint,
+          code: createError.code
+        })
         throw createError
       }
 
-      console.log('✅ Tarefa criada:', data)
+      console.log('✅ Tarefa criada com sucesso:', data)
       return data
 
     } catch (err) {
-      console.error('❌ Erro ao salvar:', err)
+      console.error('❌ Erro fatal ao salvar tarefa:', {
+        message: err.message,
+        stack: err.stack
+      })
       setError(err.message)
       throw err
     } finally {
