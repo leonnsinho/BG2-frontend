@@ -15,8 +15,30 @@ import {
   XCircle,
   Calendar,
   Building2,
-  Loader
+  Loader,
+  Eye,
+  X,
+  FileText
 } from 'lucide-react'
+
+// Injetar animação CSS para o modal (mesma do sistema)
+if (typeof document !== 'undefined' && !document.getElementById('modal-slide-animation')) {
+  const style = document.createElement('style')
+  style.id = 'modal-slide-animation'
+  style.textContent = `
+    @keyframes modalSlideIn {
+      0% {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  `
+  document.head.appendChild(style)
+}
 
 function UserActivityPage() {
   const { profile } = useAuth()
@@ -28,6 +50,13 @@ function UserActivityPage() {
   const [roleFilter, setRoleFilter] = useState('all')
   const [companyFilter, setCompanyFilter] = useState('all')
   const [companies, setCompanies] = useState([])
+  
+  // 🔥 NOVO: Estado para modal de tarefas
+  const [showTasksModal, setShowTasksModal] = useState(false)
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [userTasks, setUserTasks] = useState([])
+  const [loadingTasks, setLoadingTasks] = useState(false)
+  const [taskCreators, setTaskCreators] = useState({}) // 🔥 Mapa de IDs para nomes
 
   // Verificar se é super_admin
   const isSuperAdmin = () => {
@@ -230,6 +259,93 @@ function UserActivityPage() {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  // 🔥 NOVO: Função para buscar tarefas detalhadas do usuário
+  const fetchUserTasks = async (userId) => {
+    setLoadingTasks(true)
+    try {
+      console.log('🔍 Buscando tarefas para usuário:', userId)
+      
+      // Buscar apenas os dados básicos da tarefa sem joins
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('assigned_to', userId)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('❌ Erro na query:', error)
+        throw error
+      }
+      
+      console.log('📋 Tarefas carregadas:', data?.length)
+      console.log('📦 Dados das tarefas:', data)
+      setUserTasks(data || [])
+
+      // 🔥 Buscar nomes dos criadores
+      if (data && data.length > 0) {
+        const creatorIds = [...new Set(data.map(task => task.created_by).filter(Boolean))]
+        
+        if (creatorIds.length > 0) {
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', creatorIds)
+
+          if (!profilesError && profiles) {
+            const creatorsMap = {}
+            profiles.forEach(profile => {
+              creatorsMap[profile.id] = profile.full_name || profile.email
+            })
+            console.log('👥 Criadores carregados:', creatorsMap)
+            setTaskCreators(creatorsMap)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar tarefas:', error.message || error)
+      setUserTasks([])
+    } finally {
+      setLoadingTasks(false)
+    }
+  }
+
+  // 🔥 NOVO: Abrir modal de tarefas
+  const openTasksModal = (user) => {
+    setSelectedUser(user)
+    setShowTasksModal(true)
+    fetchUserTasks(user.id)
+  }
+
+  // 🔥 NOVO: Fechar modal de tarefas
+  const closeTasksModal = () => {
+    setShowTasksModal(false)
+    setSelectedUser(null)
+    setUserTasks([])
+    setTaskCreators({}) // 🔥 Limpar mapa de criadores
+  }
+
+  // 🔥 NOVO: Função para obter badge de status da tarefa
+  const getTaskStatusBadge = (status) => {
+    const badges = {
+      completed: { bg: 'bg-green-100', text: 'text-green-800', label: 'Concluída' },
+      in_progress: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Em Progresso' },
+      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pendente' },
+      cancelled: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Cancelada' }
+    }
+    const badge = badges[status] || badges.pending
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium ${badge.bg} ${badge.text}`}>
+        {badge.label}
+      </span>
+    )
+  }
+
+  // 🔥 NOVO: Função para verificar se tarefa está atrasada
+  const isTaskOverdue = (task) => {
+    if (task.status === 'completed' || !task.due_date) return false
+    return new Date(task.due_date) < new Date()
   }
 
   const exportToCSV = () => {
@@ -682,25 +798,16 @@ function UserActivityPage() {
                       <div className="font-semibold">{user.login_count || 0}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        <div className="flex items-center space-x-3">
-                          <div className="text-center">
-                            <div className="font-semibold text-blue-600">{user.tasks_created || 0}</div>
-                            <div className="text-xs text-gray-500">Total</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="font-semibold text-green-600">{user.tasks_completed || 0}</div>
-                            <div className="text-xs text-gray-500">Concluídas</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="font-semibold text-red-600">{user.tasks_overdue || 0}</div>
-                            <div className="text-xs text-gray-500">Atrasadas</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="font-semibold text-purple-600">{user.comments_made || 0}</div>
-                            <div className="text-xs text-gray-500">Comentários</div>
-                          </div>
-                        </div>
+                      <div className="flex items-center justify-center">
+                        {/* Botão Ver Detalhes - sempre visível */}
+                        <button
+                          onClick={() => openTasksModal(user)}
+                          className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 hover:shadow-lg text-white rounded-lg text-sm font-medium transition-all duration-200 hover:-translate-y-0.5"
+                          title="Ver detalhes das tarefas"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Tarefas
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -720,6 +827,188 @@ function UserActivityPage() {
           </div>
         )}
       </div>
+
+      {/* 🔥 NOVO: Modal de Tarefas Detalhadas */}
+      {showTasksModal && selectedUser && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+          <div 
+            className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden"
+            style={{
+              animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+            }}
+          >
+            {/* Header do Modal */}
+            <div className="bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 px-8 py-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-1">
+                    Tarefas de {selectedUser.full_name}
+                  </h2>
+                  <p className="text-white/90 text-sm">
+                    {selectedUser.email}
+                  </p>
+                </div>
+                <button
+                  onClick={closeTasksModal}
+                  className="text-white hover:bg-white/20 p-2 rounded-xl transition-all"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Estatísticas Rápidas */}
+              <div className="grid grid-cols-4 gap-4 mt-6">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <div className="text-2xl font-bold text-white">{selectedUser.tasks_created || 0}</div>
+                  <div className="text-xs text-white/80 font-medium">Total de Tarefas</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <div className="text-2xl font-bold text-white">{selectedUser.tasks_completed || 0}</div>
+                  <div className="text-xs text-white/80 font-medium">Concluídas</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <div className="text-2xl font-bold text-white">{selectedUser.tasks_overdue || 0}</div>
+                  <div className="text-xs text-white/80 font-medium">Atrasadas</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <div className="text-2xl font-bold text-white">
+                    {selectedUser.task_completion_rate ? `${selectedUser.task_completion_rate}%` : '0%'}
+                  </div>
+                  <div className="text-xs text-white/80 font-medium">Taxa de Conclusão</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Conteúdo do Modal */}
+            <div className="p-8 overflow-y-auto max-h-[calc(90vh-280px)]">
+              {console.log('🎨 Renderizando modal - userTasks:', userTasks.length, 'loadingTasks:', loadingTasks)}
+              {loadingTasks ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader className="h-8 w-8 text-[#EBA500] animate-spin" />
+                  <p className="text-gray-600 ml-3">Carregando tarefas...</p>
+                </div>
+              ) : userTasks.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Nenhuma tarefa encontrada
+                  </h3>
+                  <p className="text-gray-600">
+                    Este usuário não possui tarefas atribuídas.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {console.log('🎯 Mapeando tarefas:', userTasks)}
+                  {userTasks.map((task) => {
+                    const isOverdue = isTaskOverdue(task)
+                    
+                    return (
+                      <div
+                        key={task.id}
+                        className={`bg-white rounded-2xl p-6 border-2 transition-all hover:shadow-md ${
+                          isOverdue
+                            ? 'border-red-200 bg-red-50/30'
+                            : 'border-gray-200/50 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-[#373435] mb-2">
+                              {task.title}
+                            </h3>
+                            {task.description && (
+                              <p className="text-sm text-gray-600 mb-3">
+                                {task.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-2 ml-4">
+                            {getTaskStatusBadge(task.status)}
+                            {isOverdue && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-red-100 text-red-800">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Atrasada
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Informações da Tarefa */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 rounded-xl p-4">
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1 font-medium">Data de Criação</div>
+                            <div className="flex items-center text-sm text-gray-900">
+                              <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
+                              {formatDate(task.created_at)}
+                            </div>
+                          </div>
+
+                          {task.due_date && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1 font-medium">Data Prevista</div>
+                              <div className={`flex items-center text-sm ${isOverdue ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>
+                                <Clock className="h-4 w-4 mr-1.5" />
+                                {formatDate(task.due_date)}
+                              </div>
+                            </div>
+                          )}
+
+                          {task.completed_at && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1 font-medium">Data de Conclusão</div>
+                              <div className="flex items-center text-sm text-green-600 font-semibold">
+                                <CheckCircle className="h-4 w-4 mr-1.5" />
+                                {formatDate(task.completed_at)}
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1 font-medium">Criado por</div>
+                            <div className="text-sm text-gray-900 font-medium">
+                              {task.created_by ? (taskCreators[task.created_by] || 'Carregando...') : 'Sistema'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Prioridade */}
+                        {task.priority && (
+                          <div className="mt-3 flex items-center">
+                            <span className="text-xs text-gray-500 mr-2">Prioridade:</span>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium ${
+                              task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                              task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Média' : 'Baixa'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Footer do Modal */}
+            <div className="bg-gray-50 px-8 py-4 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Total: <span className="font-semibold text-gray-900">{userTasks.length}</span> tarefa(s)
+                </div>
+                <button
+                  onClick={closeTasksModal}
+                  className="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl font-medium transition-all"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -201,10 +201,17 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/journey-management/overview'
       },
       {
-        name: 'Aprovações de Amadurecimento',
+        name: 'Aprovações',
         icon: ThumbsUp,
-        href: '/maturity-approvals',
-        badge: pendingApprovalsCount // 🔥 NOVO: Badge com contador
+        href: '/approvals',
+        badge: pendingApprovalsCount, // 🔥 Badge apenas no menu principal
+        children: [
+          { 
+            name: 'Maturidade', 
+            href: '/maturity-approvals'
+            // 🔥 Badge removido do submódulo
+          }
+        ]
       },
       {
         name: 'Políticas Operacionais',
@@ -631,7 +638,18 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                       title={isCollapsed ? item.name : undefined}
                     >
                       {isCollapsed ? (
-                        <ItemIcon className="h-5 w-5 flex-shrink-0" />
+                        <div className="relative">
+                          <ItemIcon className="h-5 w-5 flex-shrink-0" />
+                          {/* 🔥 Badge quando colapsado */}
+                          {item.badge && item.badge > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center text-[8px] font-bold text-white">
+                                {item.badge > 9 ? '9+' : item.badge}
+                              </span>
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <>
                           <ChevronLeft
@@ -641,6 +659,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                             )}
                           />
                           <span className="flex-1 text-left">{item.name}</span>
+                          {/* 🔥 Badge quando expandido */}
+                          {item.badge && item.badge > 0 && (
+                            <NotificationBadge count={item.badge} size="sm" pulse={true} />
+                          )}
                         </>
                       )}
                     </button>
@@ -724,6 +746,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                               )}
                             ></span>
                             <span className="flex-1 text-left">{subItem.name}</span>
+                            {/* 🔥 Badge para subitem se existir */}
+                            {subItem.badge && subItem.badge > 0 && (
+                              <NotificationBadge count={subItem.badge} size="sm" pulse={true} />
+                            )}
                           </Link>
                         ))}
                       </div>
@@ -858,7 +884,11 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                               isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
                             )}
                           />
-                          {subItem.name}
+                          <span className="flex-1">{subItem.name}</span>
+                          {/* 🔥 Badge no dropdown se existir */}
+                          {subItem.badge && subItem.badge > 0 && (
+                            <NotificationBadge count={subItem.badge} size="sm" pulse={true} />
+                          )}
                         </Link>
                       ))}
                     </div>

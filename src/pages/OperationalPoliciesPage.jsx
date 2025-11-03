@@ -285,7 +285,28 @@ export default function OperationalPoliciesPage() {
       setShowSubblockModal(false)
       setEditingSubblock(null)
       setSubblockForm({ name: '', description: '' })
-      loadBlocks()
+      
+      await loadBlocks()
+      
+      // 🔥 Se estiver visualizando um bloco, buscar dados atualizados
+      if (viewingBlock && viewingBlock.id === selectedBlock) {
+        const { data: updatedBlock, error } = await supabase
+          .from('policy_blocks')
+          .select(`
+            *,
+            policy_subblocks (
+              *,
+              policy_contents (*),
+              policy_attachments (*)
+            )
+          `)
+          .eq('id', selectedBlock)
+          .single()
+        
+        if (!error && updatedBlock) {
+          setViewingBlock(updatedBlock)
+        }
+      }
     } catch (error) {
       console.error('Erro ao salvar sub-bloco:', error)
       alert('Erro ao salvar sub-bloco: ' + error.message)
@@ -307,7 +328,32 @@ export default function OperationalPoliciesPage() {
 
       if (error) throw error
 
-      loadBlocks()
+      await loadBlocks()
+      
+      // 🔥 Se estiver visualizando um bloco, buscar dados atualizados
+      if (viewingBlock) {
+        const { data: updatedBlock, error } = await supabase
+          .from('policy_blocks')
+          .select(`
+            *,
+            policy_subblocks (
+              *,
+              policy_contents (*),
+              policy_attachments (*)
+            )
+          `)
+          .eq('id', viewingBlock.id)
+          .single()
+        
+        if (!error && updatedBlock) {
+          setViewingBlock(updatedBlock)
+        }
+      }
+      
+      // 🔥 Se o sub-bloco deletado estava sendo visualizado, fechar o modal
+      if (viewingSubblock && viewingSubblock.id === subblockId) {
+        closeSubblockView()
+      }
     } catch (error) {
       console.error('Erro ao deletar sub-bloco:', error)
       alert('Erro ao deletar sub-bloco: ' + error.message)
@@ -346,10 +392,11 @@ export default function OperationalPoliciesPage() {
         if (error) throw error
       }
 
-      setShowContentModal(false)
-      setEditingContent(null)
-      setContentForm({ content_type: 'text', content_data: { text: '' } })
-      loadBlocks()
+      // 🔥 Fechar modal e atualizar viewingSubblock com dados frescos
+      await closeContentModal()
+      
+      // 🔥 Recarregar blocos para lista principal
+      await loadBlocks()
     } catch (error) {
       console.error('Erro ao salvar conteúdo:', error)
       alert('Erro ao salvar conteúdo: ' + error.message)
@@ -371,7 +418,28 @@ export default function OperationalPoliciesPage() {
 
       if (error) throw error
 
-      loadBlocks()
+      await loadBlocks()
+      
+      // 🔥 Se estiver visualizando um sub-bloco, buscar dados atualizados
+      if (viewingSubblock) {
+        console.log('🔄 Atualizando sub-bloco após deletar conteúdo...')
+        
+        const { data: updatedSubblock, error } = await supabase
+          .from('policy_subblocks')
+          .select(`
+            *,
+            policy_contents (*),
+            policy_attachments (*)
+          `)
+          .eq('id', viewingSubblock.id)
+          .order('order_index', { foreignTable: 'policy_contents', ascending: true })
+          .single()
+        
+        if (!error && updatedSubblock) {
+          console.log('✅ Sub-bloco atualizado:', updatedSubblock.policy_contents?.length, 'conteúdos')
+          setViewingSubblock(updatedSubblock)
+        }
+      }
     } catch (error) {
       console.error('Erro ao deletar conteúdo:', error)
       alert('Erro ao deletar conteúdo: ' + error.message)
@@ -419,10 +487,11 @@ export default function OperationalPoliciesPage() {
 
       if (dbError) throw dbError
 
-      setShowAttachmentModal(false)
-      setUploadFile(null)
-      setUploadDescription('')
-      loadBlocks()
+      // 🔥 Fechar modal e atualizar viewingSubblock
+      await closeAttachmentModal()
+      
+      // Recarregar blocos
+      await loadBlocks()
     } catch (error) {
       console.error('Erro ao fazer upload:', error)
       alert('Erro ao fazer upload: ' + error.message)
@@ -452,7 +521,24 @@ export default function OperationalPoliciesPage() {
 
       if (dbError) throw dbError
 
-      loadBlocks()
+      await loadBlocks()
+      
+      // 🔥 Se estiver visualizando um sub-bloco, buscar dados atualizados
+      if (viewingSubblock) {
+        const { data: updatedSubblock, error } = await supabase
+          .from('policy_subblocks')
+          .select(`
+            *,
+            policy_contents (*),
+            policy_attachments (*)
+          `)
+          .eq('id', viewingSubblock.id)
+          .single()
+        
+        if (!error && updatedSubblock) {
+          setViewingSubblock(updatedSubblock)
+        }
+      }
     } catch (error) {
       console.error('Erro ao deletar anexo:', error)
       alert('Erro ao deletar anexo: ' + error.message)
@@ -513,11 +599,67 @@ export default function OperationalPoliciesPage() {
     setShowContentModal(true)
   }
 
+  // 🔥 Fechar modal de conteúdo E atualizar o viewingSubblock
+  const closeContentModal = async () => {
+    setShowContentModal(false)
+    setEditingContent(null)
+    setContentForm({ content_type: 'text', content_data: { text: '' } })
+    
+    // 🔥 Atualizar o sub-bloco visualizado com dados frescos do banco
+    if (selectedSubblock && viewingSubblock) {
+      console.log('🔄 Atualizando sub-bloco ao fechar modal de conteúdo...')
+      
+      const { data: updatedSubblock, error } = await supabase
+        .from('policy_subblocks')
+        .select(`
+          *,
+          policy_contents (*),
+          policy_attachments (*)
+        `)
+        .eq('id', selectedSubblock)
+        .order('order_index', { foreignTable: 'policy_contents', ascending: true })
+        .single()
+      
+      if (!error && updatedSubblock) {
+        console.log('✅ Sub-bloco atualizado:', updatedSubblock.policy_contents?.length, 'conteúdos')
+        setViewingSubblock(updatedSubblock)
+      }
+    }
+  }
+
   const openAttachmentModal = (subblockId) => {
     setSelectedSubblock(subblockId)
     setUploadFile(null)
     setUploadDescription('')
     setShowAttachmentModal(true)
+  }
+
+  // 🔥 Fechar modal de anexo E atualizar o viewingSubblock
+  const closeAttachmentModal = async () => {
+    setShowAttachmentModal(false)
+    setUploadFile(null)
+    setUploadDescription('')
+    
+    // 🔥 Atualizar o sub-bloco visualizado com dados frescos do banco
+    if (selectedSubblock && viewingSubblock) {
+      console.log('🔄 Atualizando sub-bloco ao fechar modal de anexo...')
+      
+      const { data: updatedSubblock, error } = await supabase
+        .from('policy_subblocks')
+        .select(`
+          *,
+          policy_contents (*),
+          policy_attachments (*)
+        `)
+        .eq('id', selectedSubblock)
+        .order('order_index', { foreignTable: 'policy_contents', ascending: true })
+        .single()
+      
+      if (!error && updatedSubblock) {
+        console.log('✅ Sub-bloco atualizado:', updatedSubblock.policy_attachments?.length, 'anexos')
+        setViewingSubblock(updatedSubblock)
+      }
+    }
   }
 
   // 🔥 NOVO: Funções para abrir modais de visualização
@@ -1040,7 +1182,7 @@ export default function OperationalPoliciesPage() {
                 className="p-8 border-b border-gray-200"
                 style={{ borderLeft: `6px solid ${viewingBlock.color}` }}
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="text-5xl flex-shrink-0">{viewingBlock.icon}</div>
                     <div className="flex-1 min-w-0">
@@ -1054,12 +1196,25 @@ export default function OperationalPoliciesPage() {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={closeBlockView}
-                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all flex-shrink-0"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        closeBlockView();
+                        openSubblockModal(viewingBlock.id);
+                      }}
+                      className="group flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
+                      title="Criar novo sub-bloco"
+                    >
+                      <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform duration-200" />
+                      Novo Sub-bloco
+                    </button>
+                    <button
+                      onClick={closeBlockView}
+                      className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1224,6 +1379,7 @@ export default function OperationalPoliciesPage() {
               {/* Conteúdos e Anexos */}
               <div className="p-8 overflow-y-auto max-h-[calc(90vh-240px)]">
                 <div className="space-y-8">
+                  {console.log('🎨 Renderizando modal - Conteúdos:', viewingSubblock.policy_contents?.length || 0)}
                   {/* Conteúdos */}
                   {viewingSubblock.policy_contents && viewingSubblock.policy_contents.length > 0 && (
                     <div>
@@ -1246,7 +1402,7 @@ export default function OperationalPoliciesPage() {
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => {
-                                    closeSubblockView();
+                                    // 🔥 NÃO fechar o modal do sub-bloco - deixar aberto para ver o resultado
                                     openContentModal(viewingSubblock.id, content);
                                   }}
                                   className="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all"
@@ -1341,7 +1497,7 @@ export default function OperationalPoliciesPage() {
                       <div className="flex items-center justify-center gap-3">
                         <button
                           onClick={() => {
-                            closeSubblockView();
+                            // 🔥 NÃO fechar o modal do sub-bloco - deixar aberto para ver o resultado
                             openContentModal(viewingSubblock.id);
                           }}
                           className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg hover:shadow-purple-500/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
@@ -1351,7 +1507,7 @@ export default function OperationalPoliciesPage() {
                         </button>
                         <button
                           onClick={() => {
-                            closeSubblockView();
+                            // 🔥 NÃO fechar o modal do sub-bloco - deixar aberto para ver o resultado
                             openAttachmentModal(viewingSubblock.id);
                           }}
                           className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg hover:shadow-blue-500/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
@@ -1586,7 +1742,7 @@ export default function OperationalPoliciesPage() {
                   </h2>
                 </div>
                 <button
-                  onClick={() => setShowContentModal(false)}
+                  onClick={closeContentModal}
                   className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
                 >
                   <X className="h-6 w-6" />
@@ -1876,7 +2032,7 @@ export default function OperationalPoliciesPage() {
                   </h2>
                 </div>
                 <button
-                  onClick={() => setShowAttachmentModal(false)}
+                  onClick={closeAttachmentModal}
                   className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
                 >
                   <X className="h-6 w-6" />
