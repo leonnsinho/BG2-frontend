@@ -908,58 +908,24 @@ export default function AllProcessesPage() {
                   </span>
                 </div>
 
-                {/* Grid com Categoria, Ordem e Peso */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Categoria */}
-                  <div>
-                    <label htmlFor="edit_category" className="block text-sm font-medium text-gray-700 mb-2">
-                      Categoria
-                    </label>
-                    <select
-                      id="edit_category"
-                      value={editData.category_id}
-                      onChange={(e) => setEditData(prev => ({ ...prev, category_id: e.target.value }))}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    >
-                      <option value="">Selecione...</option>
-                      {availableCategories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Ordem */}
-                  <div>
-                    <label htmlFor="edit_order" className="block text-sm font-medium text-gray-700 mb-2">
-                      Ordem
-                    </label>
-                    <input
-                      type="number"
-                      id="edit_order"
-                      value={editData.order_index}
-                      onChange={(e) => setEditData(prev => ({ ...prev, order_index: e.target.value }))}
-                      min="0"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  {/* Peso */}
-                  <div>
-                    <label htmlFor="edit_weight" className="block text-sm font-medium text-gray-700 mb-2">
-                      Peso
-                    </label>
-                    <input
-                      type="number"
-                      id="edit_weight"
-                      value={editData.weight}
-                      onChange={(e) => setEditData(prev => ({ ...prev, weight: e.target.value }))}
-                      min="0"
-                      step="0.1"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
+                {/* Categoria */}
+                <div>
+                  <label htmlFor="edit_category" className="block text-sm font-medium text-gray-700 mb-2">
+                    Categoria
+                  </label>
+                  <select
+                    id="edit_category"
+                    value={editData.category_id}
+                    onChange={(e) => setEditData(prev => ({ ...prev, category_id: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">Selecione...</option>
+                    {availableCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Status Ativo */}

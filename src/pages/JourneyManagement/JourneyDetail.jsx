@@ -549,8 +549,8 @@ const JourneyDetail = () => {
   const getBusinessImportanceLabel = (score) => {
     if (score === 5) return 'Muito importante'
     if (score === 4) return 'Importante'
-    if (score === 3) return 'Pouco importante'
-    if (score === 2) return 'Irrelevante'
+    if (score === 3) return 'Regular'
+    if (score === 2) return 'Pouco relevante'
     if (score === 1) return 'Irrelevante'
     return 'Não avaliado'
   }

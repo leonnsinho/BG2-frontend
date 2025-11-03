@@ -446,8 +446,8 @@ const ProcessEvaluationForm = () => {
                       <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
                         {[
                           { value: 1, label: 'Irrelevante' },
-                          { value: 2, label: 'Irrelevante' },
-                          { value: 3, label: 'Pouco importante' },
+                          { value: 2, label: 'Pouco relevante' },
+                          { value: 3, label: 'Regular' },
                           { value: 4, label: 'Importante' },
                           { value: 5, label: 'Muito importante' }
                         ].map(option => (

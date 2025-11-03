@@ -20,7 +20,12 @@ import {
   AlertCircle,
   Paperclip,
   FileIcon,
-  Target
+  Target,
+  List,
+  Grid3X3,
+  Layers,
+  Edit2,
+  Search
 } from 'lucide-react'
 import { formatDate } from '../utils/dateUtils'
 
@@ -33,12 +38,21 @@ export default function OperationalPoliciesPage() {
   const [loading, setLoading] = useState(true)
   const [expandedBlocks, setExpandedBlocks] = useState({})
   const [expandedSubblocks, setExpandedSubblocks] = useState({})
+  const [viewMode, setViewMode] = useState('list') // 🔥 NOVO: 'list' ou 'grid'
+  const [searchQuery, setSearchQuery] = useState('') // 🔥 NOVO: Busca de blocos
+  const [subblockSearchQuery, setSubblockSearchQuery] = useState('') // 🔥 NOVO: Busca de sub-blocos
   
   // Modais
   const [showBlockModal, setShowBlockModal] = useState(false)
   const [showSubblockModal, setShowSubblockModal] = useState(false)
   const [showContentModal, setShowContentModal] = useState(false)
   const [showAttachmentModal, setShowAttachmentModal] = useState(false)
+  
+  // 🔥 NOVO: Modais de visualização
+  const [showBlockViewModal, setShowBlockViewModal] = useState(false)
+  const [showSubblockViewModal, setShowSubblockViewModal] = useState(false)
+  const [viewingBlock, setViewingBlock] = useState(null)
+  const [viewingSubblock, setViewingSubblock] = useState(null)
   
   // Estados de edição
   const [editingBlock, setEditingBlock] = useState(null)
@@ -506,6 +520,28 @@ export default function OperationalPoliciesPage() {
     setShowAttachmentModal(true)
   }
 
+  // 🔥 NOVO: Funções para abrir modais de visualização
+  const openBlockView = (block) => {
+    setViewingBlock(block)
+    setShowBlockViewModal(true)
+  }
+
+  const openSubblockView = (subblock) => {
+    setViewingSubblock(subblock)
+    setShowSubblockViewModal(true)
+  }
+
+  const closeBlockView = () => {
+    setShowBlockViewModal(false)
+    setViewingBlock(null)
+    setSubblockSearchQuery('') // 🔥 Limpa a busca ao fechar
+  }
+
+  const closeSubblockView = () => {
+    setShowSubblockViewModal(false)
+    setViewingSubblock(null)
+  }
+
   const renderContent = (content) => {
     switch (content.content_type) {
       case 'text':
@@ -605,7 +641,31 @@ export default function OperationalPoliciesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+    <>
+      {/* 🔥 Animações CSS customizadas */}
+      <style>{`
+        @keyframes modalSlideIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
+
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
       {/* Banner Super Admin */}
       <SuperAdminBanner />
       
@@ -666,7 +726,7 @@ export default function OperationalPoliciesPage() {
         {selectedJourney && (
           <>
             {/* Header da seção de blocos */}
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-[#373435] mb-1">
                   Blocos de Políticas
@@ -675,58 +735,138 @@ export default function OperationalPoliciesPage() {
                   {selectedJourney.name} • {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
                 </p>
               </div>
-              <button
-                onClick={() => openBlockModal()}
-                className="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
-              >
-                <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-200" />
-                Novo Bloco
-              </button>
-            </div>
-
-            {/* Lista de Blocos */}
-            {blocks.length === 0 ? (
-              <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-200/50 p-16 text-center">
-                <div className="max-w-md mx-auto">
-                  <div className="inline-flex p-5 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl mb-6">
-                    <FolderOpen className="h-12 w-12 text-gray-400" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
-                    Nenhum bloco criado
-                  </h3>
-                  <p className="text-gray-500 mb-8 leading-relaxed">
-                    Comece criando um novo bloco de políticas para organizar suas operações
-                  </p>
+              
+              <div className="flex items-center gap-3">
+                {/* Toggle View Mode */}
+                <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-xl">
                   <button
-                    onClick={() => openBlockModal()}
-                    className="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                    onClick={() => setViewMode('list')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                      viewMode === 'list'
+                        ? 'bg-white text-[#373435] shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
                   >
-                    <Plus className="h-5 w-5" />
-                    Criar Primeiro Bloco
+                    <List className="h-4 w-4" />
+                    Lista
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                      viewMode === 'grid'
+                        ? 'bg-white text-[#373435] shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                    Grid
                   </button>
                 </div>
+                
+                <button
+                  onClick={() => openBlockModal()}
+                  className="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                >
+                  <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-200" />
+                  Novo Bloco
+                </button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {blocks.map((block) => (
+            </div>
+
+            {/* 🔥 NOVO: Barra de Busca */}
+            <div className="mb-6">
+              <div className="relative max-w-md">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar blocos por nome..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white/80 backdrop-blur-sm placeholder:text-gray-400"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Lista/Grid de Blocos */}
+            {(() => {
+              // 🔥 Filtrar blocos pela busca
+              const filteredBlocks = blocks.filter(block => 
+                block.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                block.description?.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+
+              if (blocks.length === 0) {
+                return (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-200/50 p-16 text-center">
+                    <div className="max-w-md mx-auto">
+                      <div className="inline-flex p-5 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl mb-6">
+                        <FolderOpen className="h-12 w-12 text-gray-400" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">
+                        Nenhum bloco criado
+                      </h3>
+                      <p className="text-gray-500 mb-8 leading-relaxed">
+                        Comece criando um novo bloco de políticas para organizar suas operações
+                      </p>
+                      <button
+                        onClick={() => openBlockModal()}
+                        className="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                      >
+                        <Plus className="h-5 w-5" />
+                        Criar Primeiro Bloco
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (filteredBlocks.length === 0) {
+                return (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-200/50 p-16 text-center">
+                    <div className="max-w-md mx-auto">
+                      <div className="inline-flex p-5 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl mb-6">
+                        <Search className="h-12 w-12 text-gray-400" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">
+                        Nenhum bloco encontrado
+                      </h3>
+                      <p className="text-gray-500 mb-8 leading-relaxed">
+                        Não encontramos blocos com "{searchQuery}"
+                      </p>
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                      >
+                        <X className="h-5 w-5" />
+                        Limpar Busca
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (viewMode === 'list') {
+                return (
+                  // VISUALIZAÇÃO EM LISTA
+                  <div className="space-y-4">
+                    {filteredBlocks.map((block) => (
                   <div key={block.id} className="group bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-200/50 overflow-hidden hover:shadow-md transition-all duration-200">
-                    {/* Header do Bloco */}
+                    {/* Header do Bloco - Clicável */}
                     <div 
-                      className="p-6 cursor-pointer transition-colors relative"
-                      style={{ 
-                        borderLeft: `5px solid ${block.color}`,
-                        background: expandedBlocks[block.id] ? 'linear-gradient(to right, rgba(235, 165, 0, 0.03), transparent)' : 'transparent'
-                      }}
+                      className="p-6 cursor-pointer transition-colors relative hover:bg-gray-50/50"
+                      style={{ borderLeft: `5px solid ${block.color}` }}
+                      onClick={() => openBlockView(block)}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 flex-1" onClick={() => toggleBlock(block.id)}>
-                          <button className="text-gray-400 hover:text-[#EBA500] transition-all duration-300 p-1 hover:bg-[#EBA500]/10 rounded-xl">
-                            {expandedBlocks[block.id] ? (
-                              <ChevronDown className="h-5 w-5 transition-transform duration-300 rotate-0" />
-                            ) : (
-                              <ChevronRight className="h-5 w-5 transition-transform duration-300" />
-                            )}
-                          </button>
+                        <div className="flex items-center gap-4 flex-1">
                           <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl">
                             <span className="text-3xl">{block.icon}</span>
                           </div>
@@ -735,26 +875,45 @@ export default function OperationalPoliciesPage() {
                             {block.description && (
                               <p className="text-sm text-gray-500 leading-relaxed">{block.description}</p>
                             )}
+                            <div className="flex items-center gap-4 mt-2">
+                              <span className="text-xs text-gray-400">
+                                <Layers className="h-3 w-3 inline mr-1" />
+                                {block.policy_subblocks?.length || 0} sub-blocos
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                <FileText className="h-3 w-3 inline mr-1" />
+                                {block.policy_subblocks?.reduce((sum, sb) => sum + (sb.policy_contents?.length || 0), 0) || 0} conteúdos
+                              </span>
+                            </div>
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() => openSubblockModal(block.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openSubblockModal(block.id);
+                            }}
                             className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:scale-105"
                             title="Adicionar Sub-bloco"
                           >
                             <Plus className="h-5 w-5" />
                           </button>
                           <button
-                            onClick={() => openBlockModal(block)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openBlockModal(block);
+                            }}
                             className="p-2.5 text-green-600 hover:bg-green-50 rounded-xl transition-all hover:scale-105"
                             title="Editar Bloco"
                           >
                             <Edit className="h-5 w-5" />
                           </button>
                           <button
-                            onClick={() => handleDeleteBlock(block.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteBlock(block.id);
+                            }}
                             className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all hover:scale-105"
                             title="Deletar Bloco"
                           >
@@ -763,213 +922,461 @@ export default function OperationalPoliciesPage() {
                         </div>
                       </div>
                     </div>
-
-                    {/* Sub-blocos */}
-                    {expandedBlocks[block.id] && (
-                      <div className="border-t border-gray-100 bg-gradient-to-b from-gray-50/30 to-transparent">
-                        <div className="p-6 space-y-3">
-                          {block.policy_subblocks && block.policy_subblocks.length > 0 ? (
-                            <>
-                              {block.policy_subblocks.map((subblock, idx) => (
-                                <div 
-                                  key={subblock.id} 
-                                  className="group/sub bg-white rounded-2xl border border-gray-200/60 shadow-sm hover:shadow-md transition-all duration-200 opacity-0 animate-fade-in-scale"
-                                  style={{ 
-                                    animationDelay: `${idx * 50}ms`,
-                                    animationFillMode: 'forwards'
-                                  }}
-                                >
-                                {/* Header do Sub-bloco */}
-                                <div className="p-4">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3 flex-1" onClick={() => toggleSubblock(subblock.id)}>
-                                      <button className="text-gray-400 hover:text-[#EBA500] transition-all duration-300 p-1 hover:bg-[#EBA500]/10 rounded-lg">
-                                        {expandedSubblocks[subblock.id] ? (
-                                          <ChevronDown className="h-4 w-4 transition-transform duration-300 rotate-0" />
-                                        ) : (
-                                          <ChevronRight className="h-4 w-4 transition-transform duration-300" />
-                                        )}
-                                      </button>
-                                      <div className="flex-1">
-                                        <h4 className="font-bold text-gray-900 text-base">{subblock.name}</h4>
-                                        {subblock.description && (
-                                          <p className="text-sm text-gray-500 mt-1 leading-relaxed">{subblock.description}</p>
-                                        )}
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-1 opacity-0 group-hover/sub:opacity-100 transition-opacity">
-                                      <button
-                                        onClick={() => openContentModal(subblock.id)}
-                                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-xl transition-all hover:scale-105"
-                                        title="Adicionar Conteúdo"
-                                      >
-                                        <FileText className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => openAttachmentModal(subblock.id)}
-                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:scale-105"
-                                        title="Adicionar Anexo"
-                                      >
-                                        <Paperclip className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => openSubblockModal(block.id, subblock)}
-                                        className="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all hover:scale-105"
-                                        title="Editar"
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteSubblock(subblock.id)}
-                                        className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all hover:scale-105"
-                                        title="Deletar"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Conteúdo do Sub-bloco */}
-                                {expandedSubblocks[subblock.id] && (
-                                  <div className="border-t border-gray-100 p-5 bg-gradient-to-b from-gray-50/50 to-white space-y-4">
-                                    {/* Conteúdos */}
-                                    {subblock.policy_contents && subblock.policy_contents.length > 0 && (
-                                      <div className="space-y-3">
-                                        {subblock.policy_contents.map((content, contentIdx) => (
-                                          <div 
-                                            key={content.id} 
-                                            className="group/content bg-white rounded-xl p-4 border border-gray-200/60 hover:border-gray-300 hover:shadow-sm transition-all opacity-0 animate-fade-in-scale"
-                                            style={{ 
-                                              animationDelay: `${contentIdx * 40}ms`,
-                                              animationFillMode: 'forwards'
-                                            }}
-                                          >
-                                            <div className="flex justify-between items-start mb-3">
-                                              <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold text-gray-600 bg-gray-100">
-                                                {content.content_type}
-                                              </span>
-                                              <div className="flex gap-1 opacity-0 group-hover/content:opacity-100 transition-opacity">
-                                                <button
-                                                  onClick={() => openContentModal(subblock.id, content)}
-                                                  className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-all hover:scale-105"
-                                                >
-                                                  <Edit className="h-3.5 w-3.5" />
-                                                </button>
-                                                <button
-                                                  onClick={() => handleDeleteContent(content.id)}
-                                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all hover:scale-105"
-                                                >
-                                                  <Trash2 className="h-3.5 w-3.5" />
-                                                </button>
-                                              </div>
-                                            </div>
-                                            <div className="prose prose-sm max-w-none">
-                                              {renderContent(content)}
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-
-                                    {/* Anexos */}
-                                    {subblock.policy_attachments && subblock.policy_attachments.length > 0 && (
-                                      <div className="space-y-2">
-                                        <div className="flex items-center gap-2 mb-3">
-                                          <Paperclip className="h-4 w-4 text-gray-400" />
-                                          <h5 className="text-sm font-bold text-gray-700">Anexos</h5>
-                                        </div>
-                                        {subblock.policy_attachments.map((attachment, attachIdx) => (
-                                          <div 
-                                            key={attachment.id} 
-                                            className="group/attach bg-white rounded-xl p-4 border border-gray-200/60 hover:border-gray-300 hover:shadow-sm transition-all flex items-center justify-between opacity-0 animate-fade-in-scale"
-                                            style={{ 
-                                              animationDelay: `${attachIdx * 40}ms`,
-                                              animationFillMode: 'forwards'
-                                            }}
-                                          >
-                                            <div className="flex items-center gap-4 flex-1">
-                                              <div className="p-2.5 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl">
-                                                <FileIcon className="h-5 w-5 text-blue-600" />
-                                              </div>
-                                              <div className="flex-1">
-                                                <p className="text-sm font-semibold text-gray-900">{attachment.file_name}</p>
-                                                <p className="text-xs text-gray-500 mt-0.5">
-                                                  {formatFileSize(attachment.file_size)} • {formatDate(attachment.uploaded_at)}
-                                                </p>
-                                                {attachment.description && (
-                                                  <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">{attachment.description}</p>
-                                                )}
-                                              </div>
-                                            </div>
-                                            <div className="flex gap-1 opacity-0 group-hover/attach:opacity-100 transition-opacity">
-                                              <a
-                                                href={attachment.file_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:scale-105"
-                                                title="Download"
-                                              >
-                                                <Download className="h-4 w-4" />
-                                              </a>
-                                              <button
-                                                onClick={() => handleDeleteAttachment(attachment)}
-                                                className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all hover:scale-105"
-                                                title="Deletar"
-                                              >
-                                                <Trash2 className="h-4 w-4" />
-                                              </button>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-
-                                    {/* Empty state */}
-                                    {(!subblock.policy_contents || subblock.policy_contents.length === 0) &&
-                                     (!subblock.policy_attachments || subblock.policy_attachments.length === 0) && (
-                                      <div className="text-center py-10 text-gray-400">
-                                        <div className="inline-flex p-4 bg-gray-50 rounded-2xl mb-3">
-                                          <FileText className="h-8 w-8 text-gray-300" />
-                                        </div>
-                                        <p className="text-sm font-medium mb-1">Nenhum conteúdo adicionado</p>
-                                        <p className="text-xs">Use os botões acima para adicionar conteúdo ou anexos</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                              ))}
-                            </>
-                          ) : (
-                            <div className="p-10 text-center">
-                              <div className="inline-flex p-4 bg-gray-50 rounded-2xl mb-4">
-                                <FolderOpen className="h-10 w-10 text-gray-300" />
-                              </div>
-                              <p className="text-gray-500 mb-4 font-medium">Nenhum sub-bloco criado</p>
-                              <button
-                                onClick={() => openSubblockModal(block.id)}
-                                className="text-[#EBA500] hover:text-[#d99500] font-semibold text-sm hover:underline"
-                              >
-                                + Adicionar Sub-bloco
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
-            )}
+                );
+              } else {
+                return (
+                  // VISUALIZAÇÃO EM GRID
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredBlocks.map((block) => {
+                  const subblockCount = block.policy_subblocks?.length || 0;
+                  const totalContent = block.policy_subblocks?.reduce((sum, sb) => 
+                    sum + (sb.policy_contents?.length || 0), 0
+                  ) || 0;
+
+                  return (
+                    <div
+                      key={block.id}
+                      className="group bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border-2 border-gray-200/50 hover:border-[#EBA500]/30 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                      style={{ borderLeftWidth: '6px', borderLeftColor: block.color || '#EBA500' }}
+                    >
+                      {/* Área clicável para abrir visualização */}
+                      <div 
+                        className="p-6 cursor-pointer"
+                        onClick={() => openBlockView(block)}
+                      >
+                        {/* Header do Card */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            {block.icon && (
+                              <div className="text-4xl mb-3">{block.icon}</div>
+                            )}
+                            <h3 className="text-lg font-bold text-[#373435] mb-2 line-clamp-2">
+                              {block.name}
+                            </h3>
+                          </div>
+                        </div>
+
+                        {/* Descrição */}
+                        {block.description && (
+                          <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                            {block.description}
+                          </p>
+                        )}
+
+                        {/* Estatísticas */}
+                        <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-200">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Layers className="h-4 w-4 text-[#EBA500]" />
+                            <span className="font-semibold">{subblockCount}</span>
+                            <span>sub-blocos</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <FileText className="h-4 w-4 text-[#EBA500]" />
+                            <span className="font-semibold">{totalContent}</span>
+                            <span>conteúdos</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Ações (fora da área clicável) */}
+                      <div className="px-6 pb-6">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openSubblockModal(block.id);
+                            }}
+                            className="flex-1 px-3 py-2 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white text-sm rounded-xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                          >
+                            <Plus className="h-4 w-4 inline mr-1" />
+                            Sub-bloco
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openBlockModal(block);
+                            }}
+                            className="p-2 text-gray-600 hover:text-[#EBA500] hover:bg-[#EBA500]/10 rounded-xl transition-all"
+                            title="Editar bloco"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteBlock(block.id);
+                            }}
+                            className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                            title="Excluir bloco"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+                );
+              }
+            })()}
           </>
+        )}
+
+        {/* 🔥 NOVO: Modal de Visualização do Bloco (mostra sub-blocos) */}
+        {showBlockViewModal && viewingBlock && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+            <div 
+              className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden"
+              style={{
+                animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              }}
+            >
+              {/* Header do Modal */}
+              <div 
+                className="p-8 border-b border-gray-200"
+                style={{ borderLeft: `6px solid ${viewingBlock.color}` }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="text-5xl">{viewingBlock.icon}</div>
+                    <div className="flex-1">
+                      <h2 className="text-3xl font-bold text-[#373435] mb-2">
+                        {viewingBlock.name}
+                      </h2>
+                      {viewingBlock.description && (
+                        <p className="text-gray-600 leading-relaxed">
+                          {viewingBlock.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={closeBlockView}
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* 🔥 NOVO: Barra de Busca de Sub-blocos */}
+              {viewingBlock.policy_subblocks && viewingBlock.policy_subblocks.length > 0 && (
+                <div className="px-8 pt-6 pb-2">
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar sub-blocos..."
+                      value={subblockSearchQuery}
+                      onChange={(e) => setSubblockSearchQuery(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 placeholder:text-gray-400"
+                    />
+                    {subblockSearchQuery && (
+                      <button
+                        onClick={() => setSubblockSearchQuery('')}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Lista de Sub-blocos */}
+              <div className="p-8 overflow-y-auto max-h-[calc(90vh-280px)]">
+                {(() => {
+                  const filteredSubblocks = viewingBlock.policy_subblocks?.filter(subblock =>
+                    subblock.name.toLowerCase().includes(subblockSearchQuery.toLowerCase()) ||
+                    subblock.description?.toLowerCase().includes(subblockSearchQuery.toLowerCase())
+                  ) || [];
+
+                  if (viewingBlock.policy_subblocks && viewingBlock.policy_subblocks.length > 0) {
+                    if (filteredSubblocks.length === 0) {
+                      return (
+                        <div className="text-center py-16">
+                          <div className="inline-flex p-6 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl mb-6">
+                            <Search className="h-16 w-16 text-gray-300" />
+                          </div>
+                          <h3 className="text-xl font-bold text-gray-700 mb-3">
+                            Nenhum sub-bloco encontrado
+                          </h3>
+                          <p className="text-gray-500 mb-6">
+                            Não encontramos sub-blocos com "{subblockSearchQuery}"
+                          </p>
+                          <button
+                            onClick={() => setSubblockSearchQuery('')}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                          >
+                            <X className="h-5 w-5" />
+                            Limpar Busca
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {filteredSubblocks.map((subblock) => (
+                      <div
+                        key={subblock.id}
+                        onClick={() => openSubblockView(subblock)}
+                        className="group bg-gradient-to-br from-white to-gray-50/50 rounded-2xl border-2 border-gray-200/50 hover:border-[#EBA500]/30 hover:shadow-lg p-6 cursor-pointer transition-all duration-200"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <h3 className="text-lg font-bold text-[#373435] flex-1 pr-4">
+                            {subblock.name}
+                          </h3>
+                          <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-[#EBA500] group-hover:translate-x-1 transition-all" />
+                        </div>
+                        {subblock.description && (
+                          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                            {subblock.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 pt-3 border-t border-gray-200/50">
+                          <span className="text-xs text-gray-500">
+                            <FileText className="h-3 w-3 inline mr-1" />
+                            {subblock.policy_contents?.length || 0} conteúdos
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            <Paperclip className="h-3 w-3 inline mr-1" />
+                            {subblock.policy_attachments?.length || 0} anexos
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                    );
+                  } else {
+                    return (
+                      <div className="text-center py-16">
+                        <div className="inline-flex p-6 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl mb-6">
+                          <FolderOpen className="h-16 w-16 text-gray-300" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-700 mb-3">
+                          Nenhum sub-bloco criado
+                        </h3>
+                        <p className="text-gray-500 mb-6">
+                          Comece criando um sub-bloco para organizar este bloco
+                        </p>
+                        <button
+                          onClick={() => {
+                            closeBlockView();
+                            openSubblockModal(viewingBlock.id);
+                          }}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                        >
+                          <Plus className="h-5 w-5" />
+                          Criar Sub-bloco
+                        </button>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 🔥 NOVO: Modal de Visualização do Sub-bloco (mostra conteúdos e anexos) */}
+        {showSubblockViewModal && viewingSubblock && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+            <div 
+              className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+              style={{
+                animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              }}
+            >
+              {/* Header do Modal */}
+              <div className="p-8 border-b border-gray-200 bg-gradient-to-r from-[#EBA500]/5 to-transparent">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <button
+                      onClick={closeSubblockView}
+                      className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#EBA500] mb-4 transition-colors"
+                    >
+                      <ChevronRight className="h-4 w-4 rotate-180" />
+                      Voltar aos sub-blocos
+                    </button>
+                    <h2 className="text-3xl font-bold text-[#373435] mb-2">
+                      {viewingSubblock.name}
+                    </h2>
+                    {viewingSubblock.description && (
+                      <p className="text-gray-600 leading-relaxed">
+                        {viewingSubblock.description}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={closeSubblockView}
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all ml-4"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Conteúdos e Anexos */}
+              <div className="p-8 overflow-y-auto max-h-[calc(90vh-240px)]">
+                <div className="space-y-8">
+                  {/* Conteúdos */}
+                  {viewingSubblock.policy_contents && viewingSubblock.policy_contents.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-purple-100 rounded-xl">
+                          <FileText className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-[#373435]">Conteúdos</h3>
+                      </div>
+                      <div className="space-y-4">
+                        {viewingSubblock.policy_contents.map((content) => (
+                          <div
+                            key={content.id}
+                            className="bg-white rounded-2xl p-6 border-2 border-gray-200/50 hover:border-gray-300 transition-all"
+                          >
+                            <div className="flex justify-between items-start mb-4">
+                              <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold text-purple-700 bg-purple-100">
+                                {content.content_type}
+                              </span>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    closeSubblockView();
+                                    openContentModal(viewingSubblock.id, content);
+                                  }}
+                                  className="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all"
+                                  title="Editar"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteContent(content.id)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                  title="Excluir"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="prose prose-sm max-w-none">
+                              {renderContent(content)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Anexos */}
+                  {viewingSubblock.policy_attachments && viewingSubblock.policy_attachments.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-blue-100 rounded-xl">
+                          <Paperclip className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-[#373435]">Anexos</h3>
+                      </div>
+                      <div className="space-y-3">
+                        {viewingSubblock.policy_attachments.map((attachment) => (
+                          <div
+                            key={attachment.id}
+                            className="bg-white rounded-2xl p-5 border-2 border-gray-200/50 hover:border-gray-300 transition-all flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-4 flex-1">
+                              <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl">
+                                <FileIcon className="h-6 w-6 text-blue-600" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-semibold text-gray-900 mb-1">{attachment.file_name}</p>
+                                <p className="text-sm text-gray-500">
+                                  {formatFileSize(attachment.file_size)} • {formatDate(attachment.uploaded_at)}
+                                </p>
+                                {attachment.description && (
+                                  <p className="text-sm text-gray-600 mt-2">{attachment.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <a
+                                href={attachment.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                title="Download"
+                              >
+                                <Download className="h-5 w-5" />
+                              </a>
+                              <button
+                                onClick={() => handleDeleteAttachment(attachment)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                title="Excluir"
+                              >
+                                <Trash2 className="h-5 w-5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty state */}
+                  {(!viewingSubblock.policy_contents || viewingSubblock.policy_contents.length === 0) &&
+                   (!viewingSubblock.policy_attachments || viewingSubblock.policy_attachments.length === 0) && (
+                    <div className="text-center py-16">
+                      <div className="inline-flex p-6 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl mb-6">
+                        <FileText className="h-16 w-16 text-gray-300" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-700 mb-3">
+                        Nenhum conteúdo adicionado
+                      </h3>
+                      <p className="text-gray-500 mb-6">
+                        Adicione conteúdos ou anexos a este sub-bloco
+                      </p>
+                      <div className="flex items-center justify-center gap-3">
+                        <button
+                          onClick={() => {
+                            closeSubblockView();
+                            openContentModal(viewingSubblock.id);
+                          }}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg hover:shadow-purple-500/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                        >
+                          <FileText className="h-5 w-5" />
+                          Adicionar Conteúdo
+                        </button>
+                        <button
+                          onClick={() => {
+                            closeSubblockView();
+                            openAttachmentModal(viewingSubblock.id);
+                          }}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg hover:shadow-blue-500/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                        >
+                          <Paperclip className="h-5 w-5" />
+                          Adicionar Anexo
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Modal de Bloco - Modernizado */}
         {showBlockModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+            <div 
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8"
+              style={{
+                animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              }}
+            >
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 rounded-2xl">
@@ -1076,8 +1483,13 @@ export default function OperationalPoliciesPage() {
 
         {/* Modal de Sub-bloco - Modernizado */}
         {showSubblockModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+            <div 
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8"
+              style={{
+                animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              }}
+            >
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-2xl">
@@ -1157,8 +1569,13 @@ export default function OperationalPoliciesPage() {
 
         {/* Modal de Conteúdo - Modernizado */}
         {showContentModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full p-8 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+            <div 
+              className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full p-8 max-h-[90vh] overflow-y-auto"
+              style={{
+                animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              }}
+            >
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-2xl">
@@ -1442,8 +1859,13 @@ export default function OperationalPoliciesPage() {
 
         {/* Modal de Anexo - Modernizado */}
         {showAttachmentModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+            <div 
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8"
+              style={{
+                animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              }}
+            >
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-2xl">
@@ -1543,5 +1965,6 @@ export default function OperationalPoliciesPage() {
       </div>
       </div>
     </div>
+    </>
   )
 }
