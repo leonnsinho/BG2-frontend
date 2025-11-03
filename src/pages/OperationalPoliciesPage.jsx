@@ -545,13 +545,13 @@ export default function OperationalPoliciesPage() {
   const renderContent = (content) => {
     switch (content.content_type) {
       case 'text':
-        return <p className="text-gray-700 whitespace-pre-wrap">{content.content_data.text}</p>
+        return <p className="text-gray-700 whitespace-pre-wrap break-words overflow-wrap-anywhere">{content.content_data.text}</p>
       
       case 'list':
         return (
           <ul className="list-disc list-inside space-y-1 text-gray-700">
             {content.content_data.items?.map((item, index) => (
-              <li key={index}>{item}</li>
+              <li key={index} className="break-words">{item}</li>
             ))}
           </ul>
         )
@@ -559,7 +559,7 @@ export default function OperationalPoliciesPage() {
       case 'heading':
         const HeadingTag = `h${content.content_data.level || 3}`
         return React.createElement(HeadingTag, {
-          className: `font-bold text-gray-900 ${content.content_data.level === 2 ? 'text-xl' : 'text-lg'}`
+          className: `font-bold text-gray-900 break-words ${content.content_data.level === 2 ? 'text-xl' : 'text-lg'}`
         }, content.content_data.text)
       
       case 'table':
@@ -569,7 +569,7 @@ export default function OperationalPoliciesPage() {
               <thead className="bg-gray-50">
                 <tr>
                   {content.content_data.headers?.map((header, index) => (
-                    <th key={index} className="px-4 py-2 border border-gray-300 text-left text-sm font-semibold text-gray-900">
+                    <th key={index} className="px-4 py-2 border border-gray-300 text-left text-sm font-semibold text-gray-900 break-words">
                       {header}
                     </th>
                   ))}
@@ -579,7 +579,7 @@ export default function OperationalPoliciesPage() {
                 {content.content_data.rows?.map((row, rowIndex) => (
                   <tr key={rowIndex}>
                     {row.map((cell, cellIndex) => (
-                      <td key={cellIndex} className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
+                      <td key={cellIndex} className="px-4 py-2 border border-gray-300 text-sm text-gray-700 break-words">
                         {cell}
                       </td>
                     ))}
@@ -867,13 +867,13 @@ export default function OperationalPoliciesPage() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 flex-1">
-                          <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl">
+                          <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl flex-shrink-0">
                             <span className="text-3xl">{block.icon}</span>
                           </div>
-                          <div className="flex-1">
-                            <h3 className="text-xl font-bold text-gray-900 mb-0.5">{block.name}</h3>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-xl font-bold text-gray-900 mb-0.5 break-words">{block.name}</h3>
                             {block.description && (
-                              <p className="text-sm text-gray-500 leading-relaxed">{block.description}</p>
+                              <p className="text-sm text-gray-500 leading-relaxed break-words">{block.description}</p>
                             )}
                             <div className="flex items-center gap-4 mt-2">
                               <span className="text-xs text-gray-400">
@@ -953,7 +953,7 @@ export default function OperationalPoliciesPage() {
                             {block.icon && (
                               <div className="text-4xl mb-3">{block.icon}</div>
                             )}
-                            <h3 className="text-lg font-bold text-[#373435] mb-2 line-clamp-2">
+                            <h3 className="text-lg font-bold text-[#373435] mb-2 line-clamp-2 break-words">
                               {block.name}
                             </h3>
                           </div>
@@ -961,7 +961,7 @@ export default function OperationalPoliciesPage() {
 
                         {/* Descrição */}
                         {block.description && (
-                          <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                          <p className="text-sm text-gray-600 mb-4 line-clamp-3 break-words">
                             {block.description}
                           </p>
                         )}
@@ -1041,14 +1041,14 @@ export default function OperationalPoliciesPage() {
                 style={{ borderLeft: `6px solid ${viewingBlock.color}` }}
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="text-5xl">{viewingBlock.icon}</div>
-                    <div className="flex-1">
-                      <h2 className="text-3xl font-bold text-[#373435] mb-2">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="text-5xl flex-shrink-0">{viewingBlock.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-3xl font-bold text-[#373435] mb-2 break-words">
                         {viewingBlock.name}
                       </h2>
                       {viewingBlock.description && (
-                        <p className="text-gray-600 leading-relaxed">
+                        <p className="text-gray-600 leading-relaxed break-words">
                           {viewingBlock.description}
                         </p>
                       )}
@@ -1056,7 +1056,7 @@ export default function OperationalPoliciesPage() {
                   </div>
                   <button
                     onClick={closeBlockView}
-                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all flex-shrink-0"
                   >
                     <X className="h-6 w-6" />
                   </button>
@@ -1128,13 +1128,13 @@ export default function OperationalPoliciesPage() {
                         className="group bg-gradient-to-br from-white to-gray-50/50 rounded-2xl border-2 border-gray-200/50 hover:border-[#EBA500]/30 hover:shadow-lg p-6 cursor-pointer transition-all duration-200"
                       >
                         <div className="flex items-start justify-between mb-3">
-                          <h3 className="text-lg font-bold text-[#373435] flex-1 pr-4">
+                          <h3 className="text-lg font-bold text-[#373435] flex-1 pr-4 break-words">
                             {subblock.name}
                           </h3>
-                          <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-[#EBA500] group-hover:translate-x-1 transition-all" />
+                          <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-[#EBA500] group-hover:translate-x-1 transition-all flex-shrink-0" />
                         </div>
                         {subblock.description && (
-                          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                          <p className="text-sm text-gray-600 mb-4 line-clamp-2 break-words">
                             {subblock.description}
                           </p>
                         )}
@@ -1203,11 +1203,11 @@ export default function OperationalPoliciesPage() {
                       <ChevronRight className="h-4 w-4 rotate-180" />
                       Voltar aos sub-blocos
                     </button>
-                    <h2 className="text-3xl font-bold text-[#373435] mb-2">
+                    <h2 className="text-3xl font-bold text-[#373435] mb-2 break-words">
                       {viewingSubblock.name}
                     </h2>
                     {viewingSubblock.description && (
-                      <p className="text-gray-600 leading-relaxed">
+                      <p className="text-gray-600 leading-relaxed break-words">
                         {viewingSubblock.description}
                       </p>
                     )}
@@ -1237,7 +1237,7 @@ export default function OperationalPoliciesPage() {
                         {viewingSubblock.policy_contents.map((content) => (
                           <div
                             key={content.id}
-                            className="bg-white rounded-2xl p-6 border-2 border-gray-200/50 hover:border-gray-300 transition-all"
+                            className="bg-white rounded-2xl p-6 border-2 border-gray-200/50 hover:border-gray-300 transition-all overflow-hidden"
                           >
                             <div className="flex justify-between items-start mb-4">
                               <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold text-purple-700 bg-purple-100">
@@ -1263,7 +1263,7 @@ export default function OperationalPoliciesPage() {
                                 </button>
                               </div>
                             </div>
-                            <div className="prose prose-sm max-w-none">
+                            <div className="prose prose-sm max-w-none overflow-hidden break-words">
                               {renderContent(content)}
                             </div>
                           </div>
@@ -1285,23 +1285,23 @@ export default function OperationalPoliciesPage() {
                         {viewingSubblock.policy_attachments.map((attachment) => (
                           <div
                             key={attachment.id}
-                            className="bg-white rounded-2xl p-5 border-2 border-gray-200/50 hover:border-gray-300 transition-all flex items-center justify-between"
+                            className="bg-white rounded-2xl p-5 border-2 border-gray-200/50 hover:border-gray-300 transition-all flex items-center justify-between overflow-hidden"
                           >
-                            <div className="flex items-center gap-4 flex-1">
-                              <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl">
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                              <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl flex-shrink-0">
                                 <FileIcon className="h-6 w-6 text-blue-600" />
                               </div>
-                              <div className="flex-1">
-                                <p className="font-semibold text-gray-900 mb-1">{attachment.file_name}</p>
-                                <p className="text-sm text-gray-500">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-gray-900 mb-1 break-words">{attachment.file_name}</p>
+                                <p className="text-sm text-gray-500 break-words">
                                   {formatFileSize(attachment.file_size)} • {formatDate(attachment.uploaded_at)}
                                 </p>
                                 {attachment.description && (
-                                  <p className="text-sm text-gray-600 mt-2">{attachment.description}</p>
+                                  <p className="text-sm text-gray-600 mt-2 break-words">{attachment.description}</p>
                                 )}
                               </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-shrink-0">
                               <a
                                 href={attachment.file_url}
                                 target="_blank"
