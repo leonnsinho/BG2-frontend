@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock, CheckCircle, XCircle, Loader, Award } from 'lucide-react'
+import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock, CheckCircle, XCircle, Loader, Award, RotateCcw } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
 import { usePriorityProcesses } from '../../hooks/usePriorityProcesses2'
@@ -9,6 +9,8 @@ import TaskSidebar from './TaskSidebar'
 import ProcessProgressBar from '../process/ProcessProgressBar'
 import MaturityConfirmationModal from '../process/MaturityConfirmationModal'
 import SuperAdminBanner from '../SuperAdminBanner'
+import DraggableProcessList from './DraggableProcessList'
+import toast from 'react-hot-toast'
 import { calculateProcessProgress } from '../../services/processMaturityService'
 import { useSearchParams } from 'react-router-dom' // 🔥 NOVO: Para ler query params
 
@@ -464,6 +466,101 @@ const PlanejamentoEstrategico = () => {
     }
   }
 
+  // ====== Funções do Sistema de Amadurecimento ======
+  // ====== Funções do Sistema de Ordenação Manual ======
+  
+  const handleProcessReorder = async (newProcessos) => {
+    console.log('🔄 Reordenando processos:', newProcessos.map((p, i) => `${i + 1}. ${p.nome}`))
+    
+    // Atualizar UI imediatamente (optimistic update)
+    setProcessos(newProcessos)
+    
+    try {
+      // Salvar nova ordem no banco de dados
+      const updates = newProcessos.map((processo, index) => ({
+        process_id: processo.id,
+        company_id: companyId,
+        strategic_priority_order: index + 1 // 1, 2, 3, 4, 5
+      }))
+      
+      console.log('💾 Salvando ordem no banco:', updates)
+      
+      // Atualizar todos os process_evaluations de uma vez
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('process_evaluations')
+          .update({ strategic_priority_order: update.strategic_priority_order })
+          .eq('process_id', update.process_id)
+          .eq('company_id', update.company_id)
+        
+        if (error) {
+          console.error('❌ Erro ao salvar ordem:', error)
+          throw error
+        }
+      }
+      
+      console.log('✅ Ordem salva com sucesso!')
+      toast.success('✅ Ordem dos processos atualizada!', {
+        icon: '📌',
+        duration: 2000
+      })
+      
+      // Recarregar processos para confirmar mudança
+      if (refetch) {
+        refetch()
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao salvar reordenação:', error)
+      toast.error('Erro ao salvar ordem dos processos')
+      
+      // Reverter UI em caso de erro
+      if (jornadaSelecionada) {
+        const processosOriginais = getProcessesByJourney(jornadaSelecionada.id)
+        setProcessos(processosOriginais)
+      }
+    }
+  }
+  
+  const handleResetOrder = async () => {
+    const confirmacao = window.confirm(
+      '🔄 Resetar Ordenação Manual?\n\n' +
+      'Isso irá remover a ordenação customizada e voltar para a ordenação automática por priority_score.\n\n' +
+      'Deseja continuar?'
+    )
+    
+    if (!confirmacao) return
+    
+    try {
+      console.log('🔄 Resetando ordem manual para jornada:', jornadaSelecionada?.nome)
+      
+      // Chamar função helper do banco que reseta a ordem
+      const { error } = await supabase.rpc('reset_strategic_priority_order', {
+        p_company_id: companyId
+      })
+      
+      if (error) {
+        console.error('❌ Erro ao resetar ordem:', error)
+        throw error
+      }
+      
+      console.log('✅ Ordem resetada com sucesso!')
+      toast.success('✅ Ordenação resetada! Usando prioridade automática.', {
+        icon: '🔄',
+        duration: 3000
+      })
+      
+      // Recarregar processos
+      if (refetch) {
+        refetch()
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao resetar ordenação:', error)
+      toast.error('Erro ao resetar ordenação')
+    }
+  }
+  
   // ====== Funções do Sistema de Amadurecimento ======
   
   const handleProgressUpdate = (processId, progressData) => {
@@ -995,28 +1092,45 @@ const PlanejamentoEstrategico = () => {
       {jornadaSelecionada && (
         <div className="space-y-8">
           {/* Header da Seção de Processos */}
-          <div className="flex items-center space-x-6">
-            <div className={`w-12 h-12 rounded-2xl ${getJornadaCores(jornadaSelecionada.id).iconBg} shadow-lg flex items-center justify-center`}>
-              <div className="text-white">
-                {getJornadaIcon(jornadaSelecionada.id)}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <div className={`w-12 h-12 rounded-2xl ${getJornadaCores(jornadaSelecionada.id).iconBg} shadow-lg flex items-center justify-center`}>
+                <div className="text-white">
+                  {getJornadaIcon(jornadaSelecionada.id)}
+                </div>
+              </div>
+              <div>
+                <h2 className={`text-3xl font-bold ${getJornadaCores(jornadaSelecionada.id).text}`}>
+                  Processos Prioritários
+                </h2>
+                <p className="text-[#373435]/70 text-lg font-medium">
+                  {jornadaSelecionada.nome} - {processos.length} processos ativos
+                </p>
               </div>
             </div>
-            <div>
-              <h2 className={`text-3xl font-bold ${getJornadaCores(jornadaSelecionada.id).text}`}>
-                Processos Prioritários
-              </h2>
-              <p className="text-[#373435]/70 text-lg font-medium">
-                {jornadaSelecionada.nome} - {processos.length} processos ativos
-              </p>
-            </div>
+            
+            {/* Botão Reset Ordenação */}
+            {processos.some(p => p.strategic_priority_order != null) && (
+              <button
+                onClick={handleResetOrder}
+                className="flex items-center space-x-2 px-4 py-2 bg-white border-2 border-purple-500/30 hover:border-purple-500 text-purple-600 hover:bg-purple-50 rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg"
+                title="Resetar para ordenação automática"
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span className="font-semibold text-sm">Resetar Ordenação</span>
+              </button>
+            )}
           </div>
 
-          {/* Grid dos 5 processos elegante */}
-          <div className="grid grid-cols-5 gap-6">
-            {processos.map((processo) => {
+          {/* Grid dos 5 processos elegante com Drag & Drop */}
+          <DraggableProcessList
+            processos={processos}
+            onReorder={handleProcessReorder}
+            cores={getJornadaCores(jornadaSelecionada.id)}
+            renderProcessCard={(processo, index) => {
               const coresJornada = getJornadaCores(jornadaSelecionada.id)
               return (
-                <div key={processo.id} className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#373435]/10 hover:border-[#EBA500]/30 overflow-hidden flex flex-col h-fit min-h-[500px]">
+                <div className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#373435]/10 hover:border-[#EBA500]/30 overflow-hidden flex flex-col h-fit min-h-[500px]">
                   {/* Header do Processo Elegante */}
                   <div className="relative p-4 border-b border-[#373435]/10 bg-[#EBA500]/5 flex-shrink-0">
                     {/* Background Pattern */}
@@ -1038,9 +1152,16 @@ const PlanejamentoEstrategico = () => {
                         <span className="font-medium">
                           {(tarefas[processo.id] || []).length} tarefas
                         </span>
-                        <span className={`px-2 py-1 bg-gray-100 text-[#373435] rounded-full font-medium text-xs whitespace-nowrap`}>
-                          Prioridade {processo.prioridade}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 bg-gray-100 text-[#373435] rounded-full font-medium text-xs whitespace-nowrap`}>
+                            Prioridade {processo.prioridade}
+                          </span>
+                          {processo.priority_score && (
+                            <span className="px-2 py-1 bg-[#EBA500]/10 text-[#EBA500] rounded-full font-bold text-xs whitespace-nowrap border border-[#EBA500]/30">
+                              ⭐ {processo.priority_score.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       
                       {/* Botão Adicionar Tarefa Elegante */}
@@ -1451,9 +1572,9 @@ const PlanejamentoEstrategico = () => {
                   )}
                 </div>
               </div>
-            )
-          })}
-          </div>
+                )
+              }}
+            />
         </div>
       )}
 

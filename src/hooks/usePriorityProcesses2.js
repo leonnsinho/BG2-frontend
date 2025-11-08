@@ -98,7 +98,7 @@ export const usePriorityProcesses = (overrideCompanyId = null) => {
             const processIds = allProcesses.map(p => p.id)
             const { data: evaluations } = await supabase
               .from('process_evaluations')
-              .select('process_id, priority_score, has_process')
+              .select('process_id, priority_score, has_process, strategic_priority_order')
               .in('process_id', processIds)
               .eq('company_id', companyId)
               .eq('has_process', false) // 🔥 FILTRAR: apenas processos NÃO amadurecidos
@@ -117,10 +117,23 @@ export const usePriorityProcesses = (overrideCompanyId = null) => {
                 return {
                   id: process.id, // ID já é UUID
                   name: process.name,
-                  priority_score: evaluation?.priority_score || 0
+                  priority_score: evaluation?.priority_score || 0,
+                  strategic_priority_order: evaluation?.strategic_priority_order || null
                 }
               })
-              .sort((a, b) => b.priority_score - a.priority_score)
+              // 🔥 ORDENAÇÃO HÍBRIDA: ordem manual tem prioridade sobre score automático
+              .sort((a, b) => {
+                // Se ambos têm ordem manual, ordenar por ela
+                if (a.strategic_priority_order != null && b.strategic_priority_order != null) {
+                  return a.strategic_priority_order - b.strategic_priority_order
+                }
+                // Se só A tem ordem manual, A vem primeiro
+                if (a.strategic_priority_order != null) return -1
+                // Se só B tem ordem manual, B vem primeiro
+                if (b.strategic_priority_order != null) return 1
+                // Se nenhum tem ordem manual, ordenar por priority_score
+                return b.priority_score - a.priority_score
+              })
               .slice(0, 5) // Top 5
             
             if (processesWithScores.length > 0) {
@@ -129,6 +142,7 @@ export const usePriorityProcesses = (overrideCompanyId = null) => {
                 nome: p.name,
                 prioridade: index + 1,
                 priority_score: p.priority_score,
+                strategic_priority_order: p.strategic_priority_order,
                 journey_id: journey.id
               }))
               
