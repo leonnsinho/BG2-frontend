@@ -205,10 +205,15 @@ const ProcessEvaluationForm = () => {
         responsible_user_id: formData.responsible_user_id || null
       }
 
+      // 🔥 NOTA: O priority_score será calculado automaticamente pela trigger do banco
+      // Fórmula: (Importância × Urgência) ÷ (6 - Facilidade)
+      // A trigger foi corrigida no arquivo: scripts-sql/fix_priority_score_formula.sql
+
       console.log('🔄 Tentando salvar avaliação:', {
         dataToSave,
         userProfile: profile,
-        isUpdate: !!evaluation
+        isUpdate: !!evaluation,
+        nota: 'priority_score será calculado pela trigger do banco'
       })
 
       let result

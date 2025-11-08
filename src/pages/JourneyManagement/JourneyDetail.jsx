@@ -803,9 +803,16 @@ const JourneyDetail = () => {
                     <p className="text-sm font-medium">
                       {priorityScore > 0 ? getPriorityLabel(priorityScore) : 'Necessária avaliação completa'}
                     </p>
-                    {priorityScore === 0 && (
+                    {/* 🔥 Só mostrar mensagem de "avaliar" se realmente NÃO tiver avaliação */}
+                    {priorityScore === 0 && !evaluation.business_importance && !evaluation.implementation_urgency && !evaluation.implementation_ease && (
                       <p className="text-xs text-gray-500 mt-2">
                         Avalie importância, urgência e facilidade para calcular
+                      </p>
+                    )}
+                    {/* 🔥 Se tiver avaliação mas nota = 0, mostrar outra mensagem */}
+                    {priorityScore === 0 && (evaluation.business_importance || evaluation.implementation_urgency || evaluation.implementation_ease) && (
+                      <p className="text-xs text-orange-600 mt-2 font-medium">
+                        ⚠️ Avaliação incompleta - preencha todos os critérios
                       </p>
                     )}
                   </div>
@@ -1167,17 +1174,27 @@ const JourneyDetail = () => {
                       
                       <div className="flex items-center space-x-4 ml-6">
                         {evaluation ? (
-                          <div className="text-right">
+                          <div className="flex items-center space-x-2">
                             {evaluation.has_process === true ? (
                               <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-blue-100 text-blue-800 border border-blue-300">
                                 <span className="mr-2">🏆</span>
                                 Processo Amadurecido
                               </div>
                             ) : (
-                              <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-green-100 text-green-800 border border-green-200">
-                                <span className="mr-2">✅</span>
-                                Processo Avaliado
-                              </div>
+                              <>
+                                <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-green-100 text-green-800 border border-green-200">
+                                  <span className="mr-2">✅</span>
+                                  Processo Avaliado
+                                </div>
+                                
+                                {/* 🔥 NOVO: Badge de Nota de Priorização */}
+                                {evaluation.priority_score && (
+                                  <div className="inline-flex items-center px-3 py-2 rounded-2xl text-sm font-bold bg-[#EBA500] text-white border border-[#EBA500]/30 shadow-sm">
+                                    <span className="mr-1.5">⭐</span>
+                                    {evaluation.priority_score.toFixed(1)}
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         ) : company ? (
