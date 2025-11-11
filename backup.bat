@@ -50,12 +50,42 @@ git commit -m "[%mydate% %mytime%] %commit_message%"
 
 if %errorlevel% equ 0 (
     echo.
-    echo ✅ Backup realizado com sucesso!
+    echo ✅ Commit local realizado com sucesso!
     echo 📅 Data/Hora: %mydate% %mytime%
     echo 💬 Mensagem: %commit_message%
     echo.
-    echo 📊 Status atual do repositório:
-    git log --oneline -5
+
+    :: Verificar e configurar remote
+    echo 🌐 Verificando configuração do repositório remoto...
+    git remote get-url origin >nul 2>&1
+    if errorlevel 1 (
+        echo 🔧 Configurando repositório remoto BG2...
+        git remote add origin https://github.com/leonnsinho/BG2.git
+    ) else (
+        :: Atualizar URL do remote se necessário
+        git remote set-url origin https://github.com/leonnsinho/BG2.git
+    )
+
+    :: Fazer push para o repositório remoto
+    echo 🚀 Enviando backup para o repositório remoto...
+    git push -u origin main
+
+    if %errorlevel% equ 0 (
+        echo.
+        echo ✅ Backup enviado com sucesso para https://github.com/leonnsinho/BG2
+        echo.
+        echo 📊 Últimos commits:
+        git log --oneline -5
+    ) else (
+        echo.
+        echo ⚠️  Commit local realizado, mas houve erro ao enviar para o repositório remoto.
+        echo    Possíveis causas:
+        echo    - Verifique suas credenciais do GitHub
+        echo    - Confirme que você tem acesso ao repositório BG2
+        echo    - Verifique sua conexão com a internet
+        echo.
+        echo 💡 Você pode tentar manualmente com: git push -u origin main
+    )
 ) else (
     echo ❌ Erro ao fazer backup.
 )
