@@ -1568,29 +1568,62 @@ export default function OperationalPoliciesPage() {
                         {filteredSubblocks.map((subblock) => (
                       <div
                         key={subblock.id}
-                        onClick={() => openSubblockView(subblock)}
-                        className="group bg-gradient-to-br from-white to-gray-50/50 rounded-2xl border-2 border-gray-200/50 hover:border-[#EBA500]/30 hover:shadow-lg p-6 cursor-pointer transition-all duration-200"
+                        className="group bg-gradient-to-br from-white to-gray-50/50 rounded-2xl border-2 border-gray-200/50 hover:border-[#EBA500]/30 hover:shadow-lg p-6 transition-all duration-200 relative"
                       >
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="text-lg font-bold text-[#373435] flex-1 pr-4 break-words">
-                            {subblock.name}
-                          </h3>
-                          <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-[#EBA500] group-hover:translate-x-1 transition-all flex-shrink-0" />
+                        {/* Botões de Ação (aparecem no hover) */}
+                        <div className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openSubblockModal(viewingBlock.id, subblock);
+                            }}
+                            className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+                            title="Editar sub-bloco"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSubblock(subblock.id);
+                            }}
+                            className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+                            title="Deletar sub-bloco"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
-                        {subblock.description && (
-                          <p className="text-sm text-gray-600 mb-4 line-clamp-2 break-words">
-                            {subblock.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-4 pt-3 border-t border-gray-200/50">
-                          <span className="text-xs text-gray-500">
-                            <FileText className="h-3 w-3 inline mr-1" />
-                            {subblock.policy_contents?.length || 0} conteúdos
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            <Paperclip className="h-3 w-3 inline mr-1" />
-                            {subblock.policy_attachments?.length || 0} anexos
-                          </span>
+
+                        {/* Card clicável para abrir visualização */}
+                        <div
+                          onClick={() => openSubblockView(subblock)}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="text-lg font-bold text-[#373435] flex-1 pr-16 break-words">
+                              {subblock.name}
+                            </h3>
+                            <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-[#EBA500] group-hover:translate-x-1 transition-all flex-shrink-0" />
+                          </div>
+                          {subblock.description && (
+                            <p className="text-sm text-gray-600 mb-4 line-clamp-2 break-words">
+                              {subblock.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-4 pt-3 border-t border-gray-200/50">
+                            <span className="text-xs text-gray-500">
+                              <Layers className="h-3 w-3 inline mr-1" />
+                              {subblock.children?.length || 0} sub-blocos
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              <FileText className="h-3 w-3 inline mr-1" />
+                              {subblock.policy_contents?.length || 0} conteúdos
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              <Paperclip className="h-3 w-3 inline mr-1" />
+                              {subblock.policy_attachments?.length || 0} anexos
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1656,12 +1689,22 @@ export default function OperationalPoliciesPage() {
                       </p>
                     )}
                   </div>
-                  <button
-                    onClick={closeSubblockView}
-                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all ml-4"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
+                  <div className="flex items-center gap-2 ml-4">
+                    <button
+                      onClick={() => handleDeleteSubblock(viewingSubblock.id)}
+                      className="group flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg hover:shadow-red-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
+                      title="Deletar sub-bloco"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Deletar
+                    </button>
+                    <button
+                      onClick={closeSubblockView}
+                      className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
