@@ -545,7 +545,7 @@ const DashboardPage = memo(() => {
           {/* Saudação personalizada */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-[#373435] mb-2">
-              {getGreeting()}, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin'}!
+              {getGreeting()}, {profile?.full_name || user?.email?.split('@')[0] || 'Admin'}!
             </h1>
             <p className="text-lg text-neutral-600">
               Bem-vindo ao painel administrativo do sistema
@@ -704,7 +704,7 @@ const DashboardPage = memo(() => {
           {/* Saudação personalizada */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-[#373435] mb-2">
-              {getGreeting()}, {user?.user_metadata?.full_name || profile?.full_name || user?.email?.split('@')[0] || 'Admin'}!
+              {getGreeting()}, {profile?.full_name || user?.email?.split('@')[0] || 'Admin'}!
             </h1>
             <p className="text-lg text-neutral-600">
               Painel administrativo - {activeCompany?.companies?.name || activeCompany?.name || 'Sua Empresa'}
