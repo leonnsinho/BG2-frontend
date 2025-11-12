@@ -57,6 +57,7 @@ const SettingsPage = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [avatarSignedUrl, setAvatarSignedUrl] = useState('') // 🔥 NOVO: URL assinada do avatar
 
   // Estados para os formulários
   const [profileForm, setProfileForm] = useState({
@@ -76,6 +77,35 @@ const SettingsPage = () => {
     language: 'pt-BR',
     timezone: 'America/Sao_Paulo'
   })
+
+  // 🔥 NOVO: Gerar URL assinada para exibir avatar
+  const getAvatarSignedUrl = async (avatarPath) => {
+    if (!avatarPath) {
+      setAvatarSignedUrl('')
+      return
+    }
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('profile-avatars')
+        .createSignedUrl(avatarPath, 3600) // 1 hora de validade
+
+      if (error) throw error
+      setAvatarSignedUrl(data.signedUrl)
+    } catch (error) {
+      console.error('Erro ao gerar URL do avatar:', error)
+      setAvatarSignedUrl('')
+    }
+  }
+
+  // 🔥 NOVO: Atualizar URL assinada quando avatar mudar
+  React.useEffect(() => {
+    if (profile?.avatar_url) {
+      getAvatarSignedUrl(profile.avatar_url)
+    } else {
+      setAvatarSignedUrl('')
+    }
+  }, [profile?.avatar_url])
 
   // Atualizar perfil
   const handleProfileUpdate = async (e) => {
@@ -172,38 +202,63 @@ const SettingsPage = () => {
     const file = event.target.files[0]
     if (!file) return
 
+    // Validar tipo de arquivo
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      toast.error('Formato inválido. Use JPG, PNG, GIF ou WebP')
+      return
+    }
+
+    // Validar tamanho (5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB em bytes
+    if (file.size > maxSize) {
+      toast.error('Arquivo muito grande. Máximo: 5MB')
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`
-      const filePath = `avatars/${fileName}`
+      // Deletar avatar antigo se existir
+      if (profileForm.avatar_url) {
+        const oldPath = profileForm.avatar_url
+        await supabase.storage
+          .from('profile-avatars')
+          .remove([oldPath])
+      }
 
+      // Nome do arquivo: user_id/avatar.ext
+      const fileExt = file.name.split('.').pop()
+      const fileName = `avatar.${fileExt}`
+      const filePath = `${user.id}/${fileName}`
+
+      // Upload do novo avatar
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file)
+        .from('profile-avatars')
+        .upload(filePath, file, {
+          upsert: true, // Substitui se já existir
+          contentType: file.type
+        })
 
       if (uploadError) throw uploadError
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath)
-
+      // Atualizar perfil com o path do avatar (não URL pública, pois bucket é privado)
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          avatar_url: publicUrl,
+          avatar_url: filePath, // Salvar apenas o path
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
 
       if (updateError) throw updateError
 
-      setProfileForm(prev => ({ ...prev, avatar_url: publicUrl }))
+      setProfileForm(prev => ({ ...prev, avatar_url: filePath }))
       await refreshProfile()
-      toast.success('Avatar atualizado com sucesso!')
+      toast.success('Foto de perfil atualizada com sucesso!')
     } catch (error) {
-      toast.error('Erro ao fazer upload do avatar: ' + error.message)
+      console.error('Erro ao fazer upload:', error)
+      toast.error('Erro ao fazer upload da foto: ' + error.message)
     } finally {
       setIsLoading(false)
     }
@@ -211,9 +266,25 @@ const SettingsPage = () => {
 
   // Remover avatar
   const handleRemoveAvatar = async () => {
+    if (!profileForm.avatar_url) {
+      toast.error('Nenhuma foto para remover')
+      return
+    }
+
     setIsLoading(true)
 
     try {
+      // Deletar arquivo do storage
+      const { error: deleteError } = await supabase.storage
+        .from('profile-avatars')
+        .remove([profileForm.avatar_url])
+
+      if (deleteError) {
+        console.warn('Erro ao deletar arquivo:', deleteError)
+        // Continuar mesmo se falhar (arquivo pode não existir)
+      }
+
+      // Atualizar perfil
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -226,9 +297,10 @@ const SettingsPage = () => {
 
       setProfileForm(prev => ({ ...prev, avatar_url: '' }))
       await refreshProfile()
-      toast.success('Avatar removido com sucesso!')
+      toast.success('Foto de perfil removida com sucesso!')
     } catch (error) {
-      toast.error('Erro ao remover avatar: ' + error.message)
+      console.error('Erro ao remover:', error)
+      toast.error('Erro ao remover foto: ' + error.message)
     } finally {
       setIsLoading(false)
     }
@@ -304,24 +376,30 @@ const SettingsPage = () => {
               {/* Avatar */}
               <div className="flex items-center space-x-6 mb-8">
                 <div className="relative group">
-                  {profileForm.avatar_url ? (
+                  {avatarSignedUrl ? (
                     <img
-                      src={profileForm.avatar_url}
-                      alt="Avatar"
-                      className="h-24 w-24 rounded-full object-cover border-4 border-white shadow-lg"
+                      src={avatarSignedUrl}
+                      alt="Foto de perfil"
+                      className="h-24 w-24 rounded-full object-cover border-4 border-white shadow-lg ring-2 ring-[#EBA500]/20"
+                      onError={(e) => {
+                        // Fallback se a imagem não carregar
+                        e.target.style.display = 'none'
+                        e.target.nextElementSibling.style.display = 'flex'
+                      }}
                     />
-                  ) : (
-                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 flex items-center justify-center border-4 border-white shadow-lg">
-                      <User className="h-12 w-12 text-[#EBA500]" />
+                  ) : null}
+                  {!avatarSignedUrl && (
+                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-[#EBA500] to-[#d99500] flex items-center justify-center border-4 border-white shadow-lg text-white font-bold text-3xl">
+                      {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : <User className="h-12 w-12" />}
                     </div>
                   )}
                   
-                  <label className="absolute bottom-0 right-0 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 rounded-full p-2 text-white cursor-pointer hover:shadow-lg transform hover:scale-110 active:scale-95 transition-all duration-200">
+                  <label className="absolute bottom-0 right-0 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 rounded-full p-2 text-white cursor-pointer hover:shadow-lg transform hover:scale-110 active:scale-95 transition-all duration-200 ring-2 ring-white">
                     <Camera className="h-4 w-4" />
                     <input
                       type="file"
                       className="hidden"
-                      accept="image/*"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                       onChange={handleAvatarUpload}
                       disabled={isLoading}
                     />
@@ -330,11 +408,11 @@ const SettingsPage = () => {
                 
                 <div>
                   <h4 className="text-sm font-medium text-[#373435]">Foto do Perfil</h4>
-                  <p className="text-sm text-gray-600">JPG, GIF ou PNG. Máximo 1MB.</p>
-                  {profileForm.avatar_url && (
+                  <p className="text-sm text-gray-600">JPG, PNG, GIF ou WebP. Máximo 5MB.</p>
+                  {avatarSignedUrl && (
                     <button
                       onClick={handleRemoveAvatar}
-                      className="mt-2 text-sm text-red-600 hover:text-red-700 flex items-center hover:underline transition-all duration-200"
+                      className="mt-2 text-sm text-red-600 hover:text-red-700 flex items-center hover:underline transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={isLoading}
                     >
                       <Trash2 className="h-4 w-4 mr-1" />

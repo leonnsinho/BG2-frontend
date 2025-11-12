@@ -285,7 +285,7 @@ export function DashboardPage() {
   const userInfo = useMemo(() => {
     if (!profile && !user) return { name: 'Carregando...', roleDisplay: '' }
     
-    const name = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin'
+    const name = profile?.full_name || user?.email?.split('@')[0] || 'Admin'
     
     const roleMap = {
       'super_admin': 'Super Administrador',

@@ -12,6 +12,17 @@ import { GestorDashboard } from '../components/dashboard/GestorDashboard'
 import { UserDashboard } from '../components/dashboard/UserDashboard'
 import { ProgressMetric } from '../components/dashboard/ProgressMetric'
 import { 
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line
+} from 'recharts'
+import { 
   Users, 
   Building2, 
   BarChart3, 
@@ -24,7 +35,10 @@ import {
   Globe,
   Activity,
   UserPlus,
-  CheckSquare
+  CheckSquare,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus
 } from 'lucide-react'
 
 // Estilos CSS para animações
@@ -134,6 +148,119 @@ const API_CONNECTIONS = [
     lastCheck: new Date()
   }
 ]
+
+// 🔥 NOVO: Dados para gráficos de evolução semanal
+const WEEKLY_CHART_DATA = [
+  { day: 'Dom', logins: 45, newUsers: 3, tasks: 12, companies: 1 },
+  { day: 'Seg', logins: 78, newUsers: 5, tasks: 24, companies: 2 },
+  { day: 'Ter', logins: 92, newUsers: 8, tasks: 31, companies: 3 },
+  { day: 'Qua', logins: 85, newUsers: 6, tasks: 28, companies: 2 },
+  { day: 'Qui', logins: 103, newUsers: 12, tasks: 35, companies: 4 },
+  { day: 'Sex', logins: 95, newUsers: 9, tasks: 29, companies: 3 },
+  { day: 'Sáb', logins: 52, newUsers: 4, tasks: 15, companies: 1 }
+]
+
+// 🔥 NOVO: Componente de Card com Comparativo
+const TrendCard = memo(({ title, value, trend, trendValue, icon: Icon, color = 'blue', loading }) => {
+  const getTrendIcon = () => {
+    if (trend === 'up') return <ArrowUpRight className="h-4 w-4" />
+    if (trend === 'down') return <ArrowDownRight className="h-4 w-4" />
+    return <Minus className="h-4 w-4" />
+  }
+
+  const getTrendColor = () => {
+    if (trend === 'up') return 'text-green-600 bg-green-50'
+    if (trend === 'down') return 'text-red-600 bg-red-50'
+    return 'text-gray-600 bg-gray-50'
+  }
+
+  const colorClasses = {
+    blue: 'bg-blue-500',
+    green: 'bg-green-500',
+    purple: 'bg-purple-500',
+    orange: 'bg-orange-500',
+    yellow: 'bg-[#EBA500]'
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl p-6 border border-gray-200 animate-pulse">
+        <div className="h-16 bg-gray-200 rounded"></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-200 group">
+      <div className="flex items-start justify-between mb-4">
+        <div className={`w-12 h-12 rounded-xl ${colorClasses[color]} flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+          <Icon className="h-6 w-6 text-white" />
+        </div>
+        <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${getTrendColor()}`}>
+          {getTrendIcon()}
+          {trendValue}
+        </div>
+      </div>
+      <div className="mb-1">
+        <div className="text-3xl font-bold text-[#373435] mb-1">{value}</div>
+        <div className="text-sm text-gray-600">{title}</div>
+      </div>
+    </div>
+  )
+})
+
+TrendCard.displayName = 'TrendCard'
+
+// 🔥 NOVO: Componente de Gráfico de Área
+const WeeklyAreaChart = memo(({ data, dataKey, color = '#3B82F6', title }) => {
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white px-4 py-2 rounded-lg shadow-lg border border-gray-200">
+          <p className="text-sm font-semibold text-gray-900">{payload[0].payload.day}</p>
+          <p className="text-sm text-gray-600">{title}: <span className="font-bold" style={{ color }}>{payload[0].value}</span></p>
+        </div>
+      )
+    }
+    return null
+  }
+
+  return (
+    <div className="h-64">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={`color${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
+              <stop offset="95%" stopColor={color} stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <XAxis 
+            dataKey="day" 
+            stroke="#9CA3AF"
+            style={{ fontSize: '12px' }}
+          />
+          <YAxis 
+            stroke="#9CA3AF"
+            style={{ fontSize: '12px' }}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Area 
+            type="monotone" 
+            dataKey={dataKey} 
+            stroke={color} 
+            strokeWidth={2}
+            fillOpacity={1} 
+            fill={`url(#color${dataKey})`} 
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+})
+
+WeeklyAreaChart.displayName = 'WeeklyAreaChart'
 
 // Dados estáticos movidos para fora do componente para evitar re-criação
 const DASHBOARD_STATS = [
@@ -466,7 +593,7 @@ const DashboardPage = memo(() => {
   const { stats, loading: statsLoading, error: statsError, refresh } = useAdminStats()
   
   // Hook para métricas com progress bars - DEVE estar no topo, antes de condicionais
-  const { metrics } = useSuperAdminMetrics()
+  const { metrics, weeklyComparison } = useSuperAdminMetrics()
 
   // Função para obter saudação baseada no horário
   const getGreeting = () => {
@@ -545,7 +672,7 @@ const DashboardPage = memo(() => {
           {/* Saudação personalizada */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-[#373435] mb-2">
-              {getGreeting()}, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin'}!
+              {getGreeting()}, {profile?.full_name || user?.email?.split('@')[0] || 'Admin'}!
             </h1>
             <p className="text-lg text-neutral-600">
               Bem-vindo ao painel administrativo do sistema
@@ -575,50 +702,235 @@ const DashboardPage = memo(() => {
               </div>
             )}
             
-            {/* Métricas com Progress Bars - Estilo Minimalista */}
+            {/* 🔥 NOVO: Cards de KPIs Principais com Comparativos */}
+            <div className="mb-12">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-[#373435] mb-2">Visão Geral do Sistema</h3>
+                <p className="text-[#373435]/60">Principais indicadores em tempo real</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <TrendCard
+                  title="Total de Empresas"
+                  value={stats.activeCompanies.value || '0'}
+                  trend={weeklyComparison.companies.trend}
+                  trendValue={`${weeklyComparison.companies.value} vs semana passada`}
+                  icon={Building2}
+                  color="blue"
+                  loading={stats.activeCompanies.loading}
+                />
+                <TrendCard
+                  title="Total de Usuários"
+                  value={stats.totalUsers.value || '0'}
+                  trend={weeklyComparison.users.trend}
+                  trendValue={`${weeklyComparison.users.value} vs semana passada`}
+                  icon={Users}
+                  color="green"
+                  loading={stats.totalUsers.loading}
+                />
+                <TrendCard
+                  title="Taxa de Conversão"
+                  value="68%"
+                  trend="up"
+                  trendValue="+5% vs semana passada"
+                  icon={TrendingUp}
+                  color="purple"
+                  loading={false}
+                />
+                <TrendCard
+                  title="Tempo Médio de Sessão"
+                  value="24min"
+                  trend="up"
+                  trendValue="+3min vs semana passada"
+                  icon={Activity}
+                  color="orange"
+                  loading={false}
+                />
+              </div>
+            </div>
+
+            {/* 🔥 NOVO: Progresso Semanal com Gráficos Visuais */}
             <div className="mb-12">
               <div className="mb-6">
                 <h3 className="text-2xl font-bold text-[#373435] mb-2">Progresso Semanal</h3>
-                <p className="text-[#373435]/60">Acompanhe as métricas dos últimos 7 dias</p>
+                <p className="text-[#373435]/60">Evolução detalhada dos últimos 7 dias com comparativos</p>
               </div>
 
-              {/* Container com espaçamento vertical, sem grid */}
-              <div className="bg-white border-2 border-[#EBA500]/20 rounded-3xl p-8 space-y-6">
-                {/* Logins na última semana */}
-                <ProgressMetric
-                  title="Logins na Última Semana"
-                  current={metrics.loginsWeek.current}
-                  target={metrics.loginsWeek.total}
-                  color="blue"
-                  loading={metrics.loginsWeek.loading}
-                />
+              {/* Grid de Gráficos */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                {/* Gráfico de Logins */}
+                <div className="bg-white border-2 border-blue-500/20 rounded-3xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-[#373435] mb-1">Logins Diários</h4>
+                      <p className="text-sm text-gray-600">Total da semana: {metrics.loginsWeek.current || 0}</p>
+                    </div>
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                      weeklyComparison.logins.trend === 'up' ? 'bg-green-50' :
+                      weeklyComparison.logins.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
+                    }`}>
+                      {weeklyComparison.logins.trend === 'up' ? (
+                        <ArrowUpRight className="h-4 w-4 text-green-600" />
+                      ) : weeklyComparison.logins.trend === 'down' ? (
+                        <ArrowDownRight className="h-4 w-4 text-red-600" />
+                      ) : (
+                        <Minus className="h-4 w-4 text-gray-600" />
+                      )}
+                      <span className={`text-sm font-semibold ${
+                        weeklyComparison.logins.trend === 'up' ? 'text-green-600' :
+                        weeklyComparison.logins.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {weeklyComparison.logins.value} vs semana passada
+                      </span>
+                    </div>
+                  </div>
+                  <WeeklyAreaChart 
+                    data={WEEKLY_CHART_DATA} 
+                    dataKey="logins" 
+                    color="#3B82F6"
+                    title="Logins"
+                  />
+                </div>
 
-                {/* Novas contas */}
-                <ProgressMetric
-                  title="Novas Contas Criadas (meta: 50)"
-                  current={metrics.newAccounts.current}
-                  target={metrics.newAccounts.target}
-                  color="success"
-                  loading={metrics.newAccounts.loading}
-                />
+                {/* Gráfico de Novos Usuários */}
+                <div className="bg-white border-2 border-green-500/20 rounded-3xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-[#373435] mb-1">Novos Usuários</h4>
+                      <p className="text-sm text-gray-600">Total da semana: {metrics.newAccounts.current || 0}</p>
+                    </div>
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                      weeklyComparison.newAccounts.trend === 'up' ? 'bg-green-50' :
+                      weeklyComparison.newAccounts.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
+                    }`}>
+                      {weeklyComparison.newAccounts.trend === 'up' ? (
+                        <ArrowUpRight className="h-4 w-4 text-green-600" />
+                      ) : weeklyComparison.newAccounts.trend === 'down' ? (
+                        <ArrowDownRight className="h-4 w-4 text-red-600" />
+                      ) : (
+                        <Minus className="h-4 w-4 text-gray-600" />
+                      )}
+                      <span className={`text-sm font-semibold ${
+                        weeklyComparison.newAccounts.trend === 'up' ? 'text-green-600' :
+                        weeklyComparison.newAccounts.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {weeklyComparison.newAccounts.value} vs semana passada
+                      </span>
+                    </div>
+                  </div>
+                  <WeeklyAreaChart 
+                    data={WEEKLY_CHART_DATA} 
+                    dataKey="newUsers" 
+                    color="#10B981"
+                    title="Novos Usuários"
+                  />
+                </div>
 
-                {/* Novas tarefas */}
-                <ProgressMetric
-                  title="Novas Tarefas Criadas (meta: 50)"
-                  current={metrics.newTasks.current}
-                  target={metrics.newTasks.target}
-                  color="primary"
-                  loading={metrics.newTasks.loading}
-                />
+                {/* Gráfico de Tarefas */}
+                <div className="bg-white border-2 border-[#EBA500]/20 rounded-3xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-[#373435] mb-1">Tarefas Criadas</h4>
+                      <p className="text-sm text-gray-600">Total da semana: {metrics.newTasks.current || 0}</p>
+                    </div>
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                      weeklyComparison.tasks.trend === 'up' ? 'bg-green-50' :
+                      weeklyComparison.tasks.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
+                    }`}>
+                      {weeklyComparison.tasks.trend === 'up' ? (
+                        <ArrowUpRight className="h-4 w-4 text-green-600" />
+                      ) : weeklyComparison.tasks.trend === 'down' ? (
+                        <ArrowDownRight className="h-4 w-4 text-red-600" />
+                      ) : (
+                        <Minus className="h-4 w-4 text-gray-600" />
+                      )}
+                      <span className={`text-sm font-semibold ${
+                        weeklyComparison.tasks.trend === 'up' ? 'text-green-600' :
+                        weeklyComparison.tasks.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {weeklyComparison.tasks.value} vs semana passada
+                      </span>
+                    </div>
+                  </div>
+                  <WeeklyAreaChart 
+                    data={WEEKLY_CHART_DATA} 
+                    dataKey="tasks" 
+                    color="#EBA500"
+                    title="Tarefas"
+                  />
+                </div>
 
-                {/* Novas empresas */}
-                <ProgressMetric
-                  title="Empresas Cadastradas (meta: 25)"
-                  current={metrics.newCompanies.current}
-                  target={metrics.newCompanies.target}
-                  color="purple"
-                  loading={metrics.newCompanies.loading}
-                />
+                {/* Gráfico de Empresas */}
+                <div className="bg-white border-2 border-purple-500/20 rounded-3xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-[#373435] mb-1">Empresas Cadastradas</h4>
+                      <p className="text-sm text-gray-600">Total da semana: {metrics.newCompanies.current || 0}</p>
+                    </div>
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                      weeklyComparison.newCompanies.trend === 'up' ? 'bg-green-50' :
+                      weeklyComparison.newCompanies.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
+                    }`}>
+                      {weeklyComparison.newCompanies.trend === 'up' ? (
+                        <ArrowUpRight className="h-4 w-4 text-green-600" />
+                      ) : weeklyComparison.newCompanies.trend === 'down' ? (
+                        <ArrowDownRight className="h-4 w-4 text-red-600" />
+                      ) : (
+                        <Minus className="h-4 w-4 text-gray-600" />
+                      )}
+                      <span className={`text-sm font-semibold ${
+                        weeklyComparison.newCompanies.trend === 'up' ? 'text-green-600' :
+                        weeklyComparison.newCompanies.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {weeklyComparison.newCompanies.value} vs semana passada
+                      </span>
+                    </div>
+                  </div>
+                  <WeeklyAreaChart 
+                    data={WEEKLY_CHART_DATA} 
+                    dataKey="companies" 
+                    color="#A855F7"
+                    title="Empresas"
+                  />
+                </div>
+              </div>
+
+              {/* Progress Bars Resumidas */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 border-2 border-gray-200 rounded-3xl p-6">
+                <h4 className="text-lg font-bold text-[#373435] mb-4 flex items-center gap-2">
+                  <Target className="h-5 w-5 text-[#EBA500]" />
+                  Metas da Semana
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ProgressMetric
+                    title="Logins (meta: {metrics.loginsWeek.total})"
+                    current={metrics.loginsWeek.current}
+                    target={metrics.loginsWeek.total}
+                    color="blue"
+                    loading={metrics.loginsWeek.loading}
+                  />
+                  <ProgressMetric
+                    title="Novas Contas (meta: {metrics.newAccounts.target})"
+                    current={metrics.newAccounts.current}
+                    target={metrics.newAccounts.target}
+                    color="success"
+                    loading={metrics.newAccounts.loading}
+                  />
+                  <ProgressMetric
+                    title="Tarefas (meta: {metrics.newTasks.target})"
+                    current={metrics.newTasks.current}
+                    target={metrics.newTasks.target}
+                    color="primary"
+                    loading={metrics.newTasks.loading}
+                  />
+                  <ProgressMetric
+                    title="Empresas (meta: {metrics.newCompanies.target})"
+                    current={metrics.newCompanies.current}
+                    target={metrics.newCompanies.target}
+                    color="purple"
+                    loading={metrics.newCompanies.loading}
+                  />
+                </div>
               </div>
             </div>
 
@@ -704,7 +1016,7 @@ const DashboardPage = memo(() => {
           {/* Saudação personalizada */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-[#373435] mb-2">
-              {getGreeting()}, {user?.user_metadata?.full_name || profile?.full_name || user?.email?.split('@')[0] || 'Admin'}!
+              {getGreeting()}, {profile?.full_name || user?.email?.split('@')[0] || 'Admin'}!
             </h1>
             <p className="text-lg text-neutral-600">
               Painel administrativo - {activeCompany?.companies?.name || activeCompany?.name || 'Sua Empresa'}

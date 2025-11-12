@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useMaturityApprovals } from '../../hooks/useMaturityApprovals'
+import { supabase } from '../../services/supabase' // 🔥 NOVO: Import do supabase
 import NotificationBadge from '../common/NotificationBadge'
 import { 
   BarChart3, 
@@ -364,6 +365,31 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const [hoveredItem, setHoveredItem] = React.useState(null)
   const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0 })
   const [isClosing, setIsClosing] = React.useState(false)
+  const [avatarUrl, setAvatarUrl] = React.useState('') // 🔥 NOVO: URL assinada do avatar
+
+  // 🔥 NOVO: Carregar URL assinada do avatar
+  React.useEffect(() => {
+    const loadAvatarUrl = async () => {
+      if (!profile?.avatar_url) {
+        setAvatarUrl('')
+        return
+      }
+
+      try {
+        const { data, error } = await supabase.storage
+          .from('profile-avatars')
+          .createSignedUrl(profile.avatar_url, 3600) // 1 hora
+
+        if (error) throw error
+        setAvatarUrl(data.signedUrl)
+      } catch (error) {
+        console.error('Erro ao carregar avatar:', error)
+        setAvatarUrl('')
+      }
+    }
+
+    loadAvatarUrl()
+  }, [profile?.avatar_url])
 
   // Carregar jornadas acessíveis sempre que o perfil mudar (sistema simplificado)
   React.useEffect(() => {
@@ -513,8 +539,8 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
           // Mobile: slide in/out
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           // Desktop: collapse/expand
-          isCollapsed ? "lg:w-20" : "lg:w-72",
-          "w-72", // Mobile sempre full width
+          isCollapsed ? "lg:w-20" : "lg:w-80",
+          "w-80", // Mobile sempre full width
           className
         )}
       >
@@ -763,6 +789,46 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
 
         {/* Footer da Sidebar */}
         <div className="flex-shrink-0 p-4 border-t border-neutral-600 space-y-2">
+          {/* Perfil do Usuário */}
+          <div className={cn(
+            "flex items-center gap-3 p-3 rounded-xl bg-neutral-700/50 border border-neutral-600/50",
+            isCollapsed ? "justify-center" : ""
+          )}>
+            {/* Avatar Circle */}
+            <div className="relative flex-shrink-0">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Foto de perfil"
+                  className="w-10 h-10 rounded-full object-cover shadow-lg ring-2 ring-[#EBA500]/50"
+                  onError={(e) => {
+                    // Fallback para inicial se a imagem falhar
+                    e.target.style.display = 'none'
+                    e.target.nextElementSibling.style.display = 'flex'
+                  }}
+                />
+              ) : null}
+              {!avatarUrl && (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#EBA500] to-[#d99500] flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                  {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : '?'}
+                </div>
+              )}
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-neutral-700 rounded-full"></div>
+            </div>
+
+            {/* Nome do Usuário */}
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">
+                  {profile?.full_name || 'Usuário'}
+                </p>
+                <p className="text-xs text-neutral-400 truncate">
+                  {profile?.email || ''}
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Botão de toggle para desktop quando colapsado - acima do botão Sair */}
           {isCollapsed && (
             <button

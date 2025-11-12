@@ -57,6 +57,7 @@ function UserActivityPage() {
   const [userTasks, setUserTasks] = useState([])
   const [loadingTasks, setLoadingTasks] = useState(false)
   const [taskCreators, setTaskCreators] = useState({}) // 🔥 Mapa de IDs para nomes
+  const [taskFilter, setTaskFilter] = useState('all') // 🔥 NOVO: Filtro de tarefas
 
   // Verificar se é super_admin
   const isSuperAdmin = () => {
@@ -324,6 +325,7 @@ function UserActivityPage() {
     setSelectedUser(null)
     setUserTasks([])
     setTaskCreators({}) // 🔥 Limpar mapa de criadores
+    setTaskFilter('all') // 🔥 Resetar filtro
   }
 
   // 🔥 NOVO: Função para obter badge de status da tarefa
@@ -346,6 +348,37 @@ function UserActivityPage() {
   const isTaskOverdue = (task) => {
     if (task.status === 'completed' || !task.due_date) return false
     return new Date(task.due_date) < new Date()
+  }
+
+  // 🔥 NOVO: Filtrar tarefas baseado no filtro selecionado
+  const getFilteredTasks = () => {
+    if (taskFilter === 'all') return userTasks
+
+    return userTasks.filter(task => {
+      switch (taskFilter) {
+        case 'completed':
+          return task.status === 'completed'
+        case 'pending':
+          return task.status === 'pending'
+        case 'in_progress':
+          return task.status === 'in_progress'
+        case 'overdue':
+          return isTaskOverdue(task)
+        default:
+          return true
+      }
+    })
+  }
+
+  // 🔥 NOVO: Contar tarefas por filtro
+  const getTaskFilterCounts = () => {
+    return {
+      all: userTasks.length,
+      completed: userTasks.filter(t => t.status === 'completed').length,
+      pending: userTasks.filter(t => t.status === 'pending').length,
+      in_progress: userTasks.filter(t => t.status === 'in_progress').length,
+      overdue: userTasks.filter(t => isTaskOverdue(t)).length
+    }
   }
 
   const exportToCSV = () => {
@@ -879,8 +912,64 @@ function UserActivityPage() {
               </div>
             </div>
 
+            {/* 🔥 NOVO: Barra de Filtros de Tarefas */}
+            <div className="px-8 py-4 bg-gray-50 border-b border-gray-200">
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <Filter className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <span className="text-sm font-medium text-gray-700 flex-shrink-0">Filtrar:</span>
+                
+                {(() => {
+                  const counts = getTaskFilterCounts()
+                  const filters = [
+                    { value: 'all', label: 'Todas', count: counts.all, color: 'gray' },
+                    { value: 'completed', label: 'Concluídas', count: counts.completed, color: 'green' },
+                    { value: 'in_progress', label: 'Em Andamento', count: counts.in_progress, color: 'blue' },
+                    { value: 'pending', label: 'Pendentes', count: counts.pending, color: 'yellow' },
+                    { value: 'overdue', label: 'Atrasadas', count: counts.overdue, color: 'red' }
+                  ]
+
+                  const colorClasses = {
+                    gray: {
+                      active: 'bg-gray-600 text-white border-gray-600',
+                      inactive: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    },
+                    green: {
+                      active: 'bg-green-600 text-white border-green-600',
+                      inactive: 'bg-white text-green-700 border-green-300 hover:bg-green-50'
+                    },
+                    blue: {
+                      active: 'bg-blue-600 text-white border-blue-600',
+                      inactive: 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50'
+                    },
+                    yellow: {
+                      active: 'bg-yellow-600 text-white border-yellow-600',
+                      inactive: 'bg-white text-yellow-700 border-yellow-300 hover:bg-yellow-50'
+                    },
+                    red: {
+                      active: 'bg-red-600 text-white border-red-600',
+                      inactive: 'bg-white text-red-700 border-red-300 hover:bg-red-50'
+                    }
+                  }
+
+                  return filters.map(filter => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setTaskFilter(filter.value)}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all flex-shrink-0 ${
+                        taskFilter === filter.value
+                          ? colorClasses[filter.color].active
+                          : colorClasses[filter.color].inactive
+                      }`}
+                    >
+                      {filter.label} ({filter.count})
+                    </button>
+                  ))
+                })()}
+              </div>
+            </div>
+
             {/* Conteúdo do Modal */}
-            <div className="p-8 overflow-y-auto max-h-[calc(90vh-280px)]">
+            <div className="p-8 overflow-y-auto max-h-[calc(90vh-340px)]">
               {console.log('🎨 Renderizando modal - userTasks:', userTasks.length, 'loadingTasks:', loadingTasks)}
               {loadingTasks ? (
                 <div className="flex items-center justify-center py-12">
@@ -897,10 +986,27 @@ function UserActivityPage() {
                     Este usuário não possui tarefas atribuídas.
                   </p>
                 </div>
-              ) : (
+              ) : (() => {
+                const filteredTasks = getFilteredTasks()
+                
+                if (filteredTasks.length === 0) {
+                  return (
+                    <div className="text-center py-12">
+                      <Filter className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        Nenhuma tarefa encontrada
+                      </h3>
+                      <p className="text-gray-600">
+                        Não há tarefas com o filtro selecionado.
+                      </p>
+                    </div>
+                  )
+                }
+
+                return (
                 <div className="space-y-4">
-                  {console.log('🎯 Mapeando tarefas:', userTasks)}
-                  {userTasks.map((task) => {
+                  {console.log('🎯 Mapeando tarefas filtradas:', filteredTasks)}
+                  {filteredTasks.map((task) => {
                     const isOverdue = isTaskOverdue(task)
                     
                     return (
@@ -989,14 +1095,15 @@ function UserActivityPage() {
                     )
                   })}
                 </div>
-              )}
+                )
+              })()}
             </div>
 
             {/* Footer do Modal */}
             <div className="bg-gray-50 px-8 py-4 border-t border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                  Total: <span className="font-semibold text-gray-900">{userTasks.length}</span> tarefa(s)
+                  Exibindo: <span className="font-semibold text-gray-900">{getFilteredTasks().length}</span> de <span className="font-semibold text-gray-900">{userTasks.length}</span> tarefa(s)
                 </div>
                 <button
                   onClick={closeTasksModal}
