@@ -38,6 +38,7 @@ export default function OperationalPoliciesPage() {
   const [loading, setLoading] = useState(true)
   const [expandedBlocks, setExpandedBlocks] = useState({})
   const [expandedSubblocks, setExpandedSubblocks] = useState({})
+  const [expandedSubSubblocks, setExpandedSubSubblocks] = useState({}) // 🔥 NOVO: Para 3º nível
   const [viewMode, setViewMode] = useState('list') // 🔥 NOVO: 'list' ou 'grid'
   const [searchQuery, setSearchQuery] = useState('') // 🔥 NOVO: Busca de blocos
   const [subblockSearchQuery, setSubblockSearchQuery] = useState('') // 🔥 NOVO: Busca de sub-blocos
@@ -45,6 +46,7 @@ export default function OperationalPoliciesPage() {
   // Modais
   const [showBlockModal, setShowBlockModal] = useState(false)
   const [showSubblockModal, setShowSubblockModal] = useState(false)
+  const [showSubSubblockModal, setShowSubSubblockModal] = useState(false) // 🔥 NOVO: Modal para sub-sub-blocos
   const [showContentModal, setShowContentModal] = useState(false)
   const [showAttachmentModal, setShowAttachmentModal] = useState(false)
   
@@ -57,9 +59,11 @@ export default function OperationalPoliciesPage() {
   // Estados de edição
   const [editingBlock, setEditingBlock] = useState(null)
   const [editingSubblock, setEditingSubblock] = useState(null)
+  const [editingSubSubblock, setEditingSubSubblock] = useState(null) // 🔥 NOVO: Edição de sub-sub-blocos
   const [editingContent, setEditingContent] = useState(null)
   const [selectedBlock, setSelectedBlock] = useState(null)
   const [selectedSubblock, setSelectedSubblock] = useState(null)
+  const [selectedParentSubblock, setSelectedParentSubblock] = useState(null) // 🔥 NOVO: Parent para criar sub-sub-bloco
   
   // Formulários
   const [blockForm, setBlockForm] = useState({
@@ -72,6 +76,13 @@ export default function OperationalPoliciesPage() {
   const [subblockForm, setSubblockForm] = useState({
     name: '',
     description: ''
+  })
+  
+  // 🔥 NOVO: Form para sub-sub-blocos (3º nível)
+  const [subSubblockForm, setSubSubblockForm] = useState({
+    name: '',
+    description: '',
+    parent_subblock_id: null
   })
   
   const [contentForm, setContentForm] = useState({
@@ -154,7 +165,7 @@ export default function OperationalPoliciesPage() {
         .from('policy_blocks')
         .select(`
           *,
-          policy_subblocks (
+          policy_subblocks!policy_subblocks_block_id_fkey (
             *,
             policy_contents (*),
             policy_attachments (*)
@@ -170,8 +181,33 @@ export default function OperationalPoliciesPage() {
         throw blocksError
       }
 
-      console.log('✅ Blocos carregados:', blocksData?.length)
-      setBlocks(blocksData || [])
+      // 🔥 NOVO: Organizar sub-blocos em hierarquia de 3 níveis
+      const organizedBlocks = (blocksData || []).map(block => {
+        const allSubblocks = block.policy_subblocks || []
+        
+        // Separar sub-blocos de nível 1 (sem parent) e nível 2 (com parent)
+        const level1Subblocks = allSubblocks
+          .filter(sb => !sb.parent_subblock_id || sb.level === 1)
+          .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+        
+        const level2Subblocks = allSubblocks
+          .filter(sb => sb.parent_subblock_id && sb.level === 2)
+          .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+        
+        // Adicionar children aos sub-blocos de nível 1
+        const hierarchicalSubblocks = level1Subblocks.map(parentSubblock => ({
+          ...parentSubblock,
+          children: level2Subblocks.filter(child => child.parent_subblock_id === parentSubblock.id)
+        }))
+        
+        return {
+          ...block,
+          policy_subblocks: hierarchicalSubblocks
+        }
+      })
+
+      console.log('✅ Blocos carregados com hierarquia:', organizedBlocks.length)
+      setBlocks(organizedBlocks)
     } catch (error) {
       console.error('Erro ao carregar blocos:', error)
       alert('Erro ao carregar blocos: ' + error.message)
@@ -360,6 +396,162 @@ export default function OperationalPoliciesPage() {
     }
   }
 
+  // 🔥 NOVO: CRUD de Sub-Sub-blocos (3º nível)
+  const handleSaveSubSubblock = async () => {
+    if (!subSubblockForm.name.trim() || !selectedParentSubblock) {
+      alert('Nome do sub-bloco é obrigatório')
+      return
+    }
+
+    setSaving(true)
+    try {
+      // Buscar o parent subblock para pegar o block_id
+      const block = blocks.find(b => 
+        b.policy_subblocks?.some(sb => sb.id === selectedParentSubblock)
+      )
+      
+      if (!block) {
+        throw new Error('Bloco pai não encontrado')
+      }
+
+      const parentSubblock = block.policy_subblocks.find(sb => sb.id === selectedParentSubblock)
+      const childrenCount = parentSubblock?.children?.length || 0
+
+      const subSubblockData = {
+        block_id: block.id,
+        parent_subblock_id: selectedParentSubblock,
+        level: 2, // 🔥 Sub-sub-bloco é sempre nível 2
+        name: subSubblockForm.name.trim(),
+        description: subSubblockForm.description.trim(),
+        order_index: childrenCount,
+        created_by: profile.id
+      }
+
+      if (editingSubSubblock) {
+        const { error } = await supabase
+          .from('policy_subblocks')
+          .update(subSubblockData)
+          .eq('id', editingSubSubblock.id)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('policy_subblocks')
+          .insert([subSubblockData])
+
+        if (error) throw error
+      }
+
+      setShowSubSubblockModal(false)
+      setEditingSubSubblock(null)
+      setSubSubblockForm({ name: '', description: '', parent_subblock_id: null })
+      setSelectedParentSubblock(null)
+      
+      await loadBlocks()
+      
+      // 🔥 Atualizar viewingBlock se estiver aberto
+      if (viewingBlock) {
+        const { data: updatedBlock, error } = await supabase
+          .from('policy_blocks')
+          .select(`
+            *,
+            policy_subblocks!policy_subblocks_block_id_fkey (
+              *,
+              policy_contents (*),
+              policy_attachments (*)
+            )
+          `)
+          .eq('id', viewingBlock.id)
+          .single()
+        
+        if (!error && updatedBlock) {
+          // Reorganizar hierarquia
+          const allSubblocks = updatedBlock.policy_subblocks || []
+          const level1 = allSubblocks.filter(sb => !sb.parent_subblock_id || sb.level === 1)
+          const level2 = allSubblocks.filter(sb => sb.parent_subblock_id && sb.level === 2)
+          
+          updatedBlock.policy_subblocks = level1.map(parent => ({
+            ...parent,
+            children: level2.filter(child => child.parent_subblock_id === parent.id)
+          }))
+          
+          setViewingBlock(updatedBlock)
+
+          // 🔥 NOVO: Atualizar viewingSubblock se estiver aberto
+          if (viewingSubblock) {
+            const updatedSubblock = updatedBlock.policy_subblocks.find(sb => sb.id === viewingSubblock.id)
+            if (updatedSubblock) {
+              setViewingSubblock(updatedSubblock)
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao salvar sub-sub-bloco:', error)
+      alert('Erro ao salvar sub-sub-bloco: ' + error.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteSubSubblock = async (subSubblockId) => {
+    if (!confirm('Tem certeza que deseja deletar este sub-bloco? Todo o conteúdo será removido.')) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('policy_subblocks')
+        .delete()
+        .eq('id', subSubblockId)
+
+      if (error) throw error
+
+      await loadBlocks()
+      
+      // 🔥 Atualizar viewingBlock se estiver aberto
+      if (viewingBlock) {
+        const { data: updatedBlock, error } = await supabase
+          .from('policy_blocks')
+          .select(`
+            *,
+            policy_subblocks!policy_subblocks_block_id_fkey (
+              *,
+              policy_contents (*),
+              policy_attachments (*)
+            )
+          `)
+          .eq('id', viewingBlock.id)
+          .single()
+        
+        if (!error && updatedBlock) {
+          // Reorganizar hierarquia
+          const allSubblocks = updatedBlock.policy_subblocks || []
+          const level1 = allSubblocks.filter(sb => !sb.parent_subblock_id || sb.level === 1)
+          const level2 = allSubblocks.filter(sb => sb.parent_subblock_id && sb.level === 2)
+          
+          updatedBlock.policy_subblocks = level1.map(parent => ({
+            ...parent,
+            children: level2.filter(child => child.parent_subblock_id === parent.id)
+          }))
+          
+          setViewingBlock(updatedBlock)
+
+          // 🔥 NOVO: Atualizar viewingSubblock se estiver aberto
+          if (viewingSubblock) {
+            const updatedSubblock = updatedBlock.policy_subblocks.find(sb => sb.id === viewingSubblock.id)
+            if (updatedSubblock) {
+              setViewingSubblock(updatedSubblock)
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao deletar sub-sub-bloco:', error)
+      alert('Erro ao deletar sub-sub-bloco: ' + error.message)
+    }
+  }
+
   // CRUD de Conteúdo
   const handleSaveContent = async () => {
     if (!selectedSubblock) return
@@ -397,6 +589,11 @@ export default function OperationalPoliciesPage() {
       
       // 🔥 Recarregar blocos para lista principal
       await loadBlocks()
+
+      // 🔥 NOVO: Atualizar viewingSubblock se estiver aberto
+      if (viewingSubblock) {
+        await refreshViewingSubblock(viewingSubblock.id)
+      }
     } catch (error) {
       console.error('Erro ao salvar conteúdo:', error)
       alert('Erro ao salvar conteúdo: ' + error.message)
@@ -420,25 +617,11 @@ export default function OperationalPoliciesPage() {
 
       await loadBlocks()
       
-      // 🔥 Se estiver visualizando um sub-bloco, buscar dados atualizados
+      // 🔥 Atualizar viewingSubblock se estiver aberto
       if (viewingSubblock) {
         console.log('🔄 Atualizando sub-bloco após deletar conteúdo...')
-        
-        const { data: updatedSubblock, error } = await supabase
-          .from('policy_subblocks')
-          .select(`
-            *,
-            policy_contents (*),
-            policy_attachments (*)
-          `)
-          .eq('id', viewingSubblock.id)
-          .order('order_index', { foreignTable: 'policy_contents', ascending: true })
-          .single()
-        
-        if (!error && updatedSubblock) {
-          console.log('✅ Sub-bloco atualizado:', updatedSubblock.policy_contents?.length, 'conteúdos')
-          setViewingSubblock(updatedSubblock)
-        }
+        await refreshViewingSubblock(viewingSubblock.id)
+        console.log('✅ Sub-bloco atualizado')
       }
     } catch (error) {
       console.error('Erro ao deletar conteúdo:', error)
@@ -466,10 +649,14 @@ export default function OperationalPoliciesPage() {
 
       if (uploadError) throw uploadError
 
-      // Obter URL pública
-      const { data: urlData } = supabase.storage
+      // Obter URL autenticada (bucket é privado)
+      const { data: urlData } = await supabase.storage
         .from('policy-attachments')
-        .getPublicUrl(filePath)
+        .createSignedUrl(filePath, 31536000) // URL válida por 1 ano
+
+      if (!urlData || !urlData.signedUrl) {
+        throw new Error('Não foi possível gerar URL do arquivo')
+      }
 
       // Salvar registro no banco
       const { error: dbError } = await supabase
@@ -479,7 +666,7 @@ export default function OperationalPoliciesPage() {
           file_name: uploadFile.name,
           file_size: uploadFile.size,
           file_type: uploadFile.type,
-          file_url: urlData.publicUrl,
+          file_url: urlData.signedUrl,
           storage_path: filePath,
           description: uploadDescription.trim(),
           uploaded_by: profile.id
@@ -492,6 +679,11 @@ export default function OperationalPoliciesPage() {
       
       // Recarregar blocos
       await loadBlocks()
+
+      // 🔥 NOVO: Atualizar viewingSubblock se estiver aberto
+      if (viewingSubblock) {
+        await refreshViewingSubblock(viewingSubblock.id)
+      }
     } catch (error) {
       console.error('Erro ao fazer upload:', error)
       alert('Erro ao fazer upload: ' + error.message)
@@ -523,21 +715,9 @@ export default function OperationalPoliciesPage() {
 
       await loadBlocks()
       
-      // 🔥 Se estiver visualizando um sub-bloco, buscar dados atualizados
+      // 🔥 Atualizar viewingSubblock se estiver aberto
       if (viewingSubblock) {
-        const { data: updatedSubblock, error } = await supabase
-          .from('policy_subblocks')
-          .select(`
-            *,
-            policy_contents (*),
-            policy_attachments (*)
-          `)
-          .eq('id', viewingSubblock.id)
-          .single()
-        
-        if (!error && updatedSubblock) {
-          setViewingSubblock(updatedSubblock)
-        }
+        await refreshViewingSubblock(viewingSubblock.id)
       }
     } catch (error) {
       console.error('Erro ao deletar anexo:', error)
@@ -551,6 +731,11 @@ export default function OperationalPoliciesPage() {
 
   const toggleSubblock = (subblockId) => {
     setExpandedSubblocks(prev => ({ ...prev, [subblockId]: !prev[subblockId] }))
+  }
+
+  // 🔥 NOVO: Toggle para sub-sub-blocos (3º nível)
+  const toggleSubSubblock = (subSubblockId) => {
+    setExpandedSubSubblocks(prev => ({ ...prev, [subSubblockId]: !prev[subSubblockId] }))
   }
 
   const openBlockModal = (block = null) => {
@@ -582,6 +767,27 @@ export default function OperationalPoliciesPage() {
       setSubblockForm({ name: '', description: '' })
     }
     setShowSubblockModal(true)
+  }
+
+  // 🔥 NOVO: Abrir modal para criar/editar sub-sub-bloco (3º nível)
+  const openSubSubblockModal = (parentSubblockId, subSubblock = null) => {
+    setSelectedParentSubblock(parentSubblockId)
+    if (subSubblock) {
+      setEditingSubSubblock(subSubblock)
+      setSubSubblockForm({
+        name: subSubblock.name,
+        description: subSubblock.description || '',
+        parent_subblock_id: parentSubblockId
+      })
+    } else {
+      setEditingSubSubblock(null)
+      setSubSubblockForm({ 
+        name: '', 
+        description: '', 
+        parent_subblock_id: parentSubblockId 
+      })
+    }
+    setShowSubSubblockModal(true)
   }
 
   const openContentModal = (subblockId, content = null) => {
@@ -682,6 +888,89 @@ export default function OperationalPoliciesPage() {
   const closeSubblockView = () => {
     setShowSubblockViewModal(false)
     setViewingSubblock(null)
+  }
+
+  // 🔥 NOVO: Função helper para atualizar viewingSubblock com hierarquia completa
+  const refreshViewingSubblock = async (subblockId) => {
+    if (!viewingBlock) return
+
+    try {
+      // Buscar bloco atualizado com hierarquia completa
+      const { data: updatedBlock, error } = await supabase
+        .from('policy_blocks')
+        .select(`
+          *,
+          policy_subblocks!policy_subblocks_block_id_fkey (
+            *,
+            policy_contents (*),
+            policy_attachments (*)
+          )
+        `)
+        .eq('id', viewingBlock.id)
+        .single()
+      
+      if (!error && updatedBlock) {
+        // Reorganizar hierarquia
+        const allSubblocks = updatedBlock.policy_subblocks || []
+        const level1 = allSubblocks.filter(sb => !sb.parent_subblock_id || sb.level === 1)
+        const level2 = allSubblocks.filter(sb => sb.parent_subblock_id && sb.level === 2)
+        
+        updatedBlock.policy_subblocks = level1.map(parent => ({
+          ...parent,
+          children: level2.filter(child => child.parent_subblock_id === parent.id)
+        }))
+        
+        setViewingBlock(updatedBlock)
+
+        // Atualizar viewingSubblock
+        const updatedSubblock = updatedBlock.policy_subblocks.find(sb => sb.id === subblockId)
+        if (updatedSubblock) {
+          setViewingSubblock(updatedSubblock)
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar sub-bloco:', error)
+    }
+  }
+
+  // 🔥 NOVO: Função para obter URL autenticada de anexo
+  const getAuthenticatedFileUrl = async (storagePath) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('policy-attachments')
+        .createSignedUrl(storagePath, 3600) // URL válida por 1 hora
+
+      if (error) throw error
+      return data.signedUrl
+    } catch (error) {
+      console.error('Erro ao gerar URL:', error)
+      return null
+    }
+  }
+
+  // 🔥 NOVO: Função para visualizar anexo em nova aba
+  const handleViewAttachment = async (attachment) => {
+    const url = await getAuthenticatedFileUrl(attachment.storage_path)
+    if (url) {
+      window.open(url, '_blank')
+    } else {
+      alert('Erro ao gerar link de visualização')
+    }
+  }
+
+  // 🔥 NOVO: Função para baixar anexo
+  const handleDownloadAttachment = async (attachment) => {
+    const url = await getAuthenticatedFileUrl(attachment.storage_path)
+    if (url) {
+      const a = document.createElement('a')
+      a.href = url
+      a.download = attachment.file_name
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } else {
+      alert('Erro ao gerar link de download')
+    }
   }
 
   const renderContent = (content) => {
@@ -1279,29 +1568,62 @@ export default function OperationalPoliciesPage() {
                         {filteredSubblocks.map((subblock) => (
                       <div
                         key={subblock.id}
-                        onClick={() => openSubblockView(subblock)}
-                        className="group bg-gradient-to-br from-white to-gray-50/50 rounded-2xl border-2 border-gray-200/50 hover:border-[#EBA500]/30 hover:shadow-lg p-6 cursor-pointer transition-all duration-200"
+                        className="group bg-gradient-to-br from-white to-gray-50/50 rounded-2xl border-2 border-gray-200/50 hover:border-[#EBA500]/30 hover:shadow-lg p-6 transition-all duration-200 relative"
                       >
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="text-lg font-bold text-[#373435] flex-1 pr-4 break-words">
-                            {subblock.name}
-                          </h3>
-                          <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-[#EBA500] group-hover:translate-x-1 transition-all flex-shrink-0" />
+                        {/* Botões de Ação (aparecem no hover) */}
+                        <div className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openSubblockModal(viewingBlock.id, subblock);
+                            }}
+                            className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+                            title="Editar sub-bloco"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSubblock(subblock.id);
+                            }}
+                            className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+                            title="Deletar sub-bloco"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
-                        {subblock.description && (
-                          <p className="text-sm text-gray-600 mb-4 line-clamp-2 break-words">
-                            {subblock.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-4 pt-3 border-t border-gray-200/50">
-                          <span className="text-xs text-gray-500">
-                            <FileText className="h-3 w-3 inline mr-1" />
-                            {subblock.policy_contents?.length || 0} conteúdos
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            <Paperclip className="h-3 w-3 inline mr-1" />
-                            {subblock.policy_attachments?.length || 0} anexos
-                          </span>
+
+                        {/* Card clicável para abrir visualização */}
+                        <div
+                          onClick={() => openSubblockView(subblock)}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="text-lg font-bold text-[#373435] flex-1 pr-16 break-words">
+                              {subblock.name}
+                            </h3>
+                            <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-[#EBA500] group-hover:translate-x-1 transition-all flex-shrink-0" />
+                          </div>
+                          {subblock.description && (
+                            <p className="text-sm text-gray-600 mb-4 line-clamp-2 break-words">
+                              {subblock.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-4 pt-3 border-t border-gray-200/50">
+                            <span className="text-xs text-gray-500">
+                              <Layers className="h-3 w-3 inline mr-1" />
+                              {subblock.children?.length || 0} sub-blocos
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              <FileText className="h-3 w-3 inline mr-1" />
+                              {subblock.policy_contents?.length || 0} conteúdos
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              <Paperclip className="h-3 w-3 inline mr-1" />
+                              {subblock.policy_attachments?.length || 0} anexos
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1367,12 +1689,22 @@ export default function OperationalPoliciesPage() {
                       </p>
                     )}
                   </div>
-                  <button
-                    onClick={closeSubblockView}
-                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all ml-4"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
+                  <div className="flex items-center gap-2 ml-4">
+                    <button
+                      onClick={() => handleDeleteSubblock(viewingSubblock.id)}
+                      className="group flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg hover:shadow-red-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
+                      title="Deletar sub-bloco"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Deletar
+                    </button>
+                    <button
+                      onClick={closeSubblockView}
+                      className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1380,7 +1712,196 @@ export default function OperationalPoliciesPage() {
               <div className="p-8 overflow-y-auto max-h-[calc(90vh-240px)]">
                 <div className="space-y-8">
                   {console.log('🎨 Renderizando modal - Conteúdos:', viewingSubblock.policy_contents?.length || 0)}
-                  {/* Conteúdos */}
+                  
+                  {/* 🔥 NOVO: Sub-Sub-blocos (3º nível) */}
+                  {viewingSubblock.children && viewingSubblock.children.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-indigo-100 rounded-xl">
+                            <Layers className="h-5 w-5 text-indigo-600" />
+                          </div>
+                          <h3 className="text-xl font-bold text-[#373435]">Sub-blocos</h3>
+                        </div>
+                        <button
+                          onClick={() => openSubSubblockModal(viewingSubblock.id)}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:shadow-lg hover:shadow-indigo-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Adicionar Sub-bloco
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-4">
+                        {viewingSubblock.children.map((subSubblock) => (
+                          <div
+                            key={subSubblock.id}
+                            className="group bg-gradient-to-br from-indigo-50 to-white rounded-2xl border-2 border-indigo-200/50 hover:border-indigo-400 hover:shadow-lg p-5 transition-all duration-200"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-2 flex-1">
+                                <div className="p-1.5 bg-indigo-100 rounded-lg">
+                                  <Layers className="h-4 w-4 text-indigo-600" />
+                                </div>
+                                <h4 className="text-base font-bold text-[#373435] break-words">
+                                  {subSubblock.name}
+                                </h4>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => openSubSubblockModal(viewingSubblock.id, subSubblock)}
+                                  className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                                  title="Editar"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteSubSubblock(subSubblock.id)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                  title="Excluir"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => toggleSubSubblock(subSubblock.id)}
+                                  className="text-gray-400 group-hover:text-indigo-600 transition-all flex-shrink-0"
+                                >
+                                  {expandedSubSubblocks[subSubblock.id] ? 
+                                    <ChevronDown className="h-5 w-5" /> : 
+                                    <ChevronRight className="h-5 w-5" />
+                                  }
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {subSubblock.description && (
+                              <p className="text-sm text-gray-600 mb-3 ml-7 break-words">
+                                {subSubblock.description}
+                              </p>
+                            )}
+                            
+                            <div className="flex items-center gap-4 ml-7">
+                              <span className="text-xs text-gray-500">
+                                <FileText className="h-3 w-3 inline mr-1" />
+                                {subSubblock.policy_contents?.length || 0} conteúdos
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                <Paperclip className="h-3 w-3 inline mr-1" />
+                                {subSubblock.policy_attachments?.length || 0} anexos
+                              </span>
+                              <button
+                                onClick={() => openContentModal(subSubblock.id)}
+                                className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold"
+                              >
+                                <Plus className="h-3 w-3 inline mr-1" />
+                                Conteúdo
+                              </button>
+                              <button
+                                onClick={() => openAttachmentModal(subSubblock.id)}
+                                className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
+                              >
+                                <Plus className="h-3 w-3 inline mr-1" />
+                                Anexo
+                              </button>
+                            </div>
+
+                            {/* Conteúdos e Anexos do Sub-Subloco (se expandido) */}
+                            {expandedSubSubblocks[subSubblock.id] && (
+                              <div className="mt-4 ml-7 space-y-4 pl-4 border-l-2 border-indigo-200">
+                                {/* Conteúdos */}
+                                {subSubblock.policy_contents && subSubblock.policy_contents.length > 0 && (
+                                  <div className="space-y-3">
+                                    {subSubblock.policy_contents.map((content) => (
+                                      <div
+                                        key={content.id}
+                                        className="bg-white rounded-xl p-4 border border-gray-200 hover:border-indigo-300 transition-all"
+                                      >
+                                        <div className="flex justify-between items-start mb-3">
+                                          <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold text-indigo-700 bg-indigo-100">
+                                            {content.content_type}
+                                          </span>
+                                          <div className="flex gap-1">
+                                            <button
+                                              onClick={() => openContentModal(subSubblock.id, content)}
+                                              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                                              title="Editar"
+                                            >
+                                              <Edit className="h-3.5 w-3.5" />
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteContent(content.id)}
+                                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                              title="Excluir"
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <div className="prose prose-sm max-w-none text-sm">
+                                          {renderContent(content)}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Anexos */}
+                                {subSubblock.policy_attachments && subSubblock.policy_attachments.length > 0 && (
+                                  <div className="space-y-2">
+                                    {subSubblock.policy_attachments.map((attachment) => (
+                                      <div
+                                        key={attachment.id}
+                                        className="bg-white rounded-xl p-3 border border-gray-200 hover:border-blue-300 transition-all flex items-center justify-between"
+                                      >
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                          <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
+                                            <FileIcon className="h-4 w-4 text-blue-600" />
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-semibold text-gray-900 truncate">{attachment.file_name}</p>
+                                            {attachment.description && (
+                                              <p className="text-xs text-gray-500 truncate">{attachment.description}</p>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-1 flex-shrink-0">
+                                          <button
+                                            onClick={() => handleViewAttachment(attachment)}
+                                            className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
+                                            title="Visualizar"
+                                          >
+                                            <Eye className="h-3.5 w-3.5" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDownloadAttachment(attachment)}
+                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                            title="Download"
+                                          >
+                                            <Download className="h-3.5 w-3.5" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteAttachment(attachment)}
+                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                            title="Excluir"
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Botão para criar sub-sub-bloco se ainda não tiver nenhum (apenas nível 1) - REMOVIDO pois agora tem botão fixo na barra de ações */}
+                  
+                  {/* Conteúdos - sempre mostrar se existirem */}
                   {viewingSubblock.policy_contents && viewingSubblock.policy_contents.length > 0 && (
                     <div>
                       <div className="flex items-center gap-3 mb-4">
@@ -1458,15 +1979,20 @@ export default function OperationalPoliciesPage() {
                               </div>
                             </div>
                             <div className="flex gap-2 flex-shrink-0">
-                              <a
-                                href={attachment.file_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
+                                onClick={() => handleViewAttachment(attachment)}
+                                className="p-2 text-purple-600 hover:bg-purple-50 rounded-xl transition-all"
+                                title="Visualizar"
+                              >
+                                <Eye className="h-5 w-5" />
+                              </button>
+                              <button
+                                onClick={() => handleDownloadAttachment(attachment)}
                                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                                 title="Download"
                               >
                                 <Download className="h-5 w-5" />
-                              </a>
+                              </button>
                               <button
                                 onClick={() => handleDeleteAttachment(attachment)}
                                 className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all"
@@ -1483,7 +2009,8 @@ export default function OperationalPoliciesPage() {
 
                   {/* Empty state */}
                   {(!viewingSubblock.policy_contents || viewingSubblock.policy_contents.length === 0) &&
-                   (!viewingSubblock.policy_attachments || viewingSubblock.policy_attachments.length === 0) && (
+                   (!viewingSubblock.policy_attachments || viewingSubblock.policy_attachments.length === 0) &&
+                   (!viewingSubblock.children || viewingSubblock.children.length === 0) && (
                     <div className="text-center py-16">
                       <div className="inline-flex p-6 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl mb-6">
                         <FileText className="h-16 w-16 text-gray-300" />
@@ -1492,9 +2019,12 @@ export default function OperationalPoliciesPage() {
                         Nenhum conteúdo adicionado
                       </h3>
                       <p className="text-gray-500 mb-6">
-                        Adicione conteúdos ou anexos a este sub-bloco
+                        {(!viewingSubblock.level || viewingSubblock.level === 1)
+                          ? 'Adicione conteúdos, anexos ou organize em sub-blocos'
+                          : 'Adicione conteúdos ou anexos a este sub-bloco'
+                        }
                       </p>
-                      <div className="flex items-center justify-center gap-3">
+                      <div className="flex items-center justify-center gap-3 flex-wrap">
                         <button
                           onClick={() => {
                             // 🔥 NÃO fechar o modal do sub-bloco - deixar aberto para ver o resultado
@@ -1515,9 +2045,49 @@ export default function OperationalPoliciesPage() {
                           <Paperclip className="h-5 w-5" />
                           Adicionar Anexo
                         </button>
+                        {/* Botão de criar sub-sub-bloco só para nível 1 */}
+                        {(!viewingSubblock.level || viewingSubblock.level === 1) && (
+                          <button
+                            onClick={() => openSubSubblockModal(viewingSubblock.id)}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:shadow-lg hover:shadow-indigo-500/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                          >
+                            <Layers className="h-5 w-5" />
+                            Criar Sub-bloco
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* 🔥 NOVO: Barra de ações sempre visível (fora do scroll) */}
+                <div className="sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent pt-6 pb-4 border-t border-gray-200 mt-8">
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    <button
+                      onClick={() => openContentModal(viewingSubblock.id)}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg hover:shadow-purple-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Adicionar Conteúdo
+                    </button>
+                    <button
+                      onClick={() => openAttachmentModal(viewingSubblock.id)}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg hover:shadow-blue-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Adicionar Anexo
+                    </button>
+                    {/* Botão de criar sub-sub-bloco só para nível 1 */}
+                    {(!viewingSubblock.level || viewingSubblock.level === 1) && (
+                      <button
+                        onClick={() => openSubSubblockModal(viewingSubblock.id)}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:shadow-lg hover:shadow-indigo-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Adicionar Sub-bloco
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1715,6 +2285,93 @@ export default function OperationalPoliciesPage() {
                     <>
                       <Save className="h-4 w-4" />
                       Salvar Sub-bloco
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 🔥 NOVO: Modal de Sub-Sub-bloco (3º nível) */}
+        {showSubSubblockModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+            <div 
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8"
+              style={{
+                animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              }}
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-indigo-500/20 to-indigo-500/10 rounded-2xl">
+                    <Layers className="h-6 w-6 text-indigo-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-[#373435]">
+                    {editingSubSubblock ? 'Editar Sub-bloco' : 'Novo Sub-bloco'}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowSubSubblockModal(false)}
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                    Nome do Sub-bloco *
+                  </label>
+                  <input
+                    type="text"
+                    value={subSubblockForm.name}
+                    onChange={(e) => setSubSubblockForm(prev => ({ ...prev, name: e.target.value }))}
+                    maxLength={100}
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-indigo-500 transition-colors bg-gray-50/50 focus:bg-white"
+                    placeholder="Ex: Despesas Fixas"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                    Descrição
+                  </label>
+                  <textarea
+                    value={subSubblockForm.description}
+                    onChange={(e) => setSubSubblockForm(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    maxLength={500}
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-indigo-500 transition-colors bg-gray-50/50 focus:bg-white resize-none"
+                    placeholder="Descrição do sub-bloco..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+                <button
+                  onClick={() => setShowSubSubblockModal(false)}
+                  disabled={saving}
+                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveSubSubblock}
+                  disabled={saving || !subSubblockForm.name.trim()}
+                  className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:shadow-lg hover:shadow-indigo-500/30 text-white rounded-2xl font-semibold transition-all disabled:opacity-50 disabled:hover:shadow-none flex items-center gap-2 hover:scale-105"
+                >
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      {editingSubSubblock ? 'Atualizar' : 'Criar Sub-bloco'}
                     </>
                   )}
                 </button>
