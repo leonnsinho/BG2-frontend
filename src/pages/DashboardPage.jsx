@@ -709,12 +709,12 @@ const DashboardPage = memo(() => {
                 <p className="text-[#373435]/60">Principais indicadores em tempo real</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <TrendCard
                   title="Total de Empresas"
                   value={stats.activeCompanies.value || '0'}
-                  trend={weeklyComparison.companies.trend}
-                  trendValue={`${weeklyComparison.companies.value} vs semana passada`}
+                  trend={weeklyComparison?.companies?.trend || 'neutral'}
+                  trendValue={`${weeklyComparison?.companies?.value || '0%'} vs semana passada`}
                   icon={Building2}
                   color="blue"
                   loading={stats.activeCompanies.loading}
@@ -722,29 +722,20 @@ const DashboardPage = memo(() => {
                 <TrendCard
                   title="Total de Usuários"
                   value={stats.totalUsers.value || '0'}
-                  trend={weeklyComparison.users.trend}
-                  trendValue={`${weeklyComparison.users.value} vs semana passada`}
+                  trend={weeklyComparison?.users?.trend || 'neutral'}
+                  trendValue={`${weeklyComparison?.users?.value || '0%'} vs semana passada`}
                   icon={Users}
                   color="green"
                   loading={stats.totalUsers.loading}
                 />
                 <TrendCard
-                  title="Taxa de Conversão"
-                  value="68%"
-                  trend="up"
-                  trendValue="+5% vs semana passada"
-                  icon={TrendingUp}
+                  title="Total de Tarefas"
+                  value={stats.totalTasks.value || '0'}
+                  trend="neutral"
+                  trendValue={stats.totalTasks.change || 'Em andamento'}
+                  icon={CheckSquare}
                   color="purple"
-                  loading={false}
-                />
-                <TrendCard
-                  title="Tempo Médio de Sessão"
-                  value="24min"
-                  trend="up"
-                  trendValue="+3min vs semana passada"
-                  icon={Activity}
-                  color="orange"
-                  loading={false}
+                  loading={stats.totalTasks.loading}
                 />
               </div>
             </div>
@@ -766,21 +757,21 @@ const DashboardPage = memo(() => {
                       <p className="text-sm text-gray-600">Total da semana: {metrics.loginsWeek.current || 0}</p>
                     </div>
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
-                      weeklyComparison.logins.trend === 'up' ? 'bg-green-50' :
-                      weeklyComparison.logins.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
+                      weeklyComparison?.logins?.trend === 'up' ? 'bg-green-50' :
+                      weeklyComparison?.logins?.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
                     }`}>
-                      {weeklyComparison.logins.trend === 'up' ? (
+                      {weeklyComparison?.logins?.trend === 'up' ? (
                         <ArrowUpRight className="h-4 w-4 text-green-600" />
-                      ) : weeklyComparison.logins.trend === 'down' ? (
+                      ) : weeklyComparison?.logins?.trend === 'down' ? (
                         <ArrowDownRight className="h-4 w-4 text-red-600" />
                       ) : (
                         <Minus className="h-4 w-4 text-gray-600" />
                       )}
                       <span className={`text-sm font-semibold ${
-                        weeklyComparison.logins.trend === 'up' ? 'text-green-600' :
-                        weeklyComparison.logins.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                        weeklyComparison?.logins?.trend === 'up' ? 'text-green-600' :
+                        weeklyComparison?.logins?.trend === 'down' ? 'text-red-600' : 'text-gray-600'
                       }`}>
-                        {weeklyComparison.logins.value} vs semana passada
+                        {weeklyComparison?.logins?.value || '0%'} vs semana passada
                       </span>
                     </div>
                   </div>
@@ -800,21 +791,21 @@ const DashboardPage = memo(() => {
                       <p className="text-sm text-gray-600">Total da semana: {metrics.newAccounts.current || 0}</p>
                     </div>
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
-                      weeklyComparison.newAccounts.trend === 'up' ? 'bg-green-50' :
-                      weeklyComparison.newAccounts.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
+                      weeklyComparison?.newAccounts?.trend === 'up' ? 'bg-green-50' :
+                      weeklyComparison?.newAccounts?.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
                     }`}>
-                      {weeklyComparison.newAccounts.trend === 'up' ? (
+                      {weeklyComparison?.newAccounts?.trend === 'up' ? (
                         <ArrowUpRight className="h-4 w-4 text-green-600" />
-                      ) : weeklyComparison.newAccounts.trend === 'down' ? (
+                      ) : weeklyComparison?.newAccounts?.trend === 'down' ? (
                         <ArrowDownRight className="h-4 w-4 text-red-600" />
                       ) : (
                         <Minus className="h-4 w-4 text-gray-600" />
                       )}
                       <span className={`text-sm font-semibold ${
-                        weeklyComparison.newAccounts.trend === 'up' ? 'text-green-600' :
-                        weeklyComparison.newAccounts.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                        weeklyComparison?.newAccounts?.trend === 'up' ? 'text-green-600' :
+                        weeklyComparison?.newAccounts?.trend === 'down' ? 'text-red-600' : 'text-gray-600'
                       }`}>
-                        {weeklyComparison.newAccounts.value} vs semana passada
+                        {weeklyComparison?.newAccounts?.value || '0%'} vs semana passada
                       </span>
                     </div>
                   </div>
@@ -834,21 +825,21 @@ const DashboardPage = memo(() => {
                       <p className="text-sm text-gray-600">Total da semana: {metrics.newTasks.current || 0}</p>
                     </div>
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
-                      weeklyComparison.tasks.trend === 'up' ? 'bg-green-50' :
-                      weeklyComparison.tasks.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
+                      weeklyComparison?.tasks?.trend === 'up' ? 'bg-green-50' :
+                      weeklyComparison?.tasks?.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
                     }`}>
-                      {weeklyComparison.tasks.trend === 'up' ? (
+                      {weeklyComparison?.tasks?.trend === 'up' ? (
                         <ArrowUpRight className="h-4 w-4 text-green-600" />
-                      ) : weeklyComparison.tasks.trend === 'down' ? (
+                      ) : weeklyComparison?.tasks?.trend === 'down' ? (
                         <ArrowDownRight className="h-4 w-4 text-red-600" />
                       ) : (
                         <Minus className="h-4 w-4 text-gray-600" />
                       )}
                       <span className={`text-sm font-semibold ${
-                        weeklyComparison.tasks.trend === 'up' ? 'text-green-600' :
-                        weeklyComparison.tasks.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                        weeklyComparison?.tasks?.trend === 'up' ? 'text-green-600' :
+                        weeklyComparison?.tasks?.trend === 'down' ? 'text-red-600' : 'text-gray-600'
                       }`}>
-                        {weeklyComparison.tasks.value} vs semana passada
+                        {weeklyComparison?.tasks?.value || '0%'} vs semana passada
                       </span>
                     </div>
                   </div>
@@ -868,21 +859,21 @@ const DashboardPage = memo(() => {
                       <p className="text-sm text-gray-600">Total da semana: {metrics.newCompanies.current || 0}</p>
                     </div>
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
-                      weeklyComparison.newCompanies.trend === 'up' ? 'bg-green-50' :
-                      weeklyComparison.newCompanies.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
+                      weeklyComparison?.newCompanies?.trend === 'up' ? 'bg-green-50' :
+                      weeklyComparison?.newCompanies?.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
                     }`}>
-                      {weeklyComparison.newCompanies.trend === 'up' ? (
+                      {weeklyComparison?.newCompanies?.trend === 'up' ? (
                         <ArrowUpRight className="h-4 w-4 text-green-600" />
-                      ) : weeklyComparison.newCompanies.trend === 'down' ? (
+                      ) : weeklyComparison?.newCompanies?.trend === 'down' ? (
                         <ArrowDownRight className="h-4 w-4 text-red-600" />
                       ) : (
                         <Minus className="h-4 w-4 text-gray-600" />
                       )}
                       <span className={`text-sm font-semibold ${
-                        weeklyComparison.newCompanies.trend === 'up' ? 'text-green-600' :
-                        weeklyComparison.newCompanies.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                        weeklyComparison?.newCompanies?.trend === 'up' ? 'text-green-600' :
+                        weeklyComparison?.newCompanies?.trend === 'down' ? 'text-red-600' : 'text-gray-600'
                       }`}>
-                        {weeklyComparison.newCompanies.value} vs semana passada
+                        {weeklyComparison?.newCompanies?.value || '0%'} vs semana passada
                       </span>
                     </div>
                   </div>

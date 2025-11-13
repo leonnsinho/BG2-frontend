@@ -7,6 +7,7 @@ export const useAdminStats = () => {
     totalUsers: { value: '0', change: '+0 esta semana', loading: true },
     activeJourneys: { value: '0', change: '+0 hoje', loading: true },
     totalProcesses: { value: '0', change: '+0 esta semana', loading: true },
+    totalTasks: { value: '0', change: '0 em andamento', loading: true },
     systemUptime: { value: '99.9%', change: '30 dias', loading: false } // Estático por enquanto
   })
   const [loading, setLoading] = useState(true)
@@ -47,6 +48,18 @@ export const useAdminStats = () => {
           .select('id, created_at')
 
         if (processesError) throw processesError
+
+        // Buscar total de tarefas e tarefas em andamento
+        const { data: tasksData, error: tasksError } = await supabase
+          .from('tasks')
+          .select('id, status')
+
+        if (tasksError) throw tasksError
+
+        // Contar tarefas em andamento (status: 'in_progress' ou 'pending')
+        const tasksInProgress = tasksData?.filter(task => 
+          task.status === 'in_progress' || task.status === 'pending'
+        ).length || 0
 
         // Calcular mudanças (exemplo: últimos 30 dias para empresas, 7 dias para usuários, hoje para jornadas)
         const now = new Date()
@@ -95,6 +108,11 @@ export const useAdminStats = () => {
             change: newProcessesThisWeek > 0 ? `+${newProcessesThisWeek} esta semana` : 'Sem mudanças esta semana',
             loading: false
           },
+          totalTasks: {
+            value: String(tasksData?.length || 0),
+            change: `${tasksInProgress} em andamento`,
+            loading: false
+          },
           systemUptime: {
             value: '99.9%',
             change: '30 dias',
@@ -112,6 +130,7 @@ export const useAdminStats = () => {
           totalUsers: { value: 'Erro', change: 'Não foi possível carregar', loading: false },
           activeJourneys: { value: 'Erro', change: 'Não foi possível carregar', loading: false },
           totalProcesses: { value: 'Erro', change: 'Não foi possível carregar', loading: false },
+          totalTasks: { value: 'Erro', change: 'Não foi possível carregar', loading: false },
           systemUptime: { value: '99.9%', change: '30 dias', loading: false }
         })
       } finally {

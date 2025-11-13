@@ -24,6 +24,7 @@ const JourneyManagementOverview = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [companySearchTerm, setCompanySearchTerm] = useState('')
+  const [logoUrls, setLogoUrls] = useState({})
 
   // Dados das 5 jornadas da metodologia Bossa Focus com cores BG2
   const journeysData = [
@@ -109,6 +110,8 @@ const JourneyManagementOverview = () => {
     try {
       setLoading(true)
       
+      let companiesData = []
+      
       // Super Admin pode ver todas as empresas
       if (profile?.role === 'super_admin') {
         const { data, error } = await supabase
@@ -117,7 +120,8 @@ const JourneyManagementOverview = () => {
           .order('name')
 
         if (error) throw error
-        setCompanies(data || [])
+        companiesData = data || []
+        setCompanies(companiesData)
       } 
       // Company Admin só pode ver as empresas onde tem vínculo ativo
       else {
@@ -131,7 +135,8 @@ const JourneyManagementOverview = () => {
               name,
               cnpj,
               is_active,
-              subscription_status
+              subscription_status,
+              logo_url
             )
           `)
           .eq('user_id', profile?.id)
@@ -140,9 +145,31 @@ const JourneyManagementOverview = () => {
         if (userCompaniesError) throw userCompaniesError
         
         // Extrair as empresas dos dados retornados
-        const userCompanies = userCompaniesData?.map(uc => uc.companies).filter(Boolean) || []
-        setCompanies(userCompanies)
+        companiesData = userCompaniesData?.map(uc => uc.companies).filter(Boolean) || []
+        setCompanies(companiesData)
       }
+
+      // Carregar logos das empresas
+      const urls = {}
+      for (const company of companiesData) {
+        console.log('🏢 Empresa:', company.name, 'logo_url:', company.logo_url)
+        if (company.logo_url) {
+          const { data, error } = await supabase.storage
+            .from('company-avatars')
+            .createSignedUrl(company.logo_url, 3600) // 1 hora
+          
+          if (error) {
+            console.error('❌ Erro ao gerar signed URL para', company.name, error)
+          }
+          
+          if (data?.signedUrl) {
+            console.log('✅ Signed URL gerada para', company.name, ':', data.signedUrl)
+            urls[company.id] = data.signedUrl
+          }
+        }
+      }
+      console.log('📦 logoUrls finais:', urls)
+      setLogoUrls(urls)
     } catch (error) {
       console.error('Erro ao carregar empresas:', error)
       setCompanies([])
@@ -289,9 +316,31 @@ const JourneyManagementOverview = () => {
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-[#373435]">{company.name}</p>
-                            <p className="text-sm text-gray-500">{company.cnpj || 'CNPJ não informado'}</p>
+                          <div className="flex items-center gap-4">
+                            {/* Logo da Empresa */}
+                            <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 flex items-center justify-center overflow-hidden">
+                              {logoUrls[company.id] ? (
+                                <img 
+                                  src={logoUrls[company.id]} 
+                                  alt={company.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none'
+                                    e.target.nextSibling.style.display = 'flex'
+                                  }}
+                                />
+                              ) : null}
+                              <Building2 
+                                className="h-6 w-6 text-[#EBA500]" 
+                                style={{ display: logoUrls[company.id] ? 'none' : 'block' }}
+                              />
+                            </div>
+                            
+                            {/* Dados da Empresa */}
+                            <div>
+                              <p className="font-medium text-[#373435]">{company.name}</p>
+                              <p className="text-sm text-gray-500">{company.cnpj || 'CNPJ não informado'}</p>
+                            </div>
                           </div>
                           <div className={`inline-flex items-center px-3 py-1 rounded-2xl text-xs font-medium ${
                             company.is_active && company.subscription_status === 'active'

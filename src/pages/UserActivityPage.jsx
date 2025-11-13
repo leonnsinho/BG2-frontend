@@ -50,6 +50,7 @@ function UserActivityPage() {
   const [roleFilter, setRoleFilter] = useState('all')
   const [companyFilter, setCompanyFilter] = useState('all')
   const [companies, setCompanies] = useState([])
+  const [avatarUrls, setAvatarUrls] = useState({})
   
   // 🔥 NOVO: Estado para modal de tarefas
   const [showTasksModal, setShowTasksModal] = useState(false)
@@ -80,6 +81,52 @@ function UserActivityPage() {
     fetchUserActivity()
     fetchCompanies()
   }, [])
+
+  // Carregar avatars dos usuários
+  useEffect(() => {
+    const loadAvatars = async () => {
+      if (users.length === 0) return
+      
+      console.log('📸 Carregando avatares. Total de usuários:', users.length)
+      
+      // Buscar avatar_url da tabela profiles
+      const userIds = users.map(u => u.id)
+      const { data: profilesData, error } = await supabase
+        .from('profiles')
+        .select('id, avatar_url')
+        .in('id', userIds)
+      
+      if (error) {
+        console.error('❌ Erro ao buscar profiles:', error)
+        return
+      }
+      
+      console.log('📋 Profiles carregados:', profilesData)
+      
+      const urls = {}
+      for (const profile of (profilesData || [])) {
+        console.log('👤 Profile:', profile.id, 'avatar_url:', profile.avatar_url)
+        if (profile.avatar_url) {
+          const { data, error: urlError } = await supabase.storage
+            .from('profile-avatars')
+            .createSignedUrl(profile.avatar_url, 3600)
+          
+          if (urlError) {
+            console.error('❌ Erro ao gerar URL para', profile.id, urlError)
+          }
+          
+          if (data?.signedUrl) {
+            console.log('✅ URL gerada para', profile.id)
+            urls[profile.id] = data.signedUrl
+          }
+        }
+      }
+      console.log('📦 Total de avatares carregados:', Object.keys(urls).length)
+      setAvatarUrls(urls)
+    }
+    
+    loadAvatars()
+  }, [users])
 
   const fetchCompanies = async () => {
     try {
@@ -794,8 +841,24 @@ function UserActivityPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0">
-                          <div className="h-10 w-10 bg-gradient-to-br from-[#EBA500] to-[#EBA500]/80 rounded-full flex items-center justify-center text-white font-semibold">
-                            {user.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
+                          <div className="h-10 w-10 bg-gradient-to-br from-[#EBA500] to-[#EBA500]/80 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
+                            {avatarUrls[user.id] ? (
+                              <img 
+                                src={avatarUrls[user.id]} 
+                                alt={user.full_name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none'
+                                  e.target.nextSibling.style.display = 'flex'
+                                }}
+                              />
+                            ) : null}
+                            <span 
+                              className="text-white font-semibold"
+                              style={{ display: avatarUrls[user.id] ? 'none' : 'flex' }}
+                            >
+                              {user.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
+                            </span>
                           </div>
                         </div>
                         <div className="ml-4">

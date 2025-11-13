@@ -20,7 +20,10 @@ import {
   CreditCard,
   TestTube,
   Shuffle,
-  Trash2
+  Trash2,
+  Upload,
+  Image as ImageIcon,
+  X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -30,6 +33,8 @@ export default function CreateCompanyPage() {
   const { isSuperAdmin } = usePermissions()
   const [loading, setLoading] = useState(false)
   const [isInternational, setIsInternational] = useState(false)
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
     cnpj: '',
@@ -326,7 +331,45 @@ export default function CreateCompanyPage() {
         country: 'Brasil'
       }
     })
+    setLogoFile(null)
+    setLogoPreview(null)
     toast.success('🗑️ Formulário limpo!')
+  }
+
+  // Função para lidar com upload de logo
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0]
+    
+    if (!file) return
+
+    // Validar tipo de arquivo
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      toast.error('Tipo de arquivo inválido. Use JPG, PNG, GIF ou WEBP')
+      return
+    }
+
+    // Validar tamanho (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. O tamanho máximo é 5MB')
+      return
+    }
+
+    setLogoFile(file)
+
+    // Criar preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setLogoPreview(reader.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Função para remover logo
+  const removeLogo = () => {
+    setLogoFile(null)
+    setLogoPreview(null)
+    toast.success('Logo removido')
   }
 
   const validateForm = () => {
@@ -362,6 +405,33 @@ export default function CreateCompanyPage() {
     setLoading(true)
 
     try {
+      let logoUrl = null
+
+      // 1. Upload do logo primeiro (se houver)
+      if (logoFile) {
+        const fileExt = logoFile.name.split('.').pop()
+        const fileName = `${Date.now()}.${fileExt}`
+        const filePath = `${fileName}`
+
+        console.log('📤 Fazendo upload do logo:', filePath)
+
+        const { error: uploadError } = await supabase.storage
+          .from('company-avatars')
+          .upload(filePath, logoFile, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (uploadError) {
+          console.error('❌ Erro no upload do logo:', uploadError)
+          throw new Error(`Erro ao fazer upload do logo: ${uploadError.message}`)
+        }
+
+        logoUrl = filePath
+        console.log('✅ Logo uploaded:', logoUrl)
+      }
+
+      // 2. Criar empresa com logo_url
       const companyData = {
         name: formData.name.trim(),
         cnpj: formData.cnpj.trim() || null,
@@ -371,6 +441,7 @@ export default function CreateCompanyPage() {
         industry: formData.industry.trim() || null,
         size: formData.size,
         address: Object.values(formData.address).some(v => v.trim()) ? formData.address : null,
+        logo_url: logoUrl,
         created_by: user.id,
         subscription_plan: 'basic',
         subscription_status: 'active',
@@ -385,7 +456,15 @@ export default function CreateCompanyPage() {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        // Se houver erro ao criar empresa, deletar logo que foi enviado
+        if (logoUrl) {
+          await supabase.storage
+            .from('company-avatars')
+            .remove([logoUrl])
+        }
+        throw error
+      }
 
       console.log('✅ Empresa criada com sucesso:', data)
       
@@ -527,6 +606,57 @@ export default function CreateCompanyPage() {
                   </div>
                 </div>
               )}
+
+              {/* Upload de Logo */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-[#373435] mb-3">
+                  <ImageIcon className="w-4 h-4 inline mr-1" />
+                  Logo da Empresa (Opcional)
+                </label>
+                
+                {!logoPreview ? (
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-2xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-10 h-10 mb-3 text-gray-400" />
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Clique para fazer upload</span> ou arraste e solte
+                        </p>
+                        <p className="text-xs text-gray-500">PNG, JPG, GIF ou WEBP (MAX. 5MB)</p>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        onChange={handleLogoChange}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+                      <img
+                        src={logoPreview}
+                        alt="Preview do logo"
+                        className="w-24 h-24 object-contain rounded-lg bg-white border border-gray-200"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-[#373435]">{logoFile?.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {(logoFile?.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeLogo}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">

@@ -775,11 +775,17 @@ const PlanejamentoEstrategico = () => {
       // Buscar UUID da jornada
       const journeyUUID = await getJourneyUUIDBySlug(jornadaSelecionada.slug)
       
-      // 🔥 CORREÇÃO: O campo 'id' da tabela processes JÁ É UM UUID, não um número serial
-      // Usamos diretamente o processoId que vem do hook
+      // 🔥 CORREÇÃO: Validar se o processo é REAL (UUID) ou MOCK (número)
       const processUUID = adicionandoTarefa.processoId
       
       console.log('🔍 ProcessoId:', processUUID, 'Type:', typeof processUUID)
+      
+      // 🚨 BLOQUEIO: Se for número (mock), não permitir criação de tarefa
+      if (typeof processUUID === 'number') {
+        alert('⚠️ Esta empresa ainda não possui processos criados nesta jornada.\n\nOs processos exibidos são apenas exemplos de demonstração. Para criar tarefas, primeiro é necessário criar processos reais através do sistema de Gestão de Processos.')
+        console.error('❌ Tentativa de criar tarefa em processo MOCK (ID numérico):', processUUID)
+        return
+      }
       
       const taskData = {
         title: adicionandoTarefa.titulo,
@@ -1167,14 +1173,21 @@ const PlanejamentoEstrategico = () => {
                       {/* Botão Adicionar Tarefa Elegante */}
                       <button
                         onClick={() => {
+                          // 🚨 VALIDAÇÃO: Só permitir se processo for REAL (UUID, não número mock)
+                          if (typeof processo.id === 'number') {
+                            alert('⚠️ Esta empresa ainda não possui processos criados nesta jornada.\n\nOs processos exibidos são apenas exemplos de demonstração. Para criar tarefas, primeiro é necessário criar processos reais através do sistema de Gestão de Processos.')
+                            return
+                          }
                           // ✅ processo.id JÁ É UUID na tabela processes
                           console.log('📝 Clicou adicionar tarefa:', { processo: processo.nome, id: processo.id, idType: typeof processo.id })
                           iniciarAdicaoTarefa(processo.id)
                         }}
-                        className={`w-full ${coresJornada.iconBg} hover:opacity-90 text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs group-hover:scale-[1.02]`}
+                        disabled={typeof processo.id === 'number'}
+                        className={`w-full ${typeof processo.id === 'number' ? 'bg-gray-400 cursor-not-allowed opacity-60' : `${coresJornada.iconBg} hover:opacity-90`} text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs group-hover:scale-[1.02]`}
+                        title={typeof processo.id === 'number' ? 'Processos de exemplo - crie processos reais para adicionar tarefas' : 'Adicionar tarefa ao processo'}
                       >
                         <Plus className="h-3 w-3 flex-shrink-0" />
-                        <span className="truncate">Adicionar Tarefa</span>
+                        <span className="truncate">{typeof processo.id === 'number' ? 'Processo Mock' : 'Adicionar Tarefa'}</span>
                       </button>
 
                       {/* Barra de Progresso de Amadurecimento */}

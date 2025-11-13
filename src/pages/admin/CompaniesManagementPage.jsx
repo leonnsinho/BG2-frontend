@@ -18,9 +18,13 @@ import {
   List,
   Grid3X3,
   Target,
-  FileText
+  FileText,
+  Upload,
+  Image as ImageIcon,
+  X
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
+import toast from 'react-hot-toast'
 
 const COMPANY_TYPES = {
   'micro': { label: 'Micro Empresa', color: 'green' },
@@ -39,8 +43,22 @@ const COMPANY_TYPES = {
       <div className="bg-white border border-gray-200/50 rounded-3xl p-6 hover:shadow-lg transition-all duration-200 hover:border-[#EBA500]/30 group">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 flex items-center justify-center">
-              <Building2 className="h-6 w-6 text-[#EBA500]" />
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 flex items-center justify-center overflow-hidden">
+              {logoUrls[company.id] ? (
+                <img 
+                  src={logoUrls[company.id]} 
+                  alt={company.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none'
+                    e.target.nextSibling.style.display = 'flex'
+                  }}
+                />
+              ) : null}
+              <Building2 
+                className="h-6 w-6 text-[#EBA500]" 
+                style={{ display: logoUrls[company.id] ? 'none' : 'block' }}
+              />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-[#373435] group-hover:text-[#EBA500] transition-colors duration-200">
@@ -158,6 +176,7 @@ export default function CompaniesManagementPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [updating, setUpdating] = useState(false)
   const [modalAnimating, setModalAnimating] = useState(false)
+  const [logoUrls, setLogoUrls] = useState({})
 
   // Fechar modal com ESC
   useEffect(() => {
@@ -246,6 +265,21 @@ export default function CompaniesManagementPage() {
       )
 
       setCompanies(enrichedCompanies)
+
+      // Carregar logos das empresas
+      const urls = {}
+      for (const company of enrichedCompanies) {
+        if (company.logo_url) {
+          const { data } = await supabase.storage
+            .from('company-avatars')
+            .createSignedUrl(company.logo_url, 3600) // 1 hora
+          
+          if (data?.signedUrl) {
+            urls[company.id] = data.signedUrl
+          }
+        }
+      }
+      setLogoUrls(urls)
     } catch (error) {
       console.error('Erro ao carregar empresas:', error)
     } finally {
@@ -612,8 +646,22 @@ export default function CompaniesManagementPage() {
                         <td className="px-8 py-6 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-12 w-12">
-                              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 flex items-center justify-center">
-                                <Building2 className="h-6 w-6 text-[#EBA500]" />
+                              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 flex items-center justify-center overflow-hidden">
+                                {logoUrls[company.id] ? (
+                                  <img 
+                                    src={logoUrls[company.id]} 
+                                    alt={company.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none'
+                                      e.target.nextSibling.style.display = 'flex'
+                                    }}
+                                  />
+                                ) : null}
+                                <Building2 
+                                  className="h-6 w-6 text-[#EBA500]" 
+                                  style={{ display: logoUrls[company.id] ? 'none' : 'block' }}
+                                />
                               </div>
                             </div>
                             <div className="ml-4">
@@ -881,10 +929,113 @@ function CompanyEditModal({ company, onClose, onSave, loading, animating }) {
     website: company.website || '',
     cnpj: company.cnpj || ''
   })
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(null)
+  const [currentLogoUrl, setCurrentLogoUrl] = useState(null)
+  const [removeLogo, setRemoveLogo] = useState(false)
 
-  const handleSubmit = (e) => {
+  // Carregar logo atual se existir
+  useEffect(() => {
+    const loadCurrentLogo = async () => {
+      if (company.logo_url) {
+        const { data } = await supabase.storage
+          .from('company-avatars')
+          .createSignedUrl(company.logo_url, 3600)
+        
+        if (data?.signedUrl) {
+          setCurrentLogoUrl(data.signedUrl)
+        }
+      }
+    }
+    loadCurrentLogo()
+  }, [company.logo_url])
+
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0]
+    
+    if (!file) return
+
+    // Validar tipo de arquivo
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      toast.error('Tipo de arquivo inválido. Use JPG, PNG, GIF ou WEBP')
+      return
+    }
+
+    // Validar tamanho (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. O tamanho máximo é 5MB')
+      return
+    }
+
+    setLogoFile(file)
+    setRemoveLogo(false)
+
+    // Criar preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setLogoPreview(reader.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null)
+    setLogoPreview(null)
+    setCurrentLogoUrl(null)
+    setRemoveLogo(true)
+    toast.success('Logo será removido ao salvar')
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    onSave(company.id, formData)
+    
+    let logoUrl = company.logo_url
+
+    try {
+      // 1. Se há um novo logo para upload
+      if (logoFile) {
+        // Deletar logo antigo se existir
+        if (company.logo_url) {
+          await supabase.storage
+            .from('company-avatars')
+            .remove([company.logo_url])
+        }
+
+        // Upload do novo logo
+        const fileExt = logoFile.name.split('.').pop()
+        const fileName = `${Date.now()}.${fileExt}`
+        const filePath = `${fileName}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('company-avatars')
+          .upload(filePath, logoFile, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (uploadError) {
+          throw new Error(`Erro ao fazer upload do logo: ${uploadError.message}`)
+        }
+
+        logoUrl = filePath
+      }
+      // 2. Se o usuário marcou para remover o logo
+      else if (removeLogo && company.logo_url) {
+        await supabase.storage
+          .from('company-avatars')
+          .remove([company.logo_url])
+        
+        logoUrl = null
+      }
+
+      // 3. Atualizar empresa com novo logo_url
+      await onSave(company.id, { ...formData, logo_url: logoUrl })
+      
+    } catch (error) {
+      console.error('Erro ao processar logo:', error)
+      toast.error(error.message || 'Erro ao processar logo')
+    }
   }
 
   return (
@@ -916,6 +1067,72 @@ function CompanyEditModal({ company, onClose, onSave, loading, animating }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+          </div>
+
+          {/* Upload de Logo */}
+          <div className="mb-6 pb-6 border-b border-gray-100">
+            <label className="block text-sm font-semibold text-[#373435] mb-3">
+              <ImageIcon className="w-4 h-4 inline mr-1" />
+              Logo da Empresa
+            </label>
+            
+            {!logoPreview && !currentLogoUrl ? (
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-2xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                    <p className="mb-1 text-sm text-gray-500">
+                      <span className="font-semibold">Clique para fazer upload</span> ou arraste e solte
+                    </p>
+                    <p className="text-xs text-gray-500">PNG, JPG, GIF ou WEBP (MAX. 5MB)</p>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                    onChange={handleLogoChange}
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+                  <img
+                    src={logoPreview || currentLogoUrl}
+                    alt="Logo da empresa"
+                    className="w-20 h-20 object-contain rounded-lg bg-white border border-gray-200"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-[#373435]">
+                      {logoFile ? logoFile.name : 'Logo atual'}
+                    </p>
+                    {logoFile && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {(logoFile.size / 1024).toFixed(2)} KB
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <label className="cursor-pointer p-2 text-[#EBA500] hover:bg-[#EBA500]/10 rounded-lg transition-colors duration-200">
+                      <Upload className="w-5 h-5" />
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        onChange={handleLogoChange}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

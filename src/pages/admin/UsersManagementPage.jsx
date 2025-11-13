@@ -95,6 +95,7 @@ export default function UsersManagementPage() {
   const [updating, setUpdating] = useState(false)
   const [newUserEmail, setNewUserEmail] = useState('')
   const [creatingUser, setCreatingUser] = useState(false)
+  const [avatarUrls, setAvatarUrls] = useState({})
 
   // Obter empresa do usuário atual se for company_admin
   const getCurrentUserCompany = () => {
@@ -119,6 +120,28 @@ export default function UsersManagementPage() {
       loadCompanies()
     }
   }, [profile])
+
+  // Carregar avatars dos usuários
+  useEffect(() => {
+    const loadAvatars = async () => {
+      const urls = {}
+      for (const user of users) {
+        if (user.avatar_url) {
+          const { data } = await supabase.storage
+            .from('profile-avatars')
+            .createSignedUrl(user.avatar_url, 3600)
+          if (data?.signedUrl) {
+            urls[user.id] = data.signedUrl
+          }
+        }
+      }
+      setAvatarUrls(urls)
+    }
+    
+    if (users.length > 0) {
+      loadAvatars()
+    }
+  }, [users])
 
   const loadUsers = async () => {
     try {
@@ -679,8 +702,22 @@ export default function UsersManagementPage() {
                     <tr key={user.id} className="hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5 transition-all duration-200">
                       <td className="px-8 py-6 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-700">
+                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                            {avatarUrls[user.id] ? (
+                              <img 
+                                src={avatarUrls[user.id]} 
+                                alt={user.full_name || 'Avatar'}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none'
+                                  e.target.nextSibling.style.display = 'flex'
+                                }}
+                              />
+                            ) : null}
+                            <span 
+                              className="text-sm font-medium text-gray-700"
+                              style={{ display: avatarUrls[user.id] ? 'none' : 'flex' }}
+                            >
                               {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                             </span>
                           </div>
