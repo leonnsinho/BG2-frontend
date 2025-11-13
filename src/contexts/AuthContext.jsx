@@ -53,6 +53,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [error, setError] = useState(null)
   const pendingFetches = useRef({}) // Controle de chamadas simultâneas
 
@@ -433,6 +434,7 @@ export function AuthProvider({ children }) {
   // Logout
   const signOut = async () => {
     try {
+      setIsLoggingOut(true)
       setLoading(true)
       
       // Tentar logout no Supabase, mas não falhar se der erro
@@ -463,6 +465,9 @@ export function AuthProvider({ children }) {
       
       console.log('✅ Logout realizado com sucesso')
       
+      // Aguardar 2 segundos para mostrar a tela de logout
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
     } catch (error) {
       console.error('❌ Erro crítico no logout:', error)
       // Mesmo com erro crítico, limpar estado local
@@ -473,6 +478,7 @@ export function AuthProvider({ children }) {
       pendingFetches.current = {}
     } finally {
       setLoading(false)
+      setIsLoggingOut(false)
     }
   }
 
@@ -801,6 +807,7 @@ export function AuthProvider({ children }) {
     user,
     profile,
     loading,
+    isLoggingOut,
     error,
     signIn,
     signUp,

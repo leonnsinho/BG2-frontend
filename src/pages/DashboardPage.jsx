@@ -10,6 +10,7 @@ import { DashboardSkeleton, SmartLoader } from '../components/ui/DashboardLoader
 import UnlinkedUserMessage from '../components/common/UnlinkedUserMessage'
 import { GestorDashboard } from '../components/dashboard/GestorDashboard'
 import { UserDashboard } from '../components/dashboard/UserDashboard'
+import CompanyAdminDashboard from '../components/dashboard/CompanyAdminDashboard'
 import { ProgressMetric } from '../components/dashboard/ProgressMetric'
 import { 
   AreaChart,
@@ -996,84 +997,7 @@ const DashboardPage = memo(() => {
 
   // Dashboard específico para Company Admin
   if (isCompanyAdmin() && !isUnlinkedUser()) {
-    // Obter empresa ativa
-    const activeCompany = profile?.user_companies?.find(uc => uc.is_active)
-    const companyId = activeCompany?.company_id
-
-    return (
-      <div className="min-h-screen bg-white">
-        <div className="p-8 max-w-7xl mx-auto">
-          
-          {/* Saudação personalizada */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-[#373435] mb-2">
-              {getGreeting()}, {profile?.full_name || user?.email?.split('@')[0] || 'Admin'}!
-            </h1>
-            <p className="text-lg text-neutral-600">
-              Painel administrativo - {activeCompany?.companies?.name || activeCompany?.name || 'Sua Empresa'}
-            </p>
-          </div>
-
-            {/* Status da Empresa */}
-            <div className="bg-white border border-[#EBA500]/20 rounded-3xl p-8 shadow-lg ring-1 ring-[#EBA500]/5">
-              <div className="mb-8">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-[#EBA500] rounded-2xl flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-[#373435] mb-1">Status da Empresa</h3>
-                    <p className="text-neutral-600">{activeCompany?.companies?.name || activeCompany?.name || 'Sua Empresa'}</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Métricas rápidas */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl">
-                  <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="text-2xl font-bold text-blue-600">12</div>
-                  <div className="text-sm text-blue-600 font-medium">Usuários Ativos</div>
-                </div>
-
-                <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl">
-                  <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Target className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="text-2xl font-bold text-green-600">5</div>
-                  <div className="text-sm text-green-600 font-medium">Gestores Ativos</div>
-                </div>
-
-                <div className="text-center p-6 bg-gradient-to-br from-[#EBA500]/10 to-[#EBA500]/20 rounded-2xl">
-                  <div className="w-16 h-16 bg-[#EBA500] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Calendar className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="text-2xl font-bold text-[#EBA500]">23</div>
-                  <div className="text-sm text-[#373435] font-medium">Tarefas em Andamento</div>
-                </div>
-              </div>
-
-              {/* Status Global */}
-              <div className="pt-8 border-t border-neutral-100 mt-8">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-4 h-4 bg-success-500 rounded-full animate-pulse shadow-lg shadow-success-200"></div>
-                    <div>
-                      <span className="text-lg font-bold text-[#373435]">Empresa Operacional</span>
-                      <p className="text-sm text-neutral-500">Todos os sistemas funcionando normalmente</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-[#EBA500]">Atualizado agora</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-    )
+    return <CompanyAdminDashboard />
   }
 
   // Dashboard específico para gestores

@@ -23,7 +23,7 @@ export const useTasks = (overrideCompanyId = null) => {
     return null
   }
 
-  // Buscar usuários da empresa com role 'user' para atribuir tarefas
+  // Buscar TODOS os participantes da empresa (admins, gestores, usuários, etc.)
   const getCompanyUsers = async () => {
     try {
       const companyId = getCompanyId()
@@ -33,15 +33,14 @@ export const useTasks = (overrideCompanyId = null) => {
         return []
       }
 
-      console.log('🔍 Buscando usuários da empresa:', companyId)
+      console.log('🔍 Buscando TODOS os participantes da empresa:', companyId)
 
-      // Passo 1: Buscar user_companies com role 'user'
+      // Passo 1: Buscar TODOS os user_companies (sem filtro de role)
       const { data: userCompanies, error: ucError } = await supabase
         .from('user_companies')
-        .select('user_id')
+        .select('user_id, role')
         .eq('company_id', companyId)
         .eq('is_active', true)
-        .eq('role', 'user')
 
       if (ucError) {
         console.error('❌ Erro ao buscar user_companies:', ucError)
@@ -49,17 +48,17 @@ export const useTasks = (overrideCompanyId = null) => {
       }
 
       if (!userCompanies || userCompanies.length === 0) {
-        console.log('📭 Nenhum usuário encontrado na empresa')
+        console.log('📭 Nenhum participante encontrado na empresa')
         return []
       }
 
       const userIds = userCompanies.map(uc => uc.user_id)
-      console.log('🆔 User IDs encontrados:', userIds)
+      console.log('🆔 User IDs encontrados:', userIds.length, 'participantes')
 
       // Passo 2: Buscar dados dos profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, email, full_name')
+        .select('id, email, full_name, role')
         .in('id', userIds)
 
       if (profilesError) {
@@ -67,13 +66,21 @@ export const useTasks = (overrideCompanyId = null) => {
         throw profilesError
       }
 
-      const users = profiles?.map(profile => ({
-        id: profile.id,
-        email: profile.email,
-        name: profile.full_name || profile.email
-      })) || []
+      const users = profiles?.map(profile => {
+        // Buscar role do user_companies para esse usuário
+        const uc = userCompanies.find(u => u.user_id === profile.id)
+        const roleLabel = uc?.role === 'company_admin' ? ' (Admin)' : 
+                         uc?.role === 'gestor' ? ' (Gestor)' : ''
+        
+        return {
+          id: profile.id,
+          email: profile.email,
+          name: (profile.full_name || profile.email) + roleLabel,
+          role: uc?.role || 'user'
+        }
+      }) || []
 
-      console.log('✅ Usuários finais:', users)
+      console.log('✅ Participantes finais:', users.length, 'pessoas')
       return users
 
     } catch (err) {
@@ -122,6 +129,40 @@ export const useTasks = (overrideCompanyId = null) => {
       }
 
       console.log('✅ getTasks: Tarefas encontradas:', tasks?.length || 0)
+      
+      // 🔥 Buscar dados adicionais de criadores e jornadas
+      if (tasks && tasks.length > 0) {
+        // Buscar criadores
+        const creatorIds = [...new Set(tasks.map(t => t.created_by).filter(Boolean))]
+        const journeyIds = [...new Set(tasks.map(t => t.journey_id).filter(Boolean))]
+        
+        let creators = []
+        let journeys = []
+        
+        if (creatorIds.length > 0) {
+          const { data: creatorsData } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', creatorIds)
+          creators = creatorsData || []
+        }
+        
+        if (journeyIds.length > 0) {
+          const { data: journeysData } = await supabase
+            .from('journeys')
+            .select('id, name')
+            .in('id', journeyIds)
+          journeys = journeysData || []
+        }
+        
+        // Enriquecer tarefas com dados de criador e jornada
+        return tasks.map(task => ({
+          ...task,
+          creator: creators.find(c => c.id === task.created_by) || null,
+          journey: journeys.find(j => j.id === task.journey_id) || null
+        }))
+      }
+      
       return tasks || []
 
     } catch (err) {

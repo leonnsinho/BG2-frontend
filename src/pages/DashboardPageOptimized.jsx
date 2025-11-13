@@ -5,6 +5,7 @@ import { Layout } from '../components/layout/Layout'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { LoadingSpinner } from '../components/ui/FeedbackComponents'
+import CompanyAdminDashboard from '../components/dashboard/CompanyAdminDashboard'
 import { 
   Users, 
   Building2, 
@@ -456,6 +457,15 @@ export function DashboardPage() {
             </div>
           </div>
         </div>
+      </Layout>
+    )
+  }
+
+  // Dashboard específico para Company Admin
+  if (isCompanyAdmin) {
+    return (
+      <Layout>
+        <CompanyAdminDashboard />
       </Layout>
     )
   }

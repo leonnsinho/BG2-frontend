@@ -81,13 +81,24 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       icon: Home,
       href: '/dashboard',
       roles: ['super_admin', 'gestor', 'gestor_financeiro', 'gestor_estrategico', 'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional', 'company_admin', 'user']
+    },
+    {
+      name: 'Minhas Tarefas',
+      icon: CheckSquare,
+      href: '/tarefas',
+      roles: ['gestor', 'gestor_financeiro', 'gestor_estrategico', 'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional', 'company_admin', 'user']
     }
   ]
 
   // Super Admin - Acesso total
   if (permissions.isSuperAdmin()) {
+    // Filtrar baseItems para remover itens que Super Admin não deve ver
+    const filteredBaseItems = baseItems.filter(item => 
+      item.roles.includes('super_admin')
+    )
+    
     return [
-      ...baseItems,
+      ...filteredBaseItems,
       {
         name: 'Gestão de Sistema',
         icon: Shield,

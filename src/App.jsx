@@ -35,6 +35,7 @@ import ProcessRequestsPage from './pages/ProcessRequestsPage'
 import AllProcessesPage from './pages/AllProcessesPage'
 import OperationalPoliciesPage from './pages/OperationalPoliciesPage'
 import TasksInProgressNew from './pages/TasksInProgressNew'
+import TasksPage from './pages/TasksPage'
 import ActiveUsersPage from './pages/ActiveUsersPage'
 import UserActivityPage from './pages/UserActivityPage'
 import MaturityApprovalsPage from './pages/MaturityApprovalsPage'
@@ -44,6 +45,8 @@ import DfcPage from './pages/financeiro/DfcPage'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
 import { useUserContext } from './contexts/UserContext'
+import LoadingScreen from './components/LoadingScreen'
+import LogoutScreen from './components/LogoutScreen'
 
 // Componente para gerenciar notificações globais
 function NotificationManager() {
@@ -59,14 +62,14 @@ function NotificationManager() {
 
 // Componente para redirecionar baseado no estado de auth
 function RootRedirect() {
-  const { user, loading } = useAuth()
+  const { user, loading, isLoggingOut } = useAuth()
+  
+  if (isLoggingOut) {
+    return <LogoutScreen />
+  }
   
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    )
+    return <LoadingScreen />
   }
   
   return <Navigate to={user ? "/dashboard" : "/login"} replace />
@@ -126,6 +129,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <TasksInProgressNew />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route 
+        path="/tarefas" 
+        element={
+          <ProtectedRoute>
+            <TasksPage />
           </ProtectedRoute>
         }
       />
