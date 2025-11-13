@@ -90,7 +90,7 @@ export default function OperationalPoliciesPage() {
     content_data: { text: '' }
   })
   
-  const [uploadFile, setUploadFile] = useState(null)
+  const [uploadFiles, setUploadFiles] = useState([])
   const [uploadDescription, setUploadDescription] = useState('')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -629,61 +629,82 @@ export default function OperationalPoliciesPage() {
     }
   }
 
-  // Upload de Anexos
+  // Upload de Anexos (MÚLTIPLOS)
   const handleUploadAttachment = async () => {
-    if (!uploadFile || !selectedSubblock) {
-      alert('Selecione um arquivo')
+    console.log('🔵 handleUploadAttachment chamado')
+    console.log('📁 uploadFiles:', uploadFiles)
+    console.log('📋 selectedSubblock:', selectedSubblock)
+    
+    if (!uploadFiles || uploadFiles.length === 0 || !selectedSubblock) {
+      alert('Selecione pelo menos um arquivo')
       return
     }
 
     setUploading(true)
+    let uploadedCount = 0
+    let failedCount = 0
+    
     try {
-      // Upload para Supabase Storage
-      const fileExt = uploadFile.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-      const filePath = `${userCompanyId}/${selectedJourney.id}/${selectedSubblock}/${fileName}`
+      // Processar cada arquivo
+      for (const file of uploadFiles) {
+        try {
+          // Upload para Supabase Storage
+          const fileExt = file.name.split('.').pop()
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+          const filePath = `${userCompanyId}/${selectedJourney.id}/${selectedSubblock}/${fileName}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('policy-attachments')
-        .upload(filePath, uploadFile)
+          const { error: uploadError } = await supabase.storage
+            .from('policy-attachments')
+            .upload(filePath, file)
 
-      if (uploadError) throw uploadError
+          if (uploadError) throw uploadError
 
-      // Obter URL autenticada (bucket é privado)
-      const { data: urlData } = await supabase.storage
-        .from('policy-attachments')
-        .createSignedUrl(filePath, 31536000) // URL válida por 1 ano
+          // Obter URL autenticada (bucket é privado)
+          const { data: urlData } = await supabase.storage
+            .from('policy-attachments')
+            .createSignedUrl(filePath, 31536000) // URL válida por 1 ano
 
-      if (!urlData || !urlData.signedUrl) {
-        throw new Error('Não foi possível gerar URL do arquivo')
+          if (!urlData || !urlData.signedUrl) {
+            throw new Error('Não foi possível gerar URL do arquivo')
+          }
+
+          // Salvar registro no banco
+          const { error: dbError } = await supabase
+            .from('policy_attachments')
+            .insert([{
+              subblock_id: selectedSubblock,
+              file_name: file.name,
+              file_size: file.size,
+              file_type: file.type,
+              file_url: urlData.signedUrl,
+              storage_path: filePath,
+              description: uploadDescription.trim(),
+              uploaded_by: profile.id
+            }])
+
+          if (dbError) throw dbError
+          
+          uploadedCount++
+        } catch (fileError) {
+          console.error(`Erro ao fazer upload de ${file.name}:`, fileError)
+          failedCount++
+        }
       }
 
-      // Salvar registro no banco
-      const { error: dbError } = await supabase
-        .from('policy_attachments')
-        .insert([{
-          subblock_id: selectedSubblock,
-          file_name: uploadFile.name,
-          file_size: uploadFile.size,
-          file_type: uploadFile.type,
-          file_url: urlData.signedUrl,
-          storage_path: filePath,
-          description: uploadDescription.trim(),
-          uploaded_by: profile.id
-        }])
-
-      if (dbError) throw dbError
+      // Mostrar resultado
+      if (uploadedCount > 0 && failedCount === 0) {
+        alert(`✅ ${uploadedCount} arquivo(s) enviado(s) com sucesso!`)
+      } else if (uploadedCount > 0 && failedCount > 0) {
+        alert(`⚠️ ${uploadedCount} arquivo(s) enviado(s), ${failedCount} falharam.`)
+      } else {
+        throw new Error('Falha ao enviar todos os arquivos')
+      }
 
       // 🔥 Fechar modal e atualizar viewingSubblock
       await closeAttachmentModal()
       
       // Recarregar blocos
       await loadBlocks()
-
-      // 🔥 NOVO: Atualizar viewingSubblock se estiver aberto
-      if (viewingSubblock) {
-        await refreshViewingSubblock(viewingSubblock.id)
-      }
     } catch (error) {
       console.error('Erro ao fazer upload:', error)
       alert('Erro ao fazer upload: ' + error.message)
@@ -835,7 +856,7 @@ export default function OperationalPoliciesPage() {
 
   const openAttachmentModal = (subblockId) => {
     setSelectedSubblock(subblockId)
-    setUploadFile(null)
+    setUploadFiles([])
     setUploadDescription('')
     setShowAttachmentModal(true)
   }
@@ -843,7 +864,7 @@ export default function OperationalPoliciesPage() {
   // 🔥 Fechar modal de anexo E atualizar o viewingSubblock
   const closeAttachmentModal = async () => {
     setShowAttachmentModal(false)
-    setUploadFile(null)
+    setUploadFiles([])
     setUploadDescription('')
     
     // 🔥 Atualizar o sub-bloco visualizado com dados frescos do banco
@@ -2699,12 +2720,13 @@ export default function OperationalPoliciesPage() {
               <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2.5">
-                    Arquivo *
+                    Arquivos * (múltiplos)
                   </label>
                   <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-[#EBA500] hover:bg-[#EBA500]/5 transition-all cursor-pointer">
                     <input
                       type="file"
-                      onChange={(e) => setUploadFile(e.target.files[0])}
+                      multiple
+                      onChange={(e) => setUploadFiles(Array.from(e.target.files))}
                       className="hidden"
                       id="file-upload"
                     />
@@ -2712,18 +2734,32 @@ export default function OperationalPoliciesPage() {
                       <div className="inline-flex p-4 bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 rounded-2xl mb-4">
                         <Upload className="h-10 w-10 text-[#EBA500]" />
                       </div>
-                      {uploadFile ? (
-                        <div>
-                          <p className="text-gray-900 font-bold text-lg mb-1">{uploadFile.name}</p>
-                          <p className="text-sm text-gray-500">{formatFileSize(uploadFile.size)}</p>
+                      {uploadFiles && uploadFiles.length > 0 ? (
+                        <div className="space-y-2">
+                          <p className="text-gray-900 font-bold text-lg mb-3">
+                            {uploadFiles.length} arquivo(s) selecionado(s)
+                          </p>
+                          <div className="max-h-40 overflow-y-auto space-y-2">
+                            {uploadFiles.map((file, idx) => (
+                              <div key={idx} className="flex items-center justify-between bg-gray-50 px-4 py-2 rounded-xl">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <FileIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                  <span className="text-sm text-gray-700 truncate">{file.name}</span>
+                                </div>
+                                <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                                  {formatFileSize(file.size)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ) : (
                         <>
                           <p className="text-gray-700 font-bold mb-2">
-                            Clique para selecionar um arquivo
+                            Clique para selecionar arquivos
                           </p>
                           <p className="text-sm text-gray-500">
-                            PDF, Word, Excel, imagens, etc.
+                            PDF, Word, Excel, imagens, etc. (múltiplos arquivos)
                           </p>
                         </>
                       )}
@@ -2756,7 +2792,7 @@ export default function OperationalPoliciesPage() {
                 </button>
                 <button
                   onClick={handleUploadAttachment}
-                  disabled={uploading || !uploadFile}
+                  disabled={uploading || !uploadFiles || uploadFiles.length === 0}
                   className="px-6 py-3 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-2xl font-semibold transition-all disabled:opacity-50 disabled:hover:shadow-none flex items-center gap-2 hover:scale-105"
                 >
                   {uploading ? (
@@ -2767,7 +2803,7 @@ export default function OperationalPoliciesPage() {
                   ) : (
                     <>
                       <Upload className="h-4 w-4" />
-                      Fazer Upload
+                      Fazer Upload {uploadFiles && uploadFiles.length > 0 ? `(${uploadFiles.length})` : ''}
                     </>
                   )}
                 </button>
