@@ -64,7 +64,7 @@ export const usePriorityProcesses = (overrideCompanyId = null) => {
         1: 'estrategica',
         2: 'financeira', 
         3: 'pessoas-cultura',
-        4: 'receita-crm',
+        4: 'receita',
         5: 'operacional'
       }
 
