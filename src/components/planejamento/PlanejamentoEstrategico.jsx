@@ -818,9 +818,19 @@ const PlanejamentoEstrategico = () => {
 
   // Funções para controlar o sidebar de tarefa
   const abrirTaskSidebar = (tarefa) => {
+    // 🔥 FIX: Garantir que responsavel e dataLimite estejam mapeados corretamente
+    const tarefaFormatada = {
+      ...tarefa,
+      // Se já tem responsavel e dataLimite no formato esperado, usa eles
+      // Senão, pega do fullTask ou dos campos originais
+      responsavel: tarefa.responsavel || tarefa.assigned_to_name || 
+                   (tarefa.assigned_to ? 'Carregando...' : 'Não atribuído'),
+      dataLimite: tarefa.dataLimite || tarefa.due_date
+    }
+    
     setSidebarTask({
       isOpen: true,
-      task: tarefa
+      task: tarefaFormatada
     })
   }
 

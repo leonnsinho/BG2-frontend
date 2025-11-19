@@ -3,6 +3,7 @@ import { X, User, Calendar, MessageCircle, Send, Edit3, Check, Clock, AlertCircl
 import { useAuth } from '../../contexts/AuthContext'
 import { useTasks } from '../../hooks/useTasks'
 import { useFileUpload } from '../../hooks/useFileUpload'
+import { supabase } from '../../services/supabase'
 import FileUploadArea from '../common/FileUploadArea'
 import AttachmentList from '../common/AttachmentList'
 
@@ -20,6 +21,61 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
   const [isVisible, setIsVisible] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState([])
   const [showFileUpload, setShowFileUpload] = useState(false)
+  const [assignedUserName, setAssignedUserName] = useState(null)
+  
+  // 🔥 Buscar nome do usuário atribuído quando necessário
+  useEffect(() => {
+    const fetchAssignedUserName = async () => {
+      if (!task?.assigned_to) {
+        setAssignedUserName(null)
+        return
+      }
+      
+      // Se já tem na lista de users, usa
+      if (users && users.length > 0) {
+        const usuario = users.find(u => u.id === task.assigned_to)
+        if (usuario) {
+          setAssignedUserName(usuario.name)
+          return
+        }
+      }
+      
+      // Senão, busca direto do profiles
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', task.assigned_to)
+          .single()
+        
+        if (error) throw error
+        
+        setAssignedUserName(data.full_name || data.email || 'Usuário')
+      } catch (error) {
+        console.error('Erro ao buscar nome do usuário:', error)
+        setAssignedUserName('Erro ao carregar')
+      }
+    }
+    
+    if (task) {
+      fetchAssignedUserName()
+    }
+  }, [task?.assigned_to, users])
+  
+  // 🔥 Função para obter nome do responsável
+  const getResponsavelName = () => {
+    // 1. Se já tem responsavel mapeado, usa ele
+    if (task.responsavel) return task.responsavel
+    
+    // 2. Se tem assigned_to_name (responsável manual), usa ele
+    if (task.assigned_to_name) return task.assigned_to_name
+    
+    // 3. Usa o nome buscado do banco
+    if (assignedUserName) return assignedUserName
+    
+    // 4. Se não encontrou nada, retorna fallback
+    return task.assigned_to ? 'Carregando...' : 'Não atribuído'
+  }
   
   useEffect(() => {
     if (isOpen && task) {
@@ -255,7 +311,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
                   Responsável
                 </div>
                 <div className="text-sm font-medium text-gray-900 truncate">
-                  {task.responsavel || 'Não atribuído'}
+                  {getResponsavelName()}
                 </div>
               </div>
             </div>
@@ -270,7 +326,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
                   Data Limite
                 </div>
                 <div className="text-sm font-medium text-gray-900 truncate">
-                  {formatDate(task.dataLimite)}
+                  {formatDate(task.dataLimite || task.due_date)}
                 </div>
               </div>
             </div>
