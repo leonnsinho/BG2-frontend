@@ -367,6 +367,20 @@ export function AuthProvider({ children }) {
     return fetchPromise
   }
 
+  // Função para traduzir erros de autenticação
+  const translateAuthError = (errorMessage) => {
+    const translations = {
+      'Invalid login credentials': 'Email ou senha incorretos',
+      'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada e confirme seu email antes de fazer login.',
+      'User not found': 'Usuário não encontrado',
+      'Invalid email': 'Email inválido',
+      'User already registered': 'Este email já está registrado',
+      'Password should be at least 6 characters': 'A senha deve ter pelo menos 6 caracteres',
+    }
+    
+    return translations[errorMessage] || errorMessage
+  }
+
   // Login com email e senha
   const signIn = async (email, password) => {
     console.log('@@@@@@@@@ SIGNIN CHAMADO - VERSAO NOVA @@@@@@@@@')
@@ -379,7 +393,10 @@ export function AuthProvider({ children }) {
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        const translatedError = translateAuthError(error.message)
+        throw new Error(translatedError)
+      }
 
       console.log('@@@@@@@@@ LOGIN BEM SUCEDIDO, user.id:', data.user?.id)
 
@@ -396,8 +413,9 @@ export function AuthProvider({ children }) {
 
       return { user: data.user, error: null }
     } catch (error) {
-      setError(error.message)
-      return { user: null, error: error.message }
+      const errorMsg = error.message
+      setError(errorMsg)
+      return { user: null, error: errorMsg }
     } finally {
       setLoading(false)
     }

@@ -74,18 +74,18 @@ export function RegisterPage() {
       }
 
       if (data.user) {
-        setSuccess('✅ Conta criada com sucesso! Você pode fazer login agora.')
+        setSuccess('✅ Conta criada! Verifique seu email para confirmar e ativar sua conta.')
         
-        // Aguardar 2 segundos e redirecionar para login
+        // Aguardar 3 segundos e redirecionar para login
         setTimeout(() => {
           navigate('/login', { 
             state: { 
               email: formData.email,
-              message: 'Conta criada com sucesso! Faça login para continuar.',
-              type: 'success'
+              message: 'Verifique seu email e clique no link de confirmação antes de fazer login.',
+              type: 'info'
             }
           })
-        }, 2000)
+        }, 3000)
       }
 
     } catch (err) {

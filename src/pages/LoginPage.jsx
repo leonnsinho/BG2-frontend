@@ -16,13 +16,18 @@ export function LoginPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [infoMessage, setInfoMessage] = useState('')
   const { login, loading, error, clearError } = useLogin()
   const { user } = useAuth()
 
-  // Mostrar mensagem de sucesso vinda da navegação (ex: reset de senha)
+  // Mostrar mensagem de sucesso ou info vinda da navegação (ex: reset de senha, registro)
   useEffect(() => {
-    if (location.state?.message && location.state?.type === 'success') {
-      setSuccessMessage(location.state.message)
+    if (location.state?.message) {
+      if (location.state?.type === 'success') {
+        setSuccessMessage(location.state.message)
+      } else if (location.state?.type === 'info') {
+        setInfoMessage(location.state.message)
+      }
       // Limpar o state para não mostrar novamente
       window.history.replaceState({}, document.title)
     }
@@ -190,6 +195,13 @@ export function LoginPage() {
             {successMessage && (
               <div className="bg-success-50 border border-success-200 rounded-lg p-4">
                 <p className="text-sm text-success-700 font-medium">{successMessage}</p>
+              </div>
+            )}
+
+            {/* Mensagem de Informação */}
+            {infoMessage && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700 font-medium">{infoMessage}</p>
               </div>
             )}
 
