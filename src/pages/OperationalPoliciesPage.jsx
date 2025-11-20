@@ -42,6 +42,8 @@ export default function OperationalPoliciesPage() {
   const [viewMode, setViewMode] = useState('list') // 🔥 NOVO: 'list' ou 'grid'
   const [searchQuery, setSearchQuery] = useState('') // 🔥 NOVO: Busca de blocos
   const [subblockSearchQuery, setSubblockSearchQuery] = useState('') // 🔥 NOVO: Busca de sub-blocos
+  const [journeyDescription, setJourneyDescription] = useState('') // Descrição editável da jornada
+  const [editingDescription, setEditingDescription] = useState(false) // Se está editando a descrição
   
   // Modais
   const [showBlockModal, setShowBlockModal] = useState(false)
@@ -116,8 +118,56 @@ export default function OperationalPoliciesPage() {
     if (selectedJourney && userCompanyId) {
       console.log('📋 Carregando blocos para journey:', selectedJourney.name)
       loadBlocks()
+      loadJourneyDescription()
     }
   }, [selectedJourney, userCompanyId])
+
+  const loadJourneyDescription = async () => {
+    if (!selectedJourney?.id || !userCompanyId) return
+
+    try {
+      const { data, error } = await supabase
+        .from('journey_descriptions')
+        .select('description')
+        .eq('journey_id', selectedJourney.id)
+        .eq('company_id', userCompanyId)
+        .single()
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = não encontrado
+        console.error('❌ Erro ao carregar descrição:', error)
+        return
+      }
+
+      setJourneyDescription(data?.description || '')
+    } catch (error) {
+      console.error('❌ Erro ao carregar descrição:', error)
+    }
+  }
+
+  const saveJourneyDescription = async () => {
+    if (!selectedJourney?.id || !userCompanyId) return
+
+    try {
+      const { error } = await supabase
+        .from('journey_descriptions')
+        .upsert({
+          journey_id: selectedJourney.id,
+          company_id: userCompanyId,
+          description: journeyDescription,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'journey_id,company_id'
+        })
+
+      if (error) throw error
+
+      setEditingDescription(false)
+      console.log('✅ Descrição salva com sucesso')
+    } catch (error) {
+      console.error('❌ Erro ao salvar descrição:', error)
+      alert('Erro ao salvar descrição')
+    }
+  }
 
   const loadJourneys = async () => {
     setLoading(true)
@@ -1147,47 +1197,56 @@ export default function OperationalPoliciesPage() {
             </div>
             <div>
               <h1 className="text-4xl font-bold text-[#373435] tracking-tight">
-                Políticas de Operação
+                {selectedJourney ? `Jornada ${selectedJourney.name}` : 'Políticas de Gestão'}
               </h1>
-              <p className="text-gray-500 mt-1">
-                Defina e organize as políticas operacionais por jornada
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Seletor de Jornadas - Minimalista */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-200/50 p-8 mb-8">
-          <div className="flex items-center gap-2 mb-6">
-            <Target className="h-5 w-5 text-[#EBA500]" />
-            <h3 className="text-lg font-bold text-[#373435]">Jornada</h3>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {journeys.map((journey) => (
-              <button
-                key={journey.id}
-                onClick={() => setSelectedJourney(journey)}
-                className={`group relative p-5 rounded-2xl border-2 transition-all duration-200 ${
-                  selectedJourney?.id === journey.id
-                    ? 'border-[#EBA500] bg-gradient-to-br from-[#EBA500]/10 to-[#EBA500]/5 shadow-md shadow-[#EBA500]/10'
-                    : 'border-gray-200/60 hover:border-gray-300 hover:shadow-sm bg-white/50'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div 
-                    className={`w-2.5 h-2.5 rounded-full transition-all ${
-                      selectedJourney?.id === journey.id ? 'ring-2 ring-[#EBA500]/30 ring-offset-2' : ''
-                    }`}
-                    style={{ backgroundColor: journey.color }}
-                  />
-                  <span className={`font-semibold text-sm ${
-                    selectedJourney?.id === journey.id ? 'text-[#373435]' : 'text-gray-700 group-hover:text-gray-900'
-                  }`}>
-                    {journey.name}
-                  </span>
+              {selectedJourney ? (
+                <div className="mt-3">
+                  {editingDescription ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={journeyDescription}
+                        onChange={(e) => setJourneyDescription(e.target.value)}
+                        placeholder="Adicione uma descrição para esta jornada..."
+                        className="flex-1 px-3 py-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-sm bg-white transition-all duration-300"
+                        autoFocus
+                      />
+                      <button
+                        onClick={saveJourneyDescription}
+                        className="p-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white rounded-lg transition-all duration-300"
+                        title="Salvar"
+                      >
+                        <Save className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingDescription(false)
+                          loadJourneyDescription()
+                        }}
+                        className="p-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg transition-all duration-300"
+                        title="Cancelar"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => setEditingDescription(true)}
+                      className="cursor-pointer text-gray-500 hover:text-gray-700 transition-colors inline-flex items-center gap-2 group"
+                    >
+                      {journeyDescription ? (
+                        <span>{journeyDescription}</span>
+                      ) : (
+                        <span className="italic text-gray-400">Clique para adicionar uma descrição...</span>
+                      )}
+                      <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  )}
                 </div>
-              </button>
-            ))}
+              ) : (
+                <p className="text-gray-500 mt-1">Selecione uma jornada no menu lateral</p>
+              )}
+            </div>
           </div>
         </div>
 
