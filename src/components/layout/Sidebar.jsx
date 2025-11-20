@@ -194,13 +194,14 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     return [
       ...baseItems,
       {
-        name: 'Gestão de Sistema',
-        icon: Shield,
-        href: '/admin',
-        children: [
-          { name: 'Usuários', href: '/admin/users' },
-          { name: 'Atribuição de Jornadas', href: '/admin/journey-assignments' }
-        ]
+        name: 'Modelo de Negócio',
+        icon: Building2,
+        href: '#', // Não leva a lugar nenhum por enquanto
+      },
+      {
+        name: 'Diagnóstico do Negócio',
+        icon: CheckSquare,
+        href: '/journey-management/overview'
       },
       {
         name: 'Planejamento Estratégico',
@@ -208,9 +209,16 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/planejamento-estrategico'
       },
       {
-        name: 'Avaliação de Processos',
-        icon: CheckSquare,
-        href: '/journey-management/overview'
+        name: 'Políticas de Gestão',
+        icon: FileText,
+        href: '/operational-policies',
+        children: [
+          { name: 'Estratégia', href: '/operational-policies?journey=estrategica' },
+          { name: 'Financeiro', href: '/operational-policies?journey=financeira' },
+          { name: 'Pessoas e Cultura', href: '/operational-policies?journey=pessoas-cultura' },
+          { name: 'Receita', href: '/operational-policies?journey=receita-crm' },
+          { name: 'Operação', href: '/operational-policies?journey=operacional' }
+        ]
       },
       {
         name: 'Aprovações',
@@ -226,9 +234,13 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         ]
       },
       {
-        name: 'Políticas Operacionais',
-        icon: FileText,
-        href: '/operational-policies'
+        name: 'Gestão do Sistema',
+        icon: Shield,
+        href: '/admin',
+        children: [
+          { name: 'Usuários', href: '/admin/users' },
+          { name: 'Atribuição de Jornadas', href: '/admin/journey-assignments' }
+        ]
       },
       {
         name: 'Relatórios',
@@ -601,7 +613,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
         </div>
 
         {/* Navegação - Scrollable */}
-        <nav className="flex-1 overflow-y-auto py-6 px-3">
+        <nav className="flex-1 overflow-y-auto py-6 px-3 scrollbar-hide">
           
           {/* Seção de Navegação Principal */}
           <div className="mb-3">

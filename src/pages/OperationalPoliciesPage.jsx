@@ -105,11 +105,12 @@ export default function OperationalPoliciesPage() {
     console.log('🔍 Profile carregado:', profile)
     console.log('🏢 Company ID:', userCompanyId)
     console.log('🔗 URL Company ID:', urlCompanyId)
+    console.log('🎯 Journey param:', searchParams.get('journey'))
     
     if (userCompanyId) {
       loadJourneys()
     }
-  }, [profile, userCompanyId, urlCompanyId])
+  }, [profile, userCompanyId, urlCompanyId, searchParams])
 
   useEffect(() => {
     if (selectedJourney && userCompanyId) {
@@ -135,7 +136,22 @@ export default function OperationalPoliciesPage() {
 
       console.log('✅ Jornadas carregadas:', data?.length)
       setJourneys(data || [])
-      if (data && data.length > 0) {
+      
+      // 🔥 NOVO: Verificar se há jornada especificada na URL
+      const journeyParam = searchParams.get('journey')
+      
+      if (journeyParam && data && data.length > 0) {
+        // Procurar jornada pelo slug
+        const journeyFromUrl = data.find(j => j.slug === journeyParam)
+        if (journeyFromUrl) {
+          console.log('🎯 Selecionando jornada da URL:', journeyFromUrl.name)
+          setSelectedJourney(journeyFromUrl)
+        } else {
+          // Se não encontrar, selecionar a primeira
+          setSelectedJourney(data[0])
+        }
+      } else if (data && data.length > 0) {
+        // Se não há parâmetro na URL, selecionar a primeira
         setSelectedJourney(data[0])
       }
     } catch (error) {
