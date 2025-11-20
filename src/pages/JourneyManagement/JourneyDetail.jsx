@@ -538,9 +538,23 @@ const JourneyDetail = () => {
     
     const evaluation = getProcessEvaluation(process.id)
     const hasProcess = evaluation?.has_process ?? true
-    const matchesUsage = usageFilter === 'all' || 
-                        (usageFilter === 'utilized' && hasProcess) ||
-                        (usageFilter === 'not-utilized' && !hasProcess)
+    
+    // Filtro por estado
+    let matchesUsage = true
+    if (usageFilter === 'not-evaluated') {
+      // Não avaliados: processos sem avaliação
+      matchesUsage = !evaluation || (evaluation.business_importance === null && evaluation.implementation_urgency === null)
+    } else if (usageFilter === 'not-utilized') {
+      // Em processo: has_process = false
+      matchesUsage = evaluation && hasProcess === false
+    } else if (usageFilter === 'utilized') {
+      // Amadurecidos: has_process = true
+      matchesUsage = evaluation && hasProcess === true
+    } else if (usageFilter === 'deactivated') {
+      // Desativados: is_active = false
+      matchesUsage = process.is_active === false
+    }
+    // Se usageFilter === 'all', matchesUsage permanece true
     
     return matchesSearch && matchesCategory && matchesUsage
   })
@@ -906,22 +920,6 @@ const JourneyDetail = () => {
                   <p className="mt-2 text-base text-gray-600">{journey.description}</p>
                 </div>
               </div>
-              
-              {company && (
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600 bg-[#EBA500]/10 px-3 py-2 rounded-2xl">
-                    <Building2 className="h-4 w-4 text-[#EBA500]" />
-                    <span className="text-[#373435] font-medium">Empresa: {company.name}</span>
-                  </div>
-                  
-                  <button
-                    onClick={() => navigate(`/journey-management/${journeySlug}`)}
-                    className="text-sm text-red-500 hover:text-red-600 font-medium"
-                  >
-                    Remover filtro
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -948,24 +946,15 @@ const JourneyDetail = () => {
             
             <div className="flex items-center space-x-3">
               <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="block w-full pl-4 pr-10 py-3 text-base border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm rounded-2xl transition-all duration-200"
-              >
-                <option value="all">Todas as categorias</option>
-                {availableCategories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-
-              <select
                 value={usageFilter}
                 onChange={(e) => setUsageFilter(e.target.value)}
                 className="block w-full pl-4 pr-10 py-3 text-base border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm rounded-2xl transition-all duration-200"
               >
                 <option value="all">Todos os processos</option>
-                <option value="utilized">Utilizados</option>
+                <option value="not-evaluated">Não avaliados</option>
                 <option value="not-utilized">Em processo</option>
+                <option value="utilized">Amadurecidos</option>
+                <option value="deactivated">Desativados</option>
               </select>
             </div>
           </div>
@@ -974,20 +963,6 @@ const JourneyDetail = () => {
         {/* Estatísticas */}
         {company && evaluations.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <EyeOff className="h-8 w-8 text-gray-500" />
-                </div>
-                <div className="ml-4">
-                  <div className="text-lg font-medium text-[#373435]">
-                    {processes.filter(p => !p.is_active).length}
-                  </div>
-                  <div className="text-sm text-gray-500">Desativados</div>
-                </div>
-              </div>
-            </div>
-            
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -1026,6 +1001,20 @@ const JourneyDetail = () => {
                     {processes.length - evaluations.length}
                   </div>
                   <div className="text-sm text-gray-500">Não Avaliados</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <EyeOff className="h-8 w-8 text-gray-500" />
+                </div>
+                <div className="ml-4">
+                  <div className="text-lg font-medium text-[#373435]">
+                    {processes.filter(p => !p.is_active).length}
+                  </div>
+                  <div className="text-sm text-gray-500">Desativados</div>
                 </div>
               </div>
             </div>
@@ -1219,8 +1208,8 @@ const JourneyDetail = () => {
                             </button>
                           )}
                           
-                          {/* Botões de Admin - Menu dropdown apenas para processos ativos */}
-                          {process.is_active && (
+                          {/* Botões de Admin - Menu dropdown apenas para Super Admin */}
+                          {profile?.role === 'super_admin' && process.is_active && (
                             <div className="relative">
                               <button
                                 onClick={() => setShowDropdownMenu(showDropdownMenu === process.id ? null : process.id)}
@@ -1271,17 +1260,6 @@ const JourneyDetail = () => {
                                 </div>
                               )}
                             </div>
-                          )}
-                          
-                          {process.is_active && (
-                            <button
-                              onClick={() => showProcessDetails(process)}
-                              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-[#373435] text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
-                              title="Ver detalhes"
-                            >
-                              <Eye className="h-4 w-4" />
-                              <span>Ver Detalhes</span>
-                            </button>
                           )}
                           
                           {company && process.is_active && (

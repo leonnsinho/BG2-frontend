@@ -216,17 +216,10 @@ const JourneyManagementOverview = () => {
           <div className="py-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-[#373435]">Avaliação de Processos</h1>
+                <h1 className="text-3xl font-bold text-[#373435]">Diagnóstico do Negócio</h1>
                 <p className="mt-2 text-base text-gray-600">
-                  Gerencie as 5 jornadas da metodologia Bossa Focus
+                  Gerencie as 5 jornadas de amadurecimento de gestão do seu negócio
                 </p>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-500 bg-[#EBA500]/10 px-3 py-2 rounded-2xl">
-                  <Target className="h-4 w-4 text-[#EBA500]" />
-                  <span className="text-[#373435] font-medium">Metodologia Bossa Focus</span>
-                </div>
               </div>
             </div>
           </div>
@@ -380,26 +373,6 @@ const JourneyManagementOverview = () => {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50">
               <div className="p-8">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-lg font-semibold text-[#373435]">
-                    Jornadas da Metodologia Bossa Focus
-                  </h2>
-                  
-                  {/* Search */}
-                  <div className="relative w-64">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Search className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Buscar jornadas..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="block w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200"
-                    />
-                  </div>
-                </div>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {filteredJourneys.map((journey) => {
                     const Icon = journey.icon
@@ -485,24 +458,6 @@ const JourneyManagementOverview = () => {
                     </div>
                   </div>
                 )}
-                
-                {/* Estatísticas gerais */}
-                <div className="mt-8 pt-8 border-t border-gray-100">
-                  <div className="grid grid-cols-3 gap-6 text-center">
-                    <div className="p-4 rounded-2xl bg-[#EBA500]/5 border border-[#EBA500]/10">
-                      <div className="text-2xl font-bold text-[#373435] mb-1">5</div>
-                      <div className="text-sm text-gray-500">Jornadas</div>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-[#373435]/5 border border-[#373435]/10">
-                      <div className="text-2xl font-bold text-[#373435] mb-1">143</div>
-                      <div className="text-sm text-gray-500">Processos</div>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-[#EBA500]/5 border border-[#EBA500]/10">
-                      <div className="text-2xl font-bold text-[#373435] mb-1">{companies.length}</div>
-                      <div className="text-sm text-gray-500">Empresas</div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
