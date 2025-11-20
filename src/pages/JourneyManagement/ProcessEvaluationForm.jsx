@@ -9,7 +9,9 @@ import {
   Save,
   AlertCircle,
   CheckCircle,
-  User
+  User,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -51,6 +53,7 @@ const ProcessEvaluationForm = () => {
   const [evaluation, setEvaluation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [detailsExpanded, setDetailsExpanded] = useState(false)
   
   // Form state
   const [formData, setFormData] = useState({
@@ -316,68 +319,71 @@ const ProcessEvaluationForm = () => {
                 </p>
               </div>
             </div>
-            
-            {company && (
-              <div className="mt-6 flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 rounded-2xl border border-[#EBA500]/20">
-                <Building2 className="h-4 w-4 text-[#EBA500]" />
-                <span className="text-sm font-medium text-[#373435]">Empresa: {company.name}</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
       <div className="max-w-[95%] mx-auto px-6 sm:px-8 lg:px-12 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
+        {/* Detalhes do Processo - Colapsável */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 mb-8 overflow-hidden">
+          <button
+            onClick={() => setDetailsExpanded(!detailsExpanded)}
+            className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <Target className="h-5 w-5 text-[#EBA500]" />
+              <h3 className="text-lg font-semibold text-[#373435]">{process.name}</h3>
+            </div>
+            <div className={`transition-transform duration-300 ${detailsExpanded ? 'rotate-180' : ''}`}>
+              <ChevronDown className="h-5 w-5 text-gray-400" />
+            </div>
+          </button>
           
-          {/* Informações do Processo */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 p-8">
-              <h3 className="text-lg font-semibold text-[#373435] mb-6">
-                Detalhes do Processo
-              </h3>
+          <div 
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              detailsExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+            }`}
+          >
+            <div className="px-6 pb-6 border-t border-gray-100">
+              {process.description && (
+                <div className="mt-4">
+                  <dt className="text-sm font-medium text-gray-500 mb-2">Descrição</dt>
+                  <dd className="text-sm text-[#373435] leading-relaxed">{process.description}</dd>
+                </div>
+              )}
               
-              <dl className="space-y-6">
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Código</dt>
-                  <dd className="text-sm text-[#373435] mt-1 px-3 py-1 bg-gradient-to-r from-[#373435]/10 to-[#373435]/5 rounded-2xl inline-block border border-[#373435]/20">{process.code}</dd>
-                </div>
-                
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Nome</dt>
-                  <dd className="text-sm text-[#373435] mt-1 font-medium">{process.name}</dd>
-                </div>
-                
-                {process.category && (
+              {/* Detalhes técnicos - apenas para Super Admin */}
+              {profile?.role === 'super_admin' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 pt-6 border-t border-gray-100">
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Categoria</dt>
-                    <dd className="text-sm text-[#373435] mt-1 px-3 py-1 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 rounded-2xl inline-block border border-[#EBA500]/20">{process.category}</dd>
+                    <dt className="text-sm font-medium text-gray-500 mb-2">Código</dt>
+                    <dd className="text-sm text-[#373435] px-3 py-1 bg-gradient-to-r from-[#373435]/10 to-[#373435]/5 rounded-2xl inline-block border border-[#373435]/20">{process.code}</dd>
                   </div>
-                )}
-                
-                {process.description && (
+                  
+                  {process.category && (
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 mb-2">Categoria</dt>
+                      <dd className="text-sm text-[#373435] px-3 py-1 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 rounded-2xl inline-block border border-[#EBA500]/20">{process.category}</dd>
+                    </div>
+                  )}
+                  
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Descrição</dt>
-                    <dd className="text-sm text-[#373435] mt-1 leading-relaxed">{process.description}</dd>
+                    <dt className="text-sm font-medium text-gray-500 mb-2">Peso</dt>
+                    <dd className="text-sm text-[#373435]">
+                      <span className="inline-flex items-center space-x-1">
+                        <span className="w-2 h-2 bg-[#EBA500] rounded-full"></span>
+                        <span>{process.weight}</span>
+                      </span>
+                    </dd>
                   </div>
-                )}
-                
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Peso</dt>
-                  <dd className="text-sm text-[#373435] mt-1">
-                    <span className="inline-flex items-center space-x-1">
-                      <span className="w-2 h-2 bg-[#EBA500] rounded-full"></span>
-                      <span>{process.weight}</span>
-                    </span>
-                  </dd>
                 </div>
-              </dl>
+              )}
             </div>
           </div>
+        </div>
 
-          {/* Formulário de Avaliação */}
-          <div className="lg:col-span-4">
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 p-8">
+        {/* Formulário de Avaliação */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 p-8">
               <h3 className="text-lg font-semibold text-[#373435] mb-8">
                 Avaliação do Processo
               </h3>
@@ -429,7 +435,7 @@ const ProcessEvaluationForm = () => {
                 </div>
 
                 {/* Seção de Priorização */}
-                <div className="border-t border-gray-100 pt-8">
+                <div>
                   <h4 className="text-lg font-semibold text-[#373435] mb-6">
                     Avaliação de Prioridade
                   </h4>
@@ -708,8 +714,6 @@ const ProcessEvaluationForm = () => {
                 </div>
               </form>
             </div>
-          </div>
-        </div>
       </div>
     </div>
   )
