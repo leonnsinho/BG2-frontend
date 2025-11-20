@@ -49,6 +49,8 @@ const PlanejamentoEstrategico = () => {
   const [sidebarTask, setSidebarTask] = useState({ isOpen: false, task: null })
   const [jornadasAtribuidas, setJornadasAtribuidas] = useState([])
   const [loading, setLoading] = useState(true)
+  const [editandoMeta, setEditandoMeta] = useState(null) // ID do processo cuja meta está sendo editada
+  const [metas, setMetas] = useState({}) // Armazena metas por processo: { processoId: "texto da meta" }
   
   // Estados do sistema de amadurecimento
   const [processProgressMap, setProcessProgressMap] = useState({}) // Map de processo.id -> { total, completed, percentage }
@@ -896,6 +898,90 @@ const PlanejamentoEstrategico = () => {
     }
   }
 
+  // Funções para gerenciar metas
+  const carregarMetas = async () => {
+    if (!companyId) return
+
+    try {
+      const { data, error } = await supabase
+        .from('process_goals')
+        .select('process_id, goal_text')
+        .eq('company_id', companyId)
+
+      if (error) throw error
+
+      const metasObj = {}
+      data?.forEach(item => {
+        metasObj[item.process_id] = item.goal_text
+      })
+      
+      setMetas(metasObj)
+    } catch (error) {
+      console.error('❌ Erro ao carregar metas:', error)
+    }
+  }
+
+  const salvarMeta = async (processoId, metaTexto) => {
+    if (!companyId || !processoId) return
+
+    try {
+      const { error } = await supabase
+        .from('process_goals')
+        .upsert({
+          process_id: processoId,
+          company_id: companyId,
+          goal_text: metaTexto,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'process_id,company_id'
+        })
+
+      if (error) throw error
+
+      setMetas(prev => ({ ...prev, [processoId]: metaTexto }))
+      setEditandoMeta(null)
+      toast.success('Meta salva com sucesso!', { icon: '🎯' })
+    } catch (error) {
+      console.error('❌ Erro ao salvar meta:', error)
+      toast.error('Erro ao salvar meta')
+    }
+  }
+
+  const apagarMeta = async (processoId) => {
+    if (!companyId || !processoId) return
+
+    const confirmacao = window.confirm('Tem certeza que deseja apagar esta meta?')
+    if (!confirmacao) return
+
+    try {
+      const { error } = await supabase
+        .from('process_goals')
+        .delete()
+        .eq('process_id', processoId)
+        .eq('company_id', companyId)
+
+      if (error) throw error
+
+      setMetas(prev => {
+        const updated = { ...prev }
+        delete updated[processoId]
+        return updated
+      })
+      setEditandoMeta(null)
+      toast.success('Meta apagada com sucesso!', { icon: '🗑️' })
+    } catch (error) {
+      console.error('❌ Erro ao apagar meta:', error)
+      toast.error('Erro ao apagar meta')
+    }
+  }
+
+  // Carregar metas quando selecionar jornada
+  useEffect(() => {
+    if (jornadaSelecionada && companyId) {
+      carregarMetas()
+    }
+  }, [jornadaSelecionada, companyId])
+
   const formatarData = (dataISO) => {
     const data = new Date(dataISO)
     return data.toLocaleDateString('pt-BR', {
@@ -1164,20 +1250,63 @@ const PlanejamentoEstrategico = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-[#373435]/60 mb-3">
-                        <span className="font-medium">
-                          {(tarefas[processo.id] || []).length} tarefas
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 bg-gray-100 text-[#373435] rounded-full font-medium text-xs whitespace-nowrap`}>
-                            Prioridade {processo.prioridade}
-                          </span>
-                          {processo.priority_score && (
-                            <span className="px-2 py-1 bg-[#EBA500]/10 text-[#EBA500] rounded-full font-bold text-xs whitespace-nowrap border border-[#EBA500]/30">
-                              ⭐ {processo.priority_score.toFixed(1)}
-                            </span>
-                          )}
-                        </div>
+                      {/* Campo de Meta */}
+                      <div className="mb-3">
+                        {editandoMeta === processo.id ? (
+                          <div className="space-y-2">
+                            <textarea
+                              placeholder="Defina a meta para este processo..."
+                              value={metas[processo.id] || ''}
+                              onChange={(e) => setMetas(prev => ({ ...prev, [processo.id]: e.target.value }))}
+                              className="w-full p-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs resize-none bg-white transition-all duration-300"
+                              rows="2"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => salvarMeta(processo.id, metas[processo.id] || '')}
+                                className="flex-1 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white px-2 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 flex items-center justify-center gap-1"
+                              >
+                                <Save className="h-3 w-3" />
+                                Salvar
+                              </button>
+                              {metas[processo.id] && (
+                                <button
+                                  onClick={() => apagarMeta(processo.id)}
+                                  className="bg-red-500 hover:bg-red-600 text-white px-2 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 flex items-center justify-center gap-1"
+                                  title="Apagar meta"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => {
+                                  setEditandoMeta(null)
+                                  carregarMetas() // Recarregar para reverter mudanças
+                                }}
+                                className="flex-1 bg-gray-400 hover:bg-gray-500 text-white px-2 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 flex items-center justify-center gap-1"
+                              >
+                                <X className="h-3 w-3" />
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => setEditandoMeta(processo.id)}
+                            className="cursor-pointer p-2 bg-[#EBA500]/5 hover:bg-[#EBA500]/10 border border-dashed border-[#EBA500]/30 hover:border-[#EBA500]/50 rounded-xl transition-all duration-300 min-h-[40px] flex items-center"
+                          >
+                            {metas[processo.id] ? (
+                              <p className="text-xs text-[#373435] leading-relaxed">
+                                🎯 <span className="font-medium">{metas[processo.id]}</span>
+                              </p>
+                            ) : (
+                              <p className="text-xs text-[#373435]/40 italic">
+                                Clique para definir uma meta...
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                       
                       {/* Botão Adicionar Tarefa Elegante */}
