@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock, CheckCircle, XCircle, Loader, Award, RotateCcw } from 'lucide-react'
+import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock, CheckCircle, XCircle, Loader, Award, RotateCcw, FileSearch } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
 import { usePriorityProcesses } from '../../hooks/usePriorityProcesses2'
@@ -315,46 +315,9 @@ const PlanejamentoEstrategico = () => {
         console.log(`  ${index + 1}. ${processo.nome} (Score: ${processo.priority_score})`)
       })
     } else {
-      // Fallback para dados mock se não houver processos reais
-      console.warn('⚠️ Nenhum processo real encontrado, usando dados MOCK')
-      const processosMock = {
-        1: [
-          { id: 11, nome: 'Análise SWOT', prioridade: 1 },
-          { id: 12, nome: 'Planejamento 2025', prioridade: 2 },
-          { id: 13, nome: 'Definição KPIs', prioridade: 3 },
-          { id: 14, nome: 'Budget Review', prioridade: 4 },
-          { id: 15, nome: 'Market Research', prioridade: 5 }
-        ],
-        2: [
-          { id: 21, nome: 'Fluxo de Caixa', prioridade: 1 },
-          { id: 22, nome: 'Auditoria Q4', prioridade: 2 },
-          { id: 23, nome: 'Cost Center Review', prioridade: 3 },
-          { id: 24, nome: 'Tax Planning', prioridade: 4 },
-          { id: 25, nome: 'Investment Analysis', prioridade: 5 }
-        ],
-        3: [
-          { id: 31, nome: 'Recrutamento Dev', prioridade: 1 },
-          { id: 32, nome: 'Treinamento Equipe', prioridade: 2 },
-          { id: 33, nome: 'Performance Review', prioridade: 3 },
-          { id: 34, nome: 'Engagement Survey', prioridade: 4 },
-          { id: 35, nome: 'Benefits Review', prioridade: 5 }
-        ],
-        4: [
-          { id: 41, nome: 'Campanha Q1', prioridade: 1 },
-          { id: 42, nome: 'Lead Generation', prioridade: 2 },
-          { id: 43, nome: 'CRM Update', prioridade: 3 },
-          { id: 44, nome: 'Sales Training', prioridade: 4 },
-          { id: 45, nome: 'Market Expansion', prioridade: 5 }
-        ],
-        5: [
-          { id: 51, nome: 'Process Optimization', prioridade: 1 },
-          { id: 52, nome: 'System Upgrade', prioridade: 2 },
-          { id: 53, nome: 'Quality Assurance', prioridade: 3 },
-          { id: 54, nome: 'Supply Chain Review', prioridade: 4 },
-          { id: 55, nome: 'Capacity Planning', prioridade: 5 }
-        ]
-      }
-      setProcessos(processosMock[jornada.id] || [])
+      // Se não houver processos reais, não mostrar nada
+      console.log('⚠️ Nenhum processo prioritário encontrado para esta jornada')
+      setProcessos([])
     }
   }
 
@@ -1225,11 +1188,12 @@ const PlanejamentoEstrategico = () => {
           </div>
 
           {/* Grid dos 5 processos elegante com Drag & Drop */}
-          <DraggableProcessList
-            processos={processos}
-            onReorder={handleProcessReorder}
-            cores={getJornadaCores(jornadaSelecionada.id)}
-            renderProcessCard={(processo, index) => {
+          {processos.length > 0 ? (
+            <DraggableProcessList
+              processos={processos}
+              onReorder={handleProcessReorder}
+              cores={getJornadaCores(jornadaSelecionada.id)}
+              renderProcessCard={(processo, index) => {
               const coresJornada = getJornadaCores(jornadaSelecionada.id)
               return (
                 <div className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#373435]/10 hover:border-[#EBA500]/30 overflow-hidden flex flex-col h-fit min-h-[500px]">
@@ -1727,6 +1691,22 @@ const PlanejamentoEstrategico = () => {
                 )
               }}
             />
+          ) : (
+            /* Mensagem quando não há processos */
+            <div className="flex flex-col items-center justify-center py-20 px-4">
+              <div className="bg-gradient-to-br from-[#EBA500]/5 to-[#EBA500]/10 rounded-3xl p-12 max-w-md w-full text-center shadow-lg border border-[#EBA500]/20">
+                <div className={`w-20 h-20 ${getJornadaCores(jornadaSelecionada.id).iconBg} rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl`}>
+                  <FileSearch className="h-10 w-10 text-white" />
+                </div>
+                <h3 className={`text-2xl font-bold mb-3 ${getJornadaCores(jornadaSelecionada.id).text}`}>
+                  Nenhum Processo Avaliado
+                </h3>
+                <p className="text-[#373435]/70 text-base leading-relaxed">
+                  Esta jornada ainda não possui processos prioritários avaliados. Para adicionar processos, acesse a área de Gestão de Processos e realize avaliações.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

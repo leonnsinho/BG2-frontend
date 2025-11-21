@@ -389,6 +389,30 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0 })
   const [isClosing, setIsClosing] = React.useState(false)
   const [avatarUrl, setAvatarUrl] = React.useState('') // 🔥 NOVO: URL assinada do avatar
+  const [appVersion, setAppVersion] = React.useState('2.2.1') // Versão padrão
+
+  // 🔥 NOVO: Buscar versão do Service Worker
+  React.useEffect(() => {
+    const getVersion = async () => {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        try {
+          const messageChannel = new MessageChannel()
+          messageChannel.port1.onmessage = (event) => {
+            if (event.data.type === 'VERSION_RESPONSE' && event.data.version) {
+              setAppVersion(event.data.version)
+            }
+          }
+          navigator.serviceWorker.controller.postMessage(
+            { type: 'GET_VERSION' },
+            [messageChannel.port2]
+          )
+        } catch (error) {
+          console.log('Não foi possível obter versão do SW')
+        }
+      }
+    }
+    getVersion()
+  }, [])
 
   // 🔥 NOVO: Carregar URL assinada do avatar
   React.useEffect(() => {
@@ -913,7 +937,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
             <div className="mt-4 pt-4 border-t border-neutral-700/50">
               <div className="px-3 text-center">
                 <div className="text-xs text-neutral-400 mb-1">Versão da Plataforma</div>
-                <div className="text-sm font-mono font-semibold text-[#EBA500]">v2.2.1</div>
+                <div className="text-sm font-mono font-semibold text-[#EBA500]">v{appVersion}</div>
               </div>
             </div>
           )}
