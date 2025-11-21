@@ -1,6 +1,6 @@
 // Service Worker para PWA
 const CACHE_NAME = 'bg2-v4' // Incrementar para forçar atualização
-const APP_VERSION = '2.2.2' // Incrementar quando houver updates - IMPORTANTE: Mudar isso dispara atualização!
+const APP_VERSION = '2.2.3' // Incrementar quando houver updates - IMPORTANTE: Mudar isso dispara atualização!
 const urlsToCache = [
   '/',
   '/index.html',
@@ -82,7 +82,7 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'GET_VERSION') {
     console.log('❓ Cliente perguntou versão, respondendo:', APP_VERSION)
     event.ports[0].postMessage({
-      type: 'VERSION',
+      type: 'VERSION_RESPONSE',
       version: APP_VERSION,
       cacheName: CACHE_NAME
     })
@@ -92,7 +92,7 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'CHECK_UPDATE') {
     console.log('🔍 Cliente pediu verificação de atualização')
     event.ports[0].postMessage({
-      type: 'VERSION',
+      type: 'VERSION_RESPONSE',
       version: APP_VERSION,
       cacheName: CACHE_NAME
     })
