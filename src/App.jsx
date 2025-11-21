@@ -47,6 +47,7 @@ import { ToastContainer } from './components/ui/FeedbackComponents'
 import { useUserContext } from './contexts/UserContext'
 import LoadingScreen from './components/LoadingScreen'
 import LogoutScreen from './components/LogoutScreen'
+import UpdateNotification from './components/UpdateNotification'
 
 // Componente para gerenciar notificações globais
 function NotificationManager() {
@@ -406,6 +407,7 @@ function App() {
                 },
               }}
             />
+            <UpdateNotification />
           </div>
         </Router>
       </UserProvider>
