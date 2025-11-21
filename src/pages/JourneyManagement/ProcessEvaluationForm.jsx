@@ -588,9 +588,8 @@ const ProcessEvaluationForm = () => {
                   {/* Preview das Seleções */}
                   <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-2xl border border-gray-200">
                     <div className="flex items-center justify-center mb-6">
-                      <h5 className="text-base font-semibold text-[#373435] flex items-center space-x-2">
-                        <span>✨</span>
-                        <span>Resumo da Avaliação de Prioridade</span>
+                      <h5 className="text-base font-semibold text-[#373435]">
+                        Resumo da Avaliação de Prioridade
                       </h5>
                     </div>
                     
@@ -674,7 +673,7 @@ const ProcessEvaluationForm = () => {
                         {/* Fórmula */}
                         <div className="mt-4 p-3 bg-white/50 rounded-xl border border-gray-200/50">
                           <div className="text-xs text-gray-600 text-center font-medium">
-                            📊 Fórmula: (Importância × Urgência) ÷ Dificuldade
+                            Fórmula: (Importância × Urgência) ÷ Dificuldade
                           </div>
                         </div>
                       </>

@@ -170,6 +170,12 @@ const JourneyManagementOverview = () => {
       }
       console.log('📦 logoUrls finais:', urls)
       setLogoUrls(urls)
+      
+      // Pré-selecionar a primeira empresa automaticamente
+      if (companiesData.length > 0 && !selectedCompany) {
+        setSelectedCompany(companiesData[0])
+        console.log('✅ Primeira empresa pré-selecionada:', companiesData[0].name)
+      }
     } catch (error) {
       console.error('Erro ao carregar empresas:', error)
       setCompanies([])
@@ -228,88 +234,88 @@ const JourneyManagementOverview = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Seleção de Empresa */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50">
-              <div className="p-8">
-                <h2 className="text-lg font-semibold text-[#373435] mb-2 flex items-center">
+        
+        {/* Seleção de Empresa - Horizontal no topo */}
+        <div className="mb-8">
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-[#373435] flex items-center">
                   <Building2 className="h-5 w-5 mr-2 text-[#EBA500]" />
                   Selecionar Empresa
                 </h2>
                 
                 {/* Indicador do tipo de acesso */}
-                <div className="mb-6">
-                  {profile?.role === 'super_admin' ? (
-                    <div className="inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-medium bg-[#EBA500]/10 text-[#EBA500] border border-[#EBA500]/20">
-                      <span>Super Admin - Todas as empresas</span>
-                    </div>
-                  ) : (
-                    <div className="inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-medium bg-[#373435]/10 text-[#373435] border border-[#373435]/20">
-                      <span>Admin - Suas empresas</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Barra de busca para empresas */}
-                {companies.length > 0 && (
-                  <div className="mb-6">
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="Buscar por razão social ou CNPJ..."
-                        value={companySearchTerm}
-                        onChange={(e) => setCompanySearchTerm(e.target.value)}
-                        className="block w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200"
-                      />
-                    </div>
-                    
-                    {/* Contador de resultados */}
-                    {companySearchTerm && (
-                      <div className="mt-3 text-xs text-gray-500 pl-2">
-                        {filteredCompanies.length === 1 
-                          ? `1 empresa encontrada` 
-                          : `${filteredCompanies.length} empresas encontradas`
-                        }
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {companies.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Building2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                    <p>Nenhuma empresa encontrada</p>
-                  </div>
-                ) : filteredCompanies.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Search className="h-8 w-8 mx-auto mb-3 text-gray-300" />
-                    <p>Nenhuma empresa encontrada para "{companySearchTerm}"</p>
-                    <button
-                      onClick={() => setCompanySearchTerm('')}
-                      className="mt-3 text-sm text-[#EBA500] hover:text-[#EBA500]/80 font-medium"
-                    >
-                      Limpar filtro
-                    </button>
+                {profile?.role === 'super_admin' ? (
+                  <div className="inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-medium bg-[#EBA500]/10 text-[#EBA500] border border-[#EBA500]/20">
+                    <span>Super Admin - Todas as empresas</span>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {filteredCompanies.map((company) => (
+                  <div className="inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-medium bg-[#373435]/10 text-[#373435] border border-[#373435]/20">
+                    <span>Admin - Suas empresas</span>
+                  </div>
+                )}
+              </div>
+              
+              {companies.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Building2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p>Nenhuma empresa encontrada</p>
+                </div>
+              ) : (
+                <>
+                  {/* Barra de busca para empresas */}
+                  {companies.length > 3 && (
+                    <div className="mb-6">
+                      <div className="relative max-w-md">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Search className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Buscar por razão social ou CNPJ..."
+                          value={companySearchTerm}
+                          onChange={(e) => setCompanySearchTerm(e.target.value)}
+                          className="block w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200"
+                        />
+                      </div>
+                      
+                      {/* Contador de resultados */}
+                      {companySearchTerm && (
+                        <div className="mt-3 text-xs text-gray-500 pl-2">
+                          {filteredCompanies.length === 1 
+                            ? `1 empresa encontrada` 
+                            : `${filteredCompanies.length} empresas encontradas`
+                          }
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {filteredCompanies.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Search className="h-8 w-8 mx-auto mb-3 text-gray-300" />
+                      <p>Nenhuma empresa encontrada para "{companySearchTerm}"</p>
                       <button
-                        key={company.id}
-                        onClick={() => setSelectedCompany(company)}
-                        className={`w-full text-left p-5 rounded-2xl border-2 transition-all duration-200 hover:shadow-md ${
-                          selectedCompany?.id === company.id
-                            ? 'border-[#EBA500] bg-[#EBA500]/5 ring-2 ring-[#EBA500]/20'
-                            : 'border-gray-200 hover:border-[#EBA500]/30 hover:bg-gray-50'
-                        }`}
+                        onClick={() => setCompanySearchTerm('')}
+                        className="mt-3 text-sm text-[#EBA500] hover:text-[#EBA500]/80 font-medium"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
+                        Limpar filtro
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredCompanies.map((company) => (
+                        <button
+                          key={company.id}
+                          onClick={() => setSelectedCompany(company)}
+                          className={`text-left p-5 rounded-2xl border-2 transition-all duration-200 hover:shadow-md ${
+                            selectedCompany?.id === company.id
+                              ? 'border-[#EBA500] bg-[#EBA500]/5 ring-2 ring-[#EBA500]/20'
+                              : 'border-gray-200 hover:border-[#EBA500]/30 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-3">
                             {/* Logo da Empresa */}
                             <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 flex items-center justify-center overflow-hidden">
                               {logoUrls[company.id] ? (
@@ -329,49 +335,51 @@ const JourneyManagementOverview = () => {
                               />
                             </div>
                             
-                            {/* Dados da Empresa */}
-                            <div>
-                              <p className="font-medium text-[#373435]">{company.name}</p>
-                              <p className="text-sm text-gray-500">{company.cnpj || 'CNPJ não informado'}</p>
+                            <div className={`inline-flex items-center px-3 py-1 rounded-2xl text-xs font-medium ${
+                              company.is_active && company.subscription_status === 'active'
+                                ? 'bg-green-100 text-green-700 border border-green-200'
+                                : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                            }`}>
+                              {company.is_active && company.subscription_status === 'active' ? 'Ativa' : 'Inativa'}
                             </div>
                           </div>
-                          <div className={`inline-flex items-center px-3 py-1 rounded-2xl text-xs font-medium ${
-                            company.is_active && company.subscription_status === 'active'
-                              ? 'bg-green-100 text-green-700 border border-green-200'
-                              : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
-                          }`}>
-                            {company.is_active && company.subscription_status === 'active' ? 'Ativa' : 'Inativa'}
+                          
+                          {/* Dados da Empresa */}
+                          <div>
+                            <p className="font-medium text-[#373435] mb-1">{company.name}</p>
+                            <p className="text-sm text-gray-500">{company.cnpj || 'CNPJ não informado'}</p>
                           </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                
-                {selectedCompany && (
-                  <div className="mt-6 pt-6 border-t border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <Building2 className="h-4 w-4 text-[#EBA500]" />
-                        <span className="text-[#373435] font-medium">Selecionada: {selectedCompany.name}</span>
-                      </div>
-                      
-                      <button
-                        onClick={() => setSelectedCompany(null)}
-                        className="text-sm text-red-500 hover:text-red-600 transition-colors font-medium"
-                      >
-                        Limpar
-                      </button>
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                  
+                  {selectedCompany && (
+                    <div className="mt-6 pt-6 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <Building2 className="h-4 w-4 text-[#EBA500]" />
+                          <span className="text-[#373435] font-medium">Selecionada: {selectedCompany.name}</span>
+                        </div>
+                        
+                        <button
+                          onClick={() => setSelectedCompany(null)}
+                          className="text-sm text-red-500 hover:text-red-600 transition-colors font-medium"
+                        >
+                          Limpar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
+        </div>
 
-          {/* Painel das Jornadas */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50">
+        {/* Painel das Jornadas */}
+        <div>
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50">
               <div className="p-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {filteredJourneys.map((journey) => {
@@ -460,7 +468,6 @@ const JourneyManagementOverview = () => {
                 )}
               </div>
             </div>
-          </div>
         </div>
       </div>
     </div>
