@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { supabase } from '../services/supabase'
 import { updateUserActivity } from './updateUserActivity'
 
-console.log('%%%%%%%%%%% AUTHCONTEXT CARREGADO - VERSAO 15/10/2025 - 10:00 %%%%%%%%%%%')
+console.log('%%%%%%%%%%% AUTHCONTEXT CARREGADO - VERSAO 21/11/2025 - 19:00 - FIX RETRY %%%%%%%%%%%')
 
 const AuthContext = createContext({})
 
@@ -271,27 +271,78 @@ export function AuthProvider({ children }) {
             const retryFetch = async () => {
               retryCount++
               console.log(`🔄 Tentativa ${retryCount}/${maxRetries} de recarregar perfil...`)
-              
+
               try {
                 const { data: retryData, error: retryError } = await supabase
                   .from('profiles')
                   .select('*')
                   .eq('id', userId)
                   .single()
-                
+
                 if (retryError) throw retryError
-                
+
                 if (retryData) {
                   console.log('✅ Perfil recarregado com sucesso em background!')
+
+                  // IMPORTANTE: Preservar user_companies do cache existente
+                  // O retry só busca dados da tabela 'profiles', não busca empresas
+                  const cachedProfile = globalProfileCache.get(cacheKey)?.data
+                  const updatedProfile = {
+                    ...retryData,
+                    user_companies: cachedProfile?.user_companies || []
+                  }
+
                   globalProfileCache.set(cacheKey, {
-                    data: retryData,
+                    data: updatedProfile,
                     timestamp: Date.now()
                   })
-                  setProfile(retryData)
+                  setProfile(updatedProfile)
+
+                  // Carregar empresas em background também (caso não tenha no cache)
+                  if (!cachedProfile?.user_companies?.length) {
+                    console.log('🏢 [RETRY] Carregando empresas em background...')
+                    try {
+                      const { data: userCompaniesData } = await supabase
+                        .from('user_companies')
+                        .select('id, role, is_active, permissions, company_id')
+                        .eq('user_id', userId)
+                        .eq('is_active', true)
+
+                      if (userCompaniesData?.length > 0) {
+                        const companyIds = userCompaniesData.map(uc => uc.company_id)
+                        const { data: companiesData } = await supabase
+                          .from('companies')
+                          .select('id, name')
+                          .in('id', companyIds)
+
+                        if (companiesData) {
+                          const enrichedUserCompanies = userCompaniesData.map(uc => ({
+                            ...uc,
+                            companies: companiesData.find(c => c.id === uc.company_id) ||
+                                      { id: uc.company_id, name: 'Empresa Desconhecida' }
+                          }))
+
+                          const fullProfile = {
+                            ...retryData,
+                            user_companies: enrichedUserCompanies
+                          }
+
+                          console.log('🏢 [RETRY] Empresas carregadas:', enrichedUserCompanies.length)
+                          globalProfileCache.set(cacheKey, {
+                            data: fullProfile,
+                            timestamp: Date.now()
+                          })
+                          setProfile(fullProfile)
+                        }
+                      }
+                    } catch (compError) {
+                      console.warn('⚠️ [RETRY] Erro ao carregar empresas:', compError.message)
+                    }
+                  }
                 }
               } catch (retryError) {
                 console.warn(`⚠️ Tentativa ${retryCount} falhou:`, retryError.message)
-                
+
                 // Tentar novamente se não excedeu o limite
                 if (retryCount < maxRetries) {
                   const delay = retryCount * 2000 // 2s, 4s, 6s

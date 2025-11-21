@@ -907,6 +907,16 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
             />
             {!isCollapsed && <span className="flex-1 text-left">Configurações</span>}
           </Link>
+          
+          {/* Versão da Plataforma */}
+          {!isCollapsed && (
+            <div className="mt-4 pt-4 border-t border-neutral-700/50">
+              <div className="px-3 text-center">
+                <div className="text-xs text-neutral-400 mb-1">Versão da Plataforma</div>
+                <div className="text-sm font-mono font-semibold text-[#EBA500]">v2.2.1</div>
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
