@@ -1197,7 +1197,7 @@ export default function OperationalPoliciesPage() {
             </div>
             <div>
               <h1 className="text-4xl font-bold text-[#373435] tracking-tight">
-                {selectedJourney ? `Jornada ${selectedJourney.name}` : 'Políticas de Gestão'}
+                {selectedJourney ? selectedJourney.name : 'Políticas de Gestão'}
               </h1>
               {selectedJourney ? (
                 <div className="mt-3">
@@ -1252,6 +1252,36 @@ export default function OperationalPoliciesPage() {
 
         {selectedJourney && (
           <>
+            {/* 🔥 NOVO: Navegação entre jornadas (APENAS SUPER ADMIN) */}
+            {profile?.role === 'super_admin' && journeys.length > 0 && (
+              <div className="mb-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Layers className="h-4 w-4 text-[#EBA500]" />
+                    <h3 className="text-sm font-semibold text-gray-700">Navegar entre Jornadas</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {journeys.map((journey) => (
+                      <button
+                        key={journey.id}
+                        onClick={() => {
+                          setSelectedJourney(journey)
+                          setSearchParams({ companyId: urlCompanyId, journey: journey.slug })
+                        }}
+                        className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
+                          selectedJourney?.id === journey.id
+                            ? 'bg-gradient-to-br from-[#EBA500] to-[#d99500] text-white shadow-lg shadow-[#EBA500]/20'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {journey.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Header da seção de blocos */}
             <div className="flex justify-between items-center mb-6">
               <div>

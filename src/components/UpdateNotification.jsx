@@ -14,6 +14,7 @@ const UpdateNotification = () => {
     
     console.log('🚀 UpdateNotification montado')
     console.log('📦 Versão salva no localStorage:', savedVersion)
+    console.log('🔍 LocalStorage completo:', { ...localStorage })
     
     // Verificar se está rodando como PWA
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
@@ -27,7 +28,8 @@ const UpdateNotification = () => {
         
         const messageChannel = new MessageChannel()
         messageChannel.port1.onmessage = (event) => {
-          if (event.data && event.data.type === 'VERSION') {
+          console.log('📬 Resposta do SW recebida:', event.data)
+          if (event.data && (event.data.type === 'VERSION_RESPONSE' || event.data.type === 'VERSION')) {
             const swVersion = event.data.version
             console.log('📡 Versão recebida do SW:', swVersion)
             console.log('📦 Versão salva:', savedVersion)
@@ -36,6 +38,8 @@ const UpdateNotification = () => {
               console.log('🆕 Versão diferente detectada! Mostrando banner...')
               setNewVersion(swVersion)
               setShowUpdate(true)
+              // Salvar a versão detectada
+              localStorage.setItem('app-version', swVersion)
             } else {
               console.log('✅ Versão atual está atualizada')
             }
