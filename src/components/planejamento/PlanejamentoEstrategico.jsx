@@ -19,12 +19,15 @@ const PlanejamentoEstrategico = () => {
   const { getAccessibleJourneys } = useAuthPermissions()
   const [searchParams] = useSearchParams() // 🔥 NOVO: Hook para ler URL
   
+  // 🔥 NOVO: Estado de controle do limite de processos (DEVE vir ANTES do hook)
+  const [limiteProcessos, setLimiteProcessos] = useState(5) // Controle de quantos processos mostrar (5 ou 10)
+  
   // 🔥 NOVO: Verificar se há companyId na URL (Super Admin) ou usar do perfil
   const urlCompanyId = searchParams.get('companyId')
   const companyId = urlCompanyId || profile?.user_companies?.[0]?.company_id || null
   
-  // 🔥 NOVO: Passar urlCompanyId para os hooks (tem prioridade sobre profile)
-  const { priorityProcesses, loading: processesLoading, error: processesError, getProcessesByJourney, refetch, debugLogs } = usePriorityProcesses(urlCompanyId)
+  // 🔥 NOVO: Passar urlCompanyId e limite de processos para os hooks
+  const { priorityProcesses, loading: processesLoading, error: processesError, getProcessesByJourney, refetch, debugLogs } = usePriorityProcesses(urlCompanyId, limiteProcessos)
   const { getTasks, getCompanyUsers, createTask, updateTask, deleteTask, loading: tasksLoading } = useTasks(urlCompanyId)
   
   // Debug: log do companyId
@@ -1174,17 +1177,43 @@ const PlanejamentoEstrategico = () => {
               </div>
             </div>
             
-            {/* Botão Reset Ordenação */}
-            {processos.some(p => p.strategic_priority_order != null) && (
-              <button
-                onClick={handleResetOrder}
-                className="flex items-center space-x-2 px-4 py-2 bg-white border-2 border-purple-500/30 hover:border-purple-500 text-purple-600 hover:bg-purple-50 rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg"
-                title="Resetar para ordenação automática"
-              >
-                <RotateCcw className="h-4 w-4" />
-                <span className="font-semibold text-sm">Resetar Ordenação</span>
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {/* 🔥 NOVO: Botão para alternar entre 5 e 10 processos */}
+              <div className="flex items-center gap-2 bg-white border-2 border-[#EBA500]/30 rounded-2xl p-1 shadow-md">
+                <button
+                  onClick={() => setLimiteProcessos(5)}
+                  className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                    limiteProcessos === 5
+                      ? 'bg-gradient-to-r from-[#EBA500] to-[#d99500] text-white shadow-lg'
+                      : 'text-[#373435]/60 hover:text-[#373435]'
+                  }`}
+                >
+                  Top 5
+                </button>
+                <button
+                  onClick={() => setLimiteProcessos(10)}
+                  className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                    limiteProcessos === 10
+                      ? 'bg-gradient-to-r from-[#EBA500] to-[#d99500] text-white shadow-lg'
+                      : 'text-[#373435]/60 hover:text-[#373435]'
+                  }`}
+                >
+                  Top 10
+                </button>
+              </div>
+              
+              {/* Botão Reset Ordenação */}
+              {processos.some(p => p.strategic_priority_order != null) && (
+                <button
+                  onClick={handleResetOrder}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white border-2 border-purple-500/30 hover:border-purple-500 text-purple-600 hover:bg-purple-50 rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg"
+                  title="Resetar para ordenação automática"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span className="font-semibold text-sm">Resetar Ordenação</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Grid dos 5 processos elegante com Drag & Drop */}

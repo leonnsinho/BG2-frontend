@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
-// 🔥 NOVO: Hook agora aceita companyId opcional (para Super Admin)
-export const usePriorityProcesses = (overrideCompanyId = null) => {
+// 🔥 NOVO: Hook agora aceita companyId opcional (para Super Admin) e limite de processos
+export const usePriorityProcesses = (overrideCompanyId = null, processLimit = 5) => {
   const { profile } = useAuth()
   const [priorityProcesses, setPriorityProcesses] = useState({})
   const [loading, setLoading] = useState(true)
@@ -134,7 +134,7 @@ export const usePriorityProcesses = (overrideCompanyId = null) => {
                 // Se nenhum tem ordem manual, ordenar por priority_score
                 return b.priority_score - a.priority_score
               })
-              .slice(0, 5) // Top 5
+              .slice(0, processLimit) // 🔥 Usar limite dinâmico (5 ou 10)
             
             if (processesWithScores.length > 0) {
               processesData[mockId] = processesWithScores.map((p, index) => ({
@@ -195,7 +195,7 @@ export const usePriorityProcesses = (overrideCompanyId = null) => {
     return () => {
       mounted = false
     }
-  }, [profile?.id, profile?.company_id, profile?.user_companies?.length, overrideCompanyId]) // 🔥 NOVO: Dependência do overrideCompanyId
+  }, [profile?.id, profile?.company_id, profile?.user_companies?.length, overrideCompanyId, processLimit]) // 🔥 Recarregar quando o limite mudar
 
   const getProcessesByJourney = (journeyId) => {
     return priorityProcesses[journeyId] || []

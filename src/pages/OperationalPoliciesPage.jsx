@@ -25,7 +25,9 @@ import {
   Grid3X3,
   Layers,
   Edit2,
-  Search
+  Search,
+  ExternalLink,
+  ChevronUp
 } from 'lucide-react'
 import { formatDate } from '../utils/dateUtils'
 
@@ -44,6 +46,12 @@ export default function OperationalPoliciesPage() {
   const [subblockSearchQuery, setSubblockSearchQuery] = useState('') // 🔥 NOVO: Busca de sub-blocos
   const [journeyDescription, setJourneyDescription] = useState('') // Descrição editável da jornada
   const [editingDescription, setEditingDescription] = useState(false) // Se está editando a descrição
+  const [inlineEditingContent, setInlineEditingContent] = useState(null) // 🔥 NOVO: ID do conteúdo sendo editado inline
+  const [inlineTableData, setInlineTableData] = useState(null) // 🔥 NOVO: Dados temporários da tabela sendo editada
+  
+  // 🔥 NOVO: Sistema de abas POR JORNADA
+  const [tabsByJourney, setTabsByJourney] = useState({}) // { journeyId: { openTabs: [], activeTabId: null } }
+  const [showQuickAddDropdown, setShowQuickAddDropdown] = useState(false)
   
   // Modais
   const [showBlockModal, setShowBlockModal] = useState(false)
@@ -96,6 +104,23 @@ export default function OperationalPoliciesPage() {
   const [uploadDescription, setUploadDescription] = useState('')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // 🔥 HELPERS: Acessar abas da jornada atual
+  const getCurrentJourneyTabs = () => {
+    if (!selectedJourney?.id) return { openTabs: [], activeTabId: null }
+    return tabsByJourney[selectedJourney.id] || { openTabs: [], activeTabId: null }
+  }
+
+  const setCurrentJourneyTabs = (openTabs, activeTabId) => {
+    if (!selectedJourney?.id) return
+    setTabsByJourney(prev => ({
+      ...prev,
+      [selectedJourney.id]: { openTabs, activeTabId }
+    }))
+  }
+
+  const openTabs = getCurrentJourneyTabs().openTabs
+  const activeTabId = getCurrentJourneyTabs().activeTabId
 
   // 🔥 NOVO: Verificar se há companyId na URL (Super Admin) ou usar do perfil
   const urlCompanyId = searchParams.get('companyId')
@@ -515,6 +540,9 @@ export default function OperationalPoliciesPage() {
       
       await loadBlocks()
       
+      // 🔥 Atualizar aba ativa se estiver aberta
+      await refreshActiveTab()
+      
       // 🔥 Atualizar viewingBlock se estiver aberto
       if (viewingBlock) {
         const { data: updatedBlock, error } = await supabase
@@ -574,6 +602,9 @@ export default function OperationalPoliciesPage() {
       if (error) throw error
 
       await loadBlocks()
+      
+      // 🔥 Atualizar aba ativa se estiver aberta
+      await refreshActiveTab()
       
       // 🔥 Atualizar viewingBlock se estiver aberto
       if (viewingBlock) {
@@ -656,6 +687,9 @@ export default function OperationalPoliciesPage() {
       // 🔥 Recarregar blocos para lista principal
       await loadBlocks()
 
+      // 🔥 Atualizar aba ativa se estiver aberta
+      await refreshActiveTab()
+
       // 🔥 NOVO: Atualizar viewingSubblock se estiver aberto
       if (viewingSubblock) {
         await refreshViewingSubblock(viewingSubblock.id)
@@ -682,6 +716,9 @@ export default function OperationalPoliciesPage() {
       if (error) throw error
 
       await loadBlocks()
+      
+      // 🔥 Atualizar aba ativa se estiver aberta
+      await refreshActiveTab()
       
       // 🔥 Atualizar viewingSubblock se estiver aberto
       if (viewingSubblock) {
@@ -771,6 +808,9 @@ export default function OperationalPoliciesPage() {
       
       // Recarregar blocos
       await loadBlocks()
+      
+      // 🔥 Atualizar aba ativa se estiver aberta
+      await refreshActiveTab()
     } catch (error) {
       console.error('Erro ao fazer upload:', error)
       alert('Erro ao fazer upload: ' + error.message)
@@ -801,6 +841,9 @@ export default function OperationalPoliciesPage() {
       if (dbError) throw dbError
 
       await loadBlocks()
+      
+      // 🔥 Atualizar aba ativa se estiver aberta
+      await refreshActiveTab()
       
       // 🔥 Atualizar viewingSubblock se estiver aberto
       if (viewingSubblock) {
@@ -962,8 +1005,8 @@ export default function OperationalPoliciesPage() {
   }
 
   const openSubblockView = (subblock) => {
-    setViewingSubblock(subblock)
-    setShowSubblockViewModal(true)
+    // 🔥 NOVO: Usar sistema de abas ao invés de modal
+    openSubblockInTab(subblock)
   }
 
   const closeBlockView = () => {
@@ -1060,51 +1103,696 @@ export default function OperationalPoliciesPage() {
     }
   }
 
+  // 🔥 NOVO: Função helper para mostrar toast de sucesso
+  const showSuccessToast = (message) => {
+    const toastId = Date.now()
+    const toastEl = document.createElement('div')
+    toastEl.id = `toast-${toastId}`
+    toastEl.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-slide-in'
+    toastEl.innerHTML = `
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span>${message}</span>
+    `
+    document.body.appendChild(toastEl)
+    setTimeout(() => {
+      toastEl.remove()
+    }, 3000)
+  }
+
+  // 🔥 NOVO: Funções para gerenciar abas
+  
+  // Abrir bloco em aba
+  const openBlockInTab = async (block) => {
+    const { openTabs, activeTabId } = getCurrentJourneyTabs()
+    const existingTab = openTabs.find(tab => tab.id === block.id && tab.type === 'block')
+    
+    if (existingTab) {
+      setCurrentJourneyTabs(openTabs, block.id)
+      return
+    }
+
+    // Buscar dados completos do bloco
+    const { data: fullBlock, error } = await supabase
+      .from('policy_blocks')
+      .select(`
+        *,
+        policy_subblocks!policy_subblocks_block_id_fkey (
+          *,
+          policy_contents (*),
+          policy_attachments (*)
+        )
+      `)
+      .eq('id', block.id)
+      .single()
+
+    if (error) {
+      console.error('Erro ao carregar bloco:', error)
+      alert('Erro ao abrir bloco')
+      return
+    }
+
+    // Reorganizar hierarquia
+    const allSubblocks = fullBlock.policy_subblocks || []
+    const level1 = allSubblocks.filter(sb => !sb.parent_subblock_id || sb.level === 1)
+    const level2 = allSubblocks.filter(sb => sb.parent_subblock_id && sb.level === 2)
+    
+    fullBlock.policy_subblocks = level1.map(parent => ({
+      ...parent,
+      children: level2.filter(child => child.parent_subblock_id === parent.id)
+    }))
+
+    const newTab = {
+      id: block.id,
+      type: 'block',
+      data: fullBlock,
+      title: block.name
+    }
+
+    setCurrentJourneyTabs([...openTabs, newTab], block.id)
+  }
+
+  // Abrir todos os sub-blocos de um bloco
+  const openAllSubblocksInTabs = async (block) => {
+    if (!block.policy_subblocks || block.policy_subblocks.length === 0) {
+      alert('Este bloco não possui sub-blocos')
+      return
+    }
+
+    // Primeiro abrir o bloco
+    await openBlockInTab(block)
+
+    // Depois abrir cada sub-bloco
+    for (const subblock of block.policy_subblocks) {
+      await openSubblockInTab(subblock, null, block.id)
+    }
+  }
+
+  const openSubblockInTab = async (subblock, parentSubblockId = null, parentBlockId = null) => {
+    const { openTabs } = getCurrentJourneyTabs()
+    // Verificar se já existe uma aba aberta para este subbloco
+    const existingTab = openTabs.find(tab => tab.id === subblock.id)
+    
+    if (existingTab) {
+      // Se já existe, apenas ativar a aba
+      setCurrentJourneyTabs(openTabs, subblock.id)
+      return
+    }
+
+    // Buscar dados completos do subbloco
+    const { data: fullSubblock, error } = await supabase
+      .from('policy_subblocks')
+      .select(`
+        *,
+        policy_contents (*),
+        policy_attachments (*)
+      `)
+      .eq('id', subblock.id)
+      .single()
+
+    if (error) {
+      console.error('Erro ao carregar subbloco:', error)
+      alert('Erro ao abrir subbloco')
+      return
+    }
+
+    // Adicionar filhos (sub-subblocos) se houver
+    const { data: children } = await supabase
+      .from('policy_subblocks')
+      .select(`
+        *,
+        policy_contents (*),
+        policy_attachments (*)
+      `)
+      .eq('parent_subblock_id', subblock.id)
+
+    fullSubblock.children = children || []
+
+    // Criar nova aba
+    const newTab = {
+      id: subblock.id,
+      type: subblock.level === 2 ? 'subsubblock' : 'subblock',
+      data: fullSubblock,
+      title: subblock.name,
+      parentId: parentSubblockId || subblock.parent_subblock_id,
+      parentBlockId: parentBlockId
+    }
+
+    setCurrentJourneyTabs([...openTabs, newTab], subblock.id)
+  }
+
+  const closeTab = (tabId) => {
+    const { openTabs, activeTabId } = getCurrentJourneyTabs()
+    const tabToClose = openTabs.find(tab => tab.id === tabId)
+    if (!tabToClose) return
+
+    let tabsToClose = [tabId]
+
+    // Se for bloco, fechar todos os sub-blocos e sub-sub-blocos
+    if (tabToClose.type === 'block') {
+      const childSubblocks = openTabs.filter(tab => 
+        tab.type === 'subblock' && tab.parentBlockId === tabId
+      )
+      childSubblocks.forEach(subblock => {
+        tabsToClose.push(subblock.id)
+        // Fechar também os sub-sub-blocos deste sub-bloco
+        const childSubSubblocks = openTabs.filter(tab =>
+          tab.type === 'subsubblock' && tab.parentId === subblock.id
+        )
+        tabsToClose.push(...childSubSubblocks.map(t => t.id))
+      })
+    }
+
+    // Se for sub-bloco, fechar todos os sub-sub-blocos
+    if (tabToClose.type === 'subblock') {
+      const childSubSubblocks = openTabs.filter(tab =>
+        tab.type === 'subsubblock' && tab.parentId === tabId
+      )
+      tabsToClose.push(...childSubSubblocks.map(t => t.id))
+    }
+
+    // Remover todas as abas (pai + filhos)
+    const newTabs = openTabs.filter(tab => !tabsToClose.includes(tab.id))
+    
+    // Se fechou a aba ativa, ativar a última aba
+    const newActiveTabId = tabsToClose.includes(activeTabId)
+      ? (newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null)
+      : activeTabId
+    
+    setCurrentJourneyTabs(newTabs, newActiveTabId)
+  }
+
+  const refreshActiveTab = async () => {
+    const { openTabs, activeTabId } = getCurrentJourneyTabs()
+    if (!activeTabId) return
+
+    const activeTab = openTabs.find(tab => tab.id === activeTabId)
+    if (!activeTab) return
+
+    // Recarregar dados da aba ativa
+    const { data: fullSubblock } = await supabase
+      .from('policy_subblocks')
+      .select(`
+        *,
+        policy_contents (*),
+        policy_attachments (*)
+      `)
+      .eq('id', activeTab.id)
+      .single()
+
+    if (fullSubblock) {
+      const { data: children } = await supabase
+        .from('policy_subblocks')
+        .select(`
+          *,
+          policy_contents (*),
+          policy_attachments (*)
+        `)
+        .eq('parent_subblock_id', activeTab.id)
+
+      fullSubblock.children = children || []
+
+      const updatedTabs = openTabs.map(tab =>
+        tab.id === activeTabId
+          ? { ...tab, data: fullSubblock }
+          : tab
+      )
+      setCurrentJourneyTabs(updatedTabs, activeTabId)
+    }
+  }
+
   const renderContent = (content) => {
+    // 🔥 NOVO: Modo de edição inline para todos os tipos
+    const isInlineEditing = inlineEditingContent === content.id
+    
     switch (content.content_type) {
       case 'text':
-        return <p className="text-gray-700 whitespace-pre-wrap break-words overflow-wrap-anywhere">{content.content_data.text}</p>
+        const textData = isInlineEditing ? inlineTableData : content.content_data
+        return (
+          <div className="space-y-3">
+            {isInlineEditing ? (
+              <textarea
+                value={textData.text}
+                onChange={(e) => setInlineTableData({ text: e.target.value })}
+                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[150px] text-gray-700"
+                placeholder="Digite o texto..."
+              />
+            ) : (
+              <p className="text-gray-700 whitespace-pre-wrap break-words overflow-wrap-anywhere">{textData.text}</p>
+            )}
+            
+            {/* Botões de ação */}
+            {isInlineEditing ? (
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={async () => {
+                    try {
+                      setSaving(true)
+                      const { error } = await supabase
+                        .from('policy_contents')
+                        .update({ content_data: inlineTableData })
+                        .eq('id', content.id)
+                      
+                      if (error) throw error
+                      
+                      content.content_data = inlineTableData
+                      setInlineEditingContent(null)
+                      setInlineTableData(null)
+                      
+                      if (viewingSubblock) {
+                        await refreshViewingSubblock(viewingSubblock.id)
+                      }
+                      await loadBlocks()
+                      
+                      showSuccessToast('Texto atualizado com sucesso!')
+                    } catch (error) {
+                      console.error('Erro ao salvar:', error)
+                      alert('Erro ao salvar: ' + error.message)
+                    } finally {
+                      setSaving(false)
+                    }
+                  }}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all disabled:opacity-50"
+                >
+                  <Save className="h-4 w-4" />
+                  {saving ? 'Salvando...' : 'Salvar'}
+                </button>
+                <button
+                  onClick={() => {
+                    setInlineEditingContent(null)
+                    setInlineTableData(null)
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg transition-all"
+                >
+                  <X className="h-4 w-4" />
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setInlineEditingContent(content.id)
+                    setInlineTableData(content.content_data)
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                >
+                  <Edit className="h-4 w-4" />
+                  Editar Texto
+                </button>
+              </div>
+            )}
+          </div>
+        )
       
       case 'list':
+        const listData = isInlineEditing ? inlineTableData : content.content_data
         return (
-          <ul className="list-disc list-inside space-y-1 text-gray-700">
-            {content.content_data.items?.map((item, index) => (
-              <li key={index} className="break-words">{item}</li>
-            ))}
-          </ul>
+          <div className="space-y-3">
+            {isInlineEditing ? (
+              <div className="space-y-2">
+                {listData.items?.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <span className="text-gray-500">•</span>
+                    <input
+                      type="text"
+                      value={item}
+                      onChange={(e) => {
+                        const newItems = [...listData.items]
+                        newItems[index] = e.target.value
+                        setInlineTableData({ items: newItems })
+                      }}
+                      className="flex-1 px-3 py-2 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => {
+                        const newItems = listData.items.filter((_, i) => i !== index)
+                        setInlineTableData({ items: newItems })
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      title="Remover item"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => {
+                    setInlineTableData({ items: [...listData.items, ''] })
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-all w-full justify-center border-2 border-dashed border-green-300"
+                >
+                  <Plus className="h-4 w-4" />
+                  Adicionar item
+                </button>
+              </div>
+            ) : (
+              <ul className="list-disc list-inside space-y-1 text-gray-700">
+                {listData.items?.map((item, index) => (
+                  <li key={index} className="break-words">{item}</li>
+                ))}
+              </ul>
+            )}
+            
+            {/* Botões de ação */}
+            {isInlineEditing ? (
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={async () => {
+                    try {
+                      setSaving(true)
+                      const { error } = await supabase
+                        .from('policy_contents')
+                        .update({ content_data: inlineTableData })
+                        .eq('id', content.id)
+                      
+                      if (error) throw error
+                      
+                      content.content_data = inlineTableData
+                      setInlineEditingContent(null)
+                      setInlineTableData(null)
+                      
+                      if (viewingSubblock) {
+                        await refreshViewingSubblock(viewingSubblock.id)
+                      }
+                      await loadBlocks()
+                      
+                      showSuccessToast('Lista atualizada com sucesso!')
+                    } catch (error) {
+                      console.error('Erro ao salvar:', error)
+                      alert('Erro ao salvar: ' + error.message)
+                    } finally {
+                      setSaving(false)
+                    }
+                  }}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all disabled:opacity-50"
+                >
+                  <Save className="h-4 w-4" />
+                  {saving ? 'Salvando...' : 'Salvar'}
+                </button>
+                <button
+                  onClick={() => {
+                    setInlineEditingContent(null)
+                    setInlineTableData(null)
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg transition-all"
+                >
+                  <X className="h-4 w-4" />
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setInlineEditingContent(content.id)
+                    setInlineTableData(content.content_data)
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                >
+                  <Edit className="h-4 w-4" />
+                  Editar Lista
+                </button>
+              </div>
+            )}
+          </div>
         )
       
       case 'heading':
-        const HeadingTag = `h${content.content_data.level || 3}`
-        return React.createElement(HeadingTag, {
-          className: `font-bold text-gray-900 break-words ${content.content_data.level === 2 ? 'text-xl' : 'text-lg'}`
-        }, content.content_data.text)
+        const headingData = isInlineEditing ? inlineTableData : content.content_data
+        const HeadingTag = `h${headingData.level || 3}`
+        
+        return (
+          <div className="space-y-3">
+            {isInlineEditing ? (
+              <div className="space-y-2">
+                <div className="flex gap-2 items-center">
+                  <label className="text-sm text-gray-600">Nível:</label>
+                  <select
+                    value={headingData.level}
+                    onChange={(e) => setInlineTableData({ ...headingData, level: parseInt(e.target.value) })}
+                    className="px-3 py-2 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value={1}>H1 - Grande</option>
+                    <option value={2}>H2 - Médio</option>
+                    <option value={3}>H3 - Pequeno</option>
+                  </select>
+                </div>
+                <input
+                  type="text"
+                  value={headingData.text}
+                  onChange={(e) => setInlineTableData({ ...headingData, text: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-bold"
+                  placeholder="Digite o título..."
+                />
+              </div>
+            ) : (
+              React.createElement(HeadingTag, {
+                className: `font-bold text-gray-900 break-words ${headingData.level === 2 ? 'text-xl' : 'text-lg'}`
+              }, headingData.text)
+            )}
+            
+            {/* Botões de ação */}
+            {isInlineEditing ? (
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={async () => {
+                    try {
+                      setSaving(true)
+                      const { error } = await supabase
+                        .from('policy_contents')
+                        .update({ content_data: inlineTableData })
+                        .eq('id', content.id)
+                      
+                      if (error) throw error
+                      
+                      content.content_data = inlineTableData
+                      setInlineEditingContent(null)
+                      setInlineTableData(null)
+                      
+                      if (viewingSubblock) {
+                        await refreshViewingSubblock(viewingSubblock.id)
+                      }
+                      await loadBlocks()
+                      
+                      showSuccessToast('Título atualizado com sucesso!')
+                    } catch (error) {
+                      console.error('Erro ao salvar:', error)
+                      alert('Erro ao salvar: ' + error.message)
+                    } finally {
+                      setSaving(false)
+                    }
+                  }}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all disabled:opacity-50"
+                >
+                  <Save className="h-4 w-4" />
+                  {saving ? 'Salvando...' : 'Salvar'}
+                </button>
+                <button
+                  onClick={() => {
+                    setInlineEditingContent(null)
+                    setInlineTableData(null)
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg transition-all"
+                >
+                  <X className="h-4 w-4" />
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setInlineEditingContent(content.id)
+                    setInlineTableData(content.content_data)
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                >
+                  <Edit className="h-4 w-4" />
+                  Editar Título
+                </button>
+              </div>
+            )}
+          </div>
+        )
       
       case 'table':
+        // 🔥 NOVO: Tabela editável inline
+        const tableData = isInlineEditing ? inlineTableData : content.content_data
+        
         return (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border border-gray-300">
-              <thead className="bg-gray-50">
-                <tr>
-                  {content.content_data.headers?.map((header, index) => (
-                    <th key={index} className="px-4 py-2 border border-gray-300 text-left text-sm font-semibold text-gray-900 break-words">
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {content.content_data.rows?.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {row.map((cell, cellIndex) => (
-                      <td key={cellIndex} className="px-4 py-2 border border-gray-300 text-sm text-gray-700 break-words">
-                        {cell}
-                      </td>
+          <div className="space-y-3">
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-300">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {tableData.headers?.map((header, index) => (
+                      <th key={index} className="px-4 py-2 border border-gray-300 text-left text-sm font-semibold text-gray-900 break-words">
+                        {isInlineEditing ? (
+                          <input
+                            type="text"
+                            value={header}
+                            onChange={(e) => {
+                              const newHeaders = [...tableData.headers]
+                              newHeaders[index] = e.target.value
+                              setInlineTableData({ ...tableData, headers: newHeaders })
+                            }}
+                            className="w-full px-2 py-1 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        ) : (
+                          header
+                        )}
+                      </th>
                     ))}
+                    {isInlineEditing && (
+                      <th className="px-2 py-2 border border-gray-300 w-10">
+                        <button
+                          onClick={() => {
+                            setInlineTableData({
+                              ...tableData,
+                              headers: [...tableData.headers, 'Nova Coluna'],
+                              rows: tableData.rows.map(row => [...row, ''])
+                            })
+                          }}
+                          className="p-1 text-green-600 hover:bg-green-50 rounded transition-all"
+                          title="Adicionar coluna"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </th>
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {tableData.rows?.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {row.map((cell, cellIndex) => (
+                        <td key={cellIndex} className="px-4 py-2 border border-gray-300 text-sm text-gray-700 break-words">
+                          {isInlineEditing ? (
+                            <input
+                              type="text"
+                              value={cell}
+                              onChange={(e) => {
+                                const newRows = [...tableData.rows]
+                                newRows[rowIndex][cellIndex] = e.target.value
+                                setInlineTableData({ ...tableData, rows: newRows })
+                              }}
+                              className="w-full px-2 py-1 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            cell
+                          )}
+                        </td>
+                      ))}
+                      {isInlineEditing && (
+                        <td className="px-2 py-2 border border-gray-300">
+                          <button
+                            onClick={() => {
+                              const newRows = tableData.rows.filter((_, i) => i !== rowIndex)
+                              setInlineTableData({ ...tableData, rows: newRows })
+                            }}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-all"
+                            title="Remover linha"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                  {isInlineEditing && (
+                    <tr>
+                      <td colSpan={tableData.headers?.length + 1} className="px-4 py-2 border border-gray-300 text-center">
+                        <button
+                          onClick={() => {
+                            setInlineTableData({
+                              ...tableData,
+                              rows: [...tableData.rows, Array(tableData.headers.length).fill('')]
+                            })
+                          }}
+                          className="flex items-center gap-2 mx-auto px-3 py-1.5 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Adicionar linha
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* 🔥 NOVO: Botões de ação inline */}
+            {isInlineEditing ? (
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={async () => {
+                    try {
+                      setSaving(true)
+                      const { error } = await supabase
+                        .from('policy_contents')
+                        .update({ content_data: inlineTableData })
+                        .eq('id', content.id)
+                      
+                      if (error) throw error
+                      
+                      // 🔥 Atualizar o conteúdo localmente
+                      content.content_data = inlineTableData
+                      
+                      setInlineEditingContent(null)
+                      setInlineTableData(null)
+                      
+                      // 🔥 Atualizar viewingSubblock se estiver aberto
+                      if (viewingSubblock) {
+                        await refreshViewingSubblock(viewingSubblock.id)
+                      }
+                      
+                      // 🔥 Recarregar blocos para garantir sincronização
+                      await loadBlocks()
+                      
+                      showSuccessToast('Tabela atualizada com sucesso!')
+                    } catch (error) {
+                      console.error('Erro ao salvar tabela:', error)
+                      alert('Erro ao salvar tabela: ' + error.message)
+                    } finally {
+                      setSaving(false)
+                    }
+                  }}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="h-4 w-4" />
+                  {saving ? 'Salvando...' : 'Salvar'}
+                </button>
+                <button
+                  onClick={() => {
+                    setInlineEditingContent(null)
+                    setInlineTableData(null)
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg transition-all"
+                >
+                  <X className="h-4 w-4" />
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setInlineEditingContent(content.id)
+                    setInlineTableData(content.content_data)
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                >
+                  <Edit className="h-4 w-4" />
+                  Editar Tabela
+                </button>
+              </div>
+            )}
           </div>
         )
       
@@ -1282,6 +1970,508 @@ export default function OperationalPoliciesPage() {
               </div>
             )}
 
+            {/* 🔥 SISTEMA DE ABAS - Tab Bar */}
+            <div className="mb-6">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
+                <div className="flex items-start gap-1 p-2 relative">
+                  <div className="flex items-start gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 flex-1">
+                    {openTabs.map((tab, tabIndex) => {
+                      const isSubSubblock = tab.type === 'subsubblock'
+                      const isBlock = tab.type === 'block'
+                      const isSubblock = tab.type === 'subblock'
+                      const parentTab = isSubSubblock ? openTabs.find(t => t.id === tab.parentId) : null
+                      const parentBlockTab = (isSubblock && tab.parentBlockId) ? openTabs.find(t => t.id === tab.parentBlockId && t.type === 'block') : null
+                      
+                      // Encontrar sub-sub-blocos filhos desta aba (se for sub-bloco)
+                      const childSubSubblocks = isSubblock ? openTabs.filter(t => t.type === 'subsubblock' && t.parentId === tab.id) : []
+                      
+                      // Não renderizar se for sub-sub-bloco (será renderizado abaixo do pai)
+                      if (isSubSubblock) return null
+                      
+                      return (
+                        <div key={tab.id} className="flex flex-col items-start gap-0">
+                          {/* Linha Principal */}
+                          <div className="flex items-start gap-0">
+                            {/* Aba Principal */}
+                            <button
+                              onClick={() => {
+                                const { openTabs } = getCurrentJourneyTabs()
+                                setCurrentJourneyTabs(openTabs, tab.id)
+                              }}
+                              className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-200 min-w-fit ${
+                                isBlock
+                                  ? activeTabId === tab.id
+                                    ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md shadow-green-500/20'
+                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  : parentBlockTab
+                                    ? activeTabId === tab.id
+                                      ? 'bg-gradient-to-br from-[#EBA500] to-[#d99500] text-white shadow-md shadow-[#EBA500]/20 ml-6'
+                                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 ml-6'
+                                    : activeTabId === tab.id
+                                      ? 'bg-gradient-to-br from-[#EBA500] to-[#d99500] text-white shadow-md shadow-[#EBA500]/20'
+                                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                              style={(isSubblock && parentBlockTab) ? { 
+                                position: 'relative',
+                                marginTop: '4px'
+                              } : {}}
+                            >
+                              {/* Indicador visual de conexão para sub-blocos conectados a blocos */}
+                              {isSubblock && parentBlockTab && (
+                                <div 
+                                  className="absolute -left-6 top-1/2 w-6 h-0.5 bg-green-300"
+                                  style={{ transform: 'translateY(-50%)' }}
+                                >
+                                  <div className="absolute left-0 top-1/2 w-2 h-2 bg-green-400 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
+                                </div>
+                              )}
+                              
+                              {isBlock ? <Layers className="h-4 w-4 flex-shrink-0" /> : <FileText className="h-4 w-4 flex-shrink-0" />}
+                              <span className="max-w-[200px] truncate">{tab.title}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  closeTab(tab.id)
+                                }}
+                                className={`p-0.5 rounded-md hover:bg-black/10 transition-colors ${
+                                  activeTabId === tab.id 
+                                    ? 'text-white' 
+                                    : isBlock 
+                                      ? 'text-green-600' 
+                                      : 'text-gray-500'
+                                }`}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </button>
+                          </div>
+
+                          {/* Sub-sub-blocos conectados abaixo com formato L */}
+                          {childSubSubblocks.length > 0 && (
+                            <div className="flex items-start gap-2 mt-1 ml-4 relative">
+                              {/* Linha vertical do L */}
+                              <div 
+                                className="absolute left-0 top-0 w-0.5 bg-blue-300"
+                                style={{ 
+                                  height: `${childSubSubblocks.length * 44}px`,
+                                  marginLeft: parentBlockTab ? '24px' : '0px'
+                                }}
+                              />
+                              
+                              <div className="flex flex-col gap-1 pl-6" style={{ marginLeft: parentBlockTab ? '24px' : '0px' }}>
+                                {childSubSubblocks.map((childTab, childIndex) => (
+                                  <div key={childTab.id} className="flex items-center gap-0 relative">
+                                    {/* Linha horizontal do L */}
+                                    <div 
+                                      className="absolute -left-6 top-1/2 w-6 h-0.5 bg-blue-300"
+                                      style={{ transform: 'translateY(-50%)' }}
+                                    >
+                                      <div className="absolute left-0 top-1/2 w-2 h-2 bg-blue-400 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
+                                    </div>
+
+                                    <button
+                                      onClick={() => {
+                                        const { openTabs } = getCurrentJourneyTabs()
+                                        setCurrentJourneyTabs(openTabs, childTab.id)
+                                      }}
+                                      className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-200 min-w-fit ${
+                                        activeTabId === childTab.id
+                                          ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white shadow-md shadow-blue-400/20'
+                                          : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                      }`}
+                                    >
+                                      <FileText className="h-4 w-4 flex-shrink-0" />
+                                      <span className="max-w-[200px] truncate">{childTab.title}</span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          closeTab(childTab.id)
+                                        }}
+                                        className={`p-0.5 rounded-md hover:bg-black/10 transition-colors ${
+                                          activeTabId === childTab.id ? 'text-white' : 'text-blue-600'
+                                        }`}
+                                      >
+                                        <X className="h-3.5 w-3.5" />
+                                      </button>
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  
+                  {/* Botão Quick Add (+) */}
+                  <div className="relative flex-shrink-0 ml-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        console.log('🔥 Clicou no +, estado:', showQuickAddDropdown)
+                        setShowQuickAddDropdown(!showQuickAddDropdown)
+                      }}
+                      className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-xl transition-all duration-200 hover:scale-105"
+                      title="Adicionar aba rápida"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {showQuickAddDropdown && (
+                      <>
+                        {/* Backdrop */}
+                        <div 
+                          className="fixed inset-0 z-[100]"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowQuickAddDropdown(false)
+                          }}
+                        />
+                        
+                        {/* Menu */}
+                        <div 
+                          className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border-2 border-gray-300 z-[101]"
+                          style={{ maxHeight: '400px', overflowY: 'auto' }}
+                        >
+                          <div className="p-4">
+                            <div className="mb-3 pb-3 border-b border-gray-200">
+                              <h3 className="text-base font-bold text-[#373435]">📦 Abrir Bloco</h3>
+                              <p className="text-xs text-gray-500 mt-1">Selecione para abrir em nova aba</p>
+                            </div>
+                            
+                            {blocks.length === 0 ? (
+                              <p className="text-sm text-gray-500 text-center py-8">Nenhum bloco disponível</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {blocks.map((block) => (
+                                  <button
+                                    key={block.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      openBlockInTab(block)
+                                      setShowQuickAddDropdown(false)
+                                    }}
+                                    className="w-full text-left px-3 py-2.5 hover:bg-green-50 rounded-lg transition-colors flex items-center gap-3 group border border-transparent hover:border-green-200"
+                                  >
+                                    <div className="p-2 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl flex-shrink-0 group-hover:from-green-50 group-hover:to-green-100/50 transition-all">
+                                      <span className="text-2xl">{block.icon}</span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-sm text-gray-700 group-hover:text-green-700 font-semibold block truncate">
+                                        {block.name}
+                                      </span>
+                                      {block.policy_subblocks && block.policy_subblocks.length > 0 && (
+                                        <span className="text-xs text-gray-500 group-hover:text-green-600">
+                                          {block.policy_subblocks.length} sub-bloco{block.policy_subblocks.length !== 1 ? 's' : ''}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <Layers className="h-4 w-4 text-gray-400 group-hover:text-green-500 flex-shrink-0" />
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 🔥 SISTEMA DE ABAS - Tab Content */}
+            {activeTabId && openTabs.find(t => t.id === activeTabId) && (() => {
+              const activeTab = openTabs.find(t => t.id === activeTabId)
+              
+              // 🔥 NOVO: Renderização de Aba de Bloco
+              if (activeTab.type === 'block') {
+                const block = activeTab.data
+                
+                return (
+                  <div className="mb-6">
+                    <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
+                      {/* Header do Bloco */}
+                      <div className="p-8 border-b border-gray-200 bg-gradient-to-r from-green-500/5 to-transparent">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="p-4 bg-gradient-to-br from-green-50 to-green-100/50 rounded-2xl flex-shrink-0">
+                              <span className="text-5xl">{block.icon}</span>
+                            </div>
+                            <div className="flex-1">
+                              <h2 className="text-3xl font-bold text-[#373435] mb-2 break-words">
+                                {block.name}
+                              </h2>
+                              {block.description && (
+                                <p className="text-gray-600 leading-relaxed break-words">
+                                  {block.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Lista de Sub-blocos */}
+                      <div className="p-8">
+                        <div className="flex items-center justify-between mb-6">
+                          <h3 className="text-xl font-bold text-[#373435]">
+                            Sub-blocos ({block.policy_subblocks?.length || 0})
+                          </h3>
+                          <button
+                            onClick={() => openAllSubblocksInTabs(block)}
+                            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg hover:shadow-green-500/30 text-white rounded-xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                          >
+                            <Layers className="h-5 w-5" />
+                            Abrir Todos os Sub-blocos
+                          </button>
+                        </div>
+
+                        {block.policy_subblocks && block.policy_subblocks.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {block.policy_subblocks.map((subblock) => (
+                              <div
+                                key={subblock.id}
+                                className="group bg-gradient-to-br from-[#EBA500]/5 to-white border-2 border-[#EBA500]/20 rounded-2xl p-6 hover:shadow-lg hover:border-[#EBA500]/40 transition-all duration-200 cursor-pointer"
+                                onClick={() => openSubblockInTab(subblock, null, block.id)}
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h4 className="text-lg font-bold text-[#373435] mb-2 break-words">
+                                      {subblock.name}
+                                    </h4>
+                                    {subblock.description && (
+                                      <p className="text-sm text-gray-600 mb-3 break-words">
+                                        {subblock.description}
+                                      </p>
+                                    )}
+                                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                                      <span className="flex items-center gap-1">
+                                        <FileText className="h-3 w-3" />
+                                        {subblock.policy_contents?.length || 0} conteúdos
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <Paperclip className="h-3 w-3" />
+                                        {subblock.policy_attachments?.length || 0} anexos
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      openSubblockInTab(subblock, null, block.id)
+                                    }}
+                                    className="p-2 text-[#EBA500] hover:bg-[#EBA500]/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                  >
+                                    <ExternalLink className="h-5 w-5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-12 text-gray-400">
+                            <Layers className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                            <p>Nenhum sub-bloco ainda</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+              
+              // Renderização de Sub-bloco/Sub-sub-bloco (código existente)
+              const viewingSubblock = activeTab.data
+              
+              return (
+                <div className="mb-6">
+                  <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
+                    {/* Header do Tab */}
+                    <div className="p-8 border-b border-gray-200 bg-gradient-to-r from-[#EBA500]/5 to-transparent">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h2 className="text-3xl font-bold text-[#373435] mb-2 break-words">
+                            {viewingSubblock.name}
+                          </h2>
+                          {viewingSubblock.description && (
+                            <p className="text-gray-600 leading-relaxed break-words">
+                              {viewingSubblock.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <button
+                            onClick={() => handleDeleteSubblock(viewingSubblock.id)}
+                            className="group flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg hover:shadow-red-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
+                            title="Deletar sub-bloco"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Deletar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Conteúdos e Anexos */}
+                    <div className="p-8">
+                      {/* Sub-sub-blocos - APENAS para sub-blocos nível 1 */}
+                      {viewingSubblock.level !== 2 && viewingSubblock.children && viewingSubblock.children.length > 0 && (
+                        <div className="mb-8">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-[#373435]">Sub-blocos</h3>
+                            <button
+                              onClick={() => openSubSubblockModal(viewingSubblock.id)}
+                              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Adicionar
+                            </button>
+                          </div>
+                          <div className="space-y-3">
+                            {viewingSubblock.children.map((subSubblock) => (
+                              <div
+                                key={subSubblock.id}
+                                className="group bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-5 hover:shadow-md transition-all duration-200"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h4 className="text-base font-bold text-[#373435] mb-1 break-words">
+                                      {subSubblock.name}
+                                    </h4>
+                                    {subSubblock.description && (
+                                      <p className="text-sm text-gray-600 break-words">
+                                        {subSubblock.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={() => openSubblockInTab(subSubblock, viewingSubblock.id)}
+                                      className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                      title="Abrir em Aba"
+                                    >
+                                      <ExternalLink className="h-4 w-4 text-blue-500" />
+                                    </button>
+                                    <button
+                                      onClick={() => openSubSubblockModal(viewingSubblock.id, subSubblock)}
+                                      className="p-2 hover:bg-[#EBA500]/10 rounded-lg transition-colors"
+                                      title="Editar"
+                                    >
+                                      <Edit2 className="h-4 w-4 text-[#EBA500]" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteSubSubblock(subSubblock.id)}
+                                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                      title="Deletar"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-red-500" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Botão adicionar sub-sub-bloco quando não tem nenhum - APENAS para sub-blocos nível 1 */}
+                      {viewingSubblock.level !== 2 && (!viewingSubblock.children || viewingSubblock.children.length === 0) && (
+                        <div className="mb-8">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-[#373435]">Sub-blocos</h3>
+                            <button
+                              onClick={() => openSubSubblockModal(viewingSubblock.id)}
+                              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Adicionar
+                            </button>
+                          </div>
+                          <p className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-xl">
+                            Nenhum sub-bloco cadastrado
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Conteúdos */}
+                      <div className="mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-bold text-[#373435]">Conteúdos</h3>
+                          <button
+                            onClick={() => openContentModal(viewingSubblock.id)}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Adicionar
+                          </button>
+                        </div>
+                        {viewingSubblock.policy_contents && viewingSubblock.policy_contents.length > 0 ? (
+                          <div className="space-y-4">
+                            {viewingSubblock.policy_contents.map((content) => (
+                              <div key={content.id} className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-6">
+                                {renderContent(content)}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-xl">
+                            Nenhum conteúdo cadastrado
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Anexos */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-bold text-[#373435]">Anexos</h3>
+                          <button
+                            onClick={() => openAttachmentModal(viewingSubblock.id)}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Adicionar
+                          </button>
+                        </div>
+                        {viewingSubblock.policy_attachments && viewingSubblock.policy_attachments.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {viewingSubblock.policy_attachments.map((attachment) => (
+                              <a
+                                key={attachment.id}
+                                href={attachment.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-4 p-5 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl hover:shadow-lg hover:border-[#EBA500] transition-all group"
+                              >
+                                <div className="p-3 bg-[#EBA500]/10 rounded-xl group-hover:bg-[#EBA500]/20 transition-colors">
+                                  <Paperclip className="h-6 w-6 text-[#EBA500]" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900 truncate group-hover:text-[#EBA500] transition-colors">
+                                    {attachment.file_name}
+                                  </p>
+                                  {attachment.description && (
+                                    <p className="text-sm text-gray-500 truncate">{attachment.description}</p>
+                                  )}
+                                </div>
+                                <ExternalLink className="h-5 w-5 text-gray-400 flex-shrink-0 group-hover:text-[#EBA500] transition-colors" />
+                              </a>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-xl">
+                            Nenhum anexo cadastrado
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Header da seção de blocos */}
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -1420,7 +2610,7 @@ export default function OperationalPoliciesPage() {
                     <div 
                       className="p-6 cursor-pointer transition-colors relative hover:bg-gray-50/50"
                       style={{ borderLeft: `5px solid ${block.color}` }}
-                      onClick={() => openBlockView(block)}
+                      onClick={() => openBlockInTab(block)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 flex-1">
@@ -1449,19 +2639,19 @@ export default function OperationalPoliciesPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              openSubblockModal(block.id);
+                              openBlockInTab(block);
                             }}
-                            className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:scale-105"
-                            title="Adicionar Sub-bloco"
+                            className="p-2.5 text-green-600 hover:bg-green-50 rounded-xl transition-all hover:scale-105"
+                            title="Abrir em Aba"
                           >
-                            <Plus className="h-5 w-5" />
+                            <ExternalLink className="h-5 w-5" />
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               openBlockModal(block);
                             }}
-                            className="p-2.5 text-green-600 hover:bg-green-50 rounded-xl transition-all hover:scale-105"
+                            className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:scale-105"
                             title="Editar Bloco"
                           >
                             <Edit className="h-5 w-5" />
@@ -1502,7 +2692,7 @@ export default function OperationalPoliciesPage() {
                       {/* Área clicável para abrir visualização */}
                       <div 
                         className="p-6 cursor-pointer"
-                        onClick={() => openBlockView(block)}
+                        onClick={() => openBlockInTab(block)}
                       >
                         {/* Header do Card */}
                         <div className="flex items-start justify-between mb-4">
@@ -1544,32 +2734,33 @@ export default function OperationalPoliciesPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              openSubblockModal(block.id);
+                              openBlockInTab(block);
                             }}
-                            className="flex-1 px-3 py-2 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white text-sm rounded-xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                            className="flex-1 px-3 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg hover:shadow-green-500/30 text-white text-sm rounded-xl font-semibold transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                            title="Abrir em Aba"
                           >
-                            <Plus className="h-4 w-4 inline mr-1" />
-                            Sub-bloco
+                            <ExternalLink className="h-4 w-4" />
+                            Abrir
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               openBlockModal(block);
                             }}
-                            className="p-2 text-gray-600 hover:text-[#EBA500] hover:bg-[#EBA500]/10 rounded-xl transition-all"
+                            className="p-2.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all"
                             title="Editar bloco"
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Edit2 className="h-5 w-5" />
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteBlock(block.id);
                             }}
-                            className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                            className="p-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all"
                             title="Excluir bloco"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-5 w-5" />
                           </button>
                         </div>
                       </div>
@@ -1781,440 +2972,6 @@ export default function OperationalPoliciesPage() {
                     );
                   }
                 })()}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 🔥 NOVO: Modal de Visualização do Sub-bloco (mostra conteúdos e anexos) */}
-        {showSubblockViewModal && viewingSubblock && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
-            <div 
-              className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
-              style={{
-                animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
-              }}
-            >
-              {/* Header do Modal */}
-              <div className="p-8 border-b border-gray-200 bg-gradient-to-r from-[#EBA500]/5 to-transparent">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <button
-                      onClick={closeSubblockView}
-                      className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#EBA500] mb-4 transition-colors"
-                    >
-                      <ChevronRight className="h-4 w-4 rotate-180" />
-                      Voltar aos sub-blocos
-                    </button>
-                    <h2 className="text-3xl font-bold text-[#373435] mb-2 break-words">
-                      {viewingSubblock.name}
-                    </h2>
-                    {viewingSubblock.description && (
-                      <p className="text-gray-600 leading-relaxed break-words">
-                        {viewingSubblock.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <button
-                      onClick={() => handleDeleteSubblock(viewingSubblock.id)}
-                      className="group flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg hover:shadow-red-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
-                      title="Deletar sub-bloco"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Deletar
-                    </button>
-                    <button
-                      onClick={closeSubblockView}
-                      className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
-                    >
-                      <X className="h-6 w-6" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Conteúdos e Anexos */}
-              <div className="p-8 overflow-y-auto max-h-[calc(90vh-240px)]">
-                <div className="space-y-8">
-                  {console.log('🎨 Renderizando modal - Conteúdos:', viewingSubblock.policy_contents?.length || 0)}
-                  
-                  {/* 🔥 NOVO: Sub-Sub-blocos (3º nível) */}
-                  {viewingSubblock.children && viewingSubblock.children.length > 0 && (
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-indigo-100 rounded-xl">
-                            <Layers className="h-5 w-5 text-indigo-600" />
-                          </div>
-                          <h3 className="text-xl font-bold text-[#373435]">Sub-blocos</h3>
-                        </div>
-                        <button
-                          onClick={() => openSubSubblockModal(viewingSubblock.id)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:shadow-lg hover:shadow-indigo-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Adicionar Sub-bloco
-                        </button>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 gap-4">
-                        {viewingSubblock.children.map((subSubblock) => (
-                          <div
-                            key={subSubblock.id}
-                            className="group bg-gradient-to-br from-indigo-50 to-white rounded-2xl border-2 border-indigo-200/50 hover:border-indigo-400 hover:shadow-lg p-5 transition-all duration-200"
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-2 flex-1">
-                                <div className="p-1.5 bg-indigo-100 rounded-lg">
-                                  <Layers className="h-4 w-4 text-indigo-600" />
-                                </div>
-                                <h4 className="text-base font-bold text-[#373435] break-words">
-                                  {subSubblock.name}
-                                </h4>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => openSubSubblockModal(viewingSubblock.id, subSubblock)}
-                                  className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                                  title="Editar"
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteSubSubblock(subSubblock.id)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                  title="Excluir"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => toggleSubSubblock(subSubblock.id)}
-                                  className="text-gray-400 group-hover:text-indigo-600 transition-all flex-shrink-0"
-                                >
-                                  {expandedSubSubblocks[subSubblock.id] ? 
-                                    <ChevronDown className="h-5 w-5" /> : 
-                                    <ChevronRight className="h-5 w-5" />
-                                  }
-                                </button>
-                              </div>
-                            </div>
-                            
-                            {subSubblock.description && (
-                              <p className="text-sm text-gray-600 mb-3 ml-7 break-words">
-                                {subSubblock.description}
-                              </p>
-                            )}
-                            
-                            <div className="flex items-center gap-4 ml-7">
-                              <span className="text-xs text-gray-500">
-                                <FileText className="h-3 w-3 inline mr-1" />
-                                {subSubblock.policy_contents?.length || 0} conteúdos
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                <Paperclip className="h-3 w-3 inline mr-1" />
-                                {subSubblock.policy_attachments?.length || 0} anexos
-                              </span>
-                              <button
-                                onClick={() => openContentModal(subSubblock.id)}
-                                className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold"
-                              >
-                                <Plus className="h-3 w-3 inline mr-1" />
-                                Conteúdo
-                              </button>
-                              <button
-                                onClick={() => openAttachmentModal(subSubblock.id)}
-                                className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
-                              >
-                                <Plus className="h-3 w-3 inline mr-1" />
-                                Anexo
-                              </button>
-                            </div>
-
-                            {/* Conteúdos e Anexos do Sub-Subloco (se expandido) */}
-                            {expandedSubSubblocks[subSubblock.id] && (
-                              <div className="mt-4 ml-7 space-y-4 pl-4 border-l-2 border-indigo-200">
-                                {/* Conteúdos */}
-                                {subSubblock.policy_contents && subSubblock.policy_contents.length > 0 && (
-                                  <div className="space-y-3">
-                                    {subSubblock.policy_contents.map((content) => (
-                                      <div
-                                        key={content.id}
-                                        className="bg-white rounded-xl p-4 border border-gray-200 hover:border-indigo-300 transition-all"
-                                      >
-                                        <div className="flex justify-between items-start mb-3">
-                                          <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold text-indigo-700 bg-indigo-100">
-                                            {content.content_type}
-                                          </span>
-                                          <div className="flex gap-1">
-                                            <button
-                                              onClick={() => openContentModal(subSubblock.id, content)}
-                                              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-all"
-                                              title="Editar"
-                                            >
-                                              <Edit className="h-3.5 w-3.5" />
-                                            </button>
-                                            <button
-                                              onClick={() => handleDeleteContent(content.id)}
-                                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                              title="Excluir"
-                                            >
-                                              <Trash2 className="h-3.5 w-3.5" />
-                                            </button>
-                                          </div>
-                                        </div>
-                                        <div className="prose prose-sm max-w-none text-sm">
-                                          {renderContent(content)}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {/* Anexos */}
-                                {subSubblock.policy_attachments && subSubblock.policy_attachments.length > 0 && (
-                                  <div className="space-y-2">
-                                    {subSubblock.policy_attachments.map((attachment) => (
-                                      <div
-                                        key={attachment.id}
-                                        className="bg-white rounded-xl p-3 border border-gray-200 hover:border-blue-300 transition-all flex items-center justify-between"
-                                      >
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                          <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
-                                            <FileIcon className="h-4 w-4 text-blue-600" />
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-semibold text-gray-900 truncate">{attachment.file_name}</p>
-                                            {attachment.description && (
-                                              <p className="text-xs text-gray-500 truncate">{attachment.description}</p>
-                                            )}
-                                          </div>
-                                        </div>
-                                        <div className="flex gap-1 flex-shrink-0">
-                                          <button
-                                            onClick={() => handleViewAttachment(attachment)}
-                                            className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
-                                            title="Visualizar"
-                                          >
-                                            <Eye className="h-3.5 w-3.5" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDownloadAttachment(attachment)}
-                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                            title="Download"
-                                          >
-                                            <Download className="h-3.5 w-3.5" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDeleteAttachment(attachment)}
-                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                            title="Excluir"
-                                          >
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Botão para criar sub-sub-bloco se ainda não tiver nenhum (apenas nível 1) - REMOVIDO pois agora tem botão fixo na barra de ações */}
-                  
-                  {/* Conteúdos - sempre mostrar se existirem */}
-                  {viewingSubblock.policy_contents && viewingSubblock.policy_contents.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-purple-100 rounded-xl">
-                          <FileText className="h-5 w-5 text-purple-600" />
-                        </div>
-                        <h3 className="text-xl font-bold text-[#373435]">Conteúdos</h3>
-                      </div>
-                      <div className="space-y-4">
-                        {viewingSubblock.policy_contents.map((content) => (
-                          <div
-                            key={content.id}
-                            className="bg-white rounded-2xl p-6 border-2 border-gray-200/50 hover:border-gray-300 transition-all overflow-hidden"
-                          >
-                            <div className="flex justify-between items-start mb-4">
-                              <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold text-purple-700 bg-purple-100">
-                                {content.content_type}
-                              </span>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => {
-                                    // 🔥 NÃO fechar o modal do sub-bloco - deixar aberto para ver o resultado
-                                    openContentModal(viewingSubblock.id, content);
-                                  }}
-                                  className="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all"
-                                  title="Editar"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteContent(content.id)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                                  title="Excluir"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                            <div className="prose prose-sm max-w-none overflow-hidden break-words">
-                              {renderContent(content)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Anexos */}
-                  {viewingSubblock.policy_attachments && viewingSubblock.policy_attachments.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-blue-100 rounded-xl">
-                          <Paperclip className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <h3 className="text-xl font-bold text-[#373435]">Anexos</h3>
-                      </div>
-                      <div className="space-y-3">
-                        {viewingSubblock.policy_attachments.map((attachment) => (
-                          <div
-                            key={attachment.id}
-                            className="bg-white rounded-2xl p-5 border-2 border-gray-200/50 hover:border-gray-300 transition-all flex items-center justify-between overflow-hidden"
-                          >
-                            <div className="flex items-center gap-4 flex-1 min-w-0">
-                              <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl flex-shrink-0">
-                                <FileIcon className="h-6 w-6 text-blue-600" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-gray-900 mb-1 break-words">{attachment.file_name}</p>
-                                <p className="text-sm text-gray-500 break-words">
-                                  {formatFileSize(attachment.file_size)} • {formatDate(attachment.uploaded_at)}
-                                </p>
-                                {attachment.description && (
-                                  <p className="text-sm text-gray-600 mt-2 break-words">{attachment.description}</p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex gap-2 flex-shrink-0">
-                              <button
-                                onClick={() => handleViewAttachment(attachment)}
-                                className="p-2 text-purple-600 hover:bg-purple-50 rounded-xl transition-all"
-                                title="Visualizar"
-                              >
-                                <Eye className="h-5 w-5" />
-                              </button>
-                              <button
-                                onClick={() => handleDownloadAttachment(attachment)}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                                title="Download"
-                              >
-                                <Download className="h-5 w-5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteAttachment(attachment)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                                title="Excluir"
-                              >
-                                <Trash2 className="h-5 w-5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Empty state */}
-                  {(!viewingSubblock.policy_contents || viewingSubblock.policy_contents.length === 0) &&
-                   (!viewingSubblock.policy_attachments || viewingSubblock.policy_attachments.length === 0) &&
-                   (!viewingSubblock.children || viewingSubblock.children.length === 0) && (
-                    <div className="text-center py-16">
-                      <div className="inline-flex p-6 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl mb-6">
-                        <FileText className="h-16 w-16 text-gray-300" />
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-700 mb-3">
-                        Nenhum conteúdo adicionado
-                      </h3>
-                      <p className="text-gray-500 mb-6">
-                        {(!viewingSubblock.level || viewingSubblock.level === 1)
-                          ? 'Adicione conteúdos, anexos ou organize em sub-blocos'
-                          : 'Adicione conteúdos ou anexos a este sub-bloco'
-                        }
-                      </p>
-                      <div className="flex items-center justify-center gap-3 flex-wrap">
-                        <button
-                          onClick={() => {
-                            // 🔥 NÃO fechar o modal do sub-bloco - deixar aberto para ver o resultado
-                            openContentModal(viewingSubblock.id);
-                          }}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg hover:shadow-purple-500/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
-                        >
-                          <FileText className="h-5 w-5" />
-                          Adicionar Conteúdo
-                        </button>
-                        <button
-                          onClick={() => {
-                            // 🔥 NÃO fechar o modal do sub-bloco - deixar aberto para ver o resultado
-                            openAttachmentModal(viewingSubblock.id);
-                          }}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg hover:shadow-blue-500/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
-                        >
-                          <Paperclip className="h-5 w-5" />
-                          Adicionar Anexo
-                        </button>
-                        {/* Botão de criar sub-sub-bloco só para nível 1 */}
-                        {(!viewingSubblock.level || viewingSubblock.level === 1) && (
-                          <button
-                            onClick={() => openSubSubblockModal(viewingSubblock.id)}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:shadow-lg hover:shadow-indigo-500/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
-                          >
-                            <Layers className="h-5 w-5" />
-                            Criar Sub-bloco
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 🔥 NOVO: Barra de ações sempre visível (fora do scroll) */}
-                <div className="sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent pt-6 pb-4 border-t border-gray-200 mt-8">
-                  <div className="flex items-center justify-center gap-3 flex-wrap">
-                    <button
-                      onClick={() => openContentModal(viewingSubblock.id)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg hover:shadow-purple-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Adicionar Conteúdo
-                    </button>
-                    <button
-                      onClick={() => openAttachmentModal(viewingSubblock.id)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg hover:shadow-blue-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Adicionar Anexo
-                    </button>
-                    {/* Botão de criar sub-sub-bloco só para nível 1 */}
-                    {(!viewingSubblock.level || viewingSubblock.level === 1) && (
-                      <button
-                        onClick={() => openSubSubblockModal(viewingSubblock.id)}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:shadow-lg hover:shadow-indigo-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Adicionar Sub-bloco
-                      </button>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           </div>
