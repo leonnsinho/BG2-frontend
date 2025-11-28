@@ -1175,6 +1175,8 @@ export default function OperationalPoliciesPage() {
 
   // Abrir todos os sub-blocos de um bloco
   const openAllSubblocksInTabs = async (block) => {
+    console.log('🔥 openAllSubblocksInTabs - Iniciando', block)
+    
     if (!block.policy_subblocks || block.policy_subblocks.length === 0) {
       alert('Este bloco não possui sub-blocos')
       return
@@ -1183,10 +1185,75 @@ export default function OperationalPoliciesPage() {
     // Primeiro abrir o bloco
     await openBlockInTab(block)
 
-    // Depois abrir cada sub-bloco
-    for (const subblock of block.policy_subblocks) {
-      await openSubblockInTab(subblock, null, block.id)
+    // Filtrar apenas sub-blocos de nível 1 (não sub-sub-blocos)
+    const level1Subblocks = block.policy_subblocks.filter(sb => 
+      !sb.parent_subblock_id || sb.level === 1
+    )
+
+    console.log('🔥 Sub-blocos nível 1 para abrir:', level1Subblocks.length, level1Subblocks)
+
+    // Coletar todas as abas abertas atuais
+    let { openTabs, activeTabId } = getCurrentJourneyTabs()
+    const newTabs = [...openTabs]
+    let lastTabId = activeTabId
+
+    // Processar cada sub-bloco
+    for (const subblock of level1Subblocks) {
+      console.log('🔥 Processando sub-bloco:', subblock.name)
+      
+      // Verificar se já está aberto
+      const existingTab = newTabs.find(tab => tab.id === subblock.id)
+      if (existingTab) {
+        console.log('  ➡️ Já existe, pulando')
+        continue
+      }
+
+      // Buscar dados completos do subbloco
+      const { data: fullSubblock, error } = await supabase
+        .from('policy_subblocks')
+        .select(`
+          *,
+          policy_contents (*),
+          policy_attachments (*)
+        `)
+        .eq('id', subblock.id)
+        .single()
+
+      if (error) {
+        console.error('  ❌ Erro ao carregar:', error)
+        continue
+      }
+
+      // Buscar filhos
+      const { data: children } = await supabase
+        .from('policy_subblocks')
+        .select(`
+          *,
+          policy_contents (*),
+          policy_attachments (*)
+        `)
+        .eq('parent_subblock_id', subblock.id)
+
+      fullSubblock.children = children || []
+
+      // Criar nova aba
+      const newTab = {
+        id: subblock.id,
+        type: subblock.level === 2 ? 'subsubblock' : 'subblock',
+        data: fullSubblock,
+        title: subblock.name,
+        parentId: subblock.parent_subblock_id,
+        parentBlockId: block.id
+      }
+
+      newTabs.push(newTab)
+      lastTabId = subblock.id
+      console.log('  ✅ Aba criada:', newTab.title)
     }
+
+    // Atualizar todas as abas de uma vez
+    console.log('🔥 Atualizando com', newTabs.length, 'abas')
+    setCurrentJourneyTabs(newTabs, lastTabId)
   }
 
   const openSubblockInTab = async (subblock, parentSubblockId = null, parentBlockId = null) => {
@@ -1975,58 +2042,40 @@ export default function OperationalPoliciesPage() {
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
                 <div className="flex items-start gap-1 p-2 relative">
                   <div className="flex items-start gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 flex-1">
-                    {openTabs.map((tab, tabIndex) => {
-                      const isSubSubblock = tab.type === 'subsubblock'
+                    {openTabs.map((tab) => {
                       const isBlock = tab.type === 'block'
                       const isSubblock = tab.type === 'subblock'
-                      const parentTab = isSubSubblock ? openTabs.find(t => t.id === tab.parentId) : null
-                      const parentBlockTab = (isSubblock && tab.parentBlockId) ? openTabs.find(t => t.id === tab.parentBlockId && t.type === 'block') : null
+                      const isSubSubblock = tab.type === 'subsubblock'
                       
-                      // Encontrar sub-sub-blocos filhos desta aba (se for sub-bloco)
-                      const childSubSubblocks = isSubblock ? openTabs.filter(t => t.type === 'subsubblock' && t.parentId === tab.id) : []
+                      // Encontrar sub-blocos filhos deste bloco
+                      const childSubblocks = isBlock ? openTabs.filter(t => 
+                        t.type === 'subblock' && t.parentBlockId === tab.id
+                      ) : []
                       
-                      // Não renderizar se for sub-sub-bloco (será renderizado abaixo do pai)
-                      if (isSubSubblock) return null
+                      // Encontrar sub-sub-blocos filhos deste sub-bloco
+                      const childSubSubblocks = isSubblock ? openTabs.filter(t => 
+                        t.type === 'subsubblock' && t.parentId === tab.id
+                      ) : []
+                      
+                      // Não renderizar se for sub-bloco ou sub-sub-bloco (serão renderizados abaixo do pai)
+                      if (isSubblock || isSubSubblock) return null
                       
                       return (
                         <div key={tab.id} className="flex flex-col items-start gap-0">
-                          {/* Linha Principal */}
+                          {/* NÍVEL 1: BLOCO */}
                           <div className="flex items-start gap-0">
-                            {/* Aba Principal */}
                             <button
                               onClick={() => {
                                 const { openTabs } = getCurrentJourneyTabs()
                                 setCurrentJourneyTabs(openTabs, tab.id)
                               }}
                               className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-200 min-w-fit ${
-                                isBlock
-                                  ? activeTabId === tab.id
-                                    ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md shadow-green-500/20'
-                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                  : parentBlockTab
-                                    ? activeTabId === tab.id
-                                      ? 'bg-gradient-to-br from-[#EBA500] to-[#d99500] text-white shadow-md shadow-[#EBA500]/20 ml-6'
-                                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 ml-6'
-                                    : activeTabId === tab.id
-                                      ? 'bg-gradient-to-br from-[#EBA500] to-[#d99500] text-white shadow-md shadow-[#EBA500]/20'
-                                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                activeTabId === tab.id
+                                  ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md shadow-green-500/20'
+                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
                               }`}
-                              style={(isSubblock && parentBlockTab) ? { 
-                                position: 'relative',
-                                marginTop: '4px'
-                              } : {}}
                             >
-                              {/* Indicador visual de conexão para sub-blocos conectados a blocos */}
-                              {isSubblock && parentBlockTab && (
-                                <div 
-                                  className="absolute -left-6 top-1/2 w-6 h-0.5 bg-green-300"
-                                  style={{ transform: 'translateY(-50%)' }}
-                                >
-                                  <div className="absolute left-0 top-1/2 w-2 h-2 bg-green-400 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
-                                </div>
-                              )}
-                              
-                              {isBlock ? <Layers className="h-4 w-4 flex-shrink-0" /> : <FileText className="h-4 w-4 flex-shrink-0" />}
+                              <Layers className="h-4 w-4 flex-shrink-0" />
                               <span className="max-w-[200px] truncate">{tab.title}</span>
                               <button
                                 onClick={(e) => {
@@ -2034,11 +2083,7 @@ export default function OperationalPoliciesPage() {
                                   closeTab(tab.id)
                                 }}
                                 className={`p-0.5 rounded-md hover:bg-black/10 transition-colors ${
-                                  activeTabId === tab.id 
-                                    ? 'text-white' 
-                                    : isBlock 
-                                      ? 'text-green-600' 
-                                      : 'text-gray-500'
+                                  activeTabId === tab.id ? 'text-white' : 'text-green-600'
                                 }`}
                               >
                                 <X className="h-3.5 w-3.5" />
@@ -2046,56 +2091,118 @@ export default function OperationalPoliciesPage() {
                             </button>
                           </div>
 
-                          {/* Sub-sub-blocos conectados abaixo com formato L */}
-                          {childSubSubblocks.length > 0 && (
+                          {/* NÍVEL 2: SUB-BLOCOS (abaixo do bloco) */}
+                          {childSubblocks.length > 0 && (
                             <div className="flex items-start gap-2 mt-1 ml-4 relative">
-                              {/* Linha vertical do L */}
+                              {/* Linha vertical principal do bloco */}
                               <div 
-                                className="absolute left-0 top-0 w-0.5 bg-blue-300"
+                                className="absolute left-0 top-0 w-0.5 bg-green-300"
                                 style={{ 
-                                  height: `${childSubSubblocks.length * 44}px`,
-                                  marginLeft: parentBlockTab ? '24px' : '0px'
+                                  height: `calc(100% - 4px)`
                                 }}
                               />
                               
-                              <div className="flex flex-col gap-1 pl-6" style={{ marginLeft: parentBlockTab ? '24px' : '0px' }}>
-                                {childSubSubblocks.map((childTab, childIndex) => (
-                                  <div key={childTab.id} className="flex items-center gap-0 relative">
-                                    {/* Linha horizontal do L */}
-                                    <div 
-                                      className="absolute -left-6 top-1/2 w-6 h-0.5 bg-blue-300"
-                                      style={{ transform: 'translateY(-50%)' }}
-                                    >
-                                      <div className="absolute left-0 top-1/2 w-2 h-2 bg-blue-400 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
-                                    </div>
+                              <div className="flex flex-col gap-1 pl-6">
+                                {childSubblocks.map((subblockTab) => {
+                                  // Encontrar sub-sub-blocos deste sub-bloco
+                                  const subSubblocksOfThisSubblock = openTabs.filter(t => 
+                                    t.type === 'subsubblock' && t.parentId === subblockTab.id
+                                  )
+                                  
+                                  return (
+                                    <div key={subblockTab.id} className="flex flex-col items-start gap-0">
+                                      {/* Sub-bloco */}
+                                      <div className="flex items-center gap-0 relative">
+                                        {/* Linha horizontal conectando ao bloco pai */}
+                                        <div 
+                                          className="absolute -left-6 top-1/2 w-6 h-0.5 bg-green-300"
+                                          style={{ transform: 'translateY(-50%)' }}
+                                        >
+                                          <div className="absolute left-0 top-1/2 w-2 h-2 bg-green-400 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
+                                        </div>
 
-                                    <button
-                                      onClick={() => {
-                                        const { openTabs } = getCurrentJourneyTabs()
-                                        setCurrentJourneyTabs(openTabs, childTab.id)
-                                      }}
-                                      className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-200 min-w-fit ${
-                                        activeTabId === childTab.id
-                                          ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white shadow-md shadow-blue-400/20'
-                                          : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                                      }`}
-                                    >
-                                      <FileText className="h-4 w-4 flex-shrink-0" />
-                                      <span className="max-w-[200px] truncate">{childTab.title}</span>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          closeTab(childTab.id)
-                                        }}
-                                        className={`p-0.5 rounded-md hover:bg-black/10 transition-colors ${
-                                          activeTabId === childTab.id ? 'text-white' : 'text-blue-600'
-                                        }`}
-                                      >
-                                        <X className="h-3.5 w-3.5" />
-                                      </button>
-                                    </button>
-                                  </div>
-                                ))}
+                                        <button
+                                          onClick={() => {
+                                            const { openTabs } = getCurrentJourneyTabs()
+                                            setCurrentJourneyTabs(openTabs, subblockTab.id)
+                                          }}
+                                          className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-200 min-w-fit ${
+                                            activeTabId === subblockTab.id
+                                              ? 'bg-gradient-to-br from-[#EBA500] to-[#d99500] text-white shadow-md shadow-[#EBA500]/20'
+                                              : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                                          }`}
+                                        >
+                                          <FileText className="h-4 w-4 flex-shrink-0" />
+                                          <span className="max-w-[200px] truncate">{subblockTab.title}</span>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              closeTab(subblockTab.id)
+                                            }}
+                                            className={`p-0.5 rounded-md hover:bg-black/10 transition-colors ${
+                                              activeTabId === subblockTab.id ? 'text-white' : 'text-orange-600'
+                                            }`}
+                                          >
+                                            <X className="h-3.5 w-3.5" />
+                                          </button>
+                                        </button>
+                                      </div>
+
+                                      {/* NÍVEL 3: SUB-SUB-BLOCOS (abaixo do sub-bloco) */}
+                                      {subSubblocksOfThisSubblock.length > 0 && (
+                                        <div className="flex items-start gap-2 mt-1 ml-4 relative">
+                                          {/* Linha vertical do sub-bloco */}
+                                          <div 
+                                            className="absolute left-0 top-0 w-0.5 bg-blue-300"
+                                            style={{ 
+                                              height: `calc(100% - 4px)`
+                                            }}
+                                          />
+                                          
+                                          <div className="flex flex-col gap-1 pl-6">
+                                            {subSubblocksOfThisSubblock.map((subSubblockTab) => (
+                                              <div key={subSubblockTab.id} className="flex items-center gap-0 relative">
+                                                {/* Linha horizontal conectando ao sub-bloco pai */}
+                                                <div 
+                                                  className="absolute -left-6 top-1/2 w-6 h-0.5 bg-blue-300"
+                                                  style={{ transform: 'translateY(-50%)' }}
+                                                >
+                                                  <div className="absolute left-0 top-1/2 w-2 h-2 bg-blue-400 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
+                                                </div>
+
+                                                <button
+                                                  onClick={() => {
+                                                    const { openTabs } = getCurrentJourneyTabs()
+                                                    setCurrentJourneyTabs(openTabs, subSubblockTab.id)
+                                                  }}
+                                                  className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-200 min-w-fit ${
+                                                    activeTabId === subSubblockTab.id
+                                                      ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white shadow-md shadow-blue-400/20'
+                                                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                                  }`}
+                                                >
+                                                  <FileText className="h-4 w-4 flex-shrink-0" />
+                                                  <span className="max-w-[200px] truncate">{subSubblockTab.title}</span>
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation()
+                                                      closeTab(subSubblockTab.id)
+                                                    }}
+                                                    className={`p-0.5 rounded-md hover:bg-black/10 transition-colors ${
+                                                      activeTabId === subSubblockTab.id ? 'text-white' : 'text-blue-600'
+                                                    }`}
+                                                  >
+                                                    <X className="h-3.5 w-3.5" />
+                                                  </button>
+                                                </button>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                })}
                               </div>
                             </div>
                           )}
@@ -2258,15 +2365,28 @@ export default function OperationalPoliciesPage() {
                                       </span>
                                     </div>
                                   </div>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      openSubblockInTab(subblock, null, block.id)
-                                    }}
-                                    className="p-2 text-[#EBA500] hover:bg-[#EBA500]/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                                  >
-                                    <ExternalLink className="h-5 w-5" />
-                                  </button>
+                                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        openSubblockInTab(subblock, null, block.id)
+                                      }}
+                                      className="p-2 text-[#EBA500] hover:bg-[#EBA500]/10 rounded-xl transition-all"
+                                      title="Abrir em Aba"
+                                    >
+                                      <ExternalLink className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleDeleteSubblock(subblock.id)
+                                      }}
+                                      className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                      title="Deletar Sub-bloco"
+                                    >
+                                      <Trash2 className="h-5 w-5" />
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             ))}
