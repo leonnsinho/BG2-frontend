@@ -42,6 +42,8 @@ import MaturityApprovalsPage from './pages/MaturityApprovalsPage'
 import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage'
 import DrePage from './pages/financeiro/DrePage'
 import DfcPage from './pages/financeiro/DfcPage'
+import CompanyMaturityProgressPage from './pages/reports/CompanyMaturityProgressPage'
+import CompanyMaturityProgressPageNew from './pages/reports/CompanyMaturityProgressPageNew'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
 import { useUserContext } from './contexts/UserContext'
@@ -305,6 +307,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <UserActivityPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/reports/company-usage" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+            <CompanyMaturityProgressPageNew />
           </ProtectedRoute>
         }
       />

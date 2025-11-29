@@ -632,16 +632,64 @@ const PlanejamentoEstrategico = () => {
         throw new Error(`Progresso atual: ${progressData.percentage}%. O processo precisa estar 100% completo.`)
       }
 
-      // Atualizar process_evaluations para marcar has_process = true
-      const { data: evaluationData, error: evaluationError } = await supabase
+      // Atualizar ou criar registro em process_evaluations para marcar has_process = true
+      // Primeiro, tentar buscar registro existente
+      console.log('🔍 Buscando avaliação existente:', { process_id: processo.id, company_id: companyId })
+      
+      const { data: existingEval, error: selectError } = await supabase
         .from('process_evaluations')
-        .update({ 
-          has_process: true,
-          updated_at: new Date().toISOString()
-        })
+        .select('id')
         .eq('process_id', processo.id)
         .eq('company_id', companyId)
-        .select()
+        .is('diagnosis_id', null)
+        .maybeSingle()
+
+      if (selectError) {
+        console.error('❌ Erro no SELECT:', selectError)
+        throw new Error('Erro ao buscar avaliação: ' + selectError.message)
+      }
+
+      console.log('📝 Registro existente:', existingEval)
+
+      let evaluationData, evaluationError
+
+      if (existingEval) {
+        // Atualizar registro existente
+        console.log('✏️ Atualizando registro existente:', existingEval.id)
+        const result = await supabase
+          .from('process_evaluations')
+          .update({ 
+            has_process: true,
+            current_score: 5,
+            status: 'completed',
+            evaluated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingEval.id)
+          .select()
+        
+        evaluationData = result.data
+        evaluationError = result.error
+      } else {
+        // Criar novo registro
+        console.log('➕ Criando novo registro')
+        const result = await supabase
+          .from('process_evaluations')
+          .insert({ 
+            process_id: processo.id,
+            company_id: companyId,
+            diagnosis_id: null,
+            has_process: true,
+            current_score: 5,
+            status: 'completed',
+            evaluated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+        
+        evaluationData = result.data
+        evaluationError = result.error
+      }
 
       if (evaluationError) {
         console.error('❌ Erro ao atualizar process_evaluations:', evaluationError)
@@ -1068,8 +1116,8 @@ const PlanejamentoEstrategico = () => {
         </div>
       ) : (
         <div className="px-8 py-8 space-y-8">
-        {/* Jornadas - 5 quadrados horizontais elegantes */}
-        <div className="grid grid-cols-5 gap-6 mt-8">
+        {/* Jornadas - 5 cards horizontais compactos e elegantes */}
+        <div className="grid grid-cols-5 gap-4 mt-8">
         {jornadas.map((jornada) => {
           const cores = getJornadaCores(jornada.id)
           const isAtribuida = isJornadaAtribuida(jornada)
@@ -1080,35 +1128,30 @@ const PlanejamentoEstrategico = () => {
               key={jornada.id}
               onClick={() => selecionarJornada(jornada)}
               className={`
-                group relative p-8 rounded-3xl border-2 transition-all duration-500 transform
-                ${isAtribuida ? 'cursor-pointer hover:scale-105 hover:shadow-2xl' : 'cursor-not-allowed'}
+                group relative p-4 rounded-2xl border-2 transition-all duration-300 transform
+                ${isAtribuida ? 'cursor-pointer hover:scale-105 hover:shadow-lg' : 'cursor-not-allowed'}
                 ${isSelected && isAtribuida
-                  ? `${cores.background} text-white border-transparent shadow-2xl scale-105` 
-                  : `bg-white border-[#373435]/10 ${isAtribuida ? cores.hover : ''} shadow-lg ${isAtribuida ? 'hover:shadow-xl' : ''}`
-                }
-                before:absolute before:inset-0 before:rounded-3xl before:transition-opacity before:duration-500
-                ${isSelected && isAtribuida
-                  ? 'before:bg-gradient-to-br before:from-white/10 before:to-transparent' 
-                  : isAtribuida ? 'before:bg-gradient-to-br before:from-[#EBA500]/5 before:to-[#EBA500]/10 before:opacity-0 hover:before:opacity-100' : ''
+                  ? `${cores.background} text-white border-transparent shadow-lg scale-105` 
+                  : `bg-white border-[#373435]/10 ${isAtribuida ? cores.hover : ''} shadow-md ${isAtribuida ? 'hover:shadow-lg' : ''}`
                 }
               `}
             >
               {/* Overlay de bloqueio para jornadas não atribuídas */}
               {!isAtribuida && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-3xl z-20 flex items-center justify-center">
-                  <div className="bg-white rounded-2xl p-4 shadow-lg border border-[#373435]/20">
-                    <Lock className="h-6 w-6 text-[#373435]/60 mx-auto mb-2" />
-                    <div className="text-[#373435]/60 text-xs font-medium text-center">
-                      Não atribuída
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl z-20 flex items-center justify-center">
+                  <div className="bg-white rounded-xl p-2 shadow-md border border-[#373435]/20">
+                    <Lock className="h-4 w-4 text-[#373435]/60 mx-auto mb-1" />
+                    <div className="text-[#373435]/60 text-[10px] font-medium text-center">
+                      Bloqueada
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Background Pattern */}
-              <div className="absolute inset-0 rounded-3xl overflow-hidden">
+              <div className="absolute inset-0 rounded-2xl overflow-hidden">
                 <div className={`
-                  absolute inset-0 opacity-10 transition-all duration-500
+                  absolute inset-0 opacity-10 transition-all duration-300
                   ${isSelected && isAtribuida
                     ? 'bg-gradient-to-br from-white/20 to-transparent' 
                     : isAtribuida ? 'bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/30 group-hover:opacity-20' : ''
@@ -1116,40 +1159,41 @@ const PlanejamentoEstrategico = () => {
                 `}></div>
               </div>
 
-              <div className={`relative text-center z-10 ${!isAtribuida ? 'opacity-40' : ''}`}>
+              <div className={`relative flex items-center gap-3 z-10 ${!isAtribuida ? 'opacity-40' : ''}`}>
                 {/* Ícone da Jornada */}
                 <div className={`
-                  w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg
+                  w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-md flex-shrink-0
                   ${isSelected && isAtribuida
                     ? 'bg-white/20 backdrop-blur-sm' 
-                    : `${cores.iconBg} ${isAtribuida ? 'group-hover:shadow-xl group-hover:scale-110' : ''}`
+                    : `${cores.iconBg} ${isAtribuida ? 'group-hover:shadow-lg group-hover:scale-110' : ''}`
                   }
                 `}>
-                  <div className={`
-                    transition-colors duration-500 text-white
-                  `}>
+                  <div className="transition-colors duration-300 text-white text-lg">
                     {getJornadaIcon(jornada.id)}
                   </div>
                 </div>
 
-                <h3 className={`
-                  font-bold text-xl mb-3 transition-all duration-500
-                  ${isSelected && isAtribuida
-                    ? 'text-white drop-shadow-lg' 
-                    : `text-[#373435] ${isAtribuida ? `group-hover:${cores.text}` : ''}`
-                  }
-                `}>
-                  {jornada.nome}
-                </h3>
-
-                {/* Indicador de Status */}
-                <div className={`
-                  mt-4 w-20 h-1 mx-auto rounded-full transition-all duration-500
-                  ${isSelected && isAtribuida
-                    ? 'bg-white/40' 
-                    : `${cores.indicator}/30 ${isAtribuida ? `group-hover:${cores.indicator}` : ''}`
-                  }
-                `}></div>
+                {/* Nome da Jornada */}
+                <div className="flex-1 min-w-0">
+                  <h3 className={`
+                    font-bold text-sm leading-tight transition-all duration-300 truncate
+                    ${isSelected && isAtribuida
+                      ? 'text-white drop-shadow-md' 
+                      : `text-[#373435] ${isAtribuida ? `group-hover:${cores.text}` : ''}`
+                    }
+                  `}>
+                    {jornada.nome}
+                  </h3>
+                  
+                  {/* Indicador de Status */}
+                  <div className={`
+                    mt-1.5 w-12 h-0.5 rounded-full transition-all duration-300
+                    ${isSelected && isAtribuida
+                      ? 'bg-white/40' 
+                      : `${cores.indicator}/30 ${isAtribuida ? `group-hover:${cores.indicator}` : ''}`
+                    }
+                  `}></div>
+                </div>
               </div>
             </div>
           )

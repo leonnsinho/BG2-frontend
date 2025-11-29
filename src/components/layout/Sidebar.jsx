@@ -247,7 +247,8 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         icon: BarChart3,
         href: '/reports',
         children: [
-          { name: 'Atividade de Usuários', href: '/reports/user-activity' }
+          { name: 'Atividade de Usuários', href: '/reports/user-activity' },
+          { name: 'Uso por Empresa', href: '/reports/company-usage' }
         ]
       }
     ]

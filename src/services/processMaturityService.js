@@ -262,6 +262,31 @@ export const adminApproveMaturity = async (requestId, adminId, notes = '') => {
 
     console.log('🎉 Processo marcado como AMADURECIDO no banco de dados!')
 
+    // 4. REGISTRAR NO HISTÓRICO DE MATURIDADE (para análise temporal)
+    const { error: historyError } = await supabase
+      .from('process_maturity_evaluations')
+      .insert({
+        process_id: request.process_id,
+        company_id: request.company_id,
+        evaluated_by: adminId,
+        is_mature: true,
+        maturity_score: 100, // Processo aprovado = 100%
+        notes: notes || 'Processo aprovado após conclusão de todas as tarefas',
+        evaluated_at: new Date().toISOString()
+      })
+
+    if (historyError) {
+      console.error('⚠️ Erro ao registrar histórico (não crítico):', historyError)
+      // Não lançar erro - o histórico é secundário
+    } else {
+      console.log('📊 Histórico de maturidade registrado com sucesso')
+    }
+
+    // 5. SNAPSHOT AUTOMÁTICO será criado pelo trigger do banco
+    // O trigger auto_snapshot_on_process_approval detecta a aprovação
+    // e cria snapshot automaticamente da jornada
+    console.log('📸 Snapshot automático será criado pelo trigger do banco de dados')
+
     // TODO: Criar notificação para o gestor
     // Será implementado quando integrarmos com sistema de notificações
 
@@ -424,6 +449,162 @@ export const canProcessBeMature = async (processId, companyId) => {
       reason: 'Erro ao verificar status',
       progress: { total: 0, completed: 0, percentage: 0 }
     }
+  }
+}
+
+/**
+ * Registrar avaliação manual de maturidade
+ * Usado quando gestor/admin avalia processo diretamente (fora do fluxo de tarefas)
+ * @param {string} processId - ID do processo
+ * @param {string} companyId - ID da empresa
+ * @param {string} evaluatedBy - ID do avaliador
+ * @param {boolean} isMature - Se o processo está maduro
+ * @param {number} maturityScore - Score de 0-100 (opcional)
+ * @param {string} notes - Observações (opcional)
+ * @returns {Object} Avaliação criada
+ */
+export const recordMaturityEvaluation = async (
+  processId, 
+  companyId, 
+  evaluatedBy, 
+  isMature, 
+  maturityScore = null,
+  notes = ''
+) => {
+  try {
+    console.log('📝 Registrando avaliação manual de maturidade:', {
+      processId,
+      companyId,
+      evaluatedBy,
+      isMature,
+      maturityScore
+    })
+
+    const evaluationData = {
+      process_id: processId,
+      company_id: companyId,
+      evaluated_by: evaluatedBy,
+      is_mature: isMature,
+      maturity_score: maturityScore,
+      notes: notes || null,
+      evaluated_at: new Date().toISOString()
+    }
+
+    const { data, error } = await supabase
+      .from('process_maturity_evaluations')
+      .insert(evaluationData)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('❌ Erro ao registrar avaliação:', error)
+      throw error
+    }
+
+    console.log('✅ Avaliação registrada com sucesso:', data)
+    return data
+  } catch (error) {
+    console.error('❌ Erro ao registrar avaliação manual:', error)
+    throw error
+  }
+}
+
+/**
+ * Obter histórico de avaliações de um processo
+ * @param {string} processId - ID do processo
+ * @param {string} companyId - ID da empresa
+ * @returns {Array} Histórico de avaliações
+ */
+export const getProcessEvaluationHistory = async (processId, companyId) => {
+  try {
+    const { data, error } = await supabase
+      .from('process_maturity_evaluations')
+      .select(`
+        *,
+        evaluator:profiles!evaluated_by (
+          id,
+          full_name,
+          role
+        )
+      `)
+      .eq('process_id', processId)
+      .eq('company_id', companyId)
+      .order('evaluated_at', { ascending: false })
+
+    if (error) throw error
+
+    return data || []
+  } catch (error) {
+    console.error('❌ Erro ao buscar histórico de avaliações:', error)
+    throw error
+  }
+}
+
+/**
+ * Obter estatísticas de maturidade por empresa e período
+ * @param {string} companyId - ID da empresa
+ * @param {Date} startDate - Data inicial
+ * @param {Date} endDate - Data final (opcional, padrão: agora)
+ * @returns {Object} Estatísticas agregadas
+ */
+export const getMaturityStats = async (companyId, startDate, endDate = new Date()) => {
+  try {
+    const { data, error } = await supabase
+      .from('process_maturity_evaluations')
+      .select(`
+        *,
+        process:processes (
+          id,
+          nome,
+          journey_id,
+          journey:journeys (id, name, slug)
+        )
+      `)
+      .eq('company_id', companyId)
+      .gte('evaluated_at', startDate.toISOString())
+      .lte('evaluated_at', endDate.toISOString())
+
+    if (error) throw error
+
+    // Agregar por jornada
+    const byJourney = {}
+    data?.forEach(evaluation => {
+      const journeySlug = evaluation.process?.journey?.slug
+      if (journeySlug) {
+        if (!byJourney[journeySlug]) {
+          byJourney[journeySlug] = {
+            name: evaluation.process.journey.name,
+            total: 0,
+            mature: 0,
+            averageScore: 0
+          }
+        }
+        byJourney[journeySlug].total++
+        if (evaluation.is_mature) {
+          byJourney[journeySlug].mature++
+        }
+      }
+    })
+
+    // Calcular percentuais
+    Object.keys(byJourney).forEach(slug => {
+      const journey = byJourney[slug]
+      journey.maturityPercentage = journey.total > 0 
+        ? Math.round((journey.mature / journey.total) * 100)
+        : 0
+    })
+
+    return {
+      totalEvaluations: data?.length || 0,
+      byJourney,
+      period: {
+        start: startDate,
+        end: endDate
+      }
+    }
+  } catch (error) {
+    console.error('❌ Erro ao buscar estatísticas:', error)
+    throw error
   }
 }
 
