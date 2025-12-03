@@ -777,13 +777,8 @@ const PlanejamentoEstrategico = () => {
   }
 
   const salvarNovaTarefa = async () => {
-    // Validar campos obrigatórios
+    // Obter responsável (se fornecido)
     const responsavelFinal = tipoResponsavel === 'manual' ? responsavelManual : adicionandoTarefa.responsavel
-    
-    if (!adicionandoTarefa.titulo.trim() || !adicionandoTarefa.descricao.trim() || !responsavelFinal) {
-      alert('Por favor, preencha todos os campos obrigatórios')
-      return
-    }
 
     try {
       console.log('💾 Salvando nova tarefa')
@@ -804,11 +799,12 @@ const PlanejamentoEstrategico = () => {
       }
       
       const taskData = {
-        title: adicionandoTarefa.titulo,
-        description: adicionandoTarefa.descricao,
+        title: adicionandoTarefa.descricao || 'Sem título',
+        description: adicionandoTarefa.descricao || '',
         // Se for manual, assigned_to fica NULL e usamos assigned_to_name
-        assigned_to: tipoResponsavel === 'manual' ? null : responsavelFinal,
-        assigned_to_name: tipoResponsavel === 'manual' ? responsavelFinal : null,
+        // Se responsavelFinal estiver vazio, coloca null
+        assigned_to: tipoResponsavel === 'manual' ? null : (responsavelFinal || null),
+        assigned_to_name: tipoResponsavel === 'manual' ? (responsavelFinal || null) : null,
         process_id: processUUID,
         journey_id: journeyUUID,
         status: adicionandoTarefa.status,
@@ -1429,27 +1425,18 @@ const PlanejamentoEstrategico = () => {
                       </div>
                       
                       <div className="space-y-3">
-                        {/* Título */}
-                        <input
-                          type="text"
-                          placeholder="Título da tarefa..."
-                          value={adicionandoTarefa.titulo}
-                          onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, titulo: e.target.value })}
-                          className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
-                        />
-                        
                         {/* Descrição */}
                         <textarea
                           placeholder="Descrição da tarefa..."
                           value={adicionandoTarefa.descricao}
                           onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, descricao: e.target.value })}
                           className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs resize-none bg-white/90 transition-all duration-300"
-                          rows="2"
+                          rows="3"
                         />
                         
                         <div className="space-y-2">
                           {/* Tipo de Responsável */}
-                          <div className="flex items-center space-x-4 text-xs">
+                          <div className="flex flex-col space-y-2 text-xs">
                             <label className="flex items-center space-x-2 cursor-pointer">
                               <input
                                 type="radio"
@@ -1505,7 +1492,7 @@ const PlanejamentoEstrategico = () => {
                           )}
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-2">
                           {/* Status */}
                           <select
                             value={adicionandoTarefa.status}
@@ -1528,18 +1515,18 @@ const PlanejamentoEstrategico = () => {
                         </div>
                         
                         {/* Botões */}
-                        <div className="flex space-x-2">
+                        <div className="flex flex-col space-y-2">
                           <button
                             onClick={salvarNovaTarefa}
                             disabled={tasksLoading}
-                            className="flex-1 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1 disabled:opacity-50"
+                            className="w-full bg-[#EBA500] hover:bg-[#EBA500]/90 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1 disabled:opacity-50"
                           >
                             <Save className="h-3 w-3" />
                             <span>{tasksLoading ? 'Salvando...' : 'Salvar'}</span>
                           </button>
                           <button
                             onClick={cancelarAdicaoTarefa}
-                            className="flex-1 bg-[#373435]/60 hover:bg-[#373435]/80 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1"
+                            className="w-full bg-[#373435]/60 hover:bg-[#373435]/80 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1"
                           >
                             <X className="h-3 w-3" />
                             <span>Cancelar</span>

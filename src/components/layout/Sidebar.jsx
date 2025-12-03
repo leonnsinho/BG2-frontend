@@ -216,7 +216,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
           { name: 'Estratégia', href: '/operational-policies?journey=estrategica' },
           { name: 'Financeiro', href: '/operational-policies?journey=financeira' },
           { name: 'Pessoas e Cultura', href: '/operational-policies?journey=pessoas-cultura' },
-          { name: 'Receita', href: '/operational-policies?journey=receita-crm' },
+          { name: 'Receita', href: '/operational-policies?journey=receita' },
           { name: 'Operação', href: '/operational-policies?journey=operacional' }
         ]
       },
