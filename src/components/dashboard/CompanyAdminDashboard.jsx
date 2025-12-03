@@ -151,34 +151,34 @@ export default function CompanyAdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 p-6 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
         
         {/* Header com Saudação */}
-        <div className="mb-10">
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="relative">
-                    <div className="w-12 h-12 bg-gradient-to-br from-[#EBA500] to-[#d99500] rounded-2xl flex items-center justify-center shadow-lg">
-                      <Building2 className="w-6 h-6 text-white" />
+        <div className="mb-6 sm:mb-8 lg:mb-10">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+              <div className="flex-1 min-w-0 w-full">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                  <div className="relative flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#EBA500] to-[#d99500] rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
+                      <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#EBA500] rounded-full animate-pulse" />
+                    <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#EBA500] rounded-full animate-pulse" />
                   </div>
-                  <div>
-                    <h1 className="text-4xl font-bold text-[#373435] tracking-tight">
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] tracking-tight truncate">
                       {getGreeting()}, {profile?.full_name?.split(' ')[0] || 'Administrador'}!
                     </h1>
                     {companyName && (
-                      <p className="text-lg text-gray-600 font-medium flex items-center mt-1">
-                        <Building2 className="w-4 h-4 mr-2 text-[#EBA500]" />
+                      <p className="text-sm sm:text-base lg:text-lg text-gray-600 font-medium flex items-center mt-1 truncate">
+                        <Building2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 text-[#EBA500] flex-shrink-0" />
                         Administrando: {companyName}
                       </p>
                     )}
                   </div>
                 </div>
-                <p className="text-gray-600 text-lg">
+                <p className="text-sm sm:text-base lg:text-lg text-gray-600">
                   Acompanhe as métricas e o progresso da sua empresa
                 </p>
               </div>
@@ -187,141 +187,141 @@ export default function CompanyAdminDashboard() {
         </div>
 
         {/* Cards de Estatísticas Principais */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-6 mb-6 sm:mb-8">
           {/* Total de Usuários */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                <Users className="h-6 w-6 text-white" />
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="p-2 sm:p-2.5 lg:p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
+                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div className="flex items-center gap-1 text-green-600 text-sm font-semibold">
+              <div className="flex items-center gap-1 text-green-600 text-xs sm:text-sm font-semibold">
                 <TrendingUp className="h-4 w-4" />
                 <span>{stats.activeUsers} ativos</span>
               </div>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">Total de Usuários</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
+            <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Total de Usuários</h3>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
           </div>
 
           {/* Total de Tarefas */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
-                <Target className="h-6 w-6 text-white" />
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="p-2 sm:p-2.5 lg:p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
+                <Target className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div className="flex items-center gap-1 text-green-600 text-sm font-semibold">
+              <div className="flex items-center gap-1 text-green-600 text-xs sm:text-sm font-semibold">
                 <CheckCircle2 className="h-4 w-4" />
                 <span>{Math.round((stats.completedTasks / stats.totalTasks) * 100) || 0}%</span>
               </div>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">Total de Tarefas</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalTasks}</p>
+            <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Total de Tarefas</h3>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalTasks}</p>
           </div>
         </div>
 
         {/* Grid com 2 Colunas */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
           
           {/* Status das Tarefas */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Target className="h-5 w-5 text-blue-600" />
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                <Target className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Status das Tarefas</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Status das Tarefas</h2>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Pendentes */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gray-200 rounded-lg">
-                    <AlertCircle className="h-5 w-5 text-gray-600" />
+              <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg sm:rounded-xl hover:bg-gray-100 transition-colors">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <div className="p-1.5 sm:p-2 bg-gray-200 rounded-lg flex-shrink-0">
+                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">Pendentes</p>
-                    <p className="text-sm text-gray-600">Aguardando início</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-sm sm:text-base">Pendentes</p>
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">Aguardando início</p>
                   </div>
                 </div>
-                <span className="text-2xl font-bold text-gray-900">{stats.pendingTasks}</span>
+                <span className="text-xl sm:text-2xl font-bold text-gray-900 flex-shrink-0">{stats.pendingTasks}</span>
               </div>
 
               {/* Em Andamento */}
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-200 rounded-lg">
-                    <Clock className="h-5 w-5 text-blue-600" />
+              <div className="flex items-center justify-between p-3 sm:p-4 bg-blue-50 rounded-lg sm:rounded-xl hover:bg-blue-100 transition-colors">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <div className="p-1.5 sm:p-2 bg-blue-200 rounded-lg flex-shrink-0">
+                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-blue-900">Em Andamento</p>
-                    <p className="text-sm text-blue-600">Em execução</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-blue-900 text-sm sm:text-base">Em Andamento</p>
+                    <p className="text-xs sm:text-sm text-blue-600 truncate">Em execução</p>
                   </div>
                 </div>
-                <span className="text-2xl font-bold text-blue-900">{stats.inProgressTasks}</span>
+                <span className="text-xl sm:text-2xl font-bold text-blue-900 flex-shrink-0">{stats.inProgressTasks}</span>
               </div>
 
               {/* Concluídas */}
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-200 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <div className="flex items-center justify-between p-3 sm:p-4 bg-green-50 rounded-lg sm:rounded-xl hover:bg-green-100 transition-colors">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <div className="p-1.5 sm:p-2 bg-green-200 rounded-lg flex-shrink-0">
+                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-green-900">Concluídas</p>
-                    <p className="text-sm text-green-600">Finalizadas com sucesso</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-green-900 text-sm sm:text-base">Concluídas</p>
+                    <p className="text-xs sm:text-sm text-green-600 truncate">Finalizadas com sucesso</p>
                   </div>
                 </div>
-                <span className="text-2xl font-bold text-green-900">{stats.completedTasks}</span>
+                <span className="text-xl sm:text-2xl font-bold text-green-900 flex-shrink-0">{stats.completedTasks}</span>
               </div>
 
               {/* Atrasadas */}
               {stats.overdueTasks > 0 && (
-                <div className="flex items-center justify-between p-4 bg-red-50 rounded-xl border-2 border-red-200 animate-pulse">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-red-200 rounded-lg">
-                      <Calendar className="h-5 w-5 text-red-600" />
+                <div className="flex items-center justify-between p-3 sm:p-4 bg-red-50 rounded-lg sm:rounded-xl border-2 border-red-200 animate-pulse">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <div className="p-1.5 sm:p-2 bg-red-200 rounded-lg flex-shrink-0">
+                      <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
                     </div>
-                    <div>
-                      <p className="font-semibold text-red-900">Atrasadas</p>
-                      <p className="text-sm text-red-600">Requerem atenção urgente</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-red-900 text-sm sm:text-base">Atrasadas</p>
+                      <p className="text-xs sm:text-sm text-red-600 truncate">Requerem atenção urgente</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-red-900">{stats.overdueTasks}</span>
+                  <span className="text-xl sm:text-2xl font-bold text-red-900 flex-shrink-0">{stats.overdueTasks}</span>
                 </div>
               )}
             </div>
           </div>
 
           {/* Atividades Recentes */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Calendar className="h-5 w-5 text-purple-600" />
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Atividades Recentes</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Atividades Recentes</h2>
             </div>
 
             <div className="space-y-3">
               {recentActivities.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>Nenhuma atividade recente</p>
+                <div className="text-center py-6 sm:py-8 text-gray-500">
+                  <FileText className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm sm:text-base">Nenhuma atividade recente</p>
                 </div>
               ) : (
                 recentActivities.map((activity) => {
                   const StatusIcon = getStatusIcon(activity.status)
                   return (
-                    <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                      <div className={`p-2 rounded-lg ${getStatusColor(activity.status)}`}>
-                        <StatusIcon className="h-4 w-4" />
+                    <div key={activity.id} className="flex items-start gap-2 sm:gap-3 p-3 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl hover:bg-gray-100 transition-colors">
+                      <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${getStatusColor(activity.status)}`}>
+                        <StatusIcon className="h-3 w-3 sm:h-4 sm:w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{activity.title}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStatusColor(activity.status)}`}>
+                        <p className="font-semibold text-gray-900 truncate text-sm sm:text-base">{activity.title}</p>
+                        <div className="flex items-center gap-1.5 sm:gap-2 mt-1 flex-wrap">
+                          <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium ${getStatusColor(activity.status)}`}>
                             {getStatusLabel(activity.status)}
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-[10px] sm:text-xs text-gray-500">
                             {new Date(activity.created_at).toLocaleDateString('pt-BR')}
                           </span>
                         </div>
@@ -335,21 +335,21 @@ export default function CompanyAdminDashboard() {
         </div>
 
         {/* Métricas de Performance */}
-        <div className="mt-6 bg-gradient-to-br from-[#EBA500]/10 to-[#d99500]/10 rounded-2xl p-6 border border-[#EBA500]/20">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-[#EBA500] rounded-lg">
-              <TrendingUp className="h-5 w-5 text-white" />
+        <div className="mt-4 sm:mt-5 lg:mt-6 bg-gradient-to-br from-[#EBA500]/10 to-[#d99500]/10 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 border border-[#EBA500]/20">
+          <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="p-1.5 sm:p-2 bg-[#EBA500] rounded-lg flex-shrink-0">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Métricas de Performance</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Métricas de Performance</h2>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl p-4 border border-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-100">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Taxa de Conclusão</span>
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <span className="text-xs sm:text-sm font-medium text-gray-600">Taxa de Conclusão</span>
+                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
               </div>
-              <p className="text-3xl font-bold text-gray-900">
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">
                 {Math.round((stats.completedTasks / stats.totalTasks) * 100) || 0}%
               </p>
               <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
@@ -360,12 +360,12 @@ export default function CompanyAdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-4 border border-gray-100">
+            <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-100">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Usuários Ativos</span>
-                <Users className="h-5 w-5 text-blue-500" />
+                <span className="text-xs sm:text-sm font-medium text-gray-600">Usuários Ativos</span>
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500 flex-shrink-0" />
               </div>
-              <p className="text-3xl font-bold text-gray-900">
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">
                 {Math.round((stats.activeUsers / stats.totalUsers) * 100) || 0}%
               </p>
               <div className="mt-2 w-full bg-gray-200 rounded-full h-2">

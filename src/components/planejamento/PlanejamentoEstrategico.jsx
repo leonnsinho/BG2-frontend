@@ -1071,18 +1071,18 @@ const PlanejamentoEstrategico = () => {
       <SuperAdminBanner />
       
       {(loading || processesLoading) ? (
-        <div className="px-8 py-12 mt-8">
-          <div className="mb-8 text-center">
-            <div className="w-12 h-12 bg-[#EBA500]/20 rounded-xl mx-auto mb-4 animate-pulse"></div>
-            <div className="h-6 bg-gray-200 rounded w-48 mx-auto mb-2 animate-pulse"></div>
-            <div className="h-4 bg-gray-100 rounded w-32 mx-auto animate-pulse"></div>
+        <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 mt-6 sm:mt-8">
+          <div className="mb-6 sm:mb-8 text-center">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#EBA500]/20 rounded-xl mx-auto mb-3 sm:mb-4 animate-pulse"></div>
+            <div className="h-5 sm:h-6 bg-gray-200 rounded w-36 sm:w-48 mx-auto mb-2 animate-pulse"></div>
+            <div className="h-3 sm:h-4 bg-gray-100 rounded w-24 sm:w-32 mx-auto animate-pulse"></div>
           </div>
-          <div className="grid grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
             {[1, 2, 3, 4, 5].map((item) => (
-              <div key={item} className="bg-gray-100 rounded-3xl p-8 animate-pulse">
-                <div className="w-16 h-16 bg-gray-200 rounded-2xl mx-auto mb-4"></div>
-                <div className="h-6 bg-gray-200 rounded mx-auto mb-3 w-3/4"></div>
-                <div className="w-20 h-1 bg-gray-200 rounded-full mx-auto"></div>
+              <div key={item} className="bg-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 animate-pulse">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gray-200 rounded-xl sm:rounded-2xl mx-auto mb-3 sm:mb-4"></div>
+                <div className="h-4 sm:h-5 lg:h-6 bg-gray-200 rounded mx-auto mb-2 sm:mb-3 w-3/4"></div>
+                <div className="w-16 sm:w-20 h-1 bg-gray-200 rounded-full mx-auto"></div>
               </div>
             ))}
           </div>
@@ -1095,25 +1095,25 @@ const PlanejamentoEstrategico = () => {
           )}
         </div>
       ) : processesError ? (
-        <div className="px-8 py-12 mt-8 text-center">
-          <div className="bg-red-50 border border-red-200 rounded-3xl p-8 max-w-md mx-auto">
-            <div className="w-12 h-12 bg-red-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
+        <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 mt-6 sm:mt-8 text-center">
+          <div className="bg-red-50 border border-red-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 max-w-md mx-auto">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg sm:rounded-xl mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
             </div>
-            <h3 className="text-lg font-bold text-red-800 mb-2">Erro ao carregar processos</h3>
-            <p className="text-red-600 text-sm mb-4">{processesError}</p>
+            <h3 className="text-base sm:text-lg font-bold text-red-800 mb-2">Erro ao carregar processos</h3>
+            <p className="text-red-600 text-xs sm:text-sm mb-3 sm:mb-4">{processesError}</p>
             <button 
               onClick={() => window.location.reload()}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors min-h-[44px] touch-manipulation"
             >
               Tentar novamente
             </button>
           </div>
         </div>
       ) : (
-        <div className="px-8 py-8 space-y-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6 sm:space-y-8">
         {/* Jornadas - 5 cards horizontais compactos e elegantes */}
-        <div className="grid grid-cols-5 gap-4 mt-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mt-6 sm:mt-8">
         {jornadas.map((jornada) => {
           const cores = getJornadaCores(jornada.id)
           const isAtribuida = isJornadaAtribuida(jornada)
@@ -1124,8 +1124,8 @@ const PlanejamentoEstrategico = () => {
               key={jornada.id}
               onClick={() => selecionarJornada(jornada)}
               className={`
-                group relative p-4 rounded-2xl border-2 transition-all duration-300 transform
-                ${isAtribuida ? 'cursor-pointer hover:scale-105 hover:shadow-lg' : 'cursor-not-allowed'}
+                group relative p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 transform touch-manipulation
+                ${isAtribuida ? 'cursor-pointer hover:scale-105 hover:shadow-lg active:scale-95' : 'cursor-not-allowed'}
                 ${isSelected && isAtribuida
                   ? `${cores.background} text-white border-transparent shadow-lg scale-105` 
                   : `bg-white border-[#373435]/10 ${isAtribuida ? cores.hover : ''} shadow-md ${isAtribuida ? 'hover:shadow-lg' : ''}`
@@ -1134,10 +1134,10 @@ const PlanejamentoEstrategico = () => {
             >
               {/* Overlay de bloqueio para jornadas não atribuídas */}
               {!isAtribuida && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl z-20 flex items-center justify-center">
-                  <div className="bg-white rounded-xl p-2 shadow-md border border-[#373435]/20">
-                    <Lock className="h-4 w-4 text-[#373435]/60 mx-auto mb-1" />
-                    <div className="text-[#373435]/60 text-[10px] font-medium text-center">
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl z-20 flex items-center justify-center">
+                  <div className="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-2 shadow-md border border-[#373435]/20">
+                    <Lock className="h-3 w-3 sm:h-4 sm:w-4 text-[#373435]/60 mx-auto mb-0.5 sm:mb-1" />
+                    <div className="text-[#373435]/60 text-[8px] sm:text-[10px] font-medium text-center">
                       Bloqueada
                     </div>
                   </div>
@@ -1198,31 +1198,31 @@ const PlanejamentoEstrategico = () => {
 
       {/* Processos da jornada selecionada */}
       {jornadaSelecionada && (
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* Header da Seção de Processos */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div className={`w-12 h-12 rounded-2xl ${getJornadaCores(jornadaSelecionada.id).iconBg} shadow-lg flex items-center justify-center`}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-3 sm:space-x-4 lg:space-x-6">
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${getJornadaCores(jornadaSelecionada.id).iconBg} shadow-lg flex items-center justify-center flex-shrink-0`}>
                 <div className="text-white">
                   {getJornadaIcon(jornadaSelecionada.id)}
                 </div>
               </div>
-              <div>
-                <h2 className={`text-3xl font-bold ${getJornadaCores(jornadaSelecionada.id).text}`}>
+              <div className="flex-1 min-w-0">
+                <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold ${getJornadaCores(jornadaSelecionada.id).text} truncate`}>
                   Processos Prioritários
                 </h2>
-                <p className="text-[#373435]/70 text-lg font-medium">
+                <p className="text-[#373435]/70 text-sm sm:text-base lg:text-lg font-medium truncate">
                   {jornadaSelecionada.nome} - {processos.length} processos ativos
                 </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
               {/* 🔥 NOVO: Botão para alternar entre 5 e 10 processos */}
-              <div className="flex items-center gap-2 bg-white border-2 border-[#EBA500]/30 rounded-2xl p-1 shadow-md">
+              <div className="flex items-center gap-1 sm:gap-2 bg-white border-2 border-[#EBA500]/30 rounded-xl sm:rounded-2xl p-1 shadow-md">
                 <button
                   onClick={() => setLimiteProcessos(5)}
-                  className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-300 min-h-[44px] touch-manipulation ${
                     limiteProcessos === 5
                       ? 'bg-gradient-to-r from-[#EBA500] to-[#d99500] text-white shadow-lg'
                       : 'text-[#373435]/60 hover:text-[#373435]'
@@ -1232,7 +1232,7 @@ const PlanejamentoEstrategico = () => {
                 </button>
                 <button
                   onClick={() => setLimiteProcessos(10)}
-                  className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-300 min-h-[44px] touch-manipulation ${
                     limiteProcessos === 10
                       ? 'bg-gradient-to-r from-[#EBA500] to-[#d99500] text-white shadow-lg'
                       : 'text-[#373435]/60 hover:text-[#373435]'
@@ -1246,11 +1246,11 @@ const PlanejamentoEstrategico = () => {
               {processos.some(p => p.strategic_priority_order != null) && (
                 <button
                   onClick={handleResetOrder}
-                  className="flex items-center space-x-2 px-4 py-2 bg-white border-2 border-purple-500/30 hover:border-purple-500 text-purple-600 hover:bg-purple-50 rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 min-h-[44px] bg-white border-2 border-purple-500/30 hover:border-purple-500 text-purple-600 hover:bg-purple-50 rounded-xl sm:rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg touch-manipulation"
                   title="Resetar para ordenação automática"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  <span className="font-semibold text-sm">Resetar Ordenação</span>
+                  <span className="font-semibold text-xs sm:text-sm">Resetar Ordenação</span>
                 </button>
               )}
             </div>
@@ -1265,33 +1265,33 @@ const PlanejamentoEstrategico = () => {
               renderProcessCard={(processo, index) => {
               const coresJornada = getJornadaCores(jornadaSelecionada.id)
               return (
-                <div className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#373435]/10 hover:border-[#EBA500]/30 overflow-hidden flex flex-col h-fit min-h-[500px]">
+                <div className="group bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#373435]/10 hover:border-[#EBA500]/30 overflow-hidden flex flex-col h-fit min-h-[450px] sm:min-h-[500px]">
                   {/* Header do Processo Elegante */}
-                  <div className="relative p-4 border-b border-[#373435]/10 bg-[#EBA500]/5 flex-shrink-0">
+                  <div className="relative p-3 sm:p-4 border-b border-[#373435]/10 bg-[#EBA500]/5 flex-shrink-0">
                     {/* Background Pattern */}
                     <div className="absolute inset-0 bg-[#EBA500]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
                     <div className="relative z-10">
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start justify-between mb-2 sm:mb-3">
                         <div className="flex items-center space-x-2 flex-1 min-w-0">
-                          <div className={`w-8 h-8 ${coresJornada.iconBg} rounded-xl flex items-center justify-center shadow-md flex-shrink-0`}>
-                            <span className="text-white font-bold text-xs">#{processo.prioridade}</span>
+                          <div className={`w-7 h-7 sm:w-8 sm:h-8 ${coresJornada.iconBg} rounded-lg sm:rounded-xl flex items-center justify-center shadow-md flex-shrink-0`}>
+                            <span className="text-white font-bold text-[10px] sm:text-xs">#{processo.prioridade}</span>
                           </div>
-                          <h4 className={`font-bold text-[#373435] text-sm group-hover:${coresJornada.text} transition-colors duration-300 leading-tight break-words flex-1`}>
+                          <h4 className={`font-bold text-[#373435] text-xs sm:text-sm group-hover:${coresJornada.text} transition-colors duration-300 leading-tight break-words flex-1`}>
                             {processo.nome}
                           </h4>
                         </div>
                       </div>
 
                       {/* Campo de Meta */}
-                      <div className="mb-3">
+                      <div className="mb-2 sm:mb-3">
                         {editandoMeta === processo.id ? (
                           <div className="space-y-2">
                             <textarea
                               placeholder="Defina a meta para este processo..."
                               value={metas[processo.id] || ''}
                               onChange={(e) => setMetas(prev => ({ ...prev, [processo.id]: e.target.value }))}
-                              className="w-full p-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs resize-none bg-white transition-all duration-300"
+                              className="w-full p-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs resize-none bg-white transition-all duration-300 touch-manipulation"
                               rows="2"
                               autoFocus
                             />
@@ -1401,7 +1401,7 @@ const PlanejamentoEstrategico = () => {
                   </div>
 
                 {/* Lista de Tarefas Elegante */}
-                <div className="p-4 space-y-3 max-h-80 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 flex-1">
+                <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 max-h-64 sm:max-h-80 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 flex-1">
                   {/* Formulário de Nova Tarefa Inline */}
                   {(() => {
                     // ✅ processo.id JÁ É UUID
@@ -1418,26 +1418,26 @@ const PlanejamentoEstrategico = () => {
                     }
                     return shouldShow
                   })() && (
-                    <div className="border-2 border-dashed border-[#EBA500]/40 rounded-xl p-4 bg-[#EBA500]/10 backdrop-blur-sm">
-                      <div className="flex items-center space-x-2 mb-3">
+                    <div className="border-2 border-dashed border-[#EBA500]/40 rounded-xl p-3 sm:p-4 bg-[#EBA500]/10 backdrop-blur-sm">
+                      <div className="flex items-center space-x-2 mb-2 sm:mb-3">
                         <div className="w-2 h-2 bg-[#EBA500] rounded-full"></div>
-                        <span className="text-[#373435] font-semibold text-xs">Nova Tarefa</span>
+                        <span className="text-[#373435] font-semibold text-[10px] sm:text-xs">Nova Tarefa</span>
                       </div>
                       
-                      <div className="space-y-3">
+                      <div className="space-y-2 sm:space-y-3">
                         {/* Descrição */}
                         <textarea
                           placeholder="Descrição da tarefa..."
                           value={adicionandoTarefa.descricao}
                           onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, descricao: e.target.value })}
-                          className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs resize-none bg-white/90 transition-all duration-300"
+                          className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-[10px] sm:text-xs resize-none bg-white/90 transition-all duration-300 touch-manipulation"
                           rows="3"
                         />
                         
                         <div className="space-y-2">
                           {/* Tipo de Responsável */}
-                          <div className="flex flex-col space-y-2 text-xs">
-                            <label className="flex items-center space-x-2 cursor-pointer">
+                          <div className="flex flex-col space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs">
+                            <label className="flex items-center space-x-2 cursor-pointer min-h-[40px] touch-manipulation">
                               <input
                                 type="radio"
                                 name="tipoResponsavel"
@@ -1472,7 +1472,7 @@ const PlanejamentoEstrategico = () => {
                             <select
                               value={adicionandoTarefa.responsavel}
                               onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, responsavel: e.target.value })}
-                              className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                              className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-[10px] sm:text-xs bg-white/90 transition-all duration-300 min-h-[44px] touch-manipulation"
                             >
                               <option value="">Selecionar responsável</option>
                               {usuarios.map(usuario => (
@@ -1487,7 +1487,7 @@ const PlanejamentoEstrategico = () => {
                               placeholder="Digite o nome do responsável"
                               value={responsavelManual}
                               onChange={(e) => setResponsavelManual(e.target.value)}
-                              className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                              className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-[10px] sm:text-xs bg-white/90 transition-all duration-300 min-h-[44px] touch-manipulation"
                             />
                           )}
                         </div>
@@ -1497,7 +1497,7 @@ const PlanejamentoEstrategico = () => {
                           <select
                             value={adicionandoTarefa.status}
                             onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, status: e.target.value })}
-                            className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                            className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-[10px] sm:text-xs bg-white/90 transition-all duration-300 min-h-[44px] touch-manipulation"
                           >
                             <option value="pending">Pendente</option>
                             <option value="in_progress">Em Andamento</option>
@@ -1510,7 +1510,7 @@ const PlanejamentoEstrategico = () => {
                             placeholder="Data limite (opcional)"
                             value={adicionandoTarefa.dataLimite}
                             onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, dataLimite: e.target.value })}
-                            className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                            className="w-full p-2 border border-[#373435]/20 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-[10px] sm:text-xs bg-white/90 transition-all duration-300 min-h-[44px] touch-manipulation"
                           />
                         </div>
                         
@@ -1519,14 +1519,14 @@ const PlanejamentoEstrategico = () => {
                           <button
                             onClick={salvarNovaTarefa}
                             disabled={tasksLoading}
-                            className="w-full bg-[#EBA500] hover:bg-[#EBA500]/90 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1 disabled:opacity-50"
+                            className="w-full bg-[#EBA500] hover:bg-[#EBA500]/90 text-white px-3 py-2 rounded-xl text-[10px] sm:text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1 disabled:opacity-50 min-h-[44px] touch-manipulation"
                           >
                             <Save className="h-3 w-3" />
                             <span>{tasksLoading ? 'Salvando...' : 'Salvar'}</span>
                           </button>
                           <button
                             onClick={cancelarAdicaoTarefa}
-                            className="w-full bg-[#373435]/60 hover:bg-[#373435]/80 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1"
+                            className="w-full bg-[#373435]/60 hover:bg-[#373435]/80 text-white px-3 py-2 rounded-xl text-[10px] sm:text-xs font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-1 min-h-[44px] touch-manipulation"
                           >
                             <X className="h-3 w-3" />
                             <span>Cancelar</span>
@@ -1539,7 +1539,7 @@ const PlanejamentoEstrategico = () => {
                   {(tarefas[processo.id] || []).map((tarefa) => (
                     <div 
                       key={tarefa.id} 
-                      className="group border border-[#373435]/10 hover:border-[#EBA500]/30 rounded-xl p-3 bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-md transition-all duration-300 cursor-pointer"
+                      className="group border border-[#373435]/10 hover:border-[#EBA500]/30 rounded-xl p-2 sm:p-3 bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-md transition-all duration-300 cursor-pointer touch-manipulation"
                       onClick={() => editandoTarefa.id !== tarefa.id && abrirTaskSidebar(tarefa)}
                     >
                       {editandoTarefa.id === tarefa.id ? (

@@ -135,7 +135,7 @@ const DraggableProcessList = ({
         items={processos.map(p => p.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="grid grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
           {processos.map((processo, index) => (
             <SortableProcessCard
               key={processo.id}

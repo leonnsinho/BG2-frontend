@@ -1942,20 +1942,20 @@ export default function OperationalPoliciesPage() {
       {/* Banner Super Admin */}
       <SuperAdminBanner />
       
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header Modernizado */}
-          <div className="mb-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-gradient-to-br from-[#EBA500] to-[#d99500] rounded-2xl shadow-lg shadow-[#EBA500]/20">
-              <FileText className="h-7 w-7 text-white" />
+          <div className="mb-6 sm:mb-8 lg:mb-10">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+            <div className="p-2 sm:p-2.5 lg:p-3 bg-gradient-to-br from-[#EBA500] to-[#d99500] rounded-xl sm:rounded-2xl shadow-lg shadow-[#EBA500]/20 flex-shrink-0">
+              <FileText className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-white" />
             </div>
-            <div>
-              <h1 className="text-4xl font-bold text-[#373435] tracking-tight">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-[#373435] tracking-tight truncate">
                 {selectedJourney ? selectedJourney.name : 'Políticas de Gestão'}
               </h1>
               {selectedJourney ? (
-                <div className="mt-3">
+                <div className="mt-2 sm:mt-3">
                   {editingDescription ? (
                     <div className="flex items-center gap-2">
                       <input
@@ -1963,12 +1963,12 @@ export default function OperationalPoliciesPage() {
                         value={journeyDescription}
                         onChange={(e) => setJourneyDescription(e.target.value)}
                         placeholder="Adicione uma descrição para esta jornada..."
-                        className="flex-1 px-3 py-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-sm bg-white transition-all duration-300"
+                        className="flex-1 px-3 py-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs sm:text-sm bg-white transition-all duration-300 min-h-[44px] touch-manipulation"
                         autoFocus
                       />
                       <button
                         onClick={saveJourneyDescription}
-                        className="p-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white rounded-lg transition-all duration-300"
+                        className="p-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white rounded-lg transition-all duration-300 min-w-[40px] min-h-[40px] touch-manipulation flex-shrink-0"
                         title="Salvar"
                       >
                         <Save className="h-4 w-4" />
@@ -1978,7 +1978,7 @@ export default function OperationalPoliciesPage() {
                           setEditingDescription(false)
                           loadJourneyDescription()
                         }}
-                        className="p-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg transition-all duration-300"
+                        className="p-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg transition-all duration-300 min-w-[40px] min-h-[40px] touch-manipulation flex-shrink-0"
                         title="Cancelar"
                       >
                         <X className="h-4 w-4" />
@@ -1987,12 +1987,12 @@ export default function OperationalPoliciesPage() {
                   ) : (
                     <div
                       onClick={() => setEditingDescription(true)}
-                      className="cursor-pointer text-gray-500 hover:text-gray-700 transition-colors inline-flex items-center gap-2 group"
+                      className="cursor-pointer text-gray-500 hover:text-gray-700 transition-colors inline-flex items-center gap-2 group touch-manipulation min-h-[40px]"
                     >
                       {journeyDescription ? (
-                        <span>{journeyDescription}</span>
+                        <span className="text-xs sm:text-sm break-words">{journeyDescription}</span>
                       ) : (
-                        <span className="italic text-gray-400">Clique para adicionar uma descrição...</span>
+                        <span className="italic text-gray-400 text-xs sm:text-sm">Clique para adicionar uma descrição...</span>
                       )}
                       <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
@@ -2009,11 +2009,11 @@ export default function OperationalPoliciesPage() {
           <>
             {/* 🔥 NOVO: Navegação entre jornadas (APENAS SUPER ADMIN) */}
             {profile?.role === 'super_admin' && journeys.length > 0 && (
-              <div className="mb-6">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Layers className="h-4 w-4 text-[#EBA500]" />
-                    <h3 className="text-sm font-semibold text-gray-700">Navegar entre Jornadas</h3>
+              <div className="mb-4 sm:mb-6">
+                <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                    <Layers className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-700">Navegar entre Jornadas</h3>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {journeys.map((journey) => (
@@ -2023,7 +2023,7 @@ export default function OperationalPoliciesPage() {
                           setSelectedJourney(journey)
                           setSearchParams({ companyId: urlCompanyId, journey: journey.slug })
                         }}
-                        className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
+                        className={`px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm transition-all duration-200 min-h-[40px] touch-manipulation ${
                           selectedJourney?.id === journey.id
                             ? 'bg-gradient-to-br from-[#EBA500] to-[#d99500] text-white shadow-lg shadow-[#EBA500]/20'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -2126,7 +2126,7 @@ export default function OperationalPoliciesPage() {
                                             const { openTabs } = getCurrentJourneyTabs()
                                             setCurrentJourneyTabs(openTabs, subblockTab.id)
                                           }}
-                                          className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-200 min-w-fit ${
+                                          className={`group flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium text-xs sm:text-sm whitespace-nowrap transition-all duration-200 min-w-fit min-h-[44px] touch-manipulation ${
                                             activeTabId === subblockTab.id
                                               ? 'bg-gradient-to-br from-[#EBA500] to-[#d99500] text-white shadow-md shadow-[#EBA500]/20'
                                               : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
@@ -2175,7 +2175,7 @@ export default function OperationalPoliciesPage() {
                                                     const { openTabs } = getCurrentJourneyTabs()
                                                     setCurrentJourneyTabs(openTabs, subSubblockTab.id)
                                                   }}
-                                                  className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-200 min-w-fit ${
+                                                  className={`group flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium text-xs sm:text-sm whitespace-nowrap transition-all duration-200 min-w-fit min-h-[44px] touch-manipulation ${
                                                     activeTabId === subSubblockTab.id
                                                       ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white shadow-md shadow-blue-400/20'
                                                       : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
@@ -2212,17 +2212,17 @@ export default function OperationalPoliciesPage() {
                   </div>
                   
                   {/* Botão Quick Add (+) */}
-                  <div className="relative flex-shrink-0 ml-2">
+                  <div className="relative flex-shrink-0 ml-1 sm:ml-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         console.log('🔥 Clicou no +, estado:', showQuickAddDropdown)
                         setShowQuickAddDropdown(!showQuickAddDropdown)
                       }}
-                      className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-xl transition-all duration-200 hover:scale-105"
+                      className="flex items-center justify-center w-10 h-10 min-w-[44px] min-h-[44px] bg-gradient-to-br from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-xl transition-all duration-200 hover:scale-105 touch-manipulation"
                       title="Adicionar aba rápida"
                     >
-                      <Plus className="h-5 w-5" />
+                      <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
 
                     {/* Dropdown Menu */}
@@ -2301,14 +2301,14 @@ export default function OperationalPoliciesPage() {
                   <div className="mb-6">
                     <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
                       {/* Header do Bloco */}
-                      <div className="p-8 border-b border-gray-200 bg-gradient-to-r from-green-500/5 to-transparent">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-4 flex-1">
-                            <div className="p-4 bg-gradient-to-br from-green-50 to-green-100/50 rounded-2xl flex-shrink-0">
-                              <span className="text-5xl">{block.icon}</span>
+                      <div className="p-4 sm:p-6 lg:p-8 border-b border-gray-200 bg-gradient-to-r from-green-500/5 to-transparent">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                            <div className="p-2 sm:p-3 lg:p-4 bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl sm:rounded-2xl flex-shrink-0">
+                              <span className="text-3xl sm:text-4xl lg:text-5xl">{block.icon}</span>
                             </div>
-                            <div className="flex-1">
-                              <h2 className="text-3xl font-bold text-[#373435] mb-2 break-words">
+                            <div className="flex-1 min-w-0">
+                              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#373435] mb-1 sm:mb-2 break-words">
                                 {block.name}
                               </h2>
                               {block.description && (
@@ -2322,71 +2322,97 @@ export default function OperationalPoliciesPage() {
                       </div>
 
                       {/* Lista de Sub-blocos */}
-                      <div className="p-8">
-                        <div className="flex items-center justify-between mb-6">
-                          <h3 className="text-xl font-bold text-[#373435]">
+                      <div className="p-4 sm:p-6 lg:p-8">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+                          <h3 className="text-lg sm:text-xl font-bold text-[#373435]">
                             Sub-blocos ({block.policy_subblocks?.length || 0})
                           </h3>
                           <button
                             onClick={() => openAllSubblocksInTabs(block)}
-                            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg hover:shadow-green-500/30 text-white rounded-xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-5 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg hover:shadow-green-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5 min-h-[44px] touch-manipulation"
                           >
-                            <Layers className="h-5 w-5" />
-                            Abrir Todos os Sub-blocos
+                            <Layers className="h-4 w-4 sm:h-5 sm:w-5" />
+                            <span>Abrir Todos os Sub-blocos</span>
                           </button>
                         </div>
 
                         {block.policy_subblocks && block.policy_subblocks.length > 0 ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                             {block.policy_subblocks.map((subblock) => (
                               <div
                                 key={subblock.id}
-                                className="group bg-gradient-to-br from-[#EBA500]/5 to-white border-2 border-[#EBA500]/20 rounded-2xl p-6 hover:shadow-lg hover:border-[#EBA500]/40 transition-all duration-200 cursor-pointer"
-                                onClick={() => openSubblockInTab(subblock, null, block.id)}
+                                className="group bg-gradient-to-br from-[#EBA500]/5 to-white border-2 border-[#EBA500]/20 rounded-xl sm:rounded-2xl overflow-hidden hover:shadow-lg hover:border-[#EBA500]/40 transition-all duration-200"
                               >
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <h4 className="text-lg font-bold text-[#373435] mb-2 break-words">
-                                      {subblock.name}
-                                    </h4>
-                                    {subblock.description && (
-                                      <p className="text-sm text-gray-600 mb-3 break-words">
-                                        {subblock.description}
-                                      </p>
-                                    )}
-                                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                                      <span className="flex items-center gap-1">
-                                        <FileText className="h-3 w-3" />
-                                        {subblock.policy_contents?.length || 0} conteúdos
-                                      </span>
-                                      <span className="flex items-center gap-1">
-                                        <Paperclip className="h-3 w-3" />
-                                        {subblock.policy_attachments?.length || 0} anexos
-                                      </span>
-                                    </div>
+                                {/* Conteúdo clicável */}
+                                <div
+                                  className="p-4 sm:p-5 lg:p-6 cursor-pointer"
+                                  onClick={() => openSubblockInTab(subblock, null, block.id)}
+                                >
+                                  <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-1 sm:mb-2 break-words">
+                                    {subblock.name}
+                                  </h4>
+                                  {subblock.description && (
+                                    <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 break-words line-clamp-2">
+                                      {subblock.description}
+                                    </p>
+                                  )}
+                                  <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-500">
+                                    <span className="flex items-center gap-1">
+                                      <FileText className="h-3 w-3" />
+                                      {subblock.policy_contents?.length || 0} conteúdos
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Paperclip className="h-3 w-3" />
+                                      {subblock.policy_attachments?.length || 0} anexos
+                                    </span>
                                   </div>
-                                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        openSubblockInTab(subblock, null, block.id)
-                                      }}
-                                      className="p-2 text-[#EBA500] hover:bg-[#EBA500]/10 rounded-xl transition-all"
-                                      title="Abrir em Aba"
-                                    >
-                                      <ExternalLink className="h-5 w-5" />
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleDeleteSubblock(subblock.id)
-                                      }}
-                                      className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                                      title="Deletar Sub-bloco"
-                                    >
-                                      <Trash2 className="h-5 w-5" />
-                                    </button>
-                                  </div>
+                                </div>
+
+                                {/* Botões de ação - Abaixo em mobile, ao lado em desktop */}
+                                <div className="flex items-center gap-2 px-4 pb-4 lg:hidden">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      openSubblockInTab(subblock, null, block.id)
+                                    }}
+                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-[#EBA500] bg-[#EBA500]/10 hover:bg-[#EBA500]/20 rounded-lg transition-all min-h-[44px] touch-manipulation"
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                    <span className="text-xs font-medium">Abrir</span>
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleDeleteSubblock(subblock.id)
+                                    }}
+                                    className="flex items-center justify-center px-3 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all min-h-[44px] min-w-[44px] touch-manipulation"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+
+                                {/* Botões Desktop - Hidden em mobile */}
+                                <div className="hidden lg:flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 right-4">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      openSubblockInTab(subblock, null, block.id)
+                                    }}
+                                    className="p-2 text-[#EBA500] hover:bg-[#EBA500]/10 rounded-xl transition-all"
+                                    title="Abrir em Aba"
+                                  >
+                                    <ExternalLink className="h-5 w-5" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleDeleteSubblock(subblock.id)
+                                    }}
+                                    className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                    title="Deletar Sub-bloco"
+                                  >
+                                    <Trash2 className="h-5 w-5" />
+                                  </button>
                                 </div>
                               </div>
                             ))}
@@ -2410,84 +2436,84 @@ export default function OperationalPoliciesPage() {
                 <div className="mb-6">
                   <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
                     {/* Header do Tab */}
-                    <div className="p-8 border-b border-gray-200 bg-gradient-to-r from-[#EBA500]/5 to-transparent">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h2 className="text-3xl font-bold text-[#373435] mb-2 break-words">
+                    <div className="p-4 sm:p-6 lg:p-8 border-b border-gray-200 bg-gradient-to-r from-[#EBA500]/5 to-transparent">
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#373435] mb-1 sm:mb-2 break-words">
                             {viewingSubblock.name}
                           </h2>
                           {viewingSubblock.description && (
-                            <p className="text-gray-600 leading-relaxed break-words">
+                            <p className="text-sm sm:text-base text-gray-600 leading-relaxed break-words">
                               {viewingSubblock.description}
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 ml-4">
+                        <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-4">
                           <button
                             onClick={() => handleDeleteSubblock(viewingSubblock.id)}
-                            className="group flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg hover:shadow-red-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
+                            className="group flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg hover:shadow-red-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5 w-full sm:w-auto min-h-[44px] touch-manipulation"
                             title="Deletar sub-bloco"
                           >
                             <Trash2 className="h-4 w-4" />
-                            Deletar
+                            <span>Deletar</span>
                           </button>
                         </div>
                       </div>
                     </div>
 
                     {/* Conteúdos e Anexos */}
-                    <div className="p-8">
+                    <div className="p-4 sm:p-6 lg:p-8">
                       {/* Sub-sub-blocos - APENAS para sub-blocos nível 1 */}
                       {viewingSubblock.level !== 2 && viewingSubblock.children && viewingSubblock.children.length > 0 && (
-                        <div className="mb-8">
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-[#373435]">Sub-blocos</h3>
+                        <div className="mb-6 sm:mb-8">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 sm:mb-4">
+                            <h3 className="text-base sm:text-lg font-bold text-[#373435]">Sub-blocos</h3>
                             <button
                               onClick={() => openSubSubblockModal(viewingSubblock.id)}
-                              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all"
+                              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all min-h-[44px] touch-manipulation"
                             >
                               <Plus className="h-4 w-4" />
                               Adicionar
                             </button>
                           </div>
-                          <div className="space-y-3">
+                          <div className="space-y-2 sm:space-y-3">
                             {viewingSubblock.children.map((subSubblock) => (
                               <div
                                 key={subSubblock.id}
-                                className="group bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-5 hover:shadow-md transition-all duration-200"
+                                className="group bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 hover:shadow-md transition-all duration-200 touch-manipulation"
                               >
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <h4 className="text-base font-bold text-[#373435] mb-1 break-words">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm sm:text-base font-bold text-[#373435] mb-1 break-words">
                                       {subSubblock.name}
                                     </h4>
                                     {subSubblock.description && (
-                                      <p className="text-sm text-gray-600 break-words">
+                                      <p className="text-xs sm:text-sm text-gray-600 break-words line-clamp-2">
                                         {subSubblock.description}
                                       </p>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                                     <button
                                       onClick={() => openSubblockInTab(subSubblock, viewingSubblock.id)}
-                                      className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                      className="p-2 hover:bg-blue-50 rounded-lg transition-colors min-w-[40px] min-h-[40px] touch-manipulation flex items-center justify-center"
                                       title="Abrir em Aba"
                                     >
-                                      <ExternalLink className="h-4 w-4 text-blue-500" />
+                                      <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
                                     </button>
                                     <button
                                       onClick={() => openSubSubblockModal(viewingSubblock.id, subSubblock)}
-                                      className="p-2 hover:bg-[#EBA500]/10 rounded-lg transition-colors"
+                                      className="p-2 hover:bg-[#EBA500]/10 rounded-lg transition-colors min-w-[40px] min-h-[40px] touch-manipulation flex items-center justify-center"
                                       title="Editar"
                                     >
-                                      <Edit2 className="h-4 w-4 text-[#EBA500]" />
+                                      <Edit2 className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
                                     </button>
                                     <button
                                       onClick={() => handleDeleteSubSubblock(subSubblock.id)}
-                                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                      className="p-2 hover:bg-red-50 rounded-lg transition-colors min-w-[40px] min-h-[40px] touch-manipulation flex items-center justify-center"
                                       title="Deletar"
                                     >
-                                      <Trash2 className="h-4 w-4 text-red-500" />
+                                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
                                     </button>
                                   </div>
                                 </div>
@@ -2499,39 +2525,38 @@ export default function OperationalPoliciesPage() {
 
                       {/* Botão adicionar sub-sub-bloco quando não tem nenhum - APENAS para sub-blocos nível 1 */}
                       {viewingSubblock.level !== 2 && (!viewingSubblock.children || viewingSubblock.children.length === 0) && (
-                        <div className="mb-8">
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-[#373435]">Sub-blocos</h3>
+                        <div className="mb-6 sm:mb-8">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 sm:mb-4">
+                            <h3 className="text-base sm:text-lg font-bold text-[#373435]">Sub-blocos</h3>
                             <button
                               onClick={() => openSubSubblockModal(viewingSubblock.id)}
-                              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all"
-                            >
+                              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all min-h-[44px] touch-manipulation">
                               <Plus className="h-4 w-4" />
                               Adicionar
                             </button>
                           </div>
-                          <p className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-xl">
+                          <p className="text-xs sm:text-sm text-gray-500 text-center py-6 sm:py-8 bg-gray-50 rounded-xl">
                             Nenhum sub-bloco cadastrado
                           </p>
                         </div>
                       )}
 
                       {/* Conteúdos */}
-                      <div className="mb-8">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-bold text-[#373435]">Conteúdos</h3>
+                      <div className="mb-6 sm:mb-8">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 sm:mb-4">
+                          <h3 className="text-base sm:text-lg font-bold text-[#373435]">Conteúdos</h3>
                           <button
                             onClick={() => openContentModal(viewingSubblock.id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all"
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all min-h-[44px] touch-manipulation"
                           >
                             <Plus className="h-4 w-4" />
                             Adicionar
                           </button>
                         </div>
                         {viewingSubblock.policy_contents && viewingSubblock.policy_contents.length > 0 ? (
-                          <div className="space-y-4">
+                          <div className="space-y-3 sm:space-y-4">
                             {viewingSubblock.policy_contents.map((content) => (
-                              <div key={content.id} className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-6">
+                              <div key={content.id} className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 touch-manipulation">
                                 {renderContent(content)}
                               </div>
                             ))}
@@ -2545,38 +2570,38 @@ export default function OperationalPoliciesPage() {
 
                       {/* Anexos */}
                       <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-bold text-[#373435]">Anexos</h3>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 sm:mb-4">
+                          <h3 className="text-base sm:text-lg font-bold text-[#373435]">Anexos</h3>
                           <button
                             onClick={() => openAttachmentModal(viewingSubblock.id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all"
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all min-h-[44px] touch-manipulation"
                           >
                             <Plus className="h-4 w-4" />
                             Adicionar
                           </button>
                         </div>
                         {viewingSubblock.policy_attachments && viewingSubblock.policy_attachments.length > 0 ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                             {viewingSubblock.policy_attachments.map((attachment) => (
                               <a
                                 key={attachment.id}
                                 href={attachment.file_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-4 p-5 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl hover:shadow-lg hover:border-[#EBA500] transition-all group"
+                                className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl sm:rounded-2xl hover:shadow-lg hover:border-[#EBA500] transition-all group touch-manipulation min-h-[60px]"
                               >
-                                <div className="p-3 bg-[#EBA500]/10 rounded-xl group-hover:bg-[#EBA500]/20 transition-colors">
-                                  <Paperclip className="h-6 w-6 text-[#EBA500]" />
+                                <div className="p-2 sm:p-3 bg-[#EBA500]/10 rounded-xl group-hover:bg-[#EBA500]/20 transition-colors flex-shrink-0">
+                                  <Paperclip className="h-5 w-5 sm:h-6 sm:w-6 text-[#EBA500]" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-gray-900 truncate group-hover:text-[#EBA500] transition-colors">
+                                  <p className="text-sm sm:text-base font-semibold text-gray-900 truncate group-hover:text-[#EBA500] transition-colors">
                                     {attachment.file_name}
                                   </p>
                                   {attachment.description && (
-                                    <p className="text-sm text-gray-500 truncate">{attachment.description}</p>
+                                    <p className="text-xs sm:text-sm text-gray-500 truncate">{attachment.description}</p>
                                   )}
                                 </div>
-                                <ExternalLink className="h-5 w-5 text-gray-400 flex-shrink-0 group-hover:text-[#EBA500] transition-colors" />
+                                <ExternalLink className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0 group-hover:text-[#EBA500] transition-colors" />
                               </a>
                             ))}
                           </div>
@@ -2593,62 +2618,64 @@ export default function OperationalPoliciesPage() {
             })()}
 
             {/* Header da seção de blocos */}
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-[#373435] mb-1">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl sm:text-2xl font-bold text-[#373435] mb-1 truncate">
                   Blocos de Políticas
                 </h2>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-500">
                   {selectedJourney.name} • {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
                 </p>
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 {/* Toggle View Mode */}
-                <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-xl">
+                <div className="flex items-center gap-1 sm:gap-2 p-1 bg-gray-100 rounded-lg sm:rounded-xl flex-1 sm:flex-initial">
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                    className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 min-h-[40px] touch-manipulation flex-1 sm:flex-initial ${
                       viewMode === 'list'
                         ? 'bg-white text-[#373435] shadow-sm'
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    <List className="h-4 w-4" />
-                    Lista
+                    <List className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden xs:inline">Lista</span>
                   </button>
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                    className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 min-h-[40px] touch-manipulation flex-1 sm:flex-initial ${
                       viewMode === 'grid'
                         ? 'bg-white text-[#373435] shadow-sm'
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    <Grid3X3 className="h-4 w-4" />
-                    Grid
+                    <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden xs:inline">Grid</span>
                   </button>
                 </div>
                 
                 <button
                   onClick={() => openBlockModal()}
-                  className="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                  className="group flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-xl sm:rounded-2xl font-semibold text-xs sm:text-sm transition-all duration-200 hover:-translate-y-0.5 min-h-[44px] touch-manipulation flex-shrink-0"
                 >
-                  <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-200" />
-                  Novo Bloco
+                  <Plus className="h-4 w-4 sm:h-5 sm:w-5 group-hover:rotate-90 transition-transform duration-200" />
+                  <span className="hidden sm:inline">Novo Bloco</span>
+                  <span className="sm:hidden">Novo</span>
                 </button>
               </div>
             </div>
 
             {/* 🔥 NOVO: Barra de Busca */}
-            <div className="mb-6">
-              <div className="relative max-w-md">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="mb-4 sm:mb-6">
+              <div className="relative max-w-full sm:max-w-md">
+                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Buscar blocos por nome..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white text-sm sm:text-base min-h-[44px] touch-manipulation"
                   className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white/80 backdrop-blur-sm placeholder:text-gray-400"
                 />
                 {searchQuery && (
@@ -2723,70 +2750,103 @@ export default function OperationalPoliciesPage() {
               if (viewMode === 'list') {
                 return (
                   // VISUALIZAÇÃO EM LISTA
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {filteredBlocks.map((block) => (
-                  <div key={block.id} className="group bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-200/50 overflow-hidden hover:shadow-md transition-all duration-200">
+                  <div key={block.id} className="group bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-sm border border-gray-200/50 overflow-hidden hover:shadow-md transition-all duration-200">
                     {/* Header do Bloco - Clicável */}
                     <div 
-                      className="p-6 cursor-pointer transition-colors relative hover:bg-gray-50/50"
+                      className="p-4 sm:p-5 lg:p-6 cursor-pointer transition-colors relative hover:bg-gray-50/50"
                       style={{ borderLeft: `5px solid ${block.color}` }}
                       onClick={() => openBlockInTab(block)}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl flex-shrink-0">
-                            <span className="text-3xl">{block.icon}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-xl font-bold text-gray-900 mb-0.5 break-words">{block.name}</h3>
-                            {block.description && (
-                              <p className="text-sm text-gray-500 leading-relaxed break-words">{block.description}</p>
-                            )}
-                            <div className="flex items-center gap-4 mt-2">
-                              <span className="text-xs text-gray-400">
-                                <Layers className="h-3 w-3 inline mr-1" />
-                                {block.policy_subblocks?.length || 0} sub-blocos
-                              </span>
-                              <span className="text-xs text-gray-400">
-                                <FileText className="h-3 w-3 inline mr-1" />
-                                {block.policy_subblocks?.reduce((sum, sb) => sum + (sb.policy_contents?.length || 0), 0) || 0} conteúdos
-                              </span>
-                            </div>
+                      {/* Conteúdo Principal */}
+                      <div className="flex items-start gap-3 sm:gap-4 mb-3 lg:mb-0">
+                        <div className="p-2 sm:p-2.5 lg:p-3 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl sm:rounded-2xl flex-shrink-0">
+                          <span className="text-2xl sm:text-3xl">{block.icon}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-0.5 break-words">{block.name}</h3>
+                          {block.description && (
+                            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed break-words line-clamp-2">{block.description}</p>
+                          )}
+                          <div className="flex items-center gap-3 sm:gap-4 mt-2">
+                            <span className="text-xs text-gray-400 flex items-center gap-1">
+                              <Layers className="h-3 w-3 inline mr-1" />
+                              {block.policy_subblocks?.length || 0} sub-blocos
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              <FileText className="h-3 w-3 inline mr-1" />
+                              {block.policy_subblocks?.reduce((sum, sb) => sum + (sb.policy_contents?.length || 0), 0) || 0} conteúdos
+                            </span>
                           </div>
                         </div>
-                        
-                        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openBlockInTab(block);
-                            }}
-                            className="p-2.5 text-green-600 hover:bg-green-50 rounded-xl transition-all hover:scale-105"
-                            title="Abrir em Aba"
-                          >
-                            <ExternalLink className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openBlockModal(block);
-                            }}
-                            className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:scale-105"
-                            title="Editar Bloco"
-                          >
-                            <Edit className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteBlock(block.id);
-                            }}
-                            className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all hover:scale-105"
-                            title="Deletar Bloco"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </button>
-                        </div>
+                      </div>
+                      
+                      {/* Botões de Ação - Abaixo em mobile, ao lado em desktop */}
+                      <div className="flex items-center gap-2 pt-3 mt-3 border-t border-gray-100 lg:hidden">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openBlockInTab(block);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-all min-h-[44px] touch-manipulation"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          <span className="text-xs font-medium">Abrir</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openBlockModal(block);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all min-h-[44px] touch-manipulation"
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="text-xs font-medium">Editar</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteBlock(block.id);
+                          }}
+                          className="flex items-center justify-center px-3 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all min-h-[44px] min-w-[44px] touch-manipulation"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      
+                      {/* Botões Desktop - Hidden em mobile */}
+                      <div className="hidden lg:flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 right-4">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openBlockInTab(block);
+                          }}
+                          className="p-2.5 text-green-600 hover:bg-green-50 rounded-xl transition-all hover:scale-105"
+                          title="Abrir em Aba"
+                        >
+                          <ExternalLink className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openBlockModal(block);
+                          }}
+                          className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:scale-105"
+                          title="Editar Bloco"
+                        >
+                          <Edit className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteBlock(block.id);
+                          }}
+                          className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all hover:scale-105"
+                          title="Deletar Bloco"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -2796,7 +2856,7 @@ export default function OperationalPoliciesPage() {
               } else {
                 return (
                   // VISUALIZAÇÃO EM GRID
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
                     {filteredBlocks.map((block) => {
                   const subblockCount = block.policy_subblocks?.length || 0;
                   const totalContent = block.policy_subblocks?.reduce((sum, sb) => 
@@ -3001,7 +3061,7 @@ export default function OperationalPoliciesPage() {
                     }
 
                     return (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
                         {filteredSubblocks.map((subblock) => (
                       <div
                         key={subblock.id}
@@ -3099,33 +3159,33 @@ export default function OperationalPoliciesPage() {
 
         {/* Modal de Bloco - Modernizado */}
         {showBlockModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 animate-in fade-in duration-300">
             <div 
-              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8"
+              className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-4 sm:p-6 lg:p-8 max-h-[95vh] overflow-y-auto"
               style={{
                 animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
               }}
             >
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 rounded-2xl">
-                    <FileText className="h-6 w-6 text-[#EBA500]" />
+              <div className="flex items-center justify-between mb-6 sm:mb-8">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-2.5 bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 rounded-xl sm:rounded-2xl">
+                    <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-[#EBA500]" />
                   </div>
-                  <h2 className="text-2xl font-bold text-[#373435]">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#373435]">
                     {editingBlock ? 'Editar Bloco' : 'Novo Bloco'}
                   </h2>
                 </div>
                 <button
                   onClick={() => setShowBlockModal(false)}
-                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all min-w-[44px] min-h-[44px] touch-manipulation flex items-center justify-center"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-4 sm:space-y-5">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-2.5">
                     Nome do Bloco *
                   </label>
                   <input
@@ -3133,13 +3193,13 @@ export default function OperationalPoliciesPage() {
                     value={blockForm.name}
                     onChange={(e) => setBlockForm(prev => ({ ...prev, name: e.target.value }))}
                     maxLength={100}
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white"
+                    className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white text-sm sm:text-base min-h-[44px] touch-manipulation"
                     placeholder="Ex: Bloco Financeiro"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-2.5">
                     Descrição
                   </label>
                   <textarea
@@ -3147,14 +3207,14 @@ export default function OperationalPoliciesPage() {
                     onChange={(e) => setBlockForm(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
                     maxLength={500}
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white resize-none"
+                    className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white resize-none text-sm sm:text-base min-h-[80px] touch-manipulation"
                     placeholder="Descrição do bloco..."
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-2 gap-3 sm:gap-5">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                    <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-2.5">
                       Ícone (Emoji)
                     </label>
                     <input
@@ -3162,19 +3222,19 @@ export default function OperationalPoliciesPage() {
                       value={blockForm.icon}
                       onChange={(e) => setBlockForm(prev => ({ ...prev, icon: e.target.value }))}
                       maxLength={2}
-                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white text-3xl text-center"
+                      className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white text-2xl sm:text-3xl text-center min-h-[44px] touch-manipulation"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                    <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-2.5">
                       Cor
                     </label>
                     <input
                       type="color"
                       value={blockForm.color}
                       onChange={(e) => setBlockForm(prev => ({ ...prev, color: e.target.value }))}
-                      className="w-full h-[58px] rounded-2xl border-2 border-gray-200 cursor-pointer"
+                      className="w-full h-[50px] sm:h-[58px] rounded-xl sm:rounded-2xl border-2 border-gray-200 cursor-pointer touch-manipulation"
                     />
                   </div>
                 </div>
@@ -3212,33 +3272,33 @@ export default function OperationalPoliciesPage() {
 
         {/* Modal de Sub-bloco - Modernizado */}
         {showSubblockModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 animate-in fade-in duration-300">
             <div 
-              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8"
+              className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-4 sm:p-6 lg:p-8 max-h-[95vh] overflow-y-auto"
               style={{
                 animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
               }}
             >
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-2xl">
-                    <FolderOpen className="h-6 w-6 text-blue-600" />
+              <div className="flex items-center justify-between mb-6 sm:mb-8">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-xl sm:rounded-2xl">
+                    <FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   </div>
-                  <h2 className="text-2xl font-bold text-[#373435]">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#373435]">
                     {editingSubblock ? 'Editar Sub-bloco' : 'Novo Sub-bloco'}
                   </h2>
                 </div>
                 <button
                   onClick={() => setShowSubblockModal(false)}
-                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all min-w-[44px] min-h-[44px] touch-manipulation flex items-center justify-center"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-4 sm:space-y-5">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-2.5">
                     Nome do Sub-bloco *
                   </label>
                   <input
@@ -3246,7 +3306,7 @@ export default function OperationalPoliciesPage() {
                     value={subblockForm.name}
                     onChange={(e) => setSubblockForm(prev => ({ ...prev, name: e.target.value }))}
                     maxLength={100}
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white"
+                    className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white text-sm sm:text-base min-h-[44px] touch-manipulation"
                     placeholder="Ex: Despesas Mensais"
                   />
                 </div>

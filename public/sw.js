@@ -1,6 +1,6 @@
 // Service Worker para PWA
 const CACHE_NAME = 'bg2-v5' // Incrementar para forçar atualização
-const APP_VERSION = '2.2.7' // Incrementar quando houver updates - IMPORTANTE: Mudar isso dispara atualização!
+const APP_VERSION = '2.3.0' // Incrementar quando houver updates - IMPORTANTE: Mudar isso dispara atualização!
 const urlsToCache = [
   '/',
   '/index.html',

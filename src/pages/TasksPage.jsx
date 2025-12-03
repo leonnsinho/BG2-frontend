@@ -221,22 +221,22 @@ export default function TasksPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Minhas Tarefas</h1>
-          <p className="text-gray-600">Gerencie suas tarefas e acompanhe o progresso</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Minhas Tarefas</h1>
+          <p className="text-sm sm:text-base text-gray-600">Gerencie suas tarefas e acompanhe o progresso</p>
         </div>
 
         {/* Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 mb-1 truncate">Total</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</p>
               </div>
-              <FileText className="h-8 w-8 text-gray-400" />
+              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 flex-shrink-0" />
             </div>
           </div>
 
@@ -282,47 +282,47 @@ export default function TasksPage() {
         </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 lg:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Filtros</h3>
             
             {/* Toggle View Mode */}
-            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+            <div className="flex items-center gap-1 sm:gap-2 bg-gray-100 rounded-lg p-1 w-full sm:w-auto">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-2 ${
+                className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 rounded-md transition-all flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] touch-manipulation ${
                   viewMode === 'list' 
                     ? 'bg-white text-[#EBA500] shadow-sm' 
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <List className="h-4 w-4" />
-                <span className="text-sm font-medium">Lista</span>
+                <span className="text-xs sm:text-sm font-medium">Lista</span>
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-2 ${
+                className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 rounded-md transition-all flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] touch-manipulation ${
                   viewMode === 'grid' 
                     ? 'bg-white text-[#EBA500] shadow-sm' 
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Grid3x3 className="h-4 w-4" />
-                <span className="text-sm font-medium">Grade</span>
+                <span className="text-xs sm:text-sm font-medium">Grade</span>
               </button>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
             {/* Busca */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="relative sm:col-span-2 md:col-span-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Buscar tarefas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors"
+                className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 min-h-[44px] text-sm sm:text-base rounded-xl border border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors touch-manipulation"
               />
             </div>
 
@@ -330,7 +330,7 @@ export default function TasksPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white"
+              className="px-3 sm:px-4 py-2.5 sm:py-3 min-h-[44px] text-sm sm:text-base rounded-xl border border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white touch-manipulation"
             >
               <option value="all">Todos os Status</option>
               <option value="pending">Pendente</option>
@@ -343,7 +343,7 @@ export default function TasksPage() {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white"
+              className="px-3 sm:px-4 py-2.5 sm:py-3 min-h-[44px] text-sm sm:text-base rounded-xl border border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white touch-manipulation"
             >
               <option value="all">Todas as Prioridades</option>
               <option value="1">Crítica</option>
@@ -362,10 +362,10 @@ export default function TasksPage() {
             <p className="text-gray-600 mt-4">Carregando tarefas...</p>
           </div>
         ) : filteredTasks.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-            <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600 text-lg">Nenhuma tarefa encontrada</p>
-            <p className="text-gray-400 text-sm mt-2">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 lg:p-12 text-center">
+            <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
+            <p className="text-gray-600 text-base sm:text-lg">Nenhuma tarefa encontrada</p>
+            <p className="text-gray-400 text-xs sm:text-sm mt-2">
               {searchQuery || statusFilter !== 'all' || priorityFilter !== 'all'
                 ? 'Tente ajustar os filtros'
                 : 'Você não tem tarefas atribuídas no momento'}
@@ -373,7 +373,7 @@ export default function TasksPage() {
           </div>
         ) : viewMode === 'list' ? (
           // VISUALIZAÇÃO EM LISTA
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {filteredTasks.map(task => {
               const StatusIcon = getStatusIcon(task.status)
               const overdue = isOverdue(task.due_date)
@@ -381,28 +381,28 @@ export default function TasksPage() {
               return (
                 <div
                   key={task.id}
-                  className={`bg-white rounded-2xl shadow-sm border transition-all hover:shadow-md ${
+                  className={`bg-white rounded-xl sm:rounded-2xl shadow-sm border transition-all hover:shadow-md ${
                     overdue && task.status !== 'completed' ? 'border-red-200' : 'border-gray-100'
                   }`}
                 >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">{task.title}</h3>
+                  <div className="p-4 sm:p-5 lg:p-6">
+                    <div className="flex flex-col lg:flex-row items-start justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+                      <div className="flex-1 min-w-0 w-full">
+                        <div className="flex items-start sm:items-center gap-2 sm:gap-3 mb-2 flex-wrap">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words flex-1 min-w-0">{task.title}</h3>
                           {overdue && task.status !== 'completed' && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-lg border-2 border-red-300 animate-pulse">
-                              <AlertCircle className="h-3.5 w-3.5" />
+                            <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 bg-red-100 text-red-600 text-[10px] sm:text-xs font-bold rounded-lg border-2 border-red-300 animate-pulse flex-shrink-0">
+                              <AlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                               EM ATRASO
                             </div>
                           )}
                         </div>
                         {task.description && (
-                          <p className="text-gray-600 text-sm mb-3">{task.description}</p>
+                          <p className="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-3 break-words">{task.description}</p>
                         )}
                         
                         {/* Informações adicionais */}
-                        <div className="flex flex-wrap items-center gap-3 mb-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                           {task.creator?.name && (
                             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
                               <UserCircle className="h-3.5 w-3.5" />
@@ -447,15 +447,15 @@ export default function TasksPage() {
                       </div>
 
                       {/* Ações */}
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto lg:ml-4">
                         {/* Botão de Comentários */}
                         <button
                           onClick={() => openCommentsSidebar(task)}
-                          className="px-4 py-2 bg-[#EBA500] hover:bg-[#d99500] text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
+                          className="flex-1 sm:flex-none px-3 sm:px-4 py-2 min-h-[44px] bg-[#EBA500] hover:bg-[#d99500] text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md touch-manipulation"
                           title="Ver comentários"
                         >
                           <MessageSquare className="h-4 w-4" />
-                          Comentários
+                          <span className="text-sm">Comentários</span>
                         </button>
                         
                         {task.status === 'pending' && (
@@ -501,7 +501,7 @@ export default function TasksPage() {
           </div>
         ) : (
           // VISUALIZAÇÃO EM GRID
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
             {filteredTasks.map(task => {
               const StatusIcon = getStatusIcon(task.status)
               const overdue = isOverdue(task.due_date)
