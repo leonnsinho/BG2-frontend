@@ -583,44 +583,44 @@ export default function UsersManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="min-h-screen bg-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-[#373435] mb-3">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] mb-2 sm:mb-3">
               Gerenciamento de Usuários
             </h1>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-base sm:text-lg">
               Gerencie usuários, funções e vínculos com empresas no sistema.
             </p>
           </div>
           <button
             onClick={() => setIsCreateUserModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#EBA500] text-white rounded-lg hover:bg-[#d49400] transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-[#EBA500] text-white rounded-lg hover:bg-[#d49400] transition-colors min-h-[44px] sm:min-h-0 touch-manipulation"
           >
             <UserPlus className="h-5 w-5" />
-            Criar Usuário
+            <span>Criar Usuário</span>
           </button>
         </div>
 
         {/* Filtros */}
-        <div className="bg-white shadow-sm border border-gray-200/50 rounded-3xl p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
+        <div className="bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="relative sm:col-span-2 lg:col-span-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Buscar usuários..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200"
+                className="w-full pl-10 pr-3 py-3 sm:py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0"
               />
             </div>
             
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200"
+              className="px-3 py-3 sm:py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
             >
               <option value="">Todas as funções</option>
               {Object.entries(ROLES).map(([key, role]) => (
@@ -631,7 +631,7 @@ export default function UsersManagementPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200"
+              className="px-3 py-3 sm:py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
             >
               <option value="">Todos os status</option>
               <option value="active">Ativo</option>
@@ -645,7 +645,7 @@ export default function UsersManagementPage() {
                 setRoleFilter('')
                 setStatusFilter('')
               }}
-              className="px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
+              className="px-4 py-3 sm:py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
             >
               Limpar Filtros
             </button>
@@ -653,40 +653,42 @@ export default function UsersManagementPage() {
         </div>
 
         {/* Lista de Usuários */}
-        <div className="bg-white shadow-sm border border-gray-200/50 rounded-3xl overflow-hidden">
-          <div className="px-8 py-6 border-b border-gray-100">
-            <h2 className="text-xl font-semibold text-[#373435] flex items-center">
-              <Users className="h-6 w-6 mr-3 text-[#EBA500]" />
-              {isSuperAdmin() 
-                ? `Usuários do Sistema (${filteredUsers.length})`
-                : `Usuários da Empresa (${filteredUsers.length})`
-              }
+        <div className="bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl overflow-hidden">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-gray-100">
+            <h2 className="text-lg sm:text-xl font-semibold text-[#373435] flex items-center">
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 text-[#EBA500]" />
+              <span className="truncate">
+                {isSuperAdmin() 
+                  ? `Usuários (${filteredUsers.length})`
+                  : `Empresa (${filteredUsers.length})`
+                }
+              </span>
             </h2>
             {!isSuperAdmin() && getCurrentUserCompany() && (
-              <p className="text-sm text-gray-600 mt-2">
-                <Building2 className="h-4 w-4 inline mr-1" />
-                {getCurrentUserCompany().name}
+              <p className="text-xs sm:text-sm text-gray-600 mt-2 flex items-center">
+                <Building2 className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1" />
+                <span className="truncate">{getCurrentUserCompany().name}</span>
               </p>
             )}
           </div>
           
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <table className="min-w-full divide-y divide-gray-100">
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
                 <tr>
-                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Usuário
                   </th>
-                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Função
                   </th>
-                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Empresa
                   </th>
-                  <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-8 py-4 text-right text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-right text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
@@ -700,9 +702,9 @@ export default function UsersManagementPage() {
 
                   return (
                     <tr key={user.id} className="hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5 transition-all duration-200">
-                      <td className="px-8 py-6 whitespace-nowrap">
+                      <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
                             {avatarUrls[user.id] ? (
                               <img 
                                 src={avatarUrls[user.id]} 
@@ -721,92 +723,93 @@ export default function UsersManagementPage() {
                               {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                             </span>
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-semibold text-[#373435]">
+                          <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                            <div className="text-xs sm:text-sm font-semibold text-[#373435] truncate">
                               {user.full_name || 'Nome não informado'}
                             </div>
-                            <div className="text-sm text-gray-500 flex items-center">
-                              <Mail className="h-3 w-3 mr-1" />
-                              {user.email}
+                            <div className="text-xs sm:text-sm text-gray-500 flex items-center truncate">
+                              <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
+                              <span className="truncate">{user.email}</span>
                             </div>
                           </div>
                         </div>
                       </td>
                       
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        <div className={`inline-flex items-center px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/20 text-[#EBA500] border border-[#EBA500]/30`}>
-                          <RoleIcon className="h-3 w-3 mr-1" />
-                          {roleInfo.label}
+                      <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap">
+                        <div className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/20 text-[#EBA500] border border-[#EBA500]/30`}>
+                          <RoleIcon className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span className="hidden sm:inline">{roleInfo.label}</span>
+                          <span className="sm:hidden truncate max-w-[80px]">{roleInfo.label}</span>
                         </div>
                       </td>
                       
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 flex items-center">
-                          <Building2 className="h-3 w-3 mr-1 text-gray-400" />
+                      <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap">
+                        <div className="text-xs sm:text-sm text-gray-900 flex items-center">
+                          <Building2 className="h-3 w-3 mr-1 text-gray-400 flex-shrink-0" />
                           {user.companies?.name ? (
-                            <div className="flex items-center gap-2">
-                              <span>{user.companies.name}</span>
+                            <div className="flex items-center gap-1 sm:gap-2">
+                              <span className="truncate max-w-[100px] sm:max-w-none">{user.companies.name}</span>
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => {
                                     setSelectedUser(user)
                                     setIsLinkModalOpen(true)
                                   }}
-                                  className="text-blue-600 hover:text-blue-800 p-1 h-auto rounded-md hover:bg-blue-50 transition-colors duration-200"
+                                  className="text-blue-600 hover:text-blue-800 p-1.5 sm:p-1 h-auto min-h-[32px] sm:min-h-0 rounded-md hover:bg-blue-50 transition-colors duration-200 touch-manipulation"
                                   title="Alterar empresa"
                                 >
-                                  <Edit className="h-3 w-3" />
+                                  <Edit className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
                                 </button>
                                 <button
                                   onClick={() => handleUnlinkFromCompany(user.id)}
-                                  className="text-red-600 hover:text-red-800 p-1 h-auto rounded-md hover:bg-red-50 transition-colors duration-200"
+                                  className="text-red-600 hover:text-red-800 p-1.5 sm:p-1 h-auto min-h-[32px] sm:min-h-0 rounded-md hover:bg-red-50 transition-colors duration-200 touch-manipulation"
                                   title="Desvincular da empresa"
                                 >
-                                  <XCircle className="h-3 w-3" />
+                                  <XCircle className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-500">Não vinculado</span>
+                            <div className="flex items-center gap-1 sm:gap-2">
+                              <span className="text-gray-500 text-xs sm:text-sm">Não vinculado</span>
                               <button
                                 onClick={() => {
                                   setSelectedUser(user)
                                   setIsLinkModalOpen(true)
                                 }}
-                                className="text-blue-600 hover:text-blue-800 p-1 h-auto rounded-md hover:bg-blue-50 transition-colors duration-200"
+                                className="text-blue-600 hover:text-blue-800 p-1.5 sm:p-1 h-auto min-h-[32px] sm:min-h-0 rounded-md hover:bg-blue-50 transition-colors duration-200 touch-manipulation"
                                 title="Vincular à empresa"
                               >
-                                <LinkIcon className="h-3 w-3" />
+                                <LinkIcon className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
                               </button>
                             </div>
                           )}
                         </div>
                       </td>
                       
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        <div className={`inline-flex items-center px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r ${
+                      <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap">
+                        <div className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r ${
                           user.status === 'active' 
                             ? 'from-green-50 to-green-100 text-green-700 border border-green-200'
                             : user.status === 'inactive'
                             ? 'from-red-50 to-red-100 text-red-700 border border-red-200'
                             : 'from-yellow-50 to-yellow-100 text-yellow-700 border border-yellow-200'
                         }`}>
-                          {user.status === 'active' && <CheckCircle className="h-3 w-3 mr-1" />}
-                          {user.status === 'inactive' && <XCircle className="h-3 w-3 mr-1" />}
-                          {user.status === 'pending' && <AlertCircle className="h-3 w-3 mr-1" />}
-                          {user.status === 'active' ? 'Ativo' : user.status === 'inactive' ? 'Inativo' : 'Pendente'}
+                          {user.status === 'active' && <CheckCircle className="h-3 w-3 mr-1 flex-shrink-0" />}
+                          {user.status === 'inactive' && <XCircle className="h-3 w-3 mr-1 flex-shrink-0" />}
+                          {user.status === 'pending' && <AlertCircle className="h-3 w-3 mr-1 flex-shrink-0" />}
+                          <span className="hidden sm:inline">{user.status === 'active' ? 'Ativo' : user.status === 'inactive' ? 'Inativo' : 'Pendente'}</span>
                         </div>
                       </td>
                       
-                      <td className="px-8 py-6 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-2">
+                      <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-1 sm:space-x-2">
                           <button
                             onClick={() => {
                               setSelectedUser(user)
                               setIsViewModalOpen(true)
                             }}
-                            className="text-gray-600 hover:text-gray-800 p-2 rounded-2xl hover:bg-gray-100 transition-all duration-200"
+                            className="text-gray-600 hover:text-gray-800 p-2 sm:p-2 rounded-2xl hover:bg-gray-100 transition-all duration-200 min-h-[40px] sm:min-h-0 touch-manipulation"
                             title="Ver detalhes"
                           >
                             <Eye className="h-4 w-4" />
@@ -817,7 +820,7 @@ export default function UsersManagementPage() {
                               setSelectedUser(user)
                               setIsEditModalOpen(true)
                             }}
-                            className="text-blue-600 hover:text-blue-800 p-2 rounded-2xl hover:bg-blue-50 transition-all duration-200"
+                            className="text-blue-600 hover:text-blue-800 p-2 sm:p-2 rounded-2xl hover:bg-blue-50 transition-all duration-200 min-h-[40px] sm:min-h-0 touch-manipulation"
                             title="Editar usuário"
                           >
                             <Edit className="h-4 w-4" />
@@ -825,7 +828,7 @@ export default function UsersManagementPage() {
                           
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className={`p-2 rounded-2xl transition-all duration-200 ${
+                            className={`p-2 sm:p-2 rounded-2xl transition-all duration-200 min-h-[40px] sm:min-h-0 touch-manipulation ${
                               user.is_active 
                                 ? "text-red-600 hover:text-red-900 hover:bg-red-50" 
                                 : "text-green-600 hover:text-green-900 hover:bg-green-50"
@@ -848,12 +851,12 @@ export default function UsersManagementPage() {
           </div>
           
           {filteredUsers.length === 0 && (
-            <div className="text-center py-12">
-              <Users className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
+            <div className="text-center py-8 sm:py-12 px-4">
+              <Users className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm sm:text-base font-medium text-gray-900">
                 Nenhum usuário encontrado
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-xs sm:text-sm text-gray-500">
                 {searchTerm || roleFilter || statusFilter
                   ? 'Tente ajustar os filtros de busca.'
                   : 'Convide usuários para começar.'}

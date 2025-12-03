@@ -900,24 +900,24 @@ const JourneyDetail = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200/50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+          <div className="py-4 sm:py-6 lg:py-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full">
                 <button
                   onClick={() => navigate('/journey-management')}
-                  className="flex items-center space-x-2 px-4 py-2 text-[#373435] bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-[#EBA500]/30 transition-all duration-200 shadow-sm"
+                  className="flex items-center space-x-2 px-4 py-2 min-h-[44px] text-[#373435] bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-[#EBA500]/30 transition-all duration-200 shadow-sm touch-manipulation"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   <span className="text-sm font-medium">Voltar</span>
                 </button>
                 
-                <div className={`p-4 rounded-2xl ${journey.bgColor} shadow-sm`}>
-                  <Icon className="h-6 w-6 text-white" />
+                <div className={`p-3 sm:p-4 rounded-2xl ${journey.bgColor} shadow-sm`}>
+                  <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 
-                <div>
-                  <h1 className="text-3xl font-bold text-[#373435]">{journey.name}</h1>
-                  <p className="mt-2 text-base text-gray-600">{journey.description}</p>
+                <div className="flex-1">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">{journey.name}</h1>
+                  <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">{journey.description}</p>
                 </div>
               </div>
             </div>
@@ -925,30 +925,30 @@ const JourneyDetail = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Filtros e Busca */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 p-8 mb-8">
-          <div className="flex flex-col sm:flex-row gap-6">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50 p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
+          <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:gap-6">
             <div className="flex-1">
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 </div>
                 <input
                   type="text"
                   placeholder="Buscar processos..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200"
+                  className="block w-full pl-10 sm:pl-12 pr-4 py-3 min-h-[44px] border border-gray-200 rounded-2xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] text-sm sm:text-base transition-all duration-200 touch-manipulation"
                 />
               </div>
             </div>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center">
               <select
                 value={usageFilter}
                 onChange={(e) => setUsageFilter(e.target.value)}
-                className="block w-full pl-4 pr-10 py-3 text-base border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm rounded-2xl transition-all duration-200"
+                className="block w-full pl-4 pr-10 py-3 min-h-[44px] text-sm sm:text-base border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] rounded-2xl transition-all duration-200 touch-manipulation"
               >
                 <option value="all">Todos os processos</option>
                 <option value="not-evaluated">Não avaliados</option>
@@ -962,59 +962,59 @@ const JourneyDetail = () => {
 
         {/* Estatísticas */}
         {company && evaluations.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="h-8 w-8 text-green-500" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col sm:flex-row items-center">
+                <div className="flex-shrink-0 mb-2 sm:mb-0">
+                  <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
                 </div>
-                <div className="ml-4">
-                  <div className="text-lg font-medium text-[#373435]">
+                <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
+                  <div className="text-base sm:text-lg font-medium text-[#373435]">
                     {evaluations.filter(e => e.has_process === true).length}
                   </div>
-                  <div className="text-sm text-gray-500">Amadurecidos</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Amadurecidos</div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <AlertCircle className="h-8 w-8 text-orange-400" />
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col sm:flex-row items-center">
+                <div className="flex-shrink-0 mb-2 sm:mb-0">
+                  <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-orange-400" />
                 </div>
-                <div className="ml-4">
-                  <div className="text-lg font-medium text-[#373435]">
+                <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
+                  <div className="text-base sm:text-lg font-medium text-[#373435]">
                     {evaluations.filter(e => e.has_process === false).length}
                   </div>
-                  <div className="text-sm text-gray-500">Em Processo</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Em Processo</div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Clock className="h-8 w-8 text-gray-400" />
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col sm:flex-row items-center">
+                <div className="flex-shrink-0 mb-2 sm:mb-0">
+                  <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                 </div>
-                <div className="ml-4">
-                  <div className="text-lg font-medium text-[#373435]">
+                <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
+                  <div className="text-base sm:text-lg font-medium text-[#373435]">
                     {processes.length - evaluations.length}
                   </div>
-                  <div className="text-sm text-gray-500">Não Avaliados</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Não Avaliados</div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <EyeOff className="h-8 w-8 text-gray-500" />
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col sm:flex-row items-center">
+                <div className="flex-shrink-0 mb-2 sm:mb-0">
+                  <EyeOff className="h-6 w-6 sm:h-8 sm:w-8 text-gray-500" />
                 </div>
-                <div className="ml-4">
-                  <div className="text-lg font-medium text-[#373435]">
+                <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
+                  <div className="text-base sm:text-lg font-medium text-[#373435]">
                     {processes.filter(p => !p.is_active).length}
                   </div>
-                  <div className="text-sm text-gray-500">Desativados</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Desativados</div>
                 </div>
               </div>
             </div>
@@ -1023,19 +1023,19 @@ const JourneyDetail = () => {
 
         {/* Barra de Progresso de Amadurecimento */}
         {company && processes.filter(p => p.is_active).length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6 mb-8">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-5 lg:p-6 mb-4 sm:mb-6 lg:mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
-                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold text-[#373435]">Progresso de Amadurecimento</h4>
                   <p className="text-xs text-gray-500">Processos amadurecidos nesta jornada</p>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600">
+              <div className="text-left sm:text-right">
+                <div className="text-xl sm:text-2xl font-bold text-blue-600">
                   {processes.filter(p => p.is_active).length > 0 
                     ? ((evaluations.filter(e => e.has_process === true).length / processes.filter(p => p.is_active).length) * 100).toFixed(2)
                     : '0.00'
@@ -1075,22 +1075,23 @@ const JourneyDetail = () => {
         )}
 
         {/* Lista de Processos */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50">
-          <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-[#373435]">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <h3 className="text-base sm:text-lg font-semibold text-[#373435]">
               Processos ({filteredProcesses.length} de {processes.length})
             </h3>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {/* Botão Adicionar Processo - Apenas para Super Admin */}
               {profile?.role === 'super_admin' && (
                 <button
                   onClick={handleAddProcess}
-                  className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="flex items-center space-x-2 px-3 sm:px-4 py-2 min-h-[40px] bg-[#EBA500] hover:bg-[#EBA500]/90 text-white text-xs sm:text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md touch-manipulation"
                   title="Adicionar novo processo"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>Adicionar Processo</span>
+                  <span className="hidden sm:inline">Adicionar Processo</span>
+                  <span className="sm:hidden">Adicionar</span>
                 </button>
               )}
 
@@ -1098,11 +1099,12 @@ const JourneyDetail = () => {
               {isCompanyAdmin() && profile?.role !== 'super_admin' && (
                 <button
                   onClick={() => setShowRequestProcessModal(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="flex items-center space-x-2 px-3 sm:px-4 py-2 min-h-[40px] bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md touch-manipulation"
                   title="Solicitar criação de novo processo"
                 >
                   <FileText className="h-4 w-4" />
-                  <span>Solicitar Processo</span>
+                  <span className="hidden sm:inline">Solicitar Processo</span>
+                  <span className="sm:hidden">Solicitar</span>
                 </button>
               )}
             </div>
@@ -1110,25 +1112,25 @@ const JourneyDetail = () => {
           
           <div className="divide-y divide-gray-100">
             {filteredProcesses.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-gray-500">Nenhum processo encontrado.</p>
+              <div className="p-6 sm:p-8 text-center">
+                <p className="text-sm sm:text-base text-gray-500">Nenhum processo encontrado.</p>
               </div>
             ) : (
               filteredProcesses.map((process) => {
                 const evaluation = getProcessEvaluation(process.id)
                 
                 return (
-                  <div key={process.id} className={`p-6 transition-all duration-200 ${
+                  <div key={process.id} className={`p-4 sm:p-5 lg:p-6 transition-all duration-200 ${
                     process.is_active 
                       ? 'hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5' 
                       : 'bg-gray-50/30 opacity-60'
                   }`}>
-                    <div className="flex items-start justify-between gap-6">
-                      <div className="flex-1">
+                    <div className="flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-6">
+                      <div className="flex-1 w-full lg:w-auto">
                         {/* Badges no topo */}
-                        <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center gap-2 mb-2 sm:mb-3 flex-wrap">
                           {process.category_name && (
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
+                            <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${
                               process.is_active
                                 ? 'bg-gradient-to-r from-[#EBA500]/20 to-[#EBA500]/30 text-[#EBA500] border-[#EBA500]/30'
                                 : 'bg-gray-200 text-gray-500 border-gray-300'
@@ -1145,7 +1147,7 @@ const JourneyDetail = () => {
                         </div>
                         
                         {/* Título do Processo (name) em destaque */}
-                        <h4 className={`text-2xl font-bold mb-2 ${
+                        <h4 className={`text-lg sm:text-xl lg:text-2xl font-bold mb-2 ${
                           process.is_active ? 'text-[#373435]' : 'text-gray-500'
                         }`}>
                           {process.name}
@@ -1153,7 +1155,7 @@ const JourneyDetail = () => {
                         
                         {/* Descrição menor */}
                         {process.description && (
-                          <p className={`text-sm leading-relaxed ${
+                          <p className={`text-xs sm:text-sm leading-relaxed line-clamp-2 sm:line-clamp-none ${
                             process.is_active ? 'text-gray-600' : 'text-gray-400'
                           }`}>
                             {process.description}
@@ -1161,25 +1163,27 @@ const JourneyDetail = () => {
                         )}
                       </div>
                       
-                      <div className="flex items-center space-x-4 ml-6">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full lg:w-auto lg:ml-6">
                         {evaluation ? (
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {evaluation.has_process === true ? (
-                              <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-blue-100 text-blue-800 border border-blue-300">
-                                <span className="mr-2">🏆</span>
-                                Processo Amadurecido
+                              <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 border border-blue-300">
+                                <span className="mr-1.5 sm:mr-2">🏆</span>
+                                <span className="hidden sm:inline">Processo Amadurecido</span>
+                                <span className="sm:hidden">Amadurecido</span>
                               </div>
                             ) : (
                               <>
-                                <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-green-100 text-green-800 border border-green-200">
-                                  <span className="mr-2">✅</span>
-                                  Processo Avaliado
+                                <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl text-xs sm:text-sm font-medium bg-green-100 text-green-800 border border-green-200">
+                                  <span className="mr-1.5 sm:mr-2">✅</span>
+                                  <span className="hidden sm:inline">Processo Avaliado</span>
+                                  <span className="sm:hidden">Avaliado</span>
                                 </div>
                                 
                                 {/* 🔥 NOVO: Badge de Nota de Priorização */}
                                 {evaluation.priority_score && (
-                                  <div className="inline-flex items-center px-3 py-2 rounded-2xl text-sm font-bold bg-[#EBA500] text-white border border-[#EBA500]/30 shadow-sm">
-                                    <span className="mr-1.5">⭐</span>
+                                  <div className="inline-flex items-center px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-2xl text-xs sm:text-sm font-bold bg-[#EBA500] text-white border border-[#EBA500]/30 shadow-sm">
+                                    <span className="mr-1 sm:mr-1.5">⭐</span>
                                     {evaluation.priority_score.toFixed(1)}
                                   </div>
                                 )}
@@ -1187,20 +1191,20 @@ const JourneyDetail = () => {
                             )}
                           </div>
                         ) : company ? (
-                          <div className="text-right">
-                            <div className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200">
-                              <span className="mr-2">⏳</span>
+                          <div>
+                            <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl text-xs sm:text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                              <span className="mr-1.5 sm:mr-2">⏳</span>
                               Não Avaliado
                             </div>
                           </div>
                         ) : null}
                         
-                        <div className="flex space-x-2">
+                        <div className="flex gap-2 flex-wrap">
                           {/* Botão de Ativar para processos inativos */}
                           {!process.is_active && (
                             <button
                               onClick={() => setShowToggleConfirm(process)}
-                              className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
+                              className="flex items-center space-x-2 px-3 sm:px-4 py-2 min-h-[40px] bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md touch-manipulation"
                               title="Ativar processo"
                             >
                               <Eye className="h-4 w-4" />
@@ -1213,7 +1217,7 @@ const JourneyDetail = () => {
                             <div className="relative">
                               <button
                                 onClick={() => setShowDropdownMenu(showDropdownMenu === process.id ? null : process.id)}
-                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation"
                                 title="Mais opções"
                               >
                                 <MoreVertical className="h-4 w-4" />
@@ -1265,7 +1269,7 @@ const JourneyDetail = () => {
                           {company && process.is_active && (
                             <button
                               onClick={() => navigate(`/journey-management/${journeySlug}/${process.id}/evaluate?company=${companyId}`)}
-                              className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
+                              className="flex items-center space-x-2 px-3 sm:px-4 py-2 min-h-[40px] bg-[#EBA500] hover:bg-[#EBA500]/90 text-white text-xs sm:text-sm font-medium rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md touch-manipulation"
                               title="Avaliar processo"
                             >
                               <Edit className="h-4 w-4" />

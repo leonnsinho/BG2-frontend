@@ -153,9 +153,9 @@ export function RegisterPage() {
           
           {/* Logo Mobile */}
           <div className="lg:hidden text-center mb-8">
-            <img 
-              src="/LOGO 1.png" 
-              alt="BG2 Logo" 
+            <img
+              src="/LOGO 2.png"
+              alt="BG2 Logo"
               className="h-16 w-auto mx-auto mb-4 object-contain"
             />
           </div>

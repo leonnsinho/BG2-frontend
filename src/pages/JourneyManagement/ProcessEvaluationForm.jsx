@@ -297,24 +297,24 @@ const ProcessEvaluationForm = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200/50 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-8">
-            <div className="flex items-center space-x-4">
+          <div className="py-4 sm:py-6 lg:py-8">
+            <div className="flex items-center space-x-3 sm:space-x-4">
               <button
                 onClick={() => navigate(-1)}
-                className="p-3 rounded-2xl bg-gradient-to-r from-[#373435] to-[#373435]/90 hover:from-[#EBA500] hover:to-[#EBA500]/90 text-white transition-all duration-300 shadow-sm hover:shadow-md"
+                className="p-2 sm:p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-2xl bg-gradient-to-r from-[#373435] to-[#373435]/90 hover:from-[#EBA500] hover:to-[#EBA500]/90 text-white transition-all duration-300 shadow-sm hover:shadow-md touch-manipulation"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
               
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 shadow-sm">
-                <Target className="h-7 w-7 text-white" />
+              <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 shadow-sm">
+                <Target className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
               </div>
               
-              <div>
-                <h1 className="text-2xl font-bold text-[#373435]">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#373435] truncate">
                   {evaluation ? 'Editar Avaliação' : 'Avaliar Processo'}
                 </h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600 truncate">
                   {journey ? journey.shortName : 'Jornada'}/{process.name}
                 </p>
               </div>
@@ -323,18 +323,18 @@ const ProcessEvaluationForm = () => {
         </div>
       </div>
 
-      <div className="max-w-[95%] mx-auto px-6 sm:px-8 lg:px-12 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Detalhes do Processo - Colapsável */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 mb-8 overflow-hidden">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50 mb-4 sm:mb-6 lg:mb-8 overflow-hidden">
           <button
             onClick={() => setDetailsExpanded(!detailsExpanded)}
-            className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            className="w-full p-4 sm:p-5 lg:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors min-h-[60px] touch-manipulation"
           >
-            <div className="flex items-center space-x-3">
-              <Target className="h-5 w-5 text-[#EBA500]" />
-              <h3 className="text-lg font-semibold text-[#373435]">{process.name}</h3>
+            <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+              <Target className="h-4 w-4 sm:h-5 sm:w-5 text-[#EBA500] flex-shrink-0" />
+              <h3 className="text-base sm:text-lg font-semibold text-[#373435] truncate">{process.name}</h3>
             </div>
-            <div className={`transition-transform duration-300 ${detailsExpanded ? 'rotate-180' : ''}`}>
+            <div className={`transition-transform duration-300 flex-shrink-0 ml-2 ${detailsExpanded ? 'rotate-180' : ''}`}>
               <ChevronDown className="h-5 w-5 text-gray-400" />
             </div>
           </button>
@@ -344,7 +344,7 @@ const ProcessEvaluationForm = () => {
               detailsExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
-            <div className="px-6 pb-6 border-t border-gray-100">
+            <div className="px-4 sm:px-5 lg:px-6 pb-4 sm:pb-5 lg:pb-6 border-t border-gray-100">
               {process.description && (
                 <div className="mt-4">
                   <dt className="text-sm font-medium text-gray-500 mb-2">Descrição</dt>
@@ -354,7 +354,7 @@ const ProcessEvaluationForm = () => {
               
               {/* Detalhes técnicos - apenas para Super Admin */}
               {profile?.role === 'super_admin' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 pt-6 border-t border-gray-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-100">
                   <div>
                     <dt className="text-sm font-medium text-gray-500 mb-2">Código</dt>
                     <dd className="text-sm text-[#373435] px-3 py-1 bg-gradient-to-r from-[#373435]/10 to-[#373435]/5 rounded-2xl inline-block border border-[#373435]/20">{process.code}</dd>
@@ -383,39 +383,39 @@ const ProcessEvaluationForm = () => {
         </div>
 
         {/* Formulário de Avaliação */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 p-8">
-              <h3 className="text-lg font-semibold text-[#373435] mb-8">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50 p-4 sm:p-6 lg:p-8">
+              <h3 className="text-base sm:text-lg font-semibold text-[#373435] mb-6 sm:mb-8">
                 Avaliação do Processo
               </h3>
               
-              <form className="space-y-8">
+              <form className="space-y-6 sm:space-y-8">
                 {/* Tem/não tem processo */}
                 <div>
                   <label className="block text-sm font-semibold text-[#373435] mb-3">
                     A empresa tem/usa este processo?
                   </label>
-                  <div className="flex items-center space-x-4">
-                    <label className="inline-flex items-center">
+                  <div className="flex items-center gap-4 sm:gap-6">
+                    <label className="inline-flex items-center cursor-pointer">
                       <input
                         type="radio"
                         name="has_process"
                         value="true"
                         checked={formData.has_process === true}
                         onChange={() => handleInputChange('has_process', true)}
-                        className="form-radio h-4 w-4 text-[#EBA500] focus:ring-[#EBA500]/30 border-gray-300"
+                        className="form-radio h-5 w-5 text-[#EBA500] focus:ring-[#EBA500]/30 border-gray-300 cursor-pointer touch-manipulation"
                       />
-                      <span className="ml-2 text-sm text-[#373435]">Tem</span>
+                      <span className="ml-2 sm:ml-3 text-sm sm:text-base text-[#373435]">Tem</span>
                     </label>
-                    <label className="inline-flex items-center">
+                    <label className="inline-flex items-center cursor-pointer">
                       <input
                         type="radio"
                         name="has_process"
                         value="false"
                         checked={formData.has_process === false}
                         onChange={() => handleInputChange('has_process', false)}
-                        className="form-radio h-4 w-4 text-[#EBA500] focus:ring-[#EBA500]/30 border-gray-300"
+                        className="form-radio h-5 w-5 text-[#EBA500] focus:ring-[#EBA500]/30 border-gray-300 cursor-pointer touch-manipulation"
                       />
-                      <span className="ml-2 text-sm text-[#373435]">Não tem</span>
+                      <span className="ml-2 sm:ml-3 text-sm sm:text-base text-[#373435]">Não tem</span>
                     </label>
                   </div>
                 </div>
@@ -430,13 +430,13 @@ const ProcessEvaluationForm = () => {
                     value={formData.observations}
                     onChange={(e) => handleInputChange('observations', e.target.value)}
                     placeholder="Observações sobre o processo na empresa..."
-                    className="block w-full border border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] sm:text-sm transition-all duration-200 resize-none"
+                    className="block w-full border border-gray-200 rounded-2xl px-3 sm:px-4 py-2 sm:py-3 min-h-[80px] focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] text-sm sm:text-base transition-all duration-200 resize-none touch-manipulation"
                   />
                 </div>
 
                 {/* Seção de Priorização */}
                 <div>
-                  <h4 className="text-lg font-semibold text-[#373435] mb-6">
+                  <h4 className="text-base sm:text-lg font-semibold text-[#373435] mb-4 sm:mb-6">
                     Avaliação de Prioridade
                   </h4>
                   
@@ -448,13 +448,13 @@ const ProcessEvaluationForm = () => {
                     </div>
                   )}
                   
-                  <div className={`grid grid-cols-1 gap-8 ${formData.has_process === true ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <div className={`grid grid-cols-1 gap-6 sm:gap-8 ${formData.has_process === true ? 'opacity-50 pointer-events-none' : ''}`}>
                     {/* Importância para o Negócio */}
                     <div>
-                      <label className="block text-sm font-semibold text-[#373435] mb-4">
+                      <label className="block text-sm font-semibold text-[#373435] mb-3 sm:mb-4">
                         Importância para o Negócio
                       </label>
-                      <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
                         {[
                           { value: 1, label: 'Irrelevante' },
                           { value: 2, label: 'Pouco relevante' },
@@ -467,7 +467,7 @@ const ProcessEvaluationForm = () => {
                             type="button"
                             onClick={() => handleInputChange('business_importance', option.value)}
                             disabled={formData.has_process === true}
-                            className={`flex flex-col items-center p-5 rounded-2xl border-2 transition-all duration-200 min-h-[90px] justify-center ${
+                            className={`flex flex-col items-center p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 min-h-[80px] sm:min-h-[90px] justify-center touch-manipulation ${
                               formData.business_importance === option.value && formData.has_process !== true
                                 ? 'border-indigo-500 bg-gradient-to-r from-indigo-50 to-indigo-100/50 shadow-md'
                                 : formData.has_process === true
@@ -475,7 +475,7 @@ const ProcessEvaluationForm = () => {
                                 : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
                             }`}
                           >
-                            <span className={`text-xl font-bold mb-2 ${
+                            <span className={`text-lg sm:text-xl font-bold mb-1 sm:mb-2 ${
                               formData.business_importance === option.value && formData.has_process !== true
                                 ? 'text-indigo-600' 
                                 : formData.has_process === true 
@@ -496,10 +496,10 @@ const ProcessEvaluationForm = () => {
 
                     {/* Urgência para Implementação */}
                     <div>
-                      <label className="block text-sm font-semibold text-[#373435] mb-4">
+                      <label className="block text-sm font-semibold text-[#373435] mb-3 sm:mb-4">
                         Urgência para Implementação
                       </label>
-                      <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
                         {[
                           { value: 1, label: 'Sem urgência' },
                           { value: 2, label: 'Pouco urgente' },
@@ -512,7 +512,7 @@ const ProcessEvaluationForm = () => {
                             type="button"
                             onClick={() => handleInputChange('implementation_urgency', option.value)}
                             disabled={formData.has_process === true}
-                            className={`flex flex-col items-center p-5 rounded-2xl border-2 transition-all duration-200 min-h-[90px] justify-center ${
+                            className={`flex flex-col items-center p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 min-h-[80px] sm:min-h-[90px] justify-center touch-manipulation ${
                               formData.implementation_urgency === option.value && formData.has_process !== true
                                 ? 'border-orange-500 bg-gradient-to-r from-orange-50 to-orange-100/50 shadow-md'
                                 : formData.has_process === true
@@ -520,7 +520,7 @@ const ProcessEvaluationForm = () => {
                                 : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
                             }`}
                           >
-                            <span className={`text-xl font-bold mb-2 ${
+                            <span className={`text-lg sm:text-xl font-bold mb-1 sm:mb-2 ${
                               formData.implementation_urgency === option.value && formData.has_process !== true
                                 ? 'text-orange-600' 
                                 : formData.has_process === true 
@@ -541,10 +541,10 @@ const ProcessEvaluationForm = () => {
 
                     {/* Dificuldade para implementar */}
                     <div>
-                      <label className="block text-sm font-semibold text-[#373435] mb-4">
+                      <label className="block text-sm font-semibold text-[#373435] mb-3 sm:mb-4">
                         Dificuldade para implementar
                       </label>
-                      <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
                         {[
                           { value: 1, label: 'Sem esforço' },
                           { value: 2, label: 'Pouco esforço' },
@@ -557,7 +557,7 @@ const ProcessEvaluationForm = () => {
                             type="button"
                             onClick={() => handleInputChange('implementation_ease', option.value)}
                             disabled={formData.has_process === true}
-                            className={`flex flex-col items-center p-5 rounded-2xl border-2 transition-all duration-200 min-h-[90px] justify-center ${
+                            className={`flex flex-col items-center p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 min-h-[80px] sm:min-h-[90px] justify-center touch-manipulation ${
                               formData.implementation_ease === option.value && formData.has_process !== true
                                 ? 'border-green-500 bg-gradient-to-r from-green-50 to-green-100/50 shadow-md'
                                 : formData.has_process === true
@@ -565,7 +565,7 @@ const ProcessEvaluationForm = () => {
                                 : 'border-gray-200 hover:border-green-300 hover:bg-gray-50'
                             }`}
                           >
-                            <span className={`text-xl font-bold mb-2 ${
+                            <span className={`text-lg sm:text-xl font-bold mb-1 sm:mb-2 ${
                               formData.implementation_ease === option.value && formData.has_process !== true
                                 ? 'text-green-600' 
                                 : formData.has_process === true 
@@ -586,9 +586,9 @@ const ProcessEvaluationForm = () => {
                   </div>
 
                   {/* Preview das Seleções */}
-                  <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-2xl border border-gray-200">
-                    <div className="flex items-center justify-center mb-6">
-                      <h5 className="text-base font-semibold text-[#373435]">
+                  <div className="mt-6 sm:mt-8 p-4 sm:p-5 lg:p-6 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl sm:rounded-2xl border border-gray-200">
+                    <div className="flex items-center justify-center mb-4 sm:mb-6">
+                      <h5 className="text-sm sm:text-base font-semibold text-[#373435]">
                         Resumo da Avaliação de Prioridade
                       </h5>
                     </div>
@@ -603,29 +603,29 @@ const ProcessEvaluationForm = () => {
                       </div>
                     ) : (
                       <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                           {/* Importância */}
-                          <div className="bg-white p-4 rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-indigo-100/30 min-h-[100px] flex flex-col justify-between">
-                            <div className="text-xs text-indigo-600 font-semibold mb-2 uppercase tracking-wide">
+                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-indigo-100/30 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between">
+                            <div className="text-[10px] sm:text-xs text-indigo-600 font-semibold mb-1 sm:mb-2 uppercase tracking-wide">
                               Importância
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
-                              <div className="text-2xl font-bold text-indigo-700 mb-1">
+                              <div className="text-xl sm:text-2xl font-bold text-indigo-700 mb-1">
                                 {formData.business_importance}/5
                               </div>
-                              <div className="text-xs text-indigo-600 leading-tight font-medium">
+                              <div className="text-[10px] sm:text-xs text-indigo-600 leading-tight font-medium">
                                 {businessImportanceLabels[formData.business_importance]}
                               </div>
                             </div>
                           </div>
                           
                           {/* Urgência */}
-                          <div className="bg-white p-4 rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100/30 min-h-[100px] flex flex-col justify-between">
-                            <div className="text-xs text-orange-600 font-semibold mb-2 uppercase tracking-wide">
+                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100/30 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between">
+                            <div className="text-[10px] sm:text-xs text-orange-600 font-semibold mb-1 sm:mb-2 uppercase tracking-wide">
                               Urgência
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
-                              <div className="text-2xl font-bold text-orange-700 mb-1">
+                              <div className="text-xl sm:text-2xl font-bold text-orange-700 mb-1">
                                 {formData.implementation_urgency}/5
                               </div>
                               <div className="text-xs text-orange-600 leading-tight font-medium">
@@ -635,12 +635,12 @@ const ProcessEvaluationForm = () => {
                           </div>
                           
                           {/* Dificuldade */}
-                          <div className="bg-white p-4 rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-green-100/30 min-h-[100px] flex flex-col justify-between">
-                            <div className="text-xs text-green-600 font-semibold mb-2 uppercase tracking-wide">
+                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-green-100/30 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between">
+                            <div className="text-[10px] sm:text-xs text-green-600 font-semibold mb-1 sm:mb-2 uppercase tracking-wide">
                               Dificuldade
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
-                              <div className="text-2xl font-bold text-green-700 mb-1">
+                              <div className="text-xl sm:text-2xl font-bold text-green-700 mb-1">
                                 {formData.implementation_ease}/5
                               </div>
                               <div className="text-xs text-green-600 leading-tight font-medium">
@@ -650,12 +650,12 @@ const ProcessEvaluationForm = () => {
                           </div>
                           
                           {/* Priorização */}
-                          <div className="bg-white p-4 rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/30 min-h-[100px] flex flex-col justify-between sm:col-span-2 lg:col-span-1">
-                            <div className="text-xs text-blue-600 font-semibold mb-2 uppercase tracking-wide">
+                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/30 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between col-span-2 lg:col-span-1">
+                            <div className="text-[10px] sm:text-xs text-blue-600 font-semibold mb-1 sm:mb-2 uppercase tracking-wide">
                               Nota Final
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
-                              <div className="text-3xl font-bold text-blue-700 mb-1">
+                              <div className="text-2xl sm:text-3xl font-bold text-blue-700 mb-1">
                                 {formData.has_process === true 
                                   ? 'N/A'
                                   : formData.business_importance && formData.implementation_urgency && formData.implementation_ease
@@ -671,8 +671,8 @@ const ProcessEvaluationForm = () => {
                         </div>
                         
                         {/* Fórmula */}
-                        <div className="mt-4 p-3 bg-white/50 rounded-xl border border-gray-200/50">
-                          <div className="text-xs text-gray-600 text-center font-medium">
+                        <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-white/50 rounded-lg sm:rounded-xl border border-gray-200/50">
+                          <div className="text-[10px] sm:text-xs text-gray-600 text-center font-medium">
                             Fórmula: (Importância × Urgência) ÷ Dificuldade
                           </div>
                         </div>
@@ -683,11 +683,11 @@ const ProcessEvaluationForm = () => {
                 </div>
 
                 {/* Botões de Ação */}
-                <div className="flex justify-end space-x-4 pt-8 border-t border-gray-100">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-6 sm:pt-8 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={() => navigate(-1)}
-                    className="px-6 py-3 text-sm font-medium text-[#373435] bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 transition-all duration-200"
+                    className="w-full sm:w-auto px-6 py-3 min-h-[44px] text-sm font-medium text-[#373435] bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 transition-all duration-200 touch-manipulation"
                   >
                     Cancelar
                   </button>
@@ -696,7 +696,7 @@ const ProcessEvaluationForm = () => {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 border border-transparent rounded-2xl hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
+                    className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 min-h-[44px] text-sm font-medium text-white bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 border border-transparent rounded-2xl hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md touch-manipulation"
                   >
                     {saving ? (
                       <>

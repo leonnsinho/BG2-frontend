@@ -422,24 +422,24 @@ export default function JourneyAssignmentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="min-h-screen bg-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#373435] mb-3">
-            Atribuição de Jornadas para Gestores
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] mb-2 sm:mb-3">
+            Atribuição de Jornadas
           </h1>
-          <p className="text-gray-600 text-lg">
-            Atribua jornadas manualmente aos gestores da sua empresa além do acesso baseado em seus roles.
+          <p className="text-gray-600 text-base sm:text-lg">
+            Atribua jornadas manualmente aos gestores além do acesso baseado em roles.
           </p>
         </div>
 
         {/* Lista de usuários */}
         {users.length === 0 && !loading ? (
-          <div className="bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 border border-[#EBA500]/30 rounded-3xl p-8 text-center">
-            <h3 className="text-lg font-semibold text-[#373435] mb-3">
+          <div className="bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 border border-[#EBA500]/30 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center">
+            <h3 className="text-base sm:text-lg font-semibold text-[#373435] mb-2 sm:mb-3">
               Nenhum gestor encontrado
             </h3>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               {profile.role === 'super_admin' 
                 ? 'Não há gestores cadastrados no sistema.'
                 : 'Não há gestores registrados na sua empresa.'
@@ -447,26 +447,26 @@ export default function JourneyAssignmentsPage() {
             </p>
           </div>
         ) : (
-          <div className="bg-white shadow-sm border border-gray-200/50 rounded-3xl overflow-hidden">
-          <div className="px-8 py-6 border-b border-gray-100">
-            <h2 className="text-xl font-semibold text-[#373435] flex items-center">
-              <Users className="h-6 w-6 mr-3 text-[#EBA500]" />
-              Gestores e Acessos às Jornadas
+          <div className="bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl overflow-hidden">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-gray-100">
+            <h2 className="text-lg sm:text-xl font-semibold text-[#373435] flex items-center">
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 text-[#EBA500]" />
+              <span className="truncate">Gestores e Jornadas</span>
             </h2>
-          </div>        <div className="overflow-x-auto">
+          </div>        <div className="overflow-x-auto -mx-4 sm:mx-0">
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
               <tr>
-                <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Gestor
                 </th>
-                <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
-                  Tipo de Gestor
+                <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  Tipo
                 </th>
-                <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
-                  Jornadas Atribuídas
+                <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  Jornadas
                 </th>
-                <th className="px-8 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Ações
                 </th>
               </tr>
@@ -477,27 +477,30 @@ export default function JourneyAssignmentsPage() {
                 
                 return (
                   <tr key={user.id} className="hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5 transition-all duration-200">
-                    <td className="px-8 py-6 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div>
-                          <div className="text-sm font-semibold text-[#373435]">
+                    <td className="pl-6 pr-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap">
+                      <div className="flex items-center min-w-0">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs sm:text-sm font-semibold text-[#373435] truncate">
                             {user.full_name}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs sm:text-sm text-gray-500 truncate">
                             {user.email}
                           </div>
                         </div>
                       </div>
                     </td>
                     
-                    <td className="px-8 py-6 whitespace-nowrap">
-                      <span className="inline-flex items-center px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/20 text-[#EBA500] border border-[#EBA500]/30">
-                        {getRoleDisplayName(user.company_role || user.role)}
+                    <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/20 text-[#EBA500] border border-[#EBA500]/30">
+                        <span className="hidden sm:inline">{getRoleDisplayName(user.company_role || user.role)}</span>
+                        <span className="sm:hidden truncate max-w-[80px]" title={getRoleDisplayName(user.company_role || user.role)}>
+                          {getRoleDisplayName(user.company_role || user.role).replace('Gestor ', 'G. ')}
+                        </span>
                       </span>
                     </td>
                     
-                    <td className="px-8 py-6">
-                      <div className="flex flex-wrap gap-2">
+                    <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
                         {manualJourneys.map(slug => {
                           const journey = journeys.find(j => j.slug === slug)
                           if (!journey) return null
@@ -505,22 +508,23 @@ export default function JourneyAssignmentsPage() {
                           return (
                             <span 
                               key={slug}
-                              className="inline-flex items-center px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border border-emerald-200"
+                              className="inline-flex items-center px-2 sm:px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border border-emerald-200"
                             >
-                              ⭐ {journey.name}
+                              <span className="hidden sm:inline">⭐ {journey.name}</span>
+                              <span className="sm:hidden truncate max-w-[100px]" title={journey.name}>⭐ {journey.name}</span>
                             </span>
                           )
                         })}
                         {manualJourneys.length === 0 && (
-                          <span className="text-sm text-gray-400 italic">Nenhuma jornada atribuída</span>
+                          <span className="text-xs sm:text-sm text-gray-400 italic">Nenhuma</span>
                         )}
                       </div>
                     </td>
                     
-                    <td className="px-8 py-6 whitespace-nowrap text-sm font-medium">
+                    <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => openAssignmentModal(user)}
-                        className="text-[#EBA500] hover:text-[#EBA500]/80 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 hover:from-[#EBA500]/20 hover:to-[#EBA500]/10 px-4 py-2 rounded-2xl text-sm font-medium transition-all duration-200 border border-[#EBA500]/30 hover:shadow-md"
+                        className="text-[#EBA500] hover:text-[#EBA500]/80 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 hover:from-[#EBA500]/20 hover:to-[#EBA500]/10 px-3 sm:px-4 py-2 sm:py-2 rounded-2xl text-xs sm:text-sm font-medium transition-all duration-200 border border-[#EBA500]/30 hover:shadow-md min-h-[40px] sm:min-h-0 touch-manipulation"
                       >
                         Gerenciar
                       </button>
@@ -537,27 +541,28 @@ export default function JourneyAssignmentsPage() {
       {/* Modal de Atribuição */}
       {showAssignmentModal && selectedUser && (
         <div 
-          className={`fixed inset-0 bg-gray-900 transition-all duration-200 overflow-y-auto h-full w-full z-50 flex items-center justify-center ${
+          className={`fixed inset-0 bg-gray-900 transition-all duration-200 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4 ${
             modalAnimating ? 'bg-opacity-60' : 'bg-opacity-0'
           }`}
           onClick={closeAssignmentModal}
         >
           <div 
-            className={`relative mx-auto p-8 border border-gray-200/50 w-96 shadow-2xl rounded-3xl bg-white transition-all duration-200 transform ${
+            className={`relative mx-auto p-6 sm:p-8 border border-gray-200/50 w-full max-w-md sm:max-w-lg shadow-2xl rounded-2xl sm:rounded-3xl bg-white transition-all duration-200 transform ${
               modalAnimating 
                 ? 'scale-100 opacity-100 translate-y-0' 
                 : 'scale-95 opacity-0 translate-y-4'
             }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-[#373435]">
-                  Atribuir Jornadas para {selectedUser.full_name}
+            <div className="mt-2 sm:mt-3">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h3 className="text-base sm:text-lg font-semibold text-[#373435] pr-8">
+                  <span className="hidden sm:inline">Atribuir Jornadas para {selectedUser.full_name}</span>
+                  <span className="sm:hidden">Jornadas: {selectedUser.full_name}</span>
                 </h3>
                 <button
                   onClick={closeAssignmentModal}
-                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 hover:bg-gray-100 rounded-full"
+                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 hover:bg-gray-100 rounded-full min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 touch-manipulation flex items-center justify-center"
                   aria-label="Fechar modal"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -566,7 +571,7 @@ export default function JourneyAssignmentsPage() {
                 </button>
               </div>
               
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {journeys.map((journey, index) => {
                   const isManuallyAssignedToUser = isManuallyAssigned(selectedUser.id, journey.slug)
                   const IconComponent = journeyIcons[journey.slug] || Settings
@@ -580,7 +585,7 @@ export default function JourneyAssignmentsPage() {
                   return (
                     <div 
                       key={journey.id}
-                      className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-200 ${cardStyle} ${
+                      className={`flex items-center justify-between p-3 sm:p-4 rounded-2xl border transition-all duration-200 ${cardStyle} ${
                         modalAnimating 
                           ? 'transform translate-x-0 opacity-100' 
                           : 'transform translate-x-4 opacity-0'
@@ -589,12 +594,12 @@ export default function JourneyAssignmentsPage() {
                         transitionDelay: modalAnimating ? `${index * 50}ms` : '0ms'
                       }}
                     >
-                      <div className="flex items-center">
-                        <IconComponent className={`h-5 w-5 mr-3 ${
+                      <div className="flex items-center min-w-0 flex-1">
+                        <IconComponent className={`h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 flex-shrink-0 ${
                           journey.color ? `text-[${journey.color}]` : 'text-[#EBA500]'
                         }`} />
-                        <div>
-                          <div className="font-semibold text-[#373435]">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-[#373435] text-sm sm:text-base truncate">
                             {journey.name}
                           </div>
                           {isManuallyAssignedToUser && (
@@ -605,12 +610,12 @@ export default function JourneyAssignmentsPage() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center ml-2">
                         {/* Botão para atribuir ou remover */}
                         {!isManuallyAssignedToUser ? (
                           <button
                             onClick={() => assignJourney(selectedUser.id, journey.id)}
-                            className="px-3 py-1 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 rounded-2xl hover:from-emerald-100 hover:to-emerald-200 border border-emerald-200 font-medium text-sm transition-all duration-200"
+                            className="px-3 py-2 sm:py-1 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 rounded-2xl hover:from-emerald-100 hover:to-emerald-200 border border-emerald-200 font-medium text-xs sm:text-sm transition-all duration-200 min-h-[40px] sm:min-h-0 touch-manipulation whitespace-nowrap"
                             title="Atribuir jornada"
                           >
                             Atribuir
@@ -618,7 +623,7 @@ export default function JourneyAssignmentsPage() {
                         ) : (
                           <button
                             onClick={() => revokeJourneyAccess(selectedUser.id, journey.id)}
-                            className="px-3 py-1 bg-gradient-to-r from-red-50 to-red-100 text-red-700 rounded-2xl hover:from-red-100 hover:to-red-200 border border-red-200 font-medium text-sm transition-all duration-200"
+                            className="px-3 py-2 sm:py-1 bg-gradient-to-r from-red-50 to-red-100 text-red-700 rounded-2xl hover:from-red-100 hover:to-red-200 border border-red-200 font-medium text-xs sm:text-sm transition-all duration-200 min-h-[40px] sm:min-h-0 touch-manipulation whitespace-nowrap"
                             title="Remover atribuição"
                           >
                             Remover
@@ -630,10 +635,10 @@ export default function JourneyAssignmentsPage() {
                 })}
               </div>
 
-              <div className="mt-8 flex justify-end space-x-3">
+              <div className="mt-6 sm:mt-8 flex justify-end space-x-3">
                 <button
                   onClick={closeAssignmentModal}
-                  className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
+                  className="px-6 py-3 sm:py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
                 >
                   Fechar
                 </button>

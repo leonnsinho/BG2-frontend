@@ -314,81 +314,81 @@ export default function AllProcessesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#373435] mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] mb-2">
             Gerenciar Processos
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Visualize e gerencie todos os processos cadastrados no sistema
           </p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total de Processos</p>
-                <p className="text-3xl font-bold text-[#373435]">{processes.length}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">Total de Processos</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#373435]">{processes.length}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <FileText className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Jornadas</p>
-                <p className="text-3xl font-bold text-[#373435]">{Object.keys(journeys).length}</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <Target className="h-6 w-6 text-purple-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Categorias</p>
-                <p className="text-3xl font-bold text-[#373435]">{allCategories.length}</p>
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">Jornadas</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#373435]">{Object.keys(journeys).length}</p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <Layers className="h-6 w-6 text-green-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                <Target className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Filtrados</p>
-                <p className="text-3xl font-bold text-[#373435]">{filteredProcesses.length}</p>
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">Categorias</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#373435]">{allCategories.length}</p>
               </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Filter className="h-6 w-6 text-yellow-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                <Layers className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">Filtrados</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#373435]">{filteredProcesses.length}</p>
+              </div>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+                <Filter className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {/* Busca */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="relative sm:col-span-2 lg:col-span-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar por nome, código, descrição..."
+                placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
+                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent text-sm sm:text-base min-h-[44px]"
               />
             </div>
 
@@ -423,13 +423,13 @@ export default function AllProcessesPage() {
         </div>
 
         {/* Tabela de Processos */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
+          <div className="-mx-4 sm:mx-0 overflow-x-auto">
+            <table className="w-full min-w-[800px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th 
-                    className="px-6 py-4 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
+                    className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
                     onClick={() => toggleSort('name')}
                   >
                     <div className="flex items-center gap-2">
@@ -439,11 +439,11 @@ export default function AllProcessesPage() {
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700">
                     Código
                   </th>
                   <th 
-                    className="px-6 py-4 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
+                    className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
                     onClick={() => toggleSort('journey')}
                   >
                     <div className="flex items-center gap-2">
@@ -454,7 +454,7 @@ export default function AllProcessesPage() {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-4 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
+                    className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
                     onClick={() => toggleSort('category')}
                   >
                     <div className="flex items-center gap-2">
@@ -464,10 +464,10 @@ export default function AllProcessesPage() {
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-center text-xs sm:text-sm font-semibold text-gray-700">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-center text-xs sm:text-sm font-semibold text-gray-700">
                     Ações
                   </th>
                 </tr>
@@ -490,27 +490,27 @@ export default function AllProcessesPage() {
                     const journey = journeys[process.journey_id]
                     return (
                       <tr key={process.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                              <FileText className="h-5 w-5 text-blue-600" />
+                        <td className="px-4 sm:px-6 py-3 sm:py-4">
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                             </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{process.name}</p>
+                            <div className="min-w-0">
+                              <p className="text-sm sm:text-base font-medium text-gray-900 truncate">{process.name}</p>
                               {process.description && (
-                                <p className="text-sm text-gray-500 mt-0.5 line-clamp-1">
+                                <p className="text-xs sm:text-sm text-gray-500 mt-0.5 line-clamp-1">
                                   {process.description}
                                 </p>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-mono text-gray-600">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4">
+                          <span className="text-xs sm:text-sm font-mono text-gray-600">
                             {process.code}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4">
                           {journey && (
                             <div className="flex items-center gap-2">
                               <div 
@@ -541,34 +541,34 @@ export default function AllProcessesPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-2">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4">
+                          <div className="flex items-center justify-center gap-1 sm:gap-2">
                             <button
                               onClick={() => {
                                 setSelectedProcess(process)
                                 setShowDetailsModal(true)
                               }}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] touch-manipulation flex items-center justify-center"
                               title="Ver detalhes"
                             >
-                              <Eye className="h-5 w-5" />
+                              <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
                             </button>
                             <button
                               onClick={() => handleOpenEdit(process)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] touch-manipulation flex items-center justify-center"
                               title="Editar"
                             >
-                              <Edit className="h-5 w-5" />
+                              <Edit className="h-4 w-4 sm:h-5 sm:w-5" />
                             </button>
                             <button
                               onClick={() => {
                                 setSelectedProcess(process)
                                 setShowDeleteModal(true)
                               }}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] touch-manipulation flex items-center justify-center"
                               title="Deletar"
                             >
-                              <Trash2 className="h-5 w-5" />
+                              <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
                             </button>
                           </div>
                         </td>
@@ -582,38 +582,38 @@ export default function AllProcessesPage() {
 
           {/* Paginação */}
           {filteredProcesses.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex flex-col gap-3">
                 {/* Info de registros */}
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center justify-center sm:justify-start text-xs sm:text-sm text-gray-600">
                   <span>
                     Mostrando <span className="font-medium text-gray-900">{startIndex + 1}</span> até{' '}
                     <span className="font-medium text-gray-900">
                       {Math.min(endIndex, filteredProcesses.length)}
                     </span>{' '}
-                    de <span className="font-medium text-gray-900">{filteredProcesses.length}</span> processos
+                    de <span className="font-medium text-gray-900">{filteredProcesses.length}</span>
                   </span>
                 </div>
 
                 {/* Navegação de páginas */}
                 {totalPages > 1 && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between sm:justify-center gap-2">
                     {/* Botão Anterior */}
                     <button
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
-                      className="p-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="p-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[40px] min-w-[40px] touch-manipulation flex items-center justify-center"
                       title="Página anterior"
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
 
                     {/* Números de página */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-1 sm:flex-initial justify-center overflow-x-auto scrollbar-hide">
                       {getPageNumbers().map((pageNum, index) => {
                         if (pageNum === '...') {
                           return (
-                            <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-500">
+                            <span key={`ellipsis-${index}`} className="px-2 sm:px-3 py-2 text-gray-500 text-sm">
                               ...
                             </span>
                           )
@@ -623,7 +623,7 @@ export default function AllProcessesPage() {
                           <button
                             key={pageNum}
                             onClick={() => setCurrentPage(pageNum)}
-                            className={`min-w-[40px] px-3 py-2 rounded-lg font-medium transition-colors ${
+                            className={`min-w-[36px] sm:min-w-[40px] px-2 sm:px-3 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation ${
                               currentPage === pageNum
                                 ? 'bg-[#EBA500] text-white shadow-sm'
                                 : 'text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -639,30 +639,32 @@ export default function AllProcessesPage() {
                     <button
                       onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
-                      className="p-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="p-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[40px] min-w-[40px] touch-manipulation flex items-center justify-center"
                       title="Próxima página"
                     >
                       <ChevronRight className="h-5 w-5" />
                     </button>
+                  </div>
+                )}
 
-                    {/* Ir para página específica */}
-                    <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-300">
-                      <span className="text-sm text-gray-600">Ir para:</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max={totalPages}
-                        value={currentPage}
-                        onChange={(e) => {
-                          const page = parseInt(e.target.value)
-                          if (page >= 1 && page <= totalPages) {
-                            setCurrentPage(page)
-                          }
-                        }}
-                        className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
-                      />
-                      <span className="text-sm text-gray-600">de {totalPages}</span>
-                    </div>
+                {/* Ir para página específica - linha separada */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-2 border-t border-gray-200">
+                    <span className="text-xs sm:text-sm text-gray-600">Ir para página:</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalPages}
+                      value={currentPage}
+                      onChange={(e) => {
+                        const page = parseInt(e.target.value)
+                        if (page >= 1 && page <= totalPages) {
+                          setCurrentPage(page)
+                        }
+                      }}
+                      className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent text-center"
+                    />
+                    <span className="text-xs sm:text-sm text-gray-600">de {totalPages}</span>
                   </div>
                 )}
               </div>
@@ -674,8 +676,8 @@ export default function AllProcessesPage() {
       {/* Modal de Detalhes */}
       {showDetailsModal && selectedProcess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-auto">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-[#373435]">
                   Detalhes do Processo
@@ -814,7 +816,7 @@ export default function AllProcessesPage() {
       {/* Modal de Confirmação de Exclusão */}
       {showDeleteModal && selectedProcess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-md w-full p-4 sm:p-6 my-auto">
             <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
               <Trash2 className="h-8 w-8 text-red-600" />
             </div>
@@ -828,21 +830,21 @@ export default function AllProcessesPage() {
               Esta ação não pode ser desfeita.
             </p>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={() => {
                   setShowDeleteModal(false)
                   setSelectedProcess(null)
                 }}
                 disabled={deleting}
-                className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="flex-1 px-4 sm:px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="flex-1 px-4 sm:px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation"
               >
                 {deleting ? 'Deletando...' : 'Sim, Deletar'}
               </button>
@@ -854,8 +856,8 @@ export default function AllProcessesPage() {
       {/* Modal de Edição */}
       {showEditModal && selectedProcess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-auto">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-[#373435]">
                   Editar Processo
@@ -962,12 +964,12 @@ export default function AllProcessesPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 mt-6">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
                   disabled={updating}
-                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation"
                 >
                   Cancelar
                 </button>
@@ -975,7 +977,7 @@ export default function AllProcessesPage() {
                   type="button"
                   onClick={handleSaveEdit}
                   disabled={updating || !editData.name.trim()}
-                  className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation"
                 >
                   {updating ? 'Salvando...' : 'Salvar Alterações'}
                 </button>

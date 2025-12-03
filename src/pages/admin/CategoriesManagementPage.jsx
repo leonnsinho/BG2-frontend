@@ -316,58 +316,58 @@ export default function CategoriesManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="min-h-screen bg-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[#373435] mb-3 flex items-center gap-3">
-              <Tag className="h-8 w-8 text-[#EBA500]" />
-              Gerenciamento de Categorias
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] flex items-center gap-2 sm:gap-3">
+              <Tag className="h-6 w-6 sm:h-8 sm:w-8 text-[#EBA500]" />
+              <span className="truncate">Categorias</span>
             </h1>
-            <p className="text-gray-600 text-lg">
-              Gerencie as categorias de processos do sistema. Alterações são aplicadas automaticamente.
-            </p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-[#EBA500] text-white rounded-xl hover:bg-[#d49400] transition-colors shadow-md hover:shadow-lg min-h-[44px] touch-manipulation w-full sm:w-auto"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Nova Categoria</span>
+            </button>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-[#EBA500] text-white rounded-xl hover:bg-[#d49400] transition-colors shadow-md hover:shadow-lg"
-          >
-            <Plus className="h-5 w-5" />
-            Nova Categoria
-          </button>
+          <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
+            Gerencie as categorias de processos do sistema. Alterações são aplicadas automaticamente.
+          </p>
         </div>
 
         {/* Busca */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
             <input
               type="text"
               placeholder="Buscar categorias..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
+              className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent text-sm sm:text-base min-h-[44px]"
             />
           </div>
         </div>
 
         {/* Lista de Categorias */}
-        <div className="bg-white shadow-sm border border-gray-200/50 rounded-3xl overflow-hidden">
-          <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100/50">
-            <h2 className="text-xl font-semibold text-[#373435] flex items-center gap-2">
-              <Layers className="h-6 w-6 text-[#EBA500]" />
-              Categorias Cadastradas ({filteredCategories.length})
+        <div className="bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl overflow-hidden">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100/50">
+            <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-[#373435] flex items-center gap-2">
+              <Layers className="h-5 w-5 sm:h-6 sm:w-6 text-[#EBA500]" />
+              <span className="truncate">Categorias ({filteredCategories.length})</span>
             </h2>
           </div>
 
           {filteredCategories.length === 0 ? (
-            <div className="px-8 py-12 text-center">
-              <Tag className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 font-medium">
+            <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 text-center">
+              <Tag className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600 font-medium text-sm sm:text-base">
                 {searchTerm ? 'Nenhuma categoria encontrada' : 'Nenhuma categoria cadastrada'}
               </p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
                 {searchTerm 
                   ? 'Tente ajustar o termo de busca' 
                   : 'Clique em "Nova Categoria" para começar'}
@@ -378,69 +378,71 @@ export default function CategoriesManagementPage() {
               {filteredCategories.map((category, index) => (
                 <div
                   key={category.id}
-                  className="px-8 py-6 hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5 transition-all duration-200"
+                  className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5 transition-all duration-200"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     {/* Informações da Categoria */}
-                    <div className="flex items-center gap-6 flex-1">
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-6 flex-1 min-w-0">
                       {/* Cor e Ícone */}
                       <div 
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm"
+                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0"
                         style={{ backgroundColor: category.color + '20' }}
                       >
                         <Tag 
-                          className="h-8 w-8" 
+                          className="h-6 w-6 sm:h-8 sm:w-8" 
                           style={{ color: category.color }} 
                         />
                       </div>
 
                       {/* Detalhes */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-[#373435]">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                          <h3 className="text-base sm:text-lg font-semibold text-[#373435] truncate">
                             {category.name}
                           </h3>
                           
                           {/* Badge de Status */}
-                          {category.is_active ? (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                              <CheckCircle className="h-3 w-3" />
-                              Ativa
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                              <EyeOff className="h-3 w-3" />
-                              Inativa
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {category.is_active ? (
+                              <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                <CheckCircle className="h-3 w-3" />
+                                Ativa
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                <EyeOff className="h-3 w-3" />
+                                Inativa
+                              </span>
+                            )}
 
-                          {/* Contador de Processos */}
-                          <span className="text-sm text-gray-600">
-                            {category.processes_count} processo{category.processes_count !== 1 ? 's' : ''}
-                          </span>
+                            {/* Contador de Processos */}
+                            <span className="text-xs sm:text-sm text-gray-600">
+                              {category.processes_count} processo{category.processes_count !== 1 ? 's' : ''}
+                            </span>
+                          </div>
                         </div>
 
                         {category.description && (
-                          <p className="text-sm text-gray-600 mb-2">
+                          <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-2">
                             {category.description}
                           </p>
                         )}
 
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex items-center gap-2 sm:gap-4 text-xs text-gray-500 flex-wrap">
                           <span>Ordem: {category.order_position}</span>
-                          <span>•</span>
-                          <span>Cor: {category.color}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="truncate">Cor: {category.color}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Ações */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap sm:flex-nowrap">
                       {/* Mover para cima */}
                       <button
                         onClick={() => handleMoveUp(category)}
                         disabled={index === 0 || submitting}
-                        className={`p-2 rounded-xl transition-colors ${
+                        className={`p-2 rounded-lg sm:rounded-xl transition-colors min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 touch-manipulation flex items-center justify-center ${
                           index === 0
                             ? 'text-gray-300 cursor-not-allowed'
                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
@@ -454,7 +456,7 @@ export default function CategoriesManagementPage() {
                       <button
                         onClick={() => handleMoveDown(category)}
                         disabled={index === filteredCategories.length - 1 || submitting}
-                        className={`p-2 rounded-xl transition-colors ${
+                        className={`p-2 rounded-lg sm:rounded-xl transition-colors min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 touch-manipulation flex items-center justify-center ${
                           index === filteredCategories.length - 1
                             ? 'text-gray-300 cursor-not-allowed'
                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
@@ -464,23 +466,23 @@ export default function CategoriesManagementPage() {
                         <ArrowDown className="h-4 w-4" />
                       </button>
 
-                      <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                      <div className="w-px h-6 bg-gray-300 mx-1 hidden sm:block"></div>
 
                       {/* Editar */}
                       <button
                         onClick={() => openEditModal(category)}
                         disabled={submitting}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg sm:rounded-xl transition-colors min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 touch-manipulation flex items-center justify-center"
                         title="Editar categoria"
                       >
-                        <Edit className="h-5 w-5" />
+                        <Edit className="h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
 
                       {/* Ativar/Desativar */}
                       <button
                         onClick={() => handleToggleActive(category)}
                         disabled={submitting}
-                        className={`p-2 rounded-xl transition-colors ${
+                        className={`p-2 rounded-lg sm:rounded-xl transition-colors min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 touch-manipulation flex items-center justify-center ${
                           category.is_active
                             ? 'text-orange-600 hover:bg-orange-50'
                             : 'text-green-600 hover:bg-green-50'
@@ -488,9 +490,9 @@ export default function CategoriesManagementPage() {
                         title={category.is_active ? 'Desativar' : 'Ativar'}
                       >
                         {category.is_active ? (
-                          <EyeOff className="h-5 w-5" />
+                          <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
                         ) : (
-                          <Eye className="h-5 w-5" />
+                          <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
                         )}
                       </button>
 
@@ -498,10 +500,10 @@ export default function CategoriesManagementPage() {
                       <button
                         onClick={() => openDeleteModal(category)}
                         disabled={submitting}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg sm:rounded-xl transition-colors min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 touch-manipulation flex items-center justify-center"
                         title="Deletar categoria"
                       >
-                        <Trash2 className="h-5 w-5" />
+                        <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
                     </div>
                   </div>
@@ -512,12 +514,12 @@ export default function CategoriesManagementPage() {
         </div>
 
         {/* Informações */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-2xl p-6">
-          <div className="flex items-start gap-4">
-            <AlertCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
+        <div className="mt-4 sm:mt-6 bg-blue-50 border border-blue-200 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0 mt-1" />
             <div>
-              <h3 className="font-semibold text-blue-900 mb-2">💡 Como funciona</h3>
-              <ul className="text-sm text-blue-800 space-y-2">
+              <h3 className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">💡 Como funciona</h3>
+              <ul className="text-xs sm:text-sm text-blue-800 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="font-bold">•</span>
                   <span><strong>Editar categoria:</strong> Atualiza automaticamente em todos os processos</span>
@@ -575,14 +577,14 @@ export default function CategoriesManagementPage() {
       {/* Modal de Confirmar Exclusão */}
       {showDeleteModal && selectedCategory && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div className="flex items-center justify-center min-h-screen p-4">
             <div 
-              className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" 
+              className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-60" 
               onClick={() => setShowDeleteModal(false)}
             />
 
-            <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-8 pt-8 pb-6">
+            <div className="relative bg-white rounded-2xl sm:rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-lg max-h-[90vh] overflow-y-auto my-auto">
+              <div className="bg-white px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
                     <Trash2 className="h-7 w-7 text-red-600" />
@@ -634,11 +636,11 @@ export default function CategoriesManagementPage() {
                 </div>
               </div>
 
-              <div className="bg-gray-50 px-8 py-4 flex gap-3 justify-end">
+              <div className="bg-gray-50 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end">
                 <button
                   onClick={() => setShowDeleteModal(false)}
                   disabled={submitting}
-                  className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium min-h-[44px] touch-manipulation"
                 >
                   Cancelar
                 </button>
@@ -646,7 +648,7 @@ export default function CategoriesManagementPage() {
                   <button
                     onClick={handleDelete}
                     disabled={submitting}
-                    className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-manipulation"
                   >
                     {submitting ? 'Deletando...' : 'Deletar Categoria'}
                   </button>
@@ -664,19 +666,19 @@ export default function CategoriesManagementPage() {
 function CategoryModal({ title, formData, setFormData, onSubmit, onClose, submitting, isEdit = false }) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <div className="flex items-center justify-center min-h-screen p-4">
         <div 
-          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" 
+          className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-60" 
           onClick={onClose}
         />
 
-        <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+        <div className="relative bg-white rounded-2xl sm:rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl max-h-[90vh] overflow-y-auto my-auto">
           <form onSubmit={onSubmit}>
-            <div className="bg-white px-8 pt-8 pb-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-[#373435] flex items-center gap-3">
-                  <Tag className="h-7 w-7 text-[#EBA500]" />
-                  {title}
+            <div className="bg-white px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#373435] flex items-center gap-2 sm:gap-3">
+                  <Tag className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-[#EBA500]" />
+                  <span className="truncate">{title}</span>
                 </h3>
                 <button
                   type="button"
@@ -687,17 +689,17 @@ function CategoryModal({ title, formData, setFormData, onSubmit, onClose, submit
                 </button>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Nome */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Nome da Categoria *
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
+                    className="w-full px-3 sm:px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent text-sm sm:text-base min-h-[44px]"
                     placeholder="Ex: Gestão Financeira"
                     required
                     maxLength={100}
@@ -726,13 +728,13 @@ function CategoryModal({ title, formData, setFormData, onSubmit, onClose, submit
                 </div>
 
                 {/* Grid: Cor e Ordem */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   {/* Cor */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                       Cor
                     </label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <input
                         type="color"
                         value={formData.color}
@@ -804,22 +806,22 @@ function CategoryModal({ title, formData, setFormData, onSubmit, onClose, submit
               </div>
             </div>
 
-            <div className="bg-gray-50 px-8 py-4 flex gap-3 justify-end">
+            <div className="bg-gray-50 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={submitting}
-                className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium min-h-[44px] touch-manipulation"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={submitting || !formData.name.trim()}
-                className="px-6 py-3 bg-[#EBA500] text-white rounded-xl hover:bg-[#d49400] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-[#EBA500] text-white rounded-xl hover:bg-[#d49400] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px] touch-manipulation"
               >
                 <Save className="h-4 w-4" />
-                {submitting ? 'Salvando...' : isEdit ? 'Salvar Alterações' : 'Criar Categoria'}
+                <span>{submitting ? 'Salvando...' : isEdit ? 'Salvar Alterações' : 'Criar Categoria'}</span>
               </button>
             </div>
           </form>

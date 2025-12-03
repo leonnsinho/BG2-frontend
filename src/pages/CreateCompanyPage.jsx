@@ -496,57 +496,59 @@ export default function CreateCompanyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
         
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
             
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10">
-                <Building2 className="w-6 h-6 text-[#EBA500]" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 flex-shrink-0">
+                <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-[#EBA500]" />
               </div>
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold text-[#373435] mb-3">Nova Empresa</h1>
-                <p className="text-gray-600 text-lg">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#373435] mb-1 sm:mb-3">Nova Empresa</h1>
+                <p className="text-sm sm:text-base lg:text-lg text-gray-600">
                   Cadastre uma nova empresa no sistema
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={fillTestData}
-                  className="bg-yellow-50 border-yellow-200 text-yellow-800 hover:bg-yellow-100"
+                  className="bg-yellow-50 border-yellow-200 text-yellow-800 hover:bg-yellow-100 min-h-[40px] text-xs sm:text-sm px-2 sm:px-3 touch-manipulation"
                 >
-                  <TestTube className="w-4 h-4 mr-2" />
-                  Dados Fixos
+                  <TestTube className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Dados Fixos</span>
+                  <span className="sm:hidden">Fixo</span>
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={generateRandomData}
-                  className="bg-green-50 border-green-200 text-green-800 hover:bg-green-100"
+                  className="bg-green-50 border-green-200 text-green-800 hover:bg-green-100 min-h-[40px] text-xs sm:text-sm px-2 sm:px-3 touch-manipulation"
                 >
-                  <Shuffle className="w-4 h-4 mr-2" />
+                  <Shuffle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   Brasil
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={generateInternationalData}
-                  className="bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100"
+                  className="bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100 min-h-[40px] text-xs sm:text-sm px-2 sm:px-3 touch-manipulation"
                 >
-                  <Globe className="w-4 h-4 mr-2" />
-                  Internacional
+                  <Globe className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Internacional</span>
+                  <span className="sm:hidden">Intl</span>
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={clearForm}
-                  className="bg-red-50 border-red-200 text-red-800 hover:bg-red-100"
+                  className="bg-red-50 border-red-200 text-red-800 hover:bg-red-100 min-h-[40px] text-xs sm:text-sm px-2 sm:px-3 touch-manipulation"
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
+                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   Limpar
                 </Button>
               </div>
@@ -554,19 +556,19 @@ export default function CreateCompanyPage() {
           </div>
 
           {/* Formulário */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             
             {/* Informações Básicas */}
-            <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-[#373435] flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-[#EBA500]" />
+            <Card className="p-4 sm:p-5 lg:p-6 bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold text-[#373435] flex items-center gap-2">
+                  <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#EBA500]" />
                   Informações Básicas
                 </h2>
                 
                 {/* Toggle Empresa Internacional */}
-                <div className="flex items-center gap-3">
-                  <label className="relative inline-flex items-center cursor-pointer">
+                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                  <label className="relative inline-flex items-center cursor-pointer touch-manipulation">
                     <input
                       type="checkbox"
                       checked={isInternational}
@@ -584,8 +586,8 @@ export default function CreateCompanyPage() {
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#EBA500]/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#EBA500]"></div>
-                    <span className="ms-3 text-sm font-medium text-[#373435]">
-                      🌍 Empresa Internacional
+                    <span className="ms-2 sm:ms-3 text-xs sm:text-sm font-medium text-[#373435]">
+                      🌍 <span className="hidden sm:inline">Empresa</span> Internacional
                     </span>
                   </label>
                 </div>
@@ -593,7 +595,7 @@ export default function CreateCompanyPage() {
               
               {/* Mensagem informativa quando modo internacional ativado */}
               {isInternational && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+                <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-xl sm:rounded-2xl">
                   <div className="flex items-start gap-3">
                     <Globe className="w-5 h-5 text-blue-600 mt-0.5" />
                     <div>
@@ -608,21 +610,22 @@ export default function CreateCompanyPage() {
               )}
 
               {/* Upload de Logo */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-[#373435] mb-3">
+              <div className="mb-4 sm:mb-6">
+                <label className="block text-sm font-medium text-[#373435] mb-2 sm:mb-3">
                   <ImageIcon className="w-4 h-4 inline mr-1" />
                   Logo da Empresa (Opcional)
                 </label>
                 
                 {!logoPreview ? (
                   <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-2xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                        <p className="mb-2 text-sm text-gray-500">
-                          <span className="font-semibold">Clique para fazer upload</span> ou arraste e solte
+                    <label className="flex flex-col items-center justify-center w-full h-40 sm:h-48 border-2 border-gray-300 border-dashed rounded-xl sm:rounded-2xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200 touch-manipulation">
+                      <div className="flex flex-col items-center justify-center pt-4 pb-5 sm:pt-5 sm:pb-6">
+                        <Upload className="w-8 h-8 sm:w-10 sm:h-10 mb-2 sm:mb-3 text-gray-400" />
+                        <p className="mb-1 sm:mb-2 text-xs sm:text-sm text-gray-500 px-2 text-center">
+                          <span className="font-semibold">Clique para fazer upload</span>
+                          <span className="hidden sm:inline"> ou arraste e solte</span>
                         </p>
-                        <p className="text-xs text-gray-500">PNG, JPG, GIF ou WEBP (MAX. 5MB)</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500">PNG, JPG, GIF ou WEBP (MAX. 5MB)</p>
                       </div>
                       <input
                         type="file"
@@ -634,22 +637,22 @@ export default function CreateCompanyPage() {
                   </div>
                 ) : (
                   <div className="relative">
-                    <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+                    <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-xl sm:rounded-2xl">
                       <img
                         src={logoPreview}
                         alt="Preview do logo"
-                        className="w-24 h-24 object-contain rounded-lg bg-white border border-gray-200"
-                      />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-[#373435]">{logoFile?.name}</p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        className="w-20 h-20 sm:w-24 sm:h-24 object-contain rounded-lg bg-white border border-gray-200">
+                      </img>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-sm font-medium text-[#373435] truncate">{logoFile?.name}</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
                           {(logoFile?.size / 1024).toFixed(2)} KB
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={removeLogo}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                        className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg transition-colors duration-200 touch-manipulation flex-shrink-0"
                       >
                         <X className="w-5 h-5" />
                       </button>
@@ -658,7 +661,7 @@ export default function CreateCompanyPage() {
                 )}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-[#373435] mb-2">
                     Nome da Empresa *
@@ -721,13 +724,13 @@ export default function CreateCompanyPage() {
             </Card>
 
             {/* Informações de Contato */}
-            <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl">
-              <h2 className="text-xl font-semibold text-[#373435] mb-4 flex items-center gap-2">
-                <Phone className="w-5 h-5 text-[#EBA500]" />
+            <Card className="p-4 sm:p-5 lg:p-6 bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl">
+              <h2 className="text-lg sm:text-xl font-semibold text-[#373435] mb-3 sm:mb-4 flex items-center gap-2">
+                <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-[#EBA500]" />
                 Informações de Contato
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-[#373435] mb-2">
                     <Mail className="w-4 h-4 inline mr-1" />
@@ -777,13 +780,13 @@ export default function CreateCompanyPage() {
             </Card>
 
             {/* Endereço */}
-            <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl">
-              <h2 className="text-xl font-semibold text-[#373435] mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-[#EBA500]" />
+            <Card className="p-4 sm:p-5 lg:p-6 bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl">
+              <h2 className="text-lg sm:text-xl font-semibold text-[#373435] mb-3 sm:mb-4 flex items-center gap-2">
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#EBA500]" />
                 Endereço (Opcional)
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 
                 {/* Campo País - sempre visível */}
                 <div>
@@ -896,22 +899,22 @@ export default function CreateCompanyPage() {
             </Card>
 
             {/* Informações do Sistema */}
-            <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl">
-              <h2 className="text-xl font-semibold text-[#373435] mb-4 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-[#EBA500]" />
+            <Card className="p-4 sm:p-5 lg:p-6 bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl">
+              <h2 className="text-lg sm:text-xl font-semibold text-[#373435] mb-3 sm:mb-4 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-[#EBA500]" />
                 Configurações Iniciais
               </h2>
               
-              <div className="bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 border border-[#EBA500]/30 rounded-2xl p-4">
-                <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-[#EBA500] mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-[#373435] mb-1">Configuração Automática</h4>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• Plano: Básico (pode ser alterado posteriormente)</li>
+              <div className="bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 border border-[#EBA500]/30 rounded-xl sm:rounded-2xl p-3 sm:p-4">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <Check className="w-4 h-4 sm:w-5 sm:h-5 text-[#EBA500] mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-[#373435] mb-1 text-sm sm:text-base">Configuração Automática</h4>
+                    <ul className="text-xs sm:text-sm text-gray-600 space-y-1">
+                      <li className="break-words">• Plano: Básico <span className="hidden sm:inline">(pode ser alterado posteriormente)</span></li>
                       <li>• Status: Ativo</li>
-                      <li>• Criado por: {user?.email}</li>
-                      <li>• Data de criação: {new Date().toLocaleDateString('pt-BR')}</li>
+                      <li className="break-words truncate">• Criado por: {user?.email}</li>
+                      <li className="whitespace-nowrap">• Data: {new Date().toLocaleDateString('pt-BR')}</li>
                     </ul>
                   </div>
                 </div>
@@ -919,12 +922,13 @@ export default function CreateCompanyPage() {
             </Card>
 
             {/* Botões de Ação */}
-            <div className="flex items-center justify-end gap-4">
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 sm:gap-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => navigate('/dashboard')}
                 disabled={loading}
+                className="w-full sm:w-auto min-h-[44px] touch-manipulation"
               >
                 Cancelar
               </Button>
@@ -932,7 +936,7 @@ export default function CreateCompanyPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="min-w-[120px]"
+                className="w-full sm:w-auto min-w-[120px] min-h-[44px] touch-manipulation"
               >
                 {loading ? (
                   <>

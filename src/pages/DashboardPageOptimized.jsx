@@ -188,20 +188,22 @@ const SuperAdminStatCard = memo(({ stat }) => {
   }
   
   return (
-    <div className="bg-white border border-neutral-200 rounded-lg p-4 hover:shadow-sm hover:border-neutral-300 transition-all duration-200">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center flex-shrink-0">
-            <stat.icon className="w-4 h-4 text-white" />
+    <div className="bg-white border border-neutral-200 rounded-xl p-4 hover:shadow-md hover:border-primary-300 transition-all duration-200">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+            <stat.icon className="w-6 h-6 text-white" />
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-neutral-600 truncate">{stat.name}</p>
-            <p className="text-xl font-bold text-neutral-900">{stat.value}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-0.5">{stat.name}</p>
+            <p className="text-2xl font-black text-neutral-900">{stat.value}</p>
           </div>
         </div>
-        <div className="flex items-center space-x-1 flex-shrink-0">
-          {getTrendIcon(stat.trend)}
-          <span className="text-xs font-medium text-neutral-500">{stat.change}</span>
+        <div className="flex flex-col items-end flex-shrink-0">
+          <div className="flex items-center space-x-1">
+            {getTrendIcon(stat.trend)}
+          </div>
+          <span className="text-xs font-medium text-neutral-500 mt-1 text-right">{stat.change}</span>
         </div>
       </div>
     </div>
@@ -215,15 +217,15 @@ const QuickActionCard = memo(({ action }) => {
   return (
     <a
       href={action.href}
-      className={`group block p-6 bg-gradient-to-br ${action.bgGradient} ${action.hoverGradient} rounded-2xl text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl transform`}
+      className={`group block p-4 bg-gradient-to-br ${action.bgGradient} ${action.hoverGradient} rounded-2xl text-white transition-all duration-300 hover:scale-105 active:scale-95 transform shadow-lg hover:shadow-xl`}
     >
-      <div className="flex items-start">
-        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-4 group-hover:bg-white/30 transition-colors">
-          <action.icon className="w-6 h-6 text-white" />
+      <div className="flex flex-col h-full">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-3 group-hover:bg-white/30 transition-colors shadow-sm">
+          <action.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
         </div>
+        <h4 className="font-bold text-white mb-1 text-sm sm:text-base leading-tight">{action.title}</h4>
+        <p className="text-white/90 text-xs font-medium leading-snug">{action.description}</p>
       </div>
-      <h4 className="font-bold text-white mb-2">{action.title}</h4>
-      <p className="text-white/80 text-sm font-medium">{action.description}</p>
     </a>
   )
 })
@@ -233,14 +235,14 @@ QuickActionCard.displayName = 'QuickActionCard'
 // Componente de atividade BG2
 const ActivityItem = memo(({ activity }) => {
   return (
-    <div className="group flex items-start space-x-4 p-4 rounded-xl hover:bg-neutral-50 transition-all duration-200">
-      <div className={`w-12 h-12 ${activity.bgColor} rounded-xl flex items-center justify-center flex-shrink-0`}>
-        <activity.icon className={`w-6 h-6 ${activity.color}`} />
+    <div className="group flex items-start space-x-3 p-3 rounded-xl hover:bg-neutral-50 active:bg-neutral-100 transition-all duration-200 cursor-pointer">
+      <div className={`w-11 h-11 ${activity.bgColor} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm`}>
+        <activity.icon className={`w-5 h-5 ${activity.color}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <h4 className="font-semibold text-neutral-900 mb-1">{activity.title}</h4>
-        <p className="text-sm text-neutral-600 mb-2">{activity.description}</p>
-        <span className="text-xs text-neutral-400 font-medium">{activity.time}</span>
+        <h4 className="font-bold text-neutral-900 text-sm leading-tight mb-1">{activity.title}</h4>
+        <p className="text-xs text-neutral-600 leading-snug mb-1.5 line-clamp-2">{activity.description}</p>
+        <span className="text-xs text-neutral-400 font-semibold">{activity.time}</span>
       </div>
     </div>
   )
@@ -261,11 +263,11 @@ const SystemHealthItem = memo(({ health }) => {
   }
 
   return (
-    <div className="text-center p-4">
-      <div className={`w-16 h-16 mx-auto ${health.bgColor} rounded-2xl flex items-center justify-center mb-3`}>
-        <span className={`text-xl font-black ${health.color}`}>{health.value}</span>
+    <div className="text-center p-3">
+      <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto ${health.bgColor} rounded-2xl flex items-center justify-center mb-2 shadow-inner`}>
+        <span className={`text-lg sm:text-xl font-black ${health.color}`}>{health.value}</span>
       </div>
-      <h4 className="font-semibold text-neutral-900 text-sm">{health.metric}</h4>
+      <h4 className="font-bold text-neutral-900 text-xs leading-tight">{health.metric}</h4>
     </div>
   )
 })
@@ -316,46 +318,45 @@ export function DashboardPage() {
   if (isSuperAdmin) {
     return (
       <Layout>
-        <div className="min-h-screen bg-white">
-          <div className="space-y-8">
+        <div className="min-h-screen bg-white px-3 sm:px-0">
+          <div className="space-y-4 sm:space-y-6 lg:space-y-8">
             
             {/* Header BG2 */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 via-primary-400/5 to-transparent rounded-3xl"></div>
-              <div className="relative p-8">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                  <div>
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
-                        <Shield className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h1 className="text-4xl font-black text-neutral-900">
-                          Olá, {userInfo.name}! 
-                        </h1>
-                        <p className="text-lg text-neutral-600 font-light flex items-center">
-                          <Globe className="w-4 h-4 mr-2 text-primary-500" />
-                          {userInfo.roleDisplay} • Controle Global
-                        </p>
-                      </div>
+            <div className="relative -mx-3 sm:mx-0">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-primary-400/5 to-transparent"></div>
+              <div className="relative p-4 sm:p-6 lg:p-8">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                      <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h1 className="text-xl sm:text-2xl lg:text-4xl font-black text-neutral-900 leading-tight">
+                        Olá, {userInfo.name}!
+                      </h1>
+                      <p className="text-xs sm:text-sm lg:text-lg text-neutral-600 font-medium flex items-center mt-1">
+                        <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 text-primary-500 flex-shrink-0" />
+                        <span>{userInfo.roleDisplay}</span>
+                        <span className="hidden sm:inline ml-1.5">• Controle Global</span>
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center gap-2">
                     <Button 
                       variant="outline" 
-                      size="lg" 
-                      className="bg-white/80 backdrop-blur-sm border-neutral-200 hover:bg-white hover:shadow-md transition-all duration-200"
+                      size="sm"
+                      className="flex-1 sm:flex-none bg-white/90 backdrop-blur-sm border-neutral-200 hover:bg-white hover:shadow-md transition-all duration-200 h-10"
                     >
-                      <Bell className="w-5 h-5 mr-2 text-neutral-600" />
-                      Alertas
+                      <Bell className="w-4 h-4 text-neutral-600" />
+                      <span className="ml-2 text-sm font-medium">Alertas</span>
                     </Button>
                     <Button 
                       variant="outline" 
-                      size="lg"
-                      className="bg-white/80 backdrop-blur-sm border-neutral-200 hover:bg-white hover:shadow-md transition-all duration-200"
+                      size="sm"
+                      className="flex-1 sm:flex-none bg-white/90 backdrop-blur-sm border-neutral-200 hover:bg-white hover:shadow-md transition-all duration-200 h-10"
                     >
-                      <Settings className="w-5 h-5 mr-2 text-neutral-600" />
-                      Configurações
+                      <Settings className="w-4 h-4 text-neutral-600" />
+                      <span className="ml-2 text-sm font-medium">Config</span>
                     </Button>
                   </div>
                 </div>
@@ -363,7 +364,7 @@ export function DashboardPage() {
             </div>
 
             {/* Stats Grid BG2 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {SUPER_ADMIN_STATS.map((stat) => (
                 <SuperAdminStatCard key={stat.name} stat={stat} />
               ))}
@@ -371,32 +372,34 @@ export function DashboardPage() {
 
             {/* Quick Actions Grid BG2 */}
             <div>
-              <h2 className="text-2xl font-bold text-neutral-900 mb-6">Ações Rápidas</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-black text-neutral-900 mb-3 sm:mb-4">
+                Ações Rápidas
+              </h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {QUICK_ACTIONS.map((action) => (
                   <QuickActionCard key={action.title} action={action} />
                 ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
               
               {/* Recent Activities BG2 */}
               <div className="lg:col-span-2">
-                <div className="bg-white rounded-3xl shadow-sm border border-neutral-100 overflow-hidden">
-                  <div className="p-8 border-b border-neutral-100 bg-white">
+                <div className="bg-white rounded-2xl shadow-md border border-neutral-100 overflow-hidden">
+                  <div className="p-4 sm:p-6 border-b border-neutral-100 bg-gradient-to-r from-white to-neutral-50">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-bold text-neutral-900 flex items-center">
-                        <Activity className="w-6 h-6 mr-3 text-primary-500" />
-                        Atividades do Sistema
+                      <h3 className="text-base sm:text-lg font-black text-neutral-900 flex items-center">
+                        <Activity className="w-5 h-5 mr-2 text-primary-500" />
+                        <span>Atividades Recentes</span>
                       </h3>
-                      <Button variant="outline" size="sm" className="bg-white border-neutral-200">
-                        Ver todas
+                      <Button variant="outline" size="sm" className="bg-white border-neutral-200 text-xs px-3 py-1.5">
+                        Ver
                       </Button>
                     </div>
                   </div>
-                  <div className="p-6">
-                    <div className="space-y-2">
+                  <div className="p-3 sm:p-4 max-h-[400px] overflow-y-auto">
+                    <div className="space-y-0.5">
                       {RECENT_ACTIVITIES.map((activity) => (
                         <ActivityItem key={activity.id} activity={activity} />
                       ))}
@@ -407,15 +410,15 @@ export function DashboardPage() {
 
               {/* System Health BG2 */}
               <div>
-                <div className="bg-white rounded-3xl shadow-sm border border-neutral-100 overflow-hidden">
-                  <div className="p-6 border-b border-neutral-100 bg-gradient-to-r from-success-50 to-white">
-                    <h3 className="text-lg font-bold text-neutral-900 flex items-center">
-                      <Zap className="w-5 h-5 mr-2 text-success-500" />
-                      Status do Sistema
+                <div className="bg-white rounded-2xl shadow-md border border-neutral-100 overflow-hidden">
+                  <div className="p-4 sm:p-5 border-b border-neutral-100 bg-gradient-to-br from-success-50 to-white">
+                    <h3 className="text-base sm:text-lg font-black text-neutral-900 flex items-center">
+                      <Zap className="w-5 h-5 mr-2 text-success-600" />
+                      Status
                     </h3>
                   </div>
-                  <div className="p-6">
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4">
+                    <div className="grid grid-cols-2 gap-3">
                       {SYSTEM_HEALTH.map((health, index) => (
                         <SystemHealthItem key={index} health={health} />
                       ))}
@@ -426,32 +429,32 @@ export function DashboardPage() {
             </div>
 
             {/* Global Overview BG2 */}
-            <div className="bg-gradient-to-br from-white via-neutral-50 to-primary-50/20 rounded-3xl shadow-sm border border-neutral-100 p-8">
-              <h3 className="text-2xl font-bold text-neutral-900 mb-8 flex items-center">
-                <Globe className="w-7 h-7 mr-3 text-primary-500" />
-                Visão Global do Sistema
+            <div className="bg-gradient-to-br from-white via-neutral-50 to-primary-50/20 rounded-2xl shadow-md border border-neutral-100 p-5 sm:p-6 lg:p-8">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-black text-neutral-900 mb-5 sm:mb-6 lg:mb-8 flex items-center">
+                <Globe className="w-6 h-6 mr-2.5 text-primary-500" />
+                <span>Visão Global</span>
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="text-center">
-                  <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary-100 to-primary-200 rounded-3xl flex items-center justify-center mb-4 shadow-inner">
-                    <span className="text-3xl font-black text-primary-700">85%</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
+                <div className="text-center bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mb-3 shadow-lg">
+                    <span className="text-2xl sm:text-3xl font-black text-primary-700">85%</span>
                   </div>
-                  <h4 className="font-bold text-neutral-900 mb-2">Adoção Geral</h4>
-                  <p className="text-sm text-neutral-600">210 de 248 usuários ativos</p>
+                  <h4 className="font-black text-neutral-900 mb-1.5 text-sm sm:text-base">Adoção Geral</h4>
+                  <p className="text-xs text-neutral-600 font-medium">210 de 248 usuários</p>
                 </div>
-                <div className="text-center">
-                  <div className="w-24 h-24 mx-auto bg-gradient-to-br from-success-100 to-success-200 rounded-3xl flex items-center justify-center mb-4 shadow-inner">
-                    <span className="text-3xl font-black text-success-700">92%</span>
+                <div className="text-center bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gradient-to-br from-success-100 to-success-200 rounded-2xl flex items-center justify-center mb-3 shadow-lg">
+                    <span className="text-2xl sm:text-3xl font-black text-success-700">92%</span>
                   </div>
-                  <h4 className="font-bold text-neutral-900 mb-2">Satisfação</h4>
-                  <p className="text-sm text-neutral-600">Baseado em feedback</p>
+                  <h4 className="font-black text-neutral-900 mb-1.5 text-sm sm:text-base">Satisfação</h4>
+                  <p className="text-xs text-neutral-600 font-medium">Baseado em feedback</p>
                 </div>
-                <div className="text-center">
-                  <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-100 to-blue-200 rounded-3xl flex items-center justify-center mb-4 shadow-inner">
-                    <span className="text-3xl font-black text-blue-700">127</span>
+                <div className="text-center bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mb-3 shadow-lg">
+                    <span className="text-2xl sm:text-3xl font-black text-blue-700">127</span>
                   </div>
-                  <h4 className="font-bold text-neutral-900 mb-2">Jornadas Ativas</h4>
-                  <p className="text-sm text-neutral-600">Across 12 companies</p>
+                  <h4 className="font-black text-neutral-900 mb-1.5 text-sm sm:text-base">Jornadas Ativas</h4>
+                  <p className="text-xs text-neutral-600 font-medium">Em 12 empresas</p>
                 </div>
               </div>
             </div>

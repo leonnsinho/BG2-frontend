@@ -317,83 +317,83 @@ export default function ProcessRequestsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#373435] mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] mb-2">
             Solicitações de Processos
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Gerencie solicitações de criação de novos processos feitas por administradores de empresas
           </p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <Clock className="h-6 w-6 text-yellow-600" />
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+              <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg w-fit">
+                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
               </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">
+              <div className="sm:ml-4">
+                <div className="text-xl sm:text-2xl font-bold text-gray-900">
                   {requests.filter(r => r.status === 'pending').length}
                 </div>
-                <div className="text-sm text-gray-600">Pendentes</div>
+                <div className="text-xs sm:text-sm text-gray-600">Pendentes</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+              <div className="p-2 sm:p-3 bg-green-100 rounded-lg w-fit">
+                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">
+              <div className="sm:ml-4">
+                <div className="text-xl sm:text-2xl font-bold text-gray-900">
                   {requests.filter(r => r.status === 'approved').length}
                 </div>
-                <div className="text-sm text-gray-600">Aprovados</div>
+                <div className="text-xs sm:text-sm text-gray-600">Aprovados</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-red-100 rounded-lg">
-                <XCircle className="h-6 w-6 text-red-600" />
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+              <div className="p-2 sm:p-3 bg-red-100 rounded-lg w-fit">
+                <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
               </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">
+              <div className="sm:ml-4">
+                <div className="text-xl sm:text-2xl font-bold text-gray-900">
                   {requests.filter(r => r.status === 'rejected').length}
                 </div>
-                <div className="text-sm text-gray-600">Rejeitados</div>
+                <div className="text-xs sm:text-sm text-gray-600">Rejeitados</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <FileText className="h-6 w-6 text-blue-600" />
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+              <div className="p-2 sm:p-3 bg-blue-100 rounded-lg w-fit">
+                <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">
+              <div className="sm:ml-4">
+                <div className="text-xl sm:text-2xl font-bold text-gray-900">
                   {requests.length}
                 </div>
-                <div className="text-sm text-gray-600">Total</div>
+                <div className="text-xs sm:text-sm text-gray-600">Total</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-4 mb-6">
-          <div className="flex items-center space-x-3">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[40px] touch-manipulation ${
                 statusFilter === 'all'
                   ? 'bg-[#EBA500] text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -403,7 +403,7 @@ export default function ProcessRequestsPage() {
             </button>
             <button
               onClick={() => setStatusFilter('pending')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[40px] touch-manipulation ${
                 statusFilter === 'pending'
                   ? 'bg-yellow-500 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -413,7 +413,7 @@ export default function ProcessRequestsPage() {
             </button>
             <button
               onClick={() => setStatusFilter('approved')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[40px] touch-manipulation ${
                 statusFilter === 'approved'
                   ? 'bg-green-500 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -423,7 +423,7 @@ export default function ProcessRequestsPage() {
             </button>
             <button
               onClick={() => setStatusFilter('rejected')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[40px] touch-manipulation ${
                 statusFilter === 'rejected'
                   ? 'bg-red-500 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -435,11 +435,11 @@ export default function ProcessRequestsPage() {
         </div>
 
         {/* Lista de Solicitações */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {filteredRequests.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-12 text-center">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-8 sm:p-12 text-center">
+              <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-sm sm:text-base text-gray-600">
                 {statusFilter === 'all' 
                   ? 'Nenhuma solicitação encontrada'
                   : `Nenhuma solicitação ${getStatusConfig(statusFilter).label.toLowerCase()}`
@@ -454,12 +454,12 @@ export default function ProcessRequestsPage() {
               return (
                 <div
                   key={request.id}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-shadow"
+                  className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6 hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                           {request.process_name}
                         </h3>
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor} border`}>
@@ -468,40 +468,40 @@ export default function ProcessRequestsPage() {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                        <div className="flex items-center text-gray-600">
-                          <Building2 className="h-4 w-4 mr-2" />
-                          <span>{request.companies?.name}</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm mb-3 sm:mb-4">
+                        <div className="flex items-center text-gray-600 min-w-0">
+                          <Building2 className="h-4 w-4 mr-2 flex-shrink-0" />
+                          <span className="truncate">{request.companies?.name}</span>
+                        </div>
+                        <div className="flex items-center text-gray-600 min-w-0">
+                          <Target className="h-4 w-4 mr-2 flex-shrink-0" />
+                          <span className="capitalize truncate">{request.journey_slug?.replace('-', ' ')}</span>
+                        </div>
+                        <div className="flex items-center text-gray-600 min-w-0">
+                          <User className="h-4 w-4 mr-2 flex-shrink-0" />
+                          <span className="truncate">{request.profiles?.full_name || request.profiles?.email}</span>
                         </div>
                         <div className="flex items-center text-gray-600">
-                          <Target className="h-4 w-4 mr-2" />
-                          <span className="capitalize">{request.journey_slug?.replace('-', ' ')}</span>
-                        </div>
-                        <div className="flex items-center text-gray-600">
-                          <User className="h-4 w-4 mr-2" />
-                          <span>{request.profiles?.full_name || request.profiles?.email}</span>
-                        </div>
-                        <div className="flex items-center text-gray-600">
-                          <Calendar className="h-4 w-4 mr-2" />
+                          <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
                           <span>{formatDate(request.created_at)}</span>
                         </div>
                       </div>
 
                       {request.process_description && (
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-2">
                           {request.process_description.substring(0, 150)}
                           {request.process_description.length > 150 ? '...' : ''}
                         </p>
                       )}
                     </div>
 
-                    <div className="flex items-center space-x-2 ml-4">
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                       <button
                         onClick={() => {
                           setSelectedRequest(request)
                           setShowDetailsModal(true)
                         }}
-                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors min-h-[40px] min-w-[40px] touch-manipulation flex items-center justify-center"
                         title="Ver detalhes"
                       >
                         <Eye className="h-5 w-5" />
@@ -511,11 +511,11 @@ export default function ProcessRequestsPage() {
                         <>
                           <button
                             onClick={() => handleOpenEdit(request)}
-                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                            className="px-3 sm:px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center gap-2 min-h-[40px] touch-manipulation"
                             title="Editar processo"
                           >
                             <Edit className="h-4 w-4" />
-                            Editar
+                            <span>Editar</span>
                           </button>
                           
                           <button
@@ -524,12 +524,12 @@ export default function ProcessRequestsPage() {
                               setReviewData({ status: 'approved', admin_notes: '' })
                               setShowReviewModal(true)
                             }}
-                            className="px-4 py-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white rounded-lg font-medium transition-colors"
+                            className="px-3 sm:px-4 py-2 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[40px] touch-manipulation"
                           >
                             Revisar
                           </button>
                         </>
-                      )}
+                      )}>
                     </div>
                   </div>
                 </div>
@@ -542,8 +542,8 @@ export default function ProcessRequestsPage() {
       {/* Modal de Detalhes */}
       {showDetailsModal && selectedRequest && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-auto">
+            <div className="p-4 sm:p-6">
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -669,8 +669,8 @@ export default function ProcessRequestsPage() {
       {/* Modal de Revisão */}
       {showReviewModal && selectedRequest && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full">
-            <form onSubmit={handleReview} className="p-6">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto my-auto">
+            <form onSubmit={handleReview} className="p-4 sm:p-6">
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -763,19 +763,19 @@ export default function ProcessRequestsPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 mt-6">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowReviewModal(false)}
                   disabled={updating}
-                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={updating || (reviewData.status === 'rejected' && !reviewData.admin_notes.trim())}
-                  className={`px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 ${
+                  className={`w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation ${
                     reviewData.status === 'approved'
                       ? 'bg-green-600 hover:bg-green-700 text-white'
                       : 'bg-red-600 hover:bg-red-700 text-white'
@@ -792,8 +792,8 @@ export default function ProcessRequestsPage() {
       {/* Modal de Edição */}
       {showEditModal && selectedRequest && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-auto">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-[#373435]">
                   Editar Processo
@@ -939,12 +939,12 @@ export default function ProcessRequestsPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 mt-6">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
                   disabled={updating}
-                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation"
                 >
                   Cancelar
                 </button>
@@ -952,7 +952,7 @@ export default function ProcessRequestsPage() {
                   type="button"
                   onClick={handleSaveEdit}
                   disabled={updating || !editData.process_name.trim()}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation"
                 >
                   {updating ? 'Salvando...' : 'Salvar Alterações'}
                 </button>

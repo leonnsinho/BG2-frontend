@@ -668,34 +668,34 @@ const DashboardPage = memo(() => {
 
     return (
       <div className="min-h-screen bg-white">
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
           
           {/* Saudação personalizada */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-[#373435] mb-2">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] mb-2">
               {getGreeting()}, {profile?.full_name || user?.email?.split('@')[0] || 'Admin'}!
             </h1>
-            <p className="text-lg text-neutral-600">
+            <p className="text-sm sm:text-base lg:text-lg text-neutral-600">
               Bem-vindo ao painel administrativo do sistema
             </p>
           </div>
             
             {/* Header com botão de refresh se houver erro */}
             {statsError && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl">
-                <div className="flex items-center justify-between">
+              <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl sm:rounded-2xl">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-red-500 rounded-xl flex items-center justify-center">
+                    <div className="w-8 h-8 bg-red-500 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
                       <Activity className="w-4 h-4 text-white" />
                     </div>
-                    <div>
-                      <p className="font-semibold text-red-800">Erro ao carregar estatísticas</p>
-                      <p className="text-sm text-red-600">{statsError}</p>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-red-800 text-sm sm:text-base">Erro ao carregar estatísticas</p>
+                      <p className="text-xs sm:text-sm text-red-600 truncate">{statsError}</p>
                     </div>
                   </div>
                   <button
                     onClick={refresh}
-                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-xl transition-colors"
+                    className="w-full sm:w-auto px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl transition-colors"
                   >
                     Tentar Novamente
                   </button>
@@ -704,13 +704,13 @@ const DashboardPage = memo(() => {
             )}
             
             {/* 🔥 NOVO: Cards de KPIs Principais com Comparativos */}
-            <div className="mb-12">
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold text-[#373435] mb-2">Visão Geral do Sistema</h3>
-                <p className="text-[#373435]/60">Principais indicadores em tempo real</p>
+            <div className="mb-8 sm:mb-10 lg:mb-12">
+              <div className="mb-4 sm:mb-6">
+                <h3 className="text-xl sm:text-2xl font-bold text-[#373435] mb-1 sm:mb-2">Visão Geral do Sistema</h3>
+                <p className="text-xs sm:text-sm text-[#373435]/60">Principais indicadores em tempo real</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 <TrendCard
                   title="Total de Empresas"
                   value={stats.activeCompanies.value || '0'}
@@ -742,37 +742,37 @@ const DashboardPage = memo(() => {
             </div>
 
             {/* 🔥 NOVO: Progresso Semanal com Gráficos Visuais */}
-            <div className="mb-12">
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold text-[#373435] mb-2">Progresso Semanal</h3>
-                <p className="text-[#373435]/60">Evolução detalhada dos últimos 7 dias com comparativos</p>
+            <div className="mb-8 sm:mb-10 lg:mb-12">
+              <div className="mb-4 sm:mb-6">
+                <h3 className="text-xl sm:text-2xl font-bold text-[#373435] mb-1 sm:mb-2">Progresso Semanal</h3>
+                <p className="text-xs sm:text-sm text-[#373435]/60">Evolução detalhada dos últimos 7 dias com comparativos</p>
               </div>
 
               {/* Grid de Gráficos */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
                 {/* Gráfico de Logins */}
-                <div className="bg-white border-2 border-blue-500/20 rounded-3xl p-6">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="bg-white border-2 border-blue-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
                     <div>
-                      <h4 className="text-lg font-bold text-[#373435] mb-1">Logins Diários</h4>
-                      <p className="text-sm text-gray-600">Total da semana: {metrics.loginsWeek.current || 0}</p>
+                      <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-0.5 sm:mb-1">Logins Diários</h4>
+                      <p className="text-xs sm:text-sm text-gray-600">Total da semana: {metrics.loginsWeek.current || 0}</p>
                     </div>
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                    <div className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm ${
                       weeklyComparison?.logins?.trend === 'up' ? 'bg-green-50' :
                       weeklyComparison?.logins?.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
                     }`}>
                       {weeklyComparison?.logins?.trend === 'up' ? (
-                        <ArrowUpRight className="h-4 w-4 text-green-600" />
+                        <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
                       ) : weeklyComparison?.logins?.trend === 'down' ? (
-                        <ArrowDownRight className="h-4 w-4 text-red-600" />
+                        <ArrowDownRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600" />
                       ) : (
-                        <Minus className="h-4 w-4 text-gray-600" />
+                        <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-600" />
                       )}
-                      <span className={`text-sm font-semibold ${
+                      <span className={`font-semibold ${
                         weeklyComparison?.logins?.trend === 'up' ? 'text-green-600' :
                         weeklyComparison?.logins?.trend === 'down' ? 'text-red-600' : 'text-gray-600'
                       }`}>
-                        {weeklyComparison?.logins?.value || '0%'} vs semana passada
+                        {weeklyComparison?.logins?.value || '0%'}
                       </span>
                     </div>
                   </div>
@@ -785,28 +785,28 @@ const DashboardPage = memo(() => {
                 </div>
 
                 {/* Gráfico de Novos Usuários */}
-                <div className="bg-white border-2 border-green-500/20 rounded-3xl p-6">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="bg-white border-2 border-green-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
                     <div>
-                      <h4 className="text-lg font-bold text-[#373435] mb-1">Novos Usuários</h4>
-                      <p className="text-sm text-gray-600">Total da semana: {metrics.newAccounts.current || 0}</p>
+                      <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-0.5 sm:mb-1">Novos Usuários</h4>
+                      <p className="text-xs sm:text-sm text-gray-600">Total da semana: {metrics.newAccounts.current || 0}</p>
                     </div>
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                    <div className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm ${
                       weeklyComparison?.newAccounts?.trend === 'up' ? 'bg-green-50' :
                       weeklyComparison?.newAccounts?.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
                     }`}>
                       {weeklyComparison?.newAccounts?.trend === 'up' ? (
-                        <ArrowUpRight className="h-4 w-4 text-green-600" />
+                        <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
                       ) : weeklyComparison?.newAccounts?.trend === 'down' ? (
-                        <ArrowDownRight className="h-4 w-4 text-red-600" />
+                        <ArrowDownRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600" />
                       ) : (
-                        <Minus className="h-4 w-4 text-gray-600" />
+                        <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-600" />
                       )}
-                      <span className={`text-sm font-semibold ${
+                      <span className={`font-semibold ${
                         weeklyComparison?.newAccounts?.trend === 'up' ? 'text-green-600' :
                         weeklyComparison?.newAccounts?.trend === 'down' ? 'text-red-600' : 'text-gray-600'
                       }`}>
-                        {weeklyComparison?.newAccounts?.value || '0%'} vs semana passada
+                        {weeklyComparison?.newAccounts?.value || '0%'}
                       </span>
                     </div>
                   </div>
@@ -819,28 +819,28 @@ const DashboardPage = memo(() => {
                 </div>
 
                 {/* Gráfico de Tarefas */}
-                <div className="bg-white border-2 border-[#EBA500]/20 rounded-3xl p-6">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="bg-white border-2 border-[#EBA500]/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
                     <div>
-                      <h4 className="text-lg font-bold text-[#373435] mb-1">Tarefas Criadas</h4>
-                      <p className="text-sm text-gray-600">Total da semana: {metrics.newTasks.current || 0}</p>
+                      <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-0.5 sm:mb-1">Tarefas Criadas</h4>
+                      <p className="text-xs sm:text-sm text-gray-600">Total da semana: {metrics.newTasks.current || 0}</p>
                     </div>
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                    <div className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm ${
                       weeklyComparison?.tasks?.trend === 'up' ? 'bg-green-50' :
                       weeklyComparison?.tasks?.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
                     }`}>
                       {weeklyComparison?.tasks?.trend === 'up' ? (
-                        <ArrowUpRight className="h-4 w-4 text-green-600" />
+                        <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
                       ) : weeklyComparison?.tasks?.trend === 'down' ? (
-                        <ArrowDownRight className="h-4 w-4 text-red-600" />
+                        <ArrowDownRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600" />
                       ) : (
-                        <Minus className="h-4 w-4 text-gray-600" />
+                        <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-600" />
                       )}
-                      <span className={`text-sm font-semibold ${
+                      <span className={`font-semibold ${
                         weeklyComparison?.tasks?.trend === 'up' ? 'text-green-600' :
                         weeklyComparison?.tasks?.trend === 'down' ? 'text-red-600' : 'text-gray-600'
                       }`}>
-                        {weeklyComparison?.tasks?.value || '0%'} vs semana passada
+                        {weeklyComparison?.tasks?.value || '0%'}
                       </span>
                     </div>
                   </div>
@@ -853,28 +853,28 @@ const DashboardPage = memo(() => {
                 </div>
 
                 {/* Gráfico de Empresas */}
-                <div className="bg-white border-2 border-purple-500/20 rounded-3xl p-6">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="bg-white border-2 border-purple-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
                     <div>
-                      <h4 className="text-lg font-bold text-[#373435] mb-1">Empresas Cadastradas</h4>
-                      <p className="text-sm text-gray-600">Total da semana: {metrics.newCompanies.current || 0}</p>
+                      <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-0.5 sm:mb-1">Empresas Cadastradas</h4>
+                      <p className="text-xs sm:text-sm text-gray-600">Total da semana: {metrics.newCompanies.current || 0}</p>
                     </div>
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                    <div className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm ${
                       weeklyComparison?.newCompanies?.trend === 'up' ? 'bg-green-50' :
                       weeklyComparison?.newCompanies?.trend === 'down' ? 'bg-red-50' : 'bg-gray-50'
                     }`}>
                       {weeklyComparison?.newCompanies?.trend === 'up' ? (
-                        <ArrowUpRight className="h-4 w-4 text-green-600" />
+                        <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
                       ) : weeklyComparison?.newCompanies?.trend === 'down' ? (
-                        <ArrowDownRight className="h-4 w-4 text-red-600" />
+                        <ArrowDownRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600" />
                       ) : (
-                        <Minus className="h-4 w-4 text-gray-600" />
+                        <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-600" />
                       )}
-                      <span className={`text-sm font-semibold ${
+                      <span className={`font-semibold ${
                         weeklyComparison?.newCompanies?.trend === 'up' ? 'text-green-600' :
                         weeklyComparison?.newCompanies?.trend === 'down' ? 'text-red-600' : 'text-gray-600'
                       }`}>
-                        {weeklyComparison?.newCompanies?.value || '0%'} vs semana passada
+                        {weeklyComparison?.newCompanies?.value || '0%'}
                       </span>
                     </div>
                   </div>
@@ -888,12 +888,12 @@ const DashboardPage = memo(() => {
               </div>
 
               {/* Progress Bars Resumidas */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 border-2 border-gray-200 rounded-3xl p-6">
-                <h4 className="text-lg font-bold text-[#373435] mb-4 flex items-center gap-2">
-                  <Target className="h-5 w-5 text-[#EBA500]" />
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 border-2 border-gray-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-3 sm:mb-4 flex items-center gap-2">
+                  <Target className="h-4 w-4 sm:h-5 sm:w-5 text-[#EBA500]" />
                   Metas da Semana
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <ProgressMetric
                     title="Logins (meta: {metrics.loginsWeek.total})"
                     current={metrics.loginsWeek.current}
@@ -927,13 +927,13 @@ const DashboardPage = memo(() => {
             </div>
 
             {/* Ações Principais - Destaque */}
-            <div className="mb-12">
-              <div className="mb-8">
-                <h3 className="text-2xl font-bold text-[#373435] mb-2">Ações Principais</h3>
-                <p className="text-neutral-600">Funcionalidades essenciais do sistema</p>
+            <div className="mb-8 sm:mb-10 lg:mb-12">
+              <div className="mb-4 sm:mb-6 lg:mb-8">
+                <h3 className="text-xl sm:text-2xl font-bold text-[#373435] mb-1 sm:mb-2">Ações Principais</h3>
+                <p className="text-xs sm:text-sm text-neutral-600">Funcionalidades essenciais do sistema</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
                 {QUICK_ACTIONS.map((action) => (
                   <QuickActionCard key={action.title} action={action} />
                 ))}
@@ -941,32 +941,32 @@ const DashboardPage = memo(() => {
             </div>
 
             {/* Status do Sistema com Destaque BG2 */}
-            <div className="bg-white border border-[#EBA500]/20 rounded-3xl p-8 shadow-lg ring-1 ring-[#EBA500]/5">
-              <div className="mb-8">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-[#EBA500] rounded-2xl flex items-center justify-center">
-                    <Activity className="w-6 h-6 text-white" />
+            <div className="bg-white border border-[#EBA500]/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-lg ring-1 ring-[#EBA500]/5">
+              <div className="mb-6 sm:mb-8">
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#EBA500] rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
+                    <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-[#373435] mb-1">Status do Sistema</h3>
-                    <p className="text-neutral-600">Monitoramento em tempo real</p>
+                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#373435] mb-0.5 sm:mb-1">Status do Sistema</h3>
+                    <p className="text-xs sm:text-sm text-neutral-600">Monitoramento em tempo real</p>
                   </div>
                 </div>
               </div>
               
               {/* Conexões APIs */}
-              <div className="mb-8">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="w-8 h-8 bg-[#373435] rounded-xl flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-white" />
+              <div className="mb-6 sm:mb-8">
+                <div className="flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-6">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#373435] rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-[#373435]">Conexões APIs</h4>
-                    <p className="text-sm text-neutral-500">Status dos serviços externos</p>
+                    <h4 className="text-base sm:text-lg font-bold text-[#373435]">Conexões APIs</h4>
+                    <p className="text-xs sm:text-sm text-neutral-500">Status dos serviços externos</p>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {API_CONNECTIONS.map((connection) => (
                     <ApiConnectionItem key={connection.service} connection={connection} />
                   ))}
@@ -974,16 +974,16 @@ const DashboardPage = memo(() => {
               </div>
               
               {/* Status Global com Personalidade */}
-              <div className="pt-8 border-t border-neutral-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-4 h-4 bg-success-500 rounded-full animate-pulse shadow-lg shadow-success-200"></div>
+              <div className="pt-6 sm:pt-8 border-t border-neutral-100">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="w-4 h-4 bg-success-500 rounded-full animate-pulse shadow-lg shadow-success-200 flex-shrink-0"></div>
                     <div>
-                      <span className="text-lg font-bold text-[#373435]">Sistema Operacional</span>
-                      <p className="text-sm text-neutral-500">Todos os serviços funcionando perfeitamente</p>
+                      <span className="text-base sm:text-lg font-bold text-[#373435] block">Sistema Operacional</span>
+                      <p className="text-xs sm:text-sm text-neutral-500">Todos os serviços funcionando perfeitamente</p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <div className="text-sm font-semibold text-[#EBA500]">99.9% Uptime</div>
                     <div className="text-xs text-neutral-400">Atualizado agora</div>
                   </div>

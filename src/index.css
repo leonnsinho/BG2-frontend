@@ -39,7 +39,14 @@
   }
   
   body {
-    @apply bg-background text-neutral-900 font-creato antialiased;
+    @apply bg-background text-neutral-900 font-creato antialiased pt-0 sm:pt-0;
+    padding-top: 50px;
+  }
+
+  @media (min-width: 640px) {
+    body {
+      padding-top: 0;
+    }
   }
 
   h1, h2, h3, h4, h5, h6 {
