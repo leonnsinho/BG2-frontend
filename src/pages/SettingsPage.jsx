@@ -318,18 +318,18 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
           
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10">
-                <User className="w-6 h-6 text-[#EBA500]" />
+              <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-[#EBA500]" />
               </div>
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-[#373435] mb-3">Configurações</h1>
-                <p className="text-gray-600 text-lg">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#373435] mb-1 sm:mb-3 break-words">Configurações</h1>
+                <p className="text-gray-600 text-sm sm:text-base lg:text-lg break-words">
                   Gerencie suas informações pessoais e preferências da conta
                 </p>
               </div>
@@ -337,26 +337,28 @@ const SettingsPage = () => {
           </div>
 
           {/* Navegação por abas */}
-          <div className="flex flex-wrap gap-2 bg-white/80 backdrop-blur-sm p-2 rounded-3xl shadow-sm border border-gray-200/50 mb-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center px-6 py-3 rounded-2xl text-sm font-medium transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 ${
-                    activeTab === tab.id
-                      ? 'bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 text-white shadow-lg shadow-[#EBA500]/25'
-                      : 'text-[#373435] hover:bg-gradient-to-r hover:from-[#EBA500]/10 hover:to-[#EBA500]/5 hover:text-[#EBA500]'
-                  }`}
-                >
-                  <Icon className={`h-4 w-4 mr-2 transition-all duration-300 ${
-                    activeTab === tab.id ? 'text-white' : 'text-gray-500'
-                  }`} />
-                  {tab.name}
-                </button>
-              )
-            })}
+          <div className="overflow-x-auto mb-6 sm:mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="flex gap-2 bg-white/80 backdrop-blur-sm p-2 rounded-3xl shadow-sm border border-gray-200/50 min-w-max sm:min-w-0">
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center px-4 sm:px-6 py-3 rounded-2xl text-xs sm:text-sm font-medium transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 whitespace-nowrap touch-manipulation min-h-[44px] ${
+                      activeTab === tab.id
+                        ? 'bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 text-white shadow-lg shadow-[#EBA500]/25'
+                        : 'text-[#373435] hover:bg-gradient-to-r hover:from-[#EBA500]/10 hover:to-[#EBA500]/5 hover:text-[#EBA500]'
+                    }`}
+                  >
+                    <Icon className={`h-4 w-4 mr-2 transition-all duration-300 ${
+                      activeTab === tab.id ? 'text-white' : 'text-gray-500'
+                    }`} />
+                    {tab.name}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Conteúdo das abas com animação */}
@@ -366,21 +368,21 @@ const SettingsPage = () => {
             }`}>
         {/* Aba Perfil */}
         {activeTab === 'profile' && (
-          <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl transform transition-all duration-500 ease-in-out">
+          <Card className="p-4 sm:p-6 bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl transform transition-all duration-500 ease-in-out">
             <div className="animate-fadeIn">
-              <h3 className="text-xl font-semibold text-[#373435] mb-6 flex items-center gap-2">
+              <h3 className="text-lg sm:text-xl font-semibold text-[#373435] mb-4 sm:mb-6 flex items-center gap-2">
                 <User className="w-5 h-5 text-[#EBA500]" />
                 Informações Pessoais
               </h3>
               
               {/* Avatar */}
-              <div className="flex items-center space-x-6 mb-8">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <div className="relative group">
                   {avatarSignedUrl ? (
                     <img
                       src={avatarSignedUrl}
                       alt="Foto de perfil"
-                      className="h-24 w-24 rounded-full object-cover border-4 border-white shadow-lg ring-2 ring-[#EBA500]/20"
+                      className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border-4 border-white shadow-lg ring-2 ring-[#EBA500]/20"
                       onError={(e) => {
                         // Fallback se a imagem não carregar
                         e.target.style.display = 'none'
@@ -389,12 +391,12 @@ const SettingsPage = () => {
                     />
                   ) : null}
                   {!avatarSignedUrl && (
-                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-[#EBA500] to-[#d99500] flex items-center justify-center border-4 border-white shadow-lg text-white font-bold text-3xl">
-                      {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : <User className="h-12 w-12" />}
+                    <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-gradient-to-br from-[#EBA500] to-[#d99500] flex items-center justify-center border-4 border-white shadow-lg text-white font-bold text-2xl sm:text-3xl">
+                      {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : <User className="h-10 w-10 sm:h-12 sm:w-12" />}
                     </div>
                   )}
                   
-                  <label className="absolute bottom-0 right-0 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 rounded-full p-2 text-white cursor-pointer hover:shadow-lg transform hover:scale-110 active:scale-95 transition-all duration-200 ring-2 ring-white">
+                  <label className="absolute bottom-0 right-0 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 rounded-full p-2 text-white cursor-pointer hover:shadow-lg transform hover:scale-110 active:scale-95 transition-all duration-200 ring-2 ring-white touch-manipulation">
                     <Camera className="h-4 w-4" />
                     <input
                       type="file"
@@ -406,13 +408,13 @@ const SettingsPage = () => {
                   </label>
                 </div>
                 
-                <div>
+                <div className="text-center sm:text-left">
                   <h4 className="text-sm font-medium text-[#373435]">Foto do Perfil</h4>
-                  <p className="text-sm text-gray-600">JPG, PNG, GIF ou WebP. Máximo 5MB.</p>
+                  <p className="text-xs sm:text-sm text-gray-600">JPG, PNG, GIF ou WebP. Máximo 5MB.</p>
                   {avatarSignedUrl && (
                     <button
                       onClick={handleRemoveAvatar}
-                      className="mt-2 text-sm text-red-600 hover:text-red-700 flex items-center hover:underline transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="mt-2 text-xs sm:text-sm text-red-600 hover:text-red-700 inline-flex items-center hover:underline transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
                       disabled={isLoading}
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
@@ -424,7 +426,7 @@ const SettingsPage = () => {
 
               {/* Formulário do Perfil */}
               <form onSubmit={handleProfileUpdate} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-medium text-[#373435] mb-2">
                       Nome Completo
@@ -484,7 +486,7 @@ const SettingsPage = () => {
                   <Button 
                     type="submit" 
                     disabled={isLoading}
-                    className="bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 text-white transform hover:scale-105 active:scale-95 transition-all duration-200"
+                    className="w-full sm:w-auto bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 text-white transform hover:scale-105 active:scale-95 transition-all duration-200 min-h-[44px] touch-manipulation"
                   >
                     {isLoading ? (
                       <>
@@ -506,14 +508,14 @@ const SettingsPage = () => {
 
         {/* Aba Senha */}
         {activeTab === 'password' && (
-          <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl transform transition-all duration-500 ease-in-out">
+          <Card className="p-4 sm:p-6 bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl transform transition-all duration-500 ease-in-out">
             <div className="animate-fadeIn">
-              <h3 className="text-xl font-semibold text-[#373435] mb-6 flex items-center gap-2">
+              <h3 className="text-lg sm:text-xl font-semibold text-[#373435] mb-4 sm:mb-6 flex items-center gap-2">
                 <Key className="w-5 h-5 text-[#EBA500]" />
                 Alterar Senha
               </h3>
               
-              <form onSubmit={handlePasswordChange} className="space-y-6 max-w-md">
+              <form onSubmit={handlePasswordChange} className="space-y-4 sm:space-y-6 max-w-md">
                 <div className="relative">
                   <label className="block text-sm font-medium text-[#373435] mb-2">
                     Senha Atual *
@@ -604,7 +606,7 @@ const SettingsPage = () => {
                   <Button 
                     type="submit" 
                     disabled={isLoading}
-                    className="bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 text-white transform hover:scale-105 active:scale-95 transition-all duration-200"
+                    className="w-full sm:w-auto bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 text-white transform hover:scale-105 active:scale-95 transition-all duration-200 min-h-[44px] touch-manipulation"
                   >
                     {isLoading ? (
                       <>
@@ -626,21 +628,21 @@ const SettingsPage = () => {
 
         {/* Aba Preferências */}
         {activeTab === 'preferences' && (
-          <Card className="p-6 bg-white shadow-sm border border-gray-200/50 rounded-3xl transform transition-all duration-500 ease-in-out">
+          <Card className="p-4 sm:p-6 bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl transform transition-all duration-500 ease-in-out">
             <div className="animate-fadeIn">
-              <h3 className="text-xl font-semibold text-[#373435] mb-6 flex items-center gap-2">
+              <h3 className="text-lg sm:text-xl font-semibold text-[#373435] mb-4 sm:mb-6 flex items-center gap-2">
                 <Globe className="w-5 h-5 text-[#EBA500]" />
                 Preferências do Sistema
               </h3>
               
-              <div className="space-y-8">
+              <div className="space-y-6 sm:space-y-8">
                 {/* Tema */}
                 <div>
-                  <label className="block text-sm font-medium text-[#373435] mb-4">Tema</label>
-                  <div className="flex space-x-4">
+                  <label className="block text-sm font-medium text-[#373435] mb-3 sm:mb-4">Tema</label>
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <button
                       onClick={() => setPreferences(prev => ({ ...prev, theme: 'light' }))}
-                      className={`flex items-center space-x-3 p-4 rounded-2xl border-2 transition-all duration-300 hover:shadow-md transform hover:scale-105 active:scale-95 ${
+                      className={`flex items-center justify-center sm:justify-start space-x-3 p-4 rounded-2xl border-2 transition-all duration-300 hover:shadow-md transform hover:scale-105 active:scale-95 touch-manipulation min-h-[44px] ${
                         preferences.theme === 'light' 
                           ? 'border-[#EBA500] bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 shadow-lg' 
                           : 'border-gray-200 hover:border-[#EBA500]/30'
@@ -651,7 +653,7 @@ const SettingsPage = () => {
                     </button>
                     <button
                       onClick={() => setPreferences(prev => ({ ...prev, theme: 'dark' }))}
-                      className={`flex items-center space-x-3 p-4 rounded-2xl border-2 transition-all duration-300 hover:shadow-md transform hover:scale-105 active:scale-95 ${
+                      className={`flex items-center justify-center sm:justify-start space-x-3 p-4 rounded-2xl border-2 transition-all duration-300 hover:shadow-md transform hover:scale-105 active:scale-95 touch-manipulation min-h-[44px] ${
                         preferences.theme === 'dark' 
                           ? 'border-[#EBA500] bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 shadow-lg' 
                           : 'border-gray-200 hover:border-[#EBA500]/30'
@@ -692,8 +694,8 @@ const SettingsPage = () => {
                 </div>
               </div>
 
-              <div className="mt-8 flex justify-end">
-                <Button className="bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 text-white transform hover:scale-105 active:scale-95 transition-all duration-200">
+              <div className="mt-6 sm:mt-8 flex justify-end">
+                <Button className="w-full sm:w-auto bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 text-white transform hover:scale-105 active:scale-95 transition-all duration-200 min-h-[44px] touch-manipulation">
                   <Save className="h-4 w-4 mr-2" />
                   Salvar Preferências
                 </Button>

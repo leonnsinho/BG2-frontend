@@ -30,7 +30,8 @@ import {
   CheckSquare,
   ChevronRight,
   Menu,
-  ThumbsUp
+  ThumbsUp,
+  Download
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -391,6 +392,89 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const [isClosing, setIsClosing] = React.useState(false)
   const [avatarUrl, setAvatarUrl] = React.useState('') // 🔥 NOVO: URL assinada do avatar
   const [appVersion, setAppVersion] = React.useState('2.2.1') // Versão padrão
+  const [deferredPrompt, setDeferredPrompt] = React.useState(null)
+  const [isInstallable, setIsInstallable] = React.useState(false)
+  const [isStandalone, setIsStandalone] = React.useState(false)
+
+  // 🔥 NOVO: Capturar evento de instalação PWA
+  React.useEffect(() => {
+    // Verificar se já está instalado
+    const checkStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone || 
+                            document.referrer.includes('android-app://')
+    
+    setIsStandalone(checkStandalone)
+    console.log('📱 PWA já instalado?', checkStandalone)
+
+    if (checkStandalone) {
+      setIsInstallable(false)
+      return
+    }
+
+    const handleBeforeInstallPrompt = (e) => {
+      console.log('📲 Evento beforeinstallprompt capturado!')
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setIsInstallable(true)
+    }
+
+    const handleAppInstalled = () => {
+      console.log('✅ PWA instalado!')
+      setIsInstallable(false)
+      setIsStandalone(true)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', handleAppInstalled)
+
+    // Fallback: Se após 2 segundos não capturou o evento e não está instalado, mostrar botão
+    const fallbackTimer = setTimeout(() => {
+      if (!checkStandalone && !deferredPrompt) {
+        console.log('⚠️ Evento beforeinstallprompt não disparou, mas ainda tentaremos capturá-lo')
+        // Não mostrar o botão até que o evento seja capturado
+      }
+    }, 2000)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', handleAppInstalled)
+      clearTimeout(fallbackTimer)
+    }
+  }, [])
+
+  // Função para instalar PWA
+  const handleInstallPWA = async () => {
+    console.log('🔘 Botão instalar clicado')
+    
+    if (!deferredPrompt) {
+      console.log('⚠️ Evento beforeinstallprompt ainda não foi capturado')
+      console.log('Isso pode acontecer se:')
+      console.log('1. O app já está instalado')
+      console.log('2. O navegador não suporta instalação de PWA')
+      console.log('3. O site não está sendo servido via HTTPS')
+      console.log('4. Os critérios de instalação do PWA não foram atendidos')
+      return
+    }
+
+    try {
+      console.log('📲 Disparando prompt de instalação...')
+      await deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
+      console.log('👤 Escolha do usuário:', outcome)
+      
+      if (outcome === 'accepted') {
+        console.log('✅ Usuário aceitou instalação')
+        setIsInstallable(false)
+        setIsStandalone(true)
+      } else {
+        console.log('❌ Usuário recusou instalação')
+      }
+      
+      setDeferredPrompt(null)
+    } catch (error) {
+      console.error('❌ Erro ao instalar PWA:', error)
+    }
+  }
 
   // 🔥 NOVO: Buscar versão do Service Worker
   React.useEffect(() => {
@@ -942,6 +1026,19 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                 <div className="text-xs text-neutral-400 mb-1">Versão da Plataforma</div>
                 <div className="text-sm font-mono font-semibold text-[#EBA500]">v{appVersion}</div>
               </div>
+
+              {/* Botão Instalar App */}
+              {isInstallable && (
+                <div className="px-3 mt-3">
+                  <button
+                    onClick={handleInstallPWA}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:from-[#d99500] hover:to-[#c88500] text-white rounded-lg font-medium text-xs transition-all duration-200 shadow-md hover:shadow-lg"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Instalar App</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
