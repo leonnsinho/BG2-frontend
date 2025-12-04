@@ -641,14 +641,30 @@ const PlanejamentoEstrategico = () => {
     if (!confirmacao) return
 
     try {
+      // 🔥 BUSCAR journey_id diretamente do processo
+      console.log('🔍 Buscando journey_id do processo:', processo.id)
+      const { data: processData, error: processError } = await supabase
+        .from('processes')
+        .select('journey_id')
+        .eq('id', processo.id)
+        .single()
+
+      if (processError || !processData?.journey_id) {
+        console.error('❌ Erro ao buscar journey_id do processo:', processError)
+        throw new Error('Não foi possível identificar a jornada deste processo.')
+      }
+
+      const journeyUUID = processData.journey_id
+      console.log('✅ Journey ID do processo:', journeyUUID)
+
       console.log('🎯 Company Admin confirmando amadurecimento direto:', {
         processId: processo.id,
-        journeyUUID: jornadaUUID,
+        journeyUUID: journeyUUID,
         companyId: companyId
       })
 
       // Validações
-      if (!processo.id || !jornadaUUID || !companyId) {
+      if (!processo.id || !journeyUUID || !companyId) {
         throw new Error('Dados incompletos para confirmar amadurecimento')
       }
 
