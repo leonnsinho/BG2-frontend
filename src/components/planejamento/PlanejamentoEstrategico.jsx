@@ -92,7 +92,7 @@ const PlanejamentoEstrategico = () => {
     { id: 1, nome: 'Estratégica', slug: 'estrategica', cor: 'bg-blue-500', corTexto: 'text-blue-700' },
     { id: 2, nome: 'Financeira', slug: 'financeira', cor: 'bg-green-500', corTexto: 'text-green-700' },
     { id: 3, nome: 'Pessoas & Cultura', slug: 'pessoas-cultura', cor: 'bg-purple-500', corTexto: 'text-purple-700' },
-    { id: 4, nome: 'Receita', slug: 'receita-crm', cor: 'bg-orange-500', corTexto: 'text-orange-700' },
+    { id: 4, nome: 'Receita', slug: 'receita', cor: 'bg-orange-500', corTexto: 'text-orange-700' },
     { id: 5, nome: 'Operacional', slug: 'operacional', cor: 'bg-red-500', corTexto: 'text-red-700' }
   ]
 
@@ -101,16 +101,43 @@ const PlanejamentoEstrategico = () => {
     try {
       console.log('🔍 Buscando UUID da jornada:', slug)
       
-      const { data, error } = await supabase
+      // Primeiro tentar buscar pela jornada específica da empresa
+      let query = supabase
         .from('journeys')
         .select('id, name, slug')
         .eq('slug', slug)
         .eq('is_active', true)
-        .single()
+      
+      // Se temos companyId, buscar jornadas da empresa
+      if (companyId) {
+        query = query.eq('company_id', companyId)
+      }
+      
+      const { data, error } = await query.maybeSingle()
 
       if (error) {
         console.error('❌ Erro ao buscar jornada:', error)
         return null
+      }
+
+      if (!data) {
+        console.warn('⚠️ Jornada não encontrada para slug:', slug)
+        // Tentar buscar jornada global (sem company_id) como fallback
+        const { data: globalData, error: globalError } = await supabase
+          .from('journeys')
+          .select('id, name, slug')
+          .eq('slug', slug)
+          .eq('is_active', true)
+          .is('company_id', null)
+          .maybeSingle()
+        
+        if (globalError || !globalData) {
+          console.error('❌ Jornada global também não encontrada')
+          return null
+        }
+        
+        console.log('✅ Jornada global encontrada:', globalData)
+        return globalData.id
       }
 
       console.log('✅ Jornada encontrada:', data)
@@ -165,7 +192,7 @@ const PlanejamentoEstrategico = () => {
       // Se for Super Admin ou Company Admin, dar acesso a todas as jornadas
       if (profile?.role === 'super_admin' || isCompanyAdmin) {
         console.log(`👑 ${profile?.role === 'super_admin' ? 'Super Admin' : 'Company Admin'} - liberando todas as jornadas`)
-        const todasJornadas = ['estrategica', 'financeira', 'pessoas-cultura', 'receita-crm', 'operacional']
+        const todasJornadas = ['estrategica', 'financeira', 'pessoas-cultura', 'receita', 'operacional']
         setJornadasAtribuidas(todasJornadas)
         console.log(`✅ Todas as jornadas liberadas: ${todasJornadas.join(', ')}`)
         setLoading(false)
@@ -783,9 +810,6 @@ const PlanejamentoEstrategico = () => {
     try {
       console.log('💾 Salvando nova tarefa')
       
-      // Buscar UUID da jornada
-      const journeyUUID = await getJourneyUUIDBySlug(jornadaSelecionada.slug)
-      
       // 🔥 CORREÇÃO: Validar se o processo é REAL (UUID) ou MOCK (número)
       const processUUID = adicionandoTarefa.processoId
       
@@ -797,6 +821,23 @@ const PlanejamentoEstrategico = () => {
         console.error('❌ Tentativa de criar tarefa em processo MOCK (ID numérico):', processUUID)
         return
       }
+      
+      // 🔥 NOVO: Buscar journey_id diretamente do processo no banco
+      console.log('🔍 Buscando journey_id do processo:', processUUID)
+      const { data: processData, error: processError } = await supabase
+        .from('processes')
+        .select('journey_id')
+        .eq('id', processUUID)
+        .single()
+      
+      if (processError || !processData?.journey_id) {
+        console.error('❌ Erro ao buscar journey_id do processo:', processError)
+        alert('⚠️ Erro: Não foi possível identificar a jornada deste processo.\n\nEntre em contato com o administrador.')
+        return
+      }
+      
+      const journeyUUID = processData.journey_id
+      console.log('✅ Journey ID do processo:', journeyUUID)
       
       const taskData = {
         title: adicionandoTarefa.descricao || 'Sem título',
