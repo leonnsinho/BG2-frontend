@@ -44,6 +44,7 @@ import DrePage from './pages/financeiro/DrePage'
 import DfcPage from './pages/financeiro/DfcPage'
 import CompanyMaturityProgressPage from './pages/reports/CompanyMaturityProgressPage'
 import CompanyMaturityProgressPageNew from './pages/reports/CompanyMaturityProgressPageNew'
+import BusinessModelPage from './pages/BusinessModelPage'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
 import { useUserContext } from './contexts/UserContext'
@@ -123,6 +124,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PlanejamentoEstrategicoPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route 
+        path="/business-model" 
+        element={
+          <ProtectedRoute requiredRole={['company_admin']}>
+            <BusinessModelPage />
           </ProtectedRoute>
         }
       />

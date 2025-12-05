@@ -197,7 +197,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       {
         name: 'Modelo de Negócio',
         icon: Building2,
-        href: '#', // Não leva a lugar nenhum por enquanto
+        href: '/business-model',
       },
       {
         name: 'Diagnóstico do Negócio',
@@ -405,14 +405,16 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     
     setIsStandalone(checkStandalone)
     console.log('📱 PWA já instalado?', checkStandalone)
+    console.log('🌐 User Agent:', navigator.userAgent)
+    console.log('🔒 Protocol:', window.location.protocol)
+    console.log('🏠 Hostname:', window.location.hostname)
 
-    if (checkStandalone) {
-      setIsInstallable(false)
-      return
-    }
+    // SEMPRE mostrar o botão, mesmo se já estiver instalado
+    setIsInstallable(true)
 
     const handleBeforeInstallPrompt = (e) => {
-      console.log('📲 Evento beforeinstallprompt capturado!')
+      console.log('🎉 EVENTO BEFOREINSTALLPROMPT CAPTURADO!')
+      console.log('📋 Detalhes do evento:', e)
       e.preventDefault()
       setDeferredPrompt(e)
       setIsInstallable(true)
@@ -420,39 +422,54 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
 
     const handleAppInstalled = () => {
       console.log('✅ PWA instalado!')
-      setIsInstallable(false)
       setIsStandalone(true)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     window.addEventListener('appinstalled', handleAppInstalled)
-
-    // Fallback: Se após 2 segundos não capturou o evento e não está instalado, mostrar botão
-    const fallbackTimer = setTimeout(() => {
-      if (!checkStandalone && !deferredPrompt) {
-        console.log('⚠️ Evento beforeinstallprompt não disparou, mas ainda tentaremos capturá-lo')
-        // Não mostrar o botão até que o evento seja capturado
-      }
-    }, 2000)
+    
+    // Log para debug
+    console.log('👂 Event listeners adicionados para PWA')
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
       window.removeEventListener('appinstalled', handleAppInstalled)
-      clearTimeout(fallbackTimer)
     }
   }, [])
 
   // Função para instalar PWA
   const handleInstallPWA = async () => {
     console.log('🔘 Botão instalar clicado')
+    console.log('🎯 deferredPrompt disponível?', !!deferredPrompt)
+    console.log('📱 isStandalone?', isStandalone)
+    
+    // Se já está instalado, informar ao usuário
+    if (isStandalone) {
+      alert('✅ O app já está instalado!\n\nVocê já pode usar o BG2 como aplicativo.')
+      return
+    }
     
     if (!deferredPrompt) {
-      console.log('⚠️ Evento beforeinstallprompt ainda não foi capturado')
-      console.log('Isso pode acontecer se:')
-      console.log('1. O app já está instalado')
-      console.log('2. O navegador não suporta instalação de PWA')
-      console.log('3. O site não está sendo servido via HTTPS')
-      console.log('4. Os critérios de instalação do PWA não foram atendidos')
+      console.error('❌ deferredPrompt é null - evento beforeinstallprompt não foi capturado')
+      console.log('🔍 Possíveis causas:')
+      console.log('1. Site não está em HTTPS (atual:', window.location.protocol, ')')
+      console.log('2. PWA já foi instalado anteriormente')
+      console.log('3. Navegador não suporta PWA')
+      console.log('4. Manifest ou Service Worker com problema')
+      
+      // Tentar forçar reload do SW
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          console.log('📋 Service Workers registrados:', registrations.length)
+          registrations.forEach(reg => console.log('  - Scope:', reg.scope))
+        })
+      }
+      
+      alert('ℹ️ Para instalar o app:\n\n' +
+            '1. Clique nos três pontos (⋮) no canto superior direito\n' +
+            '2. Procure por "Instalar BG2" ou "Instalar app"\n' +
+            '3. Confirme a instalação\n\n' +
+            'Ou verifique o console para mais detalhes.')
       return
     }
 
@@ -464,7 +481,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
       
       if (outcome === 'accepted') {
         console.log('✅ Usuário aceitou instalação')
-        setIsInstallable(false)
         setIsStandalone(true)
       } else {
         console.log('❌ Usuário recusou instalação')
@@ -473,6 +489,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
       setDeferredPrompt(null)
     } catch (error) {
       console.error('❌ Erro ao instalar PWA:', error)
+      alert('Erro ao tentar instalar: ' + error.message)
     }
   }
 
@@ -1019,17 +1036,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
             {!isCollapsed && <span className="flex-1 text-left">Configurações</span>}
           </Link>
           
-          {/* Versão da Plataforma */}
-          {!isCollapsed && (
+          {/* Botão Instalar App */}
+          {!isCollapsed && isInstallable && (
             <div className="mt-4 pt-4 border-t border-neutral-700/50">
-              <div className="px-3 text-center">
-                <div className="text-xs text-neutral-400 mb-1">Versão da Plataforma</div>
-                <div className="text-sm font-mono font-semibold text-[#EBA500]">v{appVersion}</div>
-              </div>
-
-              {/* Botão Instalar App */}
-              {isInstallable && (
-                <div className="px-3 mt-3">
+              <div className="px-3">
                   <button
                     onClick={handleInstallPWA}
                     className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:from-[#d99500] hover:to-[#c88500] text-white rounded-lg font-medium text-xs transition-all duration-200 shadow-md hover:shadow-lg"
@@ -1037,8 +1047,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                     <Download className="h-3.5 w-3.5" />
                     <span>Instalar App</span>
                   </button>
-                </div>
-              )}
+              </div>
             </div>
           )}
         </div>
