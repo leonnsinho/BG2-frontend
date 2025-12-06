@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock, CheckCircle, XCircle, Loader, Award, RotateCcw, FileSearch } from 'lucide-react'
+import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock, CheckCircle, XCircle, Loader, Award, RotateCcw, FileSearch, GripVertical, Search } from 'lucide-react'
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
 import { usePriorityProcesses } from '../../hooks/usePriorityProcesses2'
@@ -14,6 +17,67 @@ import toast from 'react-hot-toast'
 import { calculateProcessProgress } from '../../services/processMaturityService'
 import { useSearchParams } from 'react-router-dom' // 🔥 NOVO: Para ler query params
 
+// Componente de Tarefa Arrastável
+const SortableTaskItem = ({ 
+  tarefa, 
+  processo, 
+  editandoTarefa, 
+  setEditandoTarefa,
+  usuarios,
+  setTipoResponsavelEdicao,
+  setModalEdicaoAberto,
+  setTarefaParaEditar,
+  setProcessoParaEdicao,
+  setTarefaParaDeletar,
+  setProcessoParaDeletar,
+  setModalDeleteAberto,
+  abrirTaskSidebar,
+  salvarEdicaoTarefa,
+  cancelarEdicao,
+  alterarStatusTarefa,
+  getStatusColor,
+  formatarData,
+  children
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: tarefa.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div 
+      ref={setNodeRef}
+      style={style}
+      className="group border border-[#373435]/10 hover:border-[#EBA500]/30 rounded-xl bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-md transition-all duration-300 overflow-hidden relative"
+    >
+      {/* Handle de Arrastar - Posicionado no canto superior direito */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 right-2 cursor-grab active:cursor-grabbing text-gray-300 hover:text-[#EBA500] transition-colors opacity-0 group-hover:opacity-100 z-10"
+        title="Arrastar para reordenar"
+      >
+        <GripVertical className="h-4 w-4" />
+      </div>
+
+      {/* Conteúdo da Tarefa */}
+      <div className="p-2 sm:p-3 min-w-0 overflow-hidden">
+        {children}
+      </div>
+    </div>
+  )
+}
+
 const PlanejamentoEstrategico = () => {
   const { profile } = useAuth()
   const { getAccessibleJourneys } = useAuthPermissions()
@@ -21,6 +85,7 @@ const PlanejamentoEstrategico = () => {
   
   // 🔥 NOVO: Estado de controle do limite de processos (DEVE vir ANTES do hook)
   const [limiteProcessos, setLimiteProcessos] = useState(5) // Controle de quantos processos mostrar (5 ou 10)
+  const [inputLimite, setInputLimite] = useState('5') // Estado temporário para o input
   
   // 🔥 NOVO: Verificar se há companyId na URL (Super Admin) ou usar do perfil
   const urlCompanyId = searchParams.get('companyId')
@@ -48,7 +113,30 @@ const PlanejamentoEstrategico = () => {
   const [tipoResponsavelEdicao, setTipoResponsavelEdicao] = useState('usuario') // Para edição: 'usuario' ou 'manual'
   const [adicionandoTarefa, setAdicionandoTarefa] = useState({ processoId: null, titulo: '', descricao: '', responsavel: '', dataLimite: '', status: 'pending' })
   const [tipoResponsavel, setTipoResponsavel] = useState('usuario') // 'usuario' ou 'manual'
+  
+  // Configurar sensores para drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Só ativa após arrastar 8px para evitar conflito com cliques
+      },
+    })
+  )
+  
+  // 🔥 NOVO: Estados para Modal de Adicionar Tarefa
+  const [modalTarefaAberto, setModalTarefaAberto] = useState(false)
+  const [processoParaTarefa, setProcessoParaTarefa] = useState(null)
   const [responsavelManual, setResponsavelManual] = useState('') // Para responsáveis não cadastrados
+  
+  // 🔥 NOVO: Estados para Modal de Editar Tarefa
+  const [modalEdicaoAberto, setModalEdicaoAberto] = useState(false)
+  const [tarefaParaEditar, setTarefaParaEditar] = useState(null)
+  const [processoParaEdicao, setProcessoParaEdicao] = useState(null)
+  
+  // 🔥 NOVO: Estados para Modal de Confirmação de Exclusão
+  const [modalDeleteAberto, setModalDeleteAberto] = useState(false)
+  const [tarefaParaDeletar, setTarefaParaDeletar] = useState(null)
+  const [processoParaDeletar, setProcessoParaDeletar] = useState(null)
   const [sidebarTask, setSidebarTask] = useState({ isOpen: false, task: null })
   const [jornadasAtribuidas, setJornadasAtribuidas] = useState([])
   const [loading, setLoading] = useState(true)
@@ -262,7 +350,7 @@ const PlanejamentoEstrategico = () => {
         }
         
         // Adaptar formato da tarefa para o que o componente espera
-        tarefasOrganizadas[task.process_id].push({
+        const tarefaFormatada = {
           id: task.id,
           texto: task.title,
           responsavel: nomeResponsavel, // Nome do usuário ou nome manual
@@ -272,9 +360,18 @@ const PlanejamentoEstrategico = () => {
           descricao: task.description,
           dataLimite: task.due_date,
           criadoEm: task.created_at,
+          created_at: task.created_at, // Adicionar para ordenação
           criadoPor: 'Sistema', // Pode ser melhorado depois
-          prioridade: task.priority || 3
-        })
+          prioridade: task.priority || 3,
+          order: task.order || 0 // Ordem customizada
+        }
+        
+        // 🔥 DEBUG: Log da data
+        if (task.due_date) {
+          console.log('📅 Tarefa:', task.title, '| due_date do DB:', task.due_date, '| Tipo:', typeof task.due_date)
+        }
+        
+        tarefasOrganizadas[task.process_id].push(tarefaFormatada)
       })
       
       console.log('✅ Tarefas organizadas por processo:', Object.keys(tarefasOrganizadas).length, 'processos com tarefas')
@@ -441,8 +538,6 @@ const PlanejamentoEstrategico = () => {
   }
 
   const apagarTarefa = async (processoId, tarefaId) => {
-    if (!confirm('Tem certeza que deseja apagar esta tarefa?')) return
-
     try {
       console.log('🗑️ Apagando tarefa:', tarefaId)
       
@@ -455,14 +550,78 @@ const PlanejamentoEstrategico = () => {
       // 🔥 NOVO: Recarregar progresso após deletar tarefa
       await reloadProcessProgress(processoId)
       
+      toast.success('✅ Tarefa excluída com sucesso!')
+      
     } catch (error) {
       console.error('❌ Erro ao apagar tarefa:', error)
-      alert('Erro ao apagar tarefa')
+      toast.error('Erro ao apagar tarefa')
     }
   }
 
   // ====== Funções do Sistema de Amadurecimento ======
   // ====== Funções do Sistema de Ordenação Manual ======
+  
+  // Função para reordenar tarefas com drag and drop
+  const handleTaskDragEnd = async (event, processoId) => {
+    const { active, over } = event
+    
+    if (!over || active.id === over.id) {
+      return
+    }
+    
+    // Pegar tarefas já ordenadas
+    const tarefasOrdenadas = [...(tarefas[processoId] || [])].sort((a, b) => {
+      const orderA = a.order !== undefined && a.order !== null ? a.order : 999999
+      const orderB = b.order !== undefined && b.order !== null ? b.order : 999999
+      
+      if (orderA !== 999999 || orderB !== 999999) {
+        if (orderA !== orderB) {
+          return orderA - orderB
+        }
+      }
+      
+      const dateA = new Date(a.created_at || a.criadoEm)
+      const dateB = new Date(b.created_at || b.criadoEm)
+      return dateA - dateB
+    })
+    
+    const oldIndex = tarefasOrdenadas.findIndex(t => t.id === active.id)
+    const newIndex = tarefasOrdenadas.findIndex(t => t.id === over.id)
+    
+    const newTasks = arrayMove(tarefasOrdenadas, oldIndex, newIndex)
+    
+    // Atualizar order de cada tarefa no novo array
+    const tasksWithNewOrder = newTasks.map((task, index) => ({
+      ...task,
+      order: index
+    }))
+    
+    // Atualizar UI imediatamente com novo array
+    setTarefas({
+      ...tarefas,
+      [processoId]: tasksWithNewOrder
+    })
+    
+    try {
+      // Salvar nova ordem no banco
+      for (let i = 0; i < tasksWithNewOrder.length; i++) {
+        const { error } = await supabase
+          .from('tasks')
+          .update({ order: i })
+          .eq('id', tasksWithNewOrder[i].id)
+        
+        if (error) throw error
+      }
+      
+      console.log('✅ Ordem das tarefas salva com sucesso')
+      toast.success('✅ Ordem atualizada!')
+    } catch (error) {
+      console.error('❌ Erro ao salvar ordem das tarefas:', error)
+      toast.error('Erro ao salvar ordem')
+      // Reverter em caso de erro
+      await loadTasks()
+    }
+  }
   
   const handleProcessReorder = async (newProcessos) => {
     console.log('🔄 Reordenando processos:', newProcessos.map((p, i) => `${i + 1}. ${p.nome}`))
@@ -855,6 +1014,15 @@ const PlanejamentoEstrategico = () => {
       const journeyUUID = processData.journey_id
       console.log('✅ Journey ID do processo:', journeyUUID)
       
+      // 🔥 NOVO: Calcular próximo order para essa tarefa
+      const tarefasDoProcesso = tarefas[processUUID] || []
+      const maxOrder = tarefasDoProcesso.length > 0 
+        ? Math.max(...tarefasDoProcesso.map(t => t.order || 0))
+        : -1
+      const nextOrder = maxOrder + 1
+      
+      console.log('📊 Calculando order: tarefas existentes =', tarefasDoProcesso.length, ', maxOrder =', maxOrder, ', nextOrder =', nextOrder)
+      
       const taskData = {
         title: adicionandoTarefa.descricao || 'Sem título',
         description: adicionandoTarefa.descricao || '',
@@ -866,7 +1034,8 @@ const PlanejamentoEstrategico = () => {
         journey_id: journeyUUID,
         status: adicionandoTarefa.status,
         due_date: adicionandoTarefa.dataLimite || null,
-        priority: 3
+        priority: 3,
+        order: nextOrder // Adicionar order para nova tarefa
       }
       
       console.log('📋 Dados da tarefa:', taskData)
@@ -877,7 +1046,12 @@ const PlanejamentoEstrategico = () => {
       // 🔥 NOVO: Recarregar progresso após criar tarefa
       await reloadProcessProgress(adicionandoTarefa.processoId)
       
+      // 🔥 NOVO: Fechar modal e limpar estados
+      setModalTarefaAberto(false)
+      setProcessoParaTarefa(null)
       cancelarAdicaoTarefa()
+      
+      toast.success('✅ Tarefa criada com sucesso!')
       
     } catch (error) {
       console.error('❌ Erro ao salvar nova tarefa:', error)
@@ -1050,6 +1224,16 @@ const PlanejamentoEstrategico = () => {
   }, [jornadaSelecionada, companyId])
 
   const formatarData = (dataISO) => {
+    if (!dataISO) return ''
+    
+    // 🔥 FIX: Para datas no formato YYYY-MM-DD (sem hora), não usar new Date()
+    // pois causa conversão de timezone
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dataISO)) {
+      const [ano, mes, dia] = dataISO.split('-')
+      return `${dia}/${mes}/${ano}`
+    }
+    
+    // Para timestamps completos (created_at, etc), usar Date normal
     const data = new Date(dataISO)
     return data.toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -1268,34 +1452,44 @@ const PlanejamentoEstrategico = () => {
                 <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold ${getJornadaCores(jornadaSelecionada.id).text} truncate`}>
                   Processos Prioritários
                 </h2>
-                <p className="text-[#373435]/70 text-sm sm:text-base lg:text-lg font-medium truncate">
-                  {jornadaSelecionada.nome} - {processos.length} processos ativos
-                </p>
               </div>
             </div>
             
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              {/* 🔥 NOVO: Botão para alternar entre 5 e 10 processos */}
-              <div className="flex items-center gap-1 sm:gap-2 bg-white border-2 border-[#EBA500]/30 rounded-xl sm:rounded-2xl p-1 shadow-md">
+              {/* Campo para definir limite de processos */}
+              <div className="flex items-center gap-2 bg-white border-2 border-[#EBA500]/30 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 shadow-md">
+                <label htmlFor="limite-processos" className="text-xs sm:text-sm font-semibold text-[#373435] whitespace-nowrap">
+                  Mostrar top:
+                </label>
+                <input
+                  id="limite-processos"
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={inputLimite}
+                  onChange={(e) => setInputLimite(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const valor = parseInt(inputLimite) || 5
+                      const valorValido = Math.max(1, Math.min(20, valor))
+                      setLimiteProcessos(valorValido)
+                      setInputLimite(String(valorValido))
+                    }
+                  }}
+                  className="w-14 sm:w-16 px-2 py-1 text-center border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-lg text-xs sm:text-sm font-bold text-[#373435] transition-all duration-300"
+                  placeholder="5"
+                />
                 <button
-                  onClick={() => setLimiteProcessos(5)}
-                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-300 min-h-[44px] touch-manipulation ${
-                    limiteProcessos === 5
-                      ? 'bg-gradient-to-r from-[#EBA500] to-[#d99500] text-white shadow-lg'
-                      : 'text-[#373435]/60 hover:text-[#373435]'
-                  }`}
+                  onClick={() => {
+                    const valor = parseInt(inputLimite) || 5
+                    const valorValido = Math.max(1, Math.min(20, valor))
+                    setLimiteProcessos(valorValido)
+                    setInputLimite(String(valorValido))
+                  }}
+                  className="p-1.5 hover:bg-[#EBA500]/10 rounded-lg transition-all duration-300"
+                  title="Aplicar filtro"
                 >
-                  Top 5
-                </button>
-                <button
-                  onClick={() => setLimiteProcessos(10)}
-                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-300 min-h-[44px] touch-manipulation ${
-                    limiteProcessos === 10
-                      ? 'bg-gradient-to-r from-[#EBA500] to-[#d99500] text-white shadow-lg'
-                      : 'text-[#373435]/60 hover:text-[#373435]'
-                  }`}
-                >
-                  Top 10
+                  <Search className="h-4 w-4 text-[#EBA500]" />
                 </button>
               </div>
               
@@ -1330,14 +1524,9 @@ const PlanejamentoEstrategico = () => {
                     
                     <div className="relative z-10">
                       <div className="flex items-start justify-between mb-2 sm:mb-3">
-                        <div className="flex items-center space-x-2 flex-1 min-w-0">
-                          <div className={`w-7 h-7 sm:w-8 sm:h-8 ${coresJornada.iconBg} rounded-lg sm:rounded-xl flex items-center justify-center shadow-md flex-shrink-0`}>
-                            <span className="text-white font-bold text-[10px] sm:text-xs">#{processo.prioridade}</span>
-                          </div>
-                          <h4 className={`font-bold text-[#373435] text-xs sm:text-sm group-hover:${coresJornada.text} transition-colors duration-300 leading-tight break-words flex-1`}>
-                            {processo.nome}
-                          </h4>
-                        </div>
+                        <h4 className={`font-bold text-[#373435] text-xs sm:text-sm group-hover:${coresJornada.text} transition-colors duration-300 leading-tight break-words flex-1`}>
+                          {processo.nome}
+                        </h4>
                       </div>
 
                       {/* Campo de Meta */}
@@ -1388,7 +1577,7 @@ const PlanejamentoEstrategico = () => {
                           >
                             {metas[processo.id] ? (
                               <p className="text-xs text-[#373435] leading-relaxed">
-                                🎯 <span className="font-medium">{metas[processo.id]}</span>
+                                <span className="font-medium">{metas[processo.id]}</span>
                               </p>
                             ) : (
                               <p className="text-xs text-[#373435]/40 italic">
@@ -1399,7 +1588,7 @@ const PlanejamentoEstrategico = () => {
                         )}
                       </div>
                       
-                      {/* Botão Adicionar Tarefa Elegante */}
+                      {/* Botão Adicionar Ação Elegante */}
                       <button
                         onClick={() => {
                           // 🚨 VALIDAÇÃO: Só permitir se processo for REAL (UUID, não número mock)
@@ -1409,14 +1598,17 @@ const PlanejamentoEstrategico = () => {
                           }
                           // ✅ processo.id JÁ É UUID na tabela processes
                           console.log('📝 Clicou adicionar tarefa:', { processo: processo.nome, id: processo.id, idType: typeof processo.id })
+                          // 🔥 NOVO: Abrir modal ao invés de inline form
+                          setProcessoParaTarefa(processo)
+                          setModalTarefaAberto(true)
                           iniciarAdicaoTarefa(processo.id)
                         }}
                         disabled={typeof processo.id === 'number'}
                         className={`w-full ${typeof processo.id === 'number' ? 'bg-gray-400 cursor-not-allowed opacity-60' : `${coresJornada.iconBg} hover:opacity-90`} text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs group-hover:scale-[1.02]`}
-                        title={typeof processo.id === 'number' ? 'Processos de exemplo - crie processos reais para adicionar tarefas' : 'Adicionar tarefa ao processo'}
+                        title={typeof processo.id === 'number' ? 'Processos de exemplo - crie processos reais para adicionar ações' : 'Adicionar ação ao processo'}
                       >
                         <Plus className="h-3 w-3 flex-shrink-0" />
-                        <span className="truncate">{typeof processo.id === 'number' ? 'Processo Mock' : 'Adicionar Tarefa'}</span>
+                        <span className="truncate">{typeof processo.id === 'number' ? 'Processo Mock' : 'Adicionar Ação'}</span>
                       </button>
 
                       {/* Barra de Progresso de Amadurecimento */}
@@ -1459,7 +1651,7 @@ const PlanejamentoEstrategico = () => {
 
                 {/* Lista de Tarefas Elegante */}
                 <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 max-h-64 sm:max-h-80 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 flex-1">
-                  {/* Formulário de Nova Tarefa Inline */}
+                  {/* Formulário de Nova Ação Inline */}
                   {(() => {
                     // ✅ processo.id JÁ É UUID
                     const shouldShow = adicionandoTarefa.processoId === processo.id
@@ -1478,7 +1670,7 @@ const PlanejamentoEstrategico = () => {
                     <div className="border-2 border-dashed border-[#EBA500]/40 rounded-xl p-3 sm:p-4 bg-[#EBA500]/10 backdrop-blur-sm">
                       <div className="flex items-center space-x-2 mb-2 sm:mb-3">
                         <div className="w-2 h-2 bg-[#EBA500] rounded-full"></div>
-                        <span className="text-[#373435] font-semibold text-[10px] sm:text-xs">Nova Tarefa</span>
+                        <span className="text-[#373435] font-semibold text-[10px] sm:text-xs">Nova Ação</span>
                       </div>
                       
                       <div className="space-y-2 sm:space-y-3">
@@ -1593,12 +1785,59 @@ const PlanejamentoEstrategico = () => {
                     </div>
                   )}
 
-                  {(tarefas[processo.id] || []).map((tarefa) => (
-                    <div 
-                      key={tarefa.id} 
-                      className="group border border-[#373435]/10 hover:border-[#EBA500]/30 rounded-xl p-2 sm:p-3 bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-md transition-all duration-300 cursor-pointer touch-manipulation"
-                      onClick={() => editandoTarefa.id !== tarefa.id && abrirTaskSidebar(tarefa)}
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event) => handleTaskDragEnd(event, processo.id)}
+                  >
+                    <SortableContext
+                      items={(tarefas[processo.id] || []).map(t => t.id)}
+                      strategy={verticalListSortingStrategy}
                     >
+                      {(tarefas[processo.id] || [])
+                        .sort((a, b) => {
+                          // Primeiro, tentar ordenar por order se ambos tiverem
+                          const orderA = a.order !== undefined && a.order !== null ? a.order : 999999
+                          const orderB = b.order !== undefined && b.order !== null ? b.order : 999999
+                          
+                          if (orderA !== 999999 || orderB !== 999999) {
+                            // Se pelo menos um tem order, ordenar por order
+                            if (orderA !== orderB) {
+                              return orderA - orderB
+                            }
+                          }
+                          
+                          // Se nenhum tem order ou são iguais, ordenar por data de criação (mais antiga primeiro)
+                          const dateA = new Date(a.created_at || a.criadoEm)
+                          const dateB = new Date(b.created_at || b.criadoEm)
+                          return dateA - dateB
+                        })
+                        .map((tarefa) => (
+                          <SortableTaskItem
+                            key={tarefa.id}
+                            tarefa={tarefa}
+                            processo={processo}
+                            editandoTarefa={editandoTarefa}
+                            setEditandoTarefa={setEditandoTarefa}
+                            usuarios={usuarios}
+                            setTipoResponsavelEdicao={setTipoResponsavelEdicao}
+                            setModalEdicaoAberto={setModalEdicaoAberto}
+                            setTarefaParaEditar={setTarefaParaEditar}
+                            setProcessoParaEdicao={setProcessoParaEdicao}
+                            setTarefaParaDeletar={setTarefaParaDeletar}
+                            setProcessoParaDeletar={setProcessoParaDeletar}
+                            setModalDeleteAberto={setModalDeleteAberto}
+                            abrirTaskSidebar={abrirTaskSidebar}
+                            salvarEdicaoTarefa={salvarEdicaoTarefa}
+                            cancelarEdicao={cancelarEdicao}
+                            alterarStatusTarefa={alterarStatusTarefa}
+                            getStatusColor={getStatusColor}
+                            formatarData={formatarData}
+                          >
+                            <div 
+                              className="cursor-pointer"
+                              onClick={() => editandoTarefa.id !== tarefa.id && abrirTaskSidebar(tarefa)}
+                            >
                       {editandoTarefa.id === tarefa.id ? (
                         /* Modo de Edição Elegante */
                         <div className="space-y-3">
@@ -1706,41 +1945,19 @@ const PlanejamentoEstrategico = () => {
                         /* Modo de Visualização Elegante */
                         <div className="space-y-2">
                           <div className="flex items-start justify-between">
-                            <p className="text-xs text-[#373435] font-medium flex-1 leading-relaxed break-words pr-2">{tarefa.texto}</p>
-                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  iniciarEdicaoTarefa(tarefa)
-                                }}
-                                className="p-1 text-blue-600 hover:bg-blue-100 rounded-lg transition-all duration-200 hover:scale-110"
-                                title="Editar tarefa"
-                              >
-                                <Edit3 className="h-3 w-3" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  apagarTarefa(processo.id, tarefa.id)
-                                }}
-                                className="p-1 text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 hover:scale-110"
-                                title="Apagar tarefa"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            </div>
+                            <p className="text-xs text-[#373435] font-medium flex-1 leading-relaxed break-words overflow-wrap-anywhere pr-2" style={{wordBreak: 'break-word', overflowWrap: 'anywhere'}}>{tarefa.texto}</p>
                           </div>
                           
                           <div className="flex items-center space-x-2">
                             <div className="w-4 h-4 bg-[#EBA500]/20 rounded-full flex items-center justify-center flex-shrink-0">
                               <User className="h-2 w-2 text-[#373435]" />
                             </div>
-                            <span className="text-xs text-[#373435]/80 font-medium truncate">{tarefa.responsavel}</span>
+                            <span className="text-xs text-[#373435]/80 font-medium break-words">{tarefa.responsavel}</span>
                           </div>
                           
                           <div className="flex items-center space-x-2 text-xs text-[#373435]/60">
                             <Clock className="h-2 w-2 flex-shrink-0" />
-                            <span className="truncate">
+                            <span className="break-words">
                               Criado em {formatarData(tarefa.criadoEm)} por {tarefa.criadoPor}
                               {tarefa.editadoEm && (
                                 <span className="ml-1 text-blue-500 font-medium">
@@ -1754,7 +1971,7 @@ const PlanejamentoEstrategico = () => {
                           {tarefa.dataLimite && (
                             <div className="flex items-center space-x-2 text-xs text-[#EBA500] font-medium">
                               <Calendar className="h-2 w-2 flex-shrink-0" />
-                              <span className="truncate">
+                              <span className="break-words">
                                 Prazo: {formatarData(tarefa.dataLimite)}
                               </span>
                             </div>
@@ -1778,16 +1995,56 @@ const PlanejamentoEstrategico = () => {
                                 paddingRight: '2rem'
                               }}
                             >
-                              <option value="pending">⏱️ Pendente</option>
-                              <option value="in_progress">⏳ Em Andamento</option>
-                              <option value="completed">✅ Concluído</option>
-                              <option value="cancelled">❌ Cancelado</option>
+                              <option value="pending">Pendente</option>
+                              <option value="in_progress">Em Andamento</option>
+                              <option value="completed">Concluído</option>
+                              <option value="cancelled">Cancelado</option>
                             </select>
+                          </div>
+                          
+                          {/* Botões de Ação */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setTarefaParaEditar(tarefa)
+                                setProcessoParaEdicao(processo)
+                                setEditandoTarefa({ 
+                                  id: tarefa.id, 
+                                  texto: tarefa.texto, 
+                                  responsavel: tarefa.responsavel, 
+                                  dataLimite: tarefa.dataLimite || '' 
+                                })
+                                // Detectar se é manual ou usuário
+                                const isManual = !usuarios.find(u => u.id === tarefa.assigned_to)
+                                setTipoResponsavelEdicao(isManual ? 'manual' : 'usuario')
+                                setModalEdicaoAberto(true)
+                              }}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-blue-200 hover:border-blue-300"
+                              title="Editar tarefa"
+                            >
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setTarefaParaDeletar(tarefa)
+                                setProcessoParaDeletar(processo)
+                                setModalDeleteAberto(true)
+                              }}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 border border-red-200 hover:border-red-300"
+                              title="Apagar tarefa"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </div>
                       )}
-                    </div>
-                  ))}
+                            </div>
+                          </SortableTaskItem>
+                        ))}
+                    </SortableContext>
+                  </DndContext>
 
                   {/* Mensagem quando não há tarefas - Elegante */}
                   {(!tarefas[processo.id] || tarefas[processo.id].length === 0) && (
@@ -1870,6 +2127,419 @@ const PlanejamentoEstrategico = () => {
           gestorId={profile?.id}
           onSuccess={handleMaturityApprovalSuccess}
         />
+      )}
+
+      {/* Modal de Adicionar Tarefa */}
+      {modalTarefaAberto && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
+          <div 
+            className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-[#EBA500] to-[#D89500] px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg sm:text-2xl font-bold text-white flex items-center space-x-2">
+                  <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
+                  <span>Nova Tarefa</span>
+                </h3>
+                {processoParaTarefa && (
+                  <p className="text-white/90 text-xs sm:text-sm mt-1 sm:mt-1.5 flex items-center space-x-2">
+                    <Target className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="truncate">{processoParaTarefa.nome}</span>
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setModalTarefaAberto(false)
+                  setProcessoParaTarefa(null)
+                  cancelarAdicaoTarefa()
+                }}
+                className="text-white/80 hover:text-white hover:bg-white/20 rounded-lg p-1.5 sm:p-2 transition-all duration-200 flex-shrink-0"
+              >
+                <X className="h-5 w-5 sm:h-6 sm:w-6" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto max-h-[calc(95vh-180px)] sm:max-h-[calc(90vh-180px)]">
+              {/* Descrição da Tarefa */}
+              <div className="group">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                  <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
+                  <span>Descrição da Tarefa *</span>
+                </label>
+                <textarea
+                  value={adicionandoTarefa.descricao}
+                  onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, descricao: e.target.value })}
+                  placeholder="Descreva a tarefa..."
+                  rows={3}
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all resize-none shadow-sm hover:border-gray-300 touch-manipulation"
+                />
+              </div>
+
+              {/* Tipo de Responsável */}
+              <div className="group">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 sm:mb-3 flex items-center space-x-2">
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
+                  <span>Tipo de Responsável</span>
+                </label>
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                  <label className={`flex-1 flex items-center space-x-3 cursor-pointer bg-white border-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 transition-all touch-manipulation min-h-[44px] ${
+                    tipoResponsavel === 'usuario' 
+                      ? 'border-[#EBA500] bg-[#EBA500]/5' 
+                      : 'border-gray-200 hover:border-[#EBA500]/50'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="tipoResponsavel"
+                      value="usuario"
+                      checked={tipoResponsavel === 'usuario'}
+                      onChange={(e) => setTipoResponsavel(e.target.value)}
+                      className="text-[#EBA500] focus:ring-[#EBA500] w-4 h-4 flex-shrink-0"
+                    />
+                    <span className="text-xs sm:text-sm font-medium text-[#373435]">Usuário do Sistema</span>
+                  </label>
+                  <label className={`flex-1 flex items-center space-x-3 cursor-pointer bg-white border-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 transition-all touch-manipulation min-h-[44px] ${
+                    tipoResponsavel === 'manual' 
+                      ? 'border-[#EBA500] bg-[#EBA500]/5' 
+                      : 'border-gray-200 hover:border-[#EBA500]/50'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="tipoResponsavel"
+                      value="manual"
+                      checked={tipoResponsavel === 'manual'}
+                      onChange={(e) => setTipoResponsavel(e.target.value)}
+                      className="text-[#EBA500] focus:ring-[#EBA500] w-4 h-4 flex-shrink-0"
+                    />
+                    <span className="text-xs sm:text-sm font-medium text-[#373435]">Nome Manual</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Responsável */}
+              <div className="group">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                  <User className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
+                  <span>Responsável</span>
+                </label>
+                {tipoResponsavel === 'usuario' ? (
+                  <select
+                    value={adicionandoTarefa.responsavel}
+                    onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, responsavel: e.target.value })}
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
+                  >
+                    <option value="">Selecionar responsável</option>
+                    {usuarios.map(usuario => (
+                      <option key={usuario.id} value={usuario.id}>
+                        {usuario.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={responsavelManual}
+                    onChange={(e) => setResponsavelManual(e.target.value)}
+                    placeholder="Digite o nome do responsável"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
+                  />
+                )}
+              </div>
+
+              {/* Prazo e Status em Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {/* Prazo */}
+                <div className="group">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
+                    <span>Prazo</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={adicionandoTarefa.dataLimite}
+                    onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, dataLimite: e.target.value })}
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
+                  />
+                </div>
+
+                {/* Status */}
+                <div className="group">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                    <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
+                    <span>Status Inicial</span>
+                  </label>
+                  <select
+                    value={adicionandoTarefa.status}
+                    onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, status: e.target.value })}
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
+                  >
+                    <option value="pending">Pendente</option>
+                    <option value="in_progress">Em Andamento</option>
+                    <option value="completed">Concluída</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+              <button
+                onClick={() => {
+                  setModalTarefaAberto(false)
+                  setProcessoParaTarefa(null)
+                  cancelarAdicaoTarefa()
+                }}
+                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold flex items-center justify-center space-x-2 min-h-[44px] touch-manipulation"
+              >
+                <X className="h-4 w-4" />
+                <span className="text-sm sm:text-base">Cancelar</span>
+              </button>
+              <button
+                onClick={salvarNovaTarefa}
+                disabled={!adicionandoTarefa.descricao}
+                className="w-full sm:w-auto px-5 sm:px-6 py-2.5 bg-gradient-to-r from-[#EBA500] to-[#D89500] text-white rounded-xl hover:from-[#D89500] hover:to-[#C78400] transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:shadow-none min-h-[44px] touch-manipulation"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-sm sm:text-base">Salvar Tarefa</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Editar Tarefa */}
+      {modalEdicaoAberto && tarefaParaEditar && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
+          <div 
+            className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg sm:text-2xl font-bold text-white flex items-center space-x-2">
+                  <Edit3 className="h-5 w-5 sm:h-6 sm:w-6" />
+                  <span>Editar Tarefa</span>
+                </h3>
+                {processoParaEdicao && (
+                  <p className="text-white/90 text-xs sm:text-sm mt-1 sm:mt-1.5 flex items-center space-x-2">
+                    <Target className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="truncate">{processoParaEdicao.nome}</span>
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setModalEdicaoAberto(false)
+                  setTarefaParaEditar(null)
+                  setProcessoParaEdicao(null)
+                  cancelarEdicao()
+                }}
+                className="text-white/80 hover:text-white hover:bg-white/20 rounded-lg p-1.5 sm:p-2 transition-all duration-200 flex-shrink-0"
+              >
+                <X className="h-5 w-5 sm:h-6 sm:w-6" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto max-h-[calc(95vh-180px)] sm:max-h-[calc(90vh-180px)]">
+              {/* Descrição da Tarefa */}
+              <div className="group">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                  <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+                  <span>Descrição da Tarefa *</span>
+                </label>
+                <textarea
+                  value={editandoTarefa.texto}
+                  onChange={(e) => setEditandoTarefa({ ...editandoTarefa, texto: e.target.value })}
+                  placeholder="Descreva a tarefa..."
+                  rows={3}
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none shadow-sm hover:border-gray-300 touch-manipulation"
+                />
+              </div>
+
+              {/* Tipo de Responsável */}
+              <div className="group">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 sm:mb-3 flex items-center space-x-2">
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+                  <span>Tipo de Responsável</span>
+                </label>
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                  <label className={`flex-1 flex items-center space-x-3 cursor-pointer bg-white border-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 transition-all touch-manipulation min-h-[44px] ${
+                    tipoResponsavelEdicao === 'usuario' 
+                      ? 'border-blue-500 bg-blue-500/5' 
+                      : 'border-gray-200 hover:border-blue-500/50'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="tipoResponsavelEdicao"
+                      value="usuario"
+                      checked={tipoResponsavelEdicao === 'usuario'}
+                      onChange={(e) => setTipoResponsavelEdicao(e.target.value)}
+                      className="text-blue-500 focus:ring-blue-500 w-4 h-4 flex-shrink-0"
+                    />
+                    <span className="text-xs sm:text-sm font-medium text-[#373435]">Usuário do Sistema</span>
+                  </label>
+                  <label className={`flex-1 flex items-center space-x-3 cursor-pointer bg-white border-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 transition-all touch-manipulation min-h-[44px] ${
+                    tipoResponsavelEdicao === 'manual' 
+                      ? 'border-blue-500 bg-blue-500/5' 
+                      : 'border-gray-200 hover:border-blue-500/50'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="tipoResponsavelEdicao"
+                      value="manual"
+                      checked={tipoResponsavelEdicao === 'manual'}
+                      onChange={(e) => setTipoResponsavelEdicao(e.target.value)}
+                      className="text-blue-500 focus:ring-blue-500 w-4 h-4 flex-shrink-0"
+                    />
+                    <span className="text-xs sm:text-sm font-medium text-[#373435]">Nome Manual</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Responsável */}
+              <div className="group">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                  <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+                  <span>Responsável</span>
+                </label>
+                {tipoResponsavelEdicao === 'usuario' ? (
+                  <select
+                    value={editandoTarefa.responsavel}
+                    onChange={(e) => setEditandoTarefa({ ...editandoTarefa, responsavel: e.target.value })}
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
+                  >
+                    <option value="">Selecionar responsável</option>
+                    {usuarios.map(usuario => (
+                      <option key={usuario.id} value={usuario.id}>
+                        {usuario.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={editandoTarefa.responsavel}
+                    onChange={(e) => setEditandoTarefa({ ...editandoTarefa, responsavel: e.target.value })}
+                    placeholder="Digite o nome do responsável"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
+                  />
+                )}
+              </div>
+
+              {/* Prazo */}
+              <div className="group">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+                  <span>Prazo</span>
+                </label>
+                <input
+                  type="date"
+                  value={editandoTarefa.dataLimite}
+                  onChange={(e) => setEditandoTarefa({ ...editandoTarefa, dataLimite: e.target.value })}
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+              <button
+                onClick={() => {
+                  setModalEdicaoAberto(false)
+                  setTarefaParaEditar(null)
+                  setProcessoParaEdicao(null)
+                  cancelarEdicao()
+                }}
+                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold flex items-center justify-center space-x-2 min-h-[44px] touch-manipulation"
+              >
+                <X className="h-4 w-4" />
+                <span className="text-sm sm:text-base">Cancelar</span>
+              </button>
+              <button
+                onClick={() => {
+                  salvarEdicaoTarefa(processoParaEdicao?.id)
+                  setModalEdicaoAberto(false)
+                  setTarefaParaEditar(null)
+                  setProcessoParaEdicao(null)
+                }}
+                disabled={!editandoTarefa.texto}
+                className="w-full sm:w-auto px-5 sm:px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:shadow-none min-h-[44px] touch-manipulation"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-sm sm:text-base">Salvar Alterações</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {modalDeleteAberto && tarefaParaDeletar && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold text-[#373435]">Excluir Tarefa</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1">Esta ação não pode ser desfeita</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 sm:p-6">
+              <p className="text-gray-700 mb-3 sm:mb-4 text-sm sm:text-base">
+                Tem certeza que deseja excluir a tarefa:
+              </p>
+              <div className="bg-gray-50 border-l-4 border-red-500 p-3 sm:p-4 rounded-r-lg">
+                <p className="font-semibold text-[#373435] text-sm sm:text-base break-words">{tarefaParaDeletar.texto}</p>
+                {processoParaDeletar && (
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1 truncate">
+                    Processo: {processoParaDeletar.nome}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 rounded-b-2xl">
+              <button
+                onClick={() => {
+                  setModalDeleteAberto(false)
+                  setTarefaParaDeletar(null)
+                  setProcessoParaDeletar(null)
+                }}
+                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-white transition-all font-semibold min-h-[44px] touch-manipulation text-sm sm:text-base"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  await apagarTarefa(processoParaDeletar.id, tarefaParaDeletar.id)
+                  setModalDeleteAberto(false)
+                  setTarefaParaDeletar(null)
+                  setProcessoParaDeletar(null)
+                }}
+                className="w-full sm:w-auto px-5 sm:px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all font-semibold flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl min-h-[44px] touch-manipulation text-sm sm:text-base"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Excluir Tarefa</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
