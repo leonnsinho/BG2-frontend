@@ -1,0 +1,948 @@
+import React, { useState, useEffect, useMemo } from 'react'
+import { supabase } from '../services/supabase'
+import { useAuth } from '../contexts/AuthContext'
+import { DFC_CATEGORIAS } from '../config/dfcCategorias'
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Search,
+  Filter,
+  Download,
+  Calendar,
+  DollarSign,
+  TrendingDown,
+  AlertCircle,
+  X,
+  Save,
+  Building2,
+  FileText,
+  ChevronDown
+} from 'lucide-react'
+import toast from 'react-hot-toast'
+
+function DFCPage() {
+  const { profile } = useAuth()
+  const [saidas, setSaidas] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [companyAvatars, setCompanyAvatars] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
+  const [editingId, setEditingId] = useState(null)
+  
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState('')
+  const [companyFilter, setCompanyFilter] = useState('all')
+  const [categoriaFilter, setCategoriaFilter] = useState('all')
+  const [mesFilter, setMesFilter] = useState('all')
+  
+  // Busca de empresa no formulário
+  const [companySearch, setCompanySearch] = useState('')
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false)
+
+  // Formulário
+  const [formData, setFormData] = useState({
+    company_id: '',
+    categoria: '',
+    item: '',
+    descricao: '',
+    valor: '',
+    mes: '',
+    vencimento: ''
+  })
+
+  const isSuperAdmin = () => profile?.role === 'super_admin'
+
+  useEffect(() => {
+    console.log('Profile:', profile)
+    console.log('Is Super Admin:', isSuperAdmin())
+    fetchCompanies()
+    fetchSaidas()
+  }, [profile])
+
+  useEffect(() => {
+    fetchSaidas()
+  }, [companyFilter, categoriaFilter])
+
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name, logo_url')
+        .order('name')
+
+      if (error) {
+        console.error('Erro na query de empresas:', error)
+        throw error
+      }
+      
+      console.log('Empresas carregadas:', data)
+      setCompanies(data || [])
+      
+      // Carregar avatars das empresas
+      if (data && data.length > 0) {
+        loadCompanyAvatars(data)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar empresas:', error)
+      toast.error('Erro ao carregar empresas')
+    }
+  }
+
+  const loadCompanyAvatars = async (companiesList) => {
+    const avatarUrls = {}
+    
+    for (const company of companiesList) {
+      if (company.logo_url) {
+        try {
+          // Usar createSignedUrl para garantir acesso mesmo se bucket não for público
+          const { data, error } = await supabase.storage
+            .from('company-avatars')
+            .createSignedUrl(company.logo_url, 3600) // URL válida por 1 hora
+          
+          if (error) {
+            console.error(`Erro ao criar signed URL para ${company.name}:`, error)
+            continue
+          }
+          
+          console.log(`Logo URL para ${company.name}:`, data?.signedUrl)
+          
+          if (data?.signedUrl) {
+            avatarUrls[company.id] = data.signedUrl
+          }
+        } catch (error) {
+          console.error(`Erro ao carregar logo de ${company.name}:`, error)
+        }
+      } else {
+        console.log(`Empresa ${company.name} não tem logo_url`)
+      }
+    }
+    
+    console.log('Company Avatars carregados:', avatarUrls)
+    setCompanyAvatars(avatarUrls)
+  }
+
+  const fetchSaidas = async () => {
+    try {
+      setLoading(true)
+      let query = supabase
+        .from('dfc_saidas')
+        .select(`
+          *,
+          companies (
+            id,
+            name,
+            logo_url
+          )
+        `)
+        .order('vencimento', { ascending: false })
+
+      if (companyFilter !== 'all') {
+        query = query.eq('company_id', companyFilter)
+      }
+
+      if (categoriaFilter !== 'all') {
+        query = query.eq('categoria', categoriaFilter)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+      setSaidas(data || [])
+    } catch (error) {
+      console.error('Erro ao buscar saídas:', error)
+      toast.error('Erro ao carregar saídas')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const openModal = (saida = null) => {
+    if (saida) {
+      setEditingId(saida.id)
+      setFormData({
+        company_id: saida.company_id,
+        categoria: saida.categoria,
+        item: saida.item,
+        descricao: saida.descricao,
+        valor: saida.valor,
+        mes: saida.mes.substring(0, 7), // Converter YYYY-MM-DD para YYYY-MM
+        vencimento: saida.vencimento
+      })
+    } else {
+      setEditingId(null)
+      setFormData({
+        company_id: companies.length === 1 ? companies[0].id : '',
+        categoria: '',
+        item: '',
+        descricao: '',
+        valor: '',
+        mes: '',
+        vencimento: ''
+      })
+    }
+    setShowModal(true)
+  }
+
+  const closeModal = () => {
+    setShowModal(false)
+    setEditingId(null)
+    setCompanySearch('')
+    setShowCompanyDropdown(false)
+    setFormData({
+      company_id: '',
+      categoria: '',
+      item: '',
+      descricao: '',
+      valor: '',
+      mes: '',
+      vencimento: ''
+    })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    // Validações
+    if (!formData.company_id) {
+      toast.error('Selecione uma empresa')
+      return
+    }
+    if (!formData.categoria || !formData.item) {
+      toast.error('Selecione uma categoria e um item')
+      return
+    }
+    if (!formData.descricao || !formData.valor || !formData.mes || !formData.vencimento) {
+      toast.error('Preencha todos os campos obrigatórios')
+      return
+    }
+
+    try {
+      const dataToSave = {
+        ...formData,
+        valor: parseFloat(formData.valor),
+        mes: formData.mes + '-01', // Converter YYYY-MM para YYYY-MM-01
+        created_by: profile.id
+      }
+
+      if (editingId) {
+        // Atualizar
+        const { error } = await supabase
+          .from('dfc_saidas')
+          .update(dataToSave)
+          .eq('id', editingId)
+
+        if (error) throw error
+        toast.success('Saída atualizada com sucesso!')
+      } else {
+        // Criar
+        const { error } = await supabase
+          .from('dfc_saidas')
+          .insert([dataToSave])
+
+        if (error) throw error
+        toast.success('Saída registrada com sucesso!')
+      }
+
+      closeModal()
+      fetchSaidas()
+    } catch (error) {
+      console.error('Erro ao salvar saída:', error)
+      toast.error('Erro ao salvar saída: ' + error.message)
+    }
+  }
+
+  const handleDelete = async (id) => {
+    setDeletingId(id)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from('dfc_saidas')
+        .delete()
+        .eq('id', deletingId)
+
+      if (error) throw error
+      toast.success('Saída excluída com sucesso!')
+      fetchSaidas()
+    } catch (error) {
+      console.error('Erro ao excluir saída:', error)
+      toast.error('Erro ao excluir saída')
+    } finally {
+      setShowDeleteModal(false)
+      setDeletingId(null)
+    }
+  }
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false)
+    setDeletingId(null)
+  }
+
+  const exportToCSV = () => {
+    const headers = ['Empresa', 'Categoria', 'Item', 'Descrição', 'Valor', 'Mês', 'Vencimento']
+    const rows = filteredSaidas.map(s => [
+      s.companies?.name || '-',
+      DFC_CATEGORIAS.find(c => c.nome === s.categoria)?.sigla || s.categoria,
+      s.item,
+      s.descricao,
+      parseFloat(s.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      s.mes.substring(0, 7), // YYYY-MM
+      new Date(s.vencimento + 'T00:00:00').toLocaleDateString('pt-BR')
+    ])
+
+    const csv = [headers, ...rows].map(row => row.join(';')).join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `dfc_saidas_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+  }
+
+  // Itens disponíveis baseado na categoria selecionada
+  const itensDisponiveis = useMemo(() => {
+    if (!formData.categoria) return []
+    const categoria = DFC_CATEGORIAS.find(c => c.nome === formData.categoria)
+    return categoria ? categoria.itens : []
+  }, [formData.categoria])
+
+  // Filtrar empresas para busca no formulário
+  const filteredCompanies = useMemo(() => {
+    console.log('Companies disponíveis:', companies.length)
+    console.log('Company Search:', companySearch)
+    if (!companySearch) return companies
+    const filtered = companies.filter(company => 
+      company.name.toLowerCase().includes(companySearch.toLowerCase())
+    )
+    console.log('Empresas filtradas:', filtered.length)
+    return filtered
+  }, [companies, companySearch])
+
+  // Obter nome da empresa selecionada
+  const selectedCompanyName = useMemo(() => {
+    const company = companies.find(c => c.id === formData.company_id)
+    return company ? company.name : ''
+  }, [companies, formData.company_id])
+
+  // Filtrar saídas
+  const filteredSaidas = useMemo(() => {
+    return saidas.filter(saida => {
+      const matchSearch = !searchTerm || 
+        saida.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        saida.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        saida.categoria.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      // Filtro por mês
+      const matchMes = mesFilter === 'all' || mesFilter === '' || 
+        saida.mes.substring(0, 7) === mesFilter
+      
+      return matchSearch && matchMes
+    })
+  }, [saidas, searchTerm, mesFilter])
+
+  // Calcular totais
+  const totais = useMemo(() => {
+    const total = filteredSaidas.reduce((sum, s) => sum + parseFloat(s.valor), 0)
+    const porCategoria = {}
+    
+    filteredSaidas.forEach(s => {
+      if (!porCategoria[s.categoria]) {
+        porCategoria[s.categoria] = 0
+      }
+      porCategoria[s.categoria] += parseFloat(s.valor)
+    })
+
+    return { total, porCategoria }
+  }, [filteredSaidas])
+
+  const formatCurrency = (value) => {
+    return parseFloat(value).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    })
+  }
+
+  const formatDate = (date) => {
+    if (!date) return '-'
+    return new Date(date + 'T00:00:00').toLocaleDateString('pt-BR')
+  }
+
+  const formatMonth = (date) => {
+    if (!date) return '-'
+    return new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  }
+
+  if (!isSuperAdmin()) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-red-900 mb-2">Acesso Negado</h2>
+          <p className="text-red-700">Apenas Super Admins têm acesso ao DFC.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EBA500] mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando DFC...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">
+              DFC - Saídas Financeiras
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              Demonstrativo de Fluxo de Caixa - Registro de Saídas
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={exportToCSV}
+              className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 transition-all font-medium"
+            >
+              <Download className="h-4 w-4" />
+              <span>Exportar CSV</span>
+            </button>
+
+            <button
+              onClick={() => openModal()}
+              className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-2xl hover:bg-[#EBA500]/90 transition-all font-medium"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Nova Saída</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Cards de Estatísticas */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Total de Saídas</p>
+              <p className="text-2xl font-bold text-[#373435] mt-1">{filteredSaidas.length}</p>
+            </div>
+            <FileText className="h-8 w-8 text-gray-400" />
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Valor Total</p>
+              <p className="text-2xl font-bold text-red-600 mt-1">{formatCurrency(totais.total)}</p>
+            </div>
+            <TrendingDown className="h-8 w-8 text-red-400" />
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Categorias</p>
+              <p className="text-2xl font-bold text-[#373435] mt-1">{Object.keys(totais.porCategoria).length}</p>
+            </div>
+            <Filter className="h-8 w-8 text-gray-400" />
+          </div>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-white border border-gray-200/50 rounded-2xl p-4 sm:p-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+            />
+          </div>
+
+          <select
+            value={companyFilter}
+            onChange={(e) => setCompanyFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+          >
+            <option value="all">Todas as empresas</option>
+            {companies.map(company => (
+              <option key={company.id} value={company.id}>{company.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={categoriaFilter}
+            onChange={(e) => setCategoriaFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+          >
+            <option value="all">Todas as categorias</option>
+            {DFC_CATEGORIAS.map(cat => (
+              <option key={cat.id} value={cat.nome}>{cat.sigla}</option>
+            ))}
+          </select>
+
+          <input
+            type="month"
+            value={mesFilter === 'all' ? '' : mesFilter}
+            onChange={(e) => setMesFilter(e.target.value || 'all')}
+            className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+            placeholder="Filtrar por mês"
+          />
+        </div>
+      </div>
+
+      {/* Tabela */}
+      <div className="bg-white border border-gray-200/50 rounded-2xl sm:rounded-3xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#373435] flex items-center">
+            <TrendingDown className="h-5 w-5 sm:h-6 sm:w-6 mr-3 text-red-500" />
+            Saídas Registradas ({filteredSaidas.length})
+          </h2>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  Empresa
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  Categoria
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  Item
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  Descrição
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  Valor
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  Mês
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  Vencimento
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-50">
+              {filteredSaidas.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="px-6 py-12 text-center">
+                    <TrendingDown className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma saída encontrada</h3>
+                    <p className="text-gray-600">
+                      {searchTerm || companyFilter !== 'all' || categoriaFilter !== 'all' || mesFilter !== 'all'
+                        ? 'Tente ajustar os filtros de busca'
+                        : 'Registre a primeira saída clicando em "Nova Saída"'}
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filteredSaidas.map((saida) => (
+                  <tr key={saida.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center text-sm text-gray-900">
+                        {companyAvatars[saida.company_id] ? (
+                          <img 
+                            src={companyAvatars[saida.company_id]} 
+                            alt={saida.companies?.name}
+                            className="h-6 w-6 rounded object-cover mr-2 flex-shrink-0"
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                            }}
+                          />
+                        ) : null}
+                        {!companyAvatars[saida.company_id] && (
+                          <Building2 className="h-4 w-4 mr-2 text-gray-400" />
+                        )}
+                        {saida.companies?.name || '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-medium text-gray-900">
+                        {DFC_CATEGORIAS.find(c => c.nome === saida.categoria)?.sigla || saida.categoria}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-900">{saida.item}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-600">{saida.descricao}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-semibold text-red-600">{formatCurrency(saida.valor)}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
+                        {formatMonth(saida.mes)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-900">{formatDate(saida.vencimento)}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => openModal(saida)}
+                          className="text-[#EBA500] hover:text-[#EBA500]/80"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(saida.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal de Formulário */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={closeModal}>
+          <div 
+            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <TrendingDown className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">
+                      {editingId ? 'Editar Saída' : 'Nova Saída'}
+                    </h2>
+                    <p className="text-sm text-white/90 mt-1">Preencha os dados da saída financeira</p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="text-white hover:bg-white/20 p-2 rounded-xl transition-all"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Formulário */}
+            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+              <div className="space-y-4">
+                {/* Empresa */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Empresa *
+                  </label>
+                  <div className="relative">
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={showCompanyDropdown ? companySearch : selectedCompanyName}
+                        onChange={(e) => {
+                          setCompanySearch(e.target.value)
+                          setShowCompanyDropdown(true)
+                        }}
+                        onFocus={() => {
+                          setCompanySearch('')
+                          setShowCompanyDropdown(true)
+                        }}
+                        placeholder="Buscar empresa..."
+                        className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                        required
+                      />
+                      {formData.company_id && !showCompanyDropdown && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, company_id: '' })
+                            setCompanySearch('')
+                          }}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                      {showCompanyDropdown && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCompanyDropdown(false)
+                            setCompanySearch('')
+                          }}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Dropdown de empresas */}
+                    {showCompanyDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-auto">
+                        {filteredCompanies.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                            Nenhuma empresa encontrada
+                          </div>
+                        ) : (
+                          filteredCompanies.map(company => (
+                            <button
+                              key={company.id}
+                              type="button"
+                              onClick={() => {
+                                setFormData({ ...formData, company_id: company.id })
+                                setShowCompanyDropdown(false)
+                                setCompanySearch('')
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                                formData.company_id === company.id ? 'bg-[#EBA500]/10 text-[#EBA500] font-medium' : 'text-gray-900'
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2">
+                                {companyAvatars[company.id] ? (
+                                  <img 
+                                    src={companyAvatars[company.id]} 
+                                    alt={company.name}
+                                    className="h-6 w-6 rounded object-cover flex-shrink-0"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none'
+                                      console.log(`Erro ao carregar imagem: ${companyAvatars[company.id]}`)
+                                    }}
+                                  />
+                                ) : null}
+                                {!companyAvatars[company.id] && (
+                                  <Building2 className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                                )}
+                                <span className="truncate">{company.name}</span>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Categoria */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Categoria *
+                  </label>
+                  <select
+                    value={formData.categoria}
+                    onChange={(e) => setFormData({ ...formData, categoria: e.target.value, item: '' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                    required
+                  >
+                    <option value="">Selecione uma categoria</option>
+                    {DFC_CATEGORIAS.map(cat => (
+                      <option key={cat.id} value={cat.nome}>{cat.sigla} - {cat.nome}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Item */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Item *
+                  </label>
+                  <select
+                    value={formData.item}
+                    onChange={(e) => setFormData({ ...formData, item: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                    required
+                    disabled={!formData.categoria}
+                  >
+                    <option value="">Selecione um item</option>
+                    {itensDisponiveis.map(item => (
+                      <option key={item} value={item}>{item}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Descrição */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descrição *
+                  </label>
+                  <textarea
+                    value={formData.descricao}
+                    onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                    rows="3"
+                    placeholder="Descreva a saída..."
+                    required
+                  />
+                </div>
+
+                {/* Valor */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Valor (R$) *
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.valor}
+                      onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                      placeholder="0,00"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Mês e Vencimento */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Mês de Referência *
+                    </label>
+                    <input
+                      type="month"
+                      value={formData.mes}
+                      onChange={(e) => setFormData({ ...formData, mes: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Vencimento *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.vencimento}
+                      onChange={(e) => setFormData({ ...formData, vencimento: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </form>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 transition-all font-medium"
+              >
+                <Save className="h-4 w-4" />
+                <span>{editingId ? 'Atualizar' : 'Salvar'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white flex items-center">
+                  <AlertCircle className="h-6 w-6 mr-2" />
+                  Confirmar Exclusão
+                </h3>
+                <button
+                  onClick={cancelDelete}
+                  className="text-white hover:bg-white/20 rounded-lg p-1 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-6">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <Trash2 className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-gray-900 font-medium mb-2">
+                    Tem certeza que deseja excluir esta saída?
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Esta ação não pode ser desfeita. A saída será removida permanentemente do sistema.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={cancelDelete}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all font-medium"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Excluir Saída</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default DFCPage

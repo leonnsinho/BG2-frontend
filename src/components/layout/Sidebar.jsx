@@ -14,6 +14,7 @@ import {
   Settings,
   FileText,
   TrendingUp,
+  TrendingDown,
   Building2,
   UserCircle,
   ChevronLeft,
@@ -132,6 +133,14 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
           { name: 'Atividade de Usuários', href: '/reports/user-activity' },
           { name: 'Uso por Empresa', href: '/reports/company-usage' },
           { name: 'Métricas da Plataforma', href: '/reports/platform-metrics' }
+        ]
+      },
+      {
+        name: 'DFC',
+        icon: TrendingDown,
+        href: '/dfc',
+        children: [
+          { name: 'Saídas', href: '/dfc/saidas' }
         ]
       }
     ]

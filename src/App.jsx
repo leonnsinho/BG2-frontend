@@ -43,6 +43,7 @@ import MaturityApprovalsPage from './pages/MaturityApprovalsPage'
 import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage'
 import DrePage from './pages/financeiro/DrePage'
 import DfcPage from './pages/financeiro/DfcPage'
+import DFCSaidasPage from './pages/DFCPage'
 import CompanyMaturityProgressPage from './pages/reports/CompanyMaturityProgressPage'
 import CompanyMaturityProgressPageNew from './pages/reports/CompanyMaturityProgressPageNew'
 import BusinessModelPage from './pages/BusinessModelPage'
@@ -344,6 +345,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <MaturityApprovalsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rota DFC - Saídas (Super Admin apenas) */}
+      <Route 
+        path="/dfc/saidas" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <DFCSaidasPage />
           </ProtectedRoute>
         }
       />

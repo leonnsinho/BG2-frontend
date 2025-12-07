@@ -57,7 +57,10 @@ function UserActivityPage() {
   const [selectedUser, setSelectedUser] = useState(null)
   const [userTasks, setUserTasks] = useState([])
   const [loadingTasks, setLoadingTasks] = useState(false)
-  const [taskCreators, setTaskCreators] = useState({}) // 🔥 Mapa de IDs para nomes
+  const [taskCreators, setTaskCreators] = useState({})
+  
+  // Estado para modal de status
+  const [showStatusModal, setShowStatusModal] = useState(false) // 🔥 Mapa de IDs para nomes
   const [taskFilter, setTaskFilter] = useState('all') // 🔥 NOVO: Filtro de tarefas
 
   // Verificar se é super_admin
@@ -164,19 +167,66 @@ function UserActivityPage() {
       // Se for company_admin (e não super_admin), filtrar por empresa
       if (isCompanyAdmin() && !isSuperAdmin() && currentCompany) {
         console.log('🔍 Filtrando por empresa:', currentCompany.id)
-        query = query.eq('company_id', currentCompany.id)
+        query = query.eq('primary_company_id', currentCompany.id)
       }
 
       const { data: usersData, error: usersError } = await query
         .order('last_login_at', { ascending: false, nullsFirst: false })
 
       if (usersError) {
-        console.error('❌ Erro ao buscar user_activity_summary:', usersError.message, usersError)
-        throw usersError
+        console.error('❌ Erro ao buscar user_activity_summary:', usersError)
+        console.error('❌ Código do erro:', usersError.code)
+        console.error('❌ Detalhes:', usersError.details)
+        console.error('❌ Mensagem:', usersError.message)
+        
+        // Se a view não existir, tentar criar dados mock ou buscar direto do profiles
+        if (usersError.code === '42P01' || usersError.message.includes('does not exist')) {
+          console.warn('⚠️ View user_activity_summary não existe. Buscando dados de profiles...')
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('*')
+          
+          if (profilesError) {
+            console.error('❌ Erro ao buscar profiles:', profilesError)
+            throw profilesError
+          }
+          
+          console.log('✅ Dados de profiles carregados:', profilesData?.length, 'usuários')
+          // Formatar dados do profiles para estrutura esperada
+          const formattedData = (profilesData || []).map(p => ({
+            id: p.id,
+            email: p.email,
+            full_name: p.full_name,
+            role: p.role,
+            last_login_at: p.last_login_at,
+            login_count: p.login_count || 0,
+            first_login_at: p.first_login_at,
+            last_activity_at: p.last_activity_at,
+            registered_at: p.created_at,
+            is_active: p.is_active,
+            days_since_last_login: p.last_login_at ? Math.floor((new Date() - new Date(p.last_login_at)) / (1000 * 60 * 60 * 24)) : null,
+            activity_status: !p.last_login_at ? 'never_accessed' : 
+                            Math.floor((new Date() - new Date(p.last_login_at)) / (1000 * 60 * 60 * 24)) < 7 ? 'active' :
+                            Math.floor((new Date() - new Date(p.last_login_at)) / (1000 * 60 * 60 * 24)) < 30 ? 'moderate' :
+                            Math.floor((new Date() - new Date(p.last_login_at)) / (1000 * 60 * 60 * 24)) < 90 ? 'inactive' : 'very_inactive',
+            tasks_created: 0,
+            tasks_completed: 0,
+            task_completion_rate: 0,
+            comments_made: 0,
+            companies_count: 0,
+            primary_company_name: null,
+            primary_company_id: null,
+            tasks_overdue: 0
+          }))
+          setUsers(formattedData)
+        } else {
+          throw usersError
+        }
+      } else {
+        console.log('✅ Dados de usuários carregados:', usersData?.length, 'usuários')
+        console.log('📋 Primeiros 3 usuários:', usersData?.slice(0, 3))
+        setUsers(usersData || [])
       }
-
-      console.log('✅ Dados de usuários carregados:', usersData?.length, 'usuários')
-      setUsers(usersData || [])
 
       // Buscar estatísticas
       console.log('📊 Carregando estatísticas...')
@@ -485,347 +535,198 @@ function UserActivityPage() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-white to-[#EBA500]/5 border-b border-gray-200/50 shadow-sm -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#373435] mb-1">Atividade de Usuários</h1>
-            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">Atividade de Usuários</h1>
+            <p className="mt-1 text-sm text-gray-600">
               {isCompanyAdmin() && !isSuperAdmin() 
                 ? `Monitore o engajamento dos usuários da ${getCurrentUserCompany()?.name || 'sua empresa'}`
-                : 'Monitore o engajamento e uso da plataforma por todos os usuários'
+                : 'Monitore o engajamento e uso da plataforma'
               }
             </p>
-            {isCompanyAdmin() && !isSuperAdmin() && (
-              <div className="mt-2 sm:mt-3 inline-flex items-center px-2 sm:px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
-                <Building2 className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 mr-1 sm:mr-2 flex-shrink-0" />
-                <span className="text-xs sm:text-sm font-medium text-blue-700 truncate">
-                  Visualizando apenas usuários de: {getCurrentUserCompany()?.name}
-                </span>
-              </div>
-            )}
           </div>
 
-          <button
-            onClick={exportToCSV}
-            className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2.5 min-h-[44px] bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 transition-all font-medium shadow-sm hover:shadow-md touch-manipulation w-full sm:w-auto"
-          >
-            <Download className="h-4 w-4" />
-            <span className="text-sm sm:text-base">Exportar CSV</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Seção Explicativa dos Estados de Usuários */}
-      <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-xl sm:rounded-2xl shadow-sm border border-blue-200/50 p-4 sm:p-5 lg:p-6">
-        <div className="flex items-start space-x-2 sm:space-x-3 mb-4">
-          <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base sm:text-lg font-bold text-[#373435] mb-1">
-              Entendendo os Estados de Atividade
-            </h3>
-            <p className="text-xs sm:text-sm text-gray-600">
-              A plataforma classifica automaticamente os usuários com base em seu padrão de uso
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mt-4 sm:mt-6">
-          {/* Ativo */}
-          <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border-2 border-green-200 hover:shadow-md transition-all">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-              </div>
-              <h4 className="font-bold text-green-800 text-sm sm:text-base">Ativo</h4>
-            </div>
-            <p className="text-[10px] sm:text-xs text-gray-600 leading-relaxed">
-              Usuário logou <span className="font-semibold text-green-700">nos últimos 7 dias</span>. 
-              Demonstra engajamento regular com a plataforma.
-            </p>
-          </div>
-
-          {/* Moderado */}
-          <div className="bg-white rounded-xl p-4 border-2 border-yellow-200 hover:shadow-md transition-all">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-yellow-600" />
-              </div>
-              <h4 className="font-bold text-yellow-800">Moderado</h4>
-            </div>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Último login entre <span className="font-semibold text-yellow-700">8 e 30 dias atrás</span>. 
-              Uso ocasional, pode necessitar re-engajamento.
-            </p>
-          </div>
-
-          {/* Inativo */}
-          <div className="bg-white rounded-xl p-4 border-2 border-orange-200 hover:shadow-md transition-all">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Clock className="h-5 w-5 text-orange-600" />
-              </div>
-              <h4 className="font-bold text-orange-800">Inativo</h4>
-            </div>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Último login entre <span className="font-semibold text-orange-700">31 e 60 dias atrás</span>. 
-              Requer atenção para reativar o uso.
-            </p>
-          </div>
-
-          {/* Muito Inativo */}
-          <div className="bg-white rounded-xl p-4 border-2 border-red-200 hover:shadow-md transition-all">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <XCircle className="h-5 w-5 text-red-600" />
-              </div>
-              <h4 className="font-bold text-red-800">Muito Inativo</h4>
-            </div>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Último login <span className="font-semibold text-red-700">há mais de 60 dias</span>. 
-              Usuário pode estar desengajado ou não necessitar mais do acesso.
-            </p>
-          </div>
-
-          {/* Nunca Acessou */}
-          <div className="bg-white rounded-xl p-4 border-2 border-gray-300 hover:shadow-md transition-all">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <XCircle className="h-5 w-5 text-gray-600" />
-              </div>
-              <h4 className="font-bold text-gray-700">Nunca Acessou</h4>
-            </div>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Usuário foi convidado mas <span className="font-semibold text-gray-700">ainda não realizou o primeiro login</span>. 
-              Verifique se recebeu o convite.
-            </p>
-          </div>
-        </div>
-
-        {/* Dica de Ação */}
-        <div className="mt-4 sm:mt-5 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg sm:rounded-xl">
-          <div className="flex items-start space-x-2 sm:space-x-3">
-            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <h5 className="text-xs sm:text-sm font-semibold text-blue-900 mb-1">💡 Dica de Engajamento</h5>
-              <p className="text-[10px] sm:text-xs text-blue-700 leading-relaxed">
-                Usuários com status <span className="font-semibold">Inativo</span> ou <span className="font-semibold">Muito Inativo</span> podem 
-                se beneficiar de comunicação direta, treinamento adicional ou verificação se ainda necessitam do acesso à plataforma.
-              </p>
-            </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowStatusModal(true)}
+              className="flex items-center justify-center space-x-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 transition-all font-medium"
+            >
+              <AlertCircle className="h-4 w-4" />
+              <span>Ver Status</span>
+            </button>
+            
+            <button
+              onClick={exportToCSV}
+              className="flex items-center justify-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-2xl hover:bg-[#EBA500]/90 transition-all font-medium"
+            >
+              <Download className="h-4 w-4" />
+              <span>Exportar CSV</span>
+            </button>
           </div>
         </div>
       </div>
 
       {/* Cards de Estatísticas */}
       {stats && (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
-          <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4 lg:p-6 hover:shadow-md transition-all duration-200">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center">
-              <div className="flex-shrink-0 mb-2 sm:mb-0">
-                <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg sm:rounded-xl shadow-sm">
-                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total de Usuários</p>
+                <p className="text-2xl font-bold text-[#373435] mt-1">{stats.total_users}</p>
               </div>
-              <div className="sm:ml-3 lg:ml-4">
-                <div className="text-xl sm:text-2xl font-bold text-[#373435]">{stats.total_users}</div>
-                <div className="text-[10px] sm:text-xs text-gray-500 font-medium mt-0.5">Total de Usuários</div>
-              </div>
+              <Users className="h-8 w-8 text-gray-400" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-white to-green-50/30 rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-all duration-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="p-3 bg-gradient-to-br from-green-100 to-green-200 rounded-xl shadow-sm">
-                  <Activity className="h-6 w-6 text-green-600" />
-                </div>
+          <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Ativos</p>
+                <p className="text-2xl font-bold text-green-600 mt-1">{stats.active_users}</p>
+                <p className="text-xs text-gray-500 mt-1">{stats.active_percentage?.toFixed(1)}%</p>
               </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-[#373435]">{stats.active_users}</div>
-                <div className="text-xs text-gray-500 font-medium mt-0.5">Usuários Ativos</div>
-                <div className="text-xs text-green-600 font-semibold mt-1">
-                  {stats.active_percentage?.toFixed(1)}% do total
-                </div>
-              </div>
+              <Activity className="h-8 w-8 text-green-400" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-white to-[#EBA500]/10 rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-all duration-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="p-3 bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/30 rounded-xl shadow-sm">
-                  <TrendingUp className="h-6 w-6 text-[#EBA500]" />
-                </div>
+          <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total de Logins</p>
+                <p className="text-2xl font-bold text-[#373435] mt-1">{stats.total_logins?.toLocaleString()}</p>
+                <p className="text-xs text-gray-500 mt-1">~{stats.avg_login_count?.toFixed(1)} por usuário</p>
               </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-[#373435]">{stats.total_logins}</div>
-                <div className="text-xs text-gray-500 font-medium mt-0.5">Total de Logins</div>
-                <div className="text-xs text-[#EBA500] font-semibold mt-1">
-                  ~{stats.avg_login_count?.toFixed(1)} por usuário
-                </div>
-              </div>
+              <TrendingUp className="h-8 w-8 text-blue-400" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-white to-orange-50/30 rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-all duration-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="p-3 bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl shadow-sm">
-                  <Clock className="h-6 w-6 text-orange-600" />
-                </div>
-              </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-[#373435]">{stats.total_overdue_tasks || 0}</div>
-                <div className="text-xs text-gray-500 font-medium mt-0.5">Tarefas em Atraso</div>
-                <div className="text-xs text-orange-600 font-semibold mt-1">
-                  Total na empresa
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-white to-red-50/30 rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-all duration-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="p-3 bg-gradient-to-br from-red-100 to-red-200 rounded-xl shadow-sm">
-                  <AlertCircle className="h-6 w-6 text-red-600" />
-                </div>
-              </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-[#373435]">
+          <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Inativos</p>
+                <p className="text-2xl font-bold text-orange-600 mt-1">
                   {stats.inactive_users + stats.never_accessed_users}
-                </div>
-                <div className="text-xs text-gray-500 font-medium mt-0.5">Inativos/Nunca Acessaram</div>
+                </p>
               </div>
+              <Clock className="h-8 w-8 text-orange-400" />
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Tarefas Atrasadas</p>
+                <p className="text-2xl font-bold text-red-600 mt-1">{stats.total_overdue_tasks || 0}</p>
+              </div>
+              <AlertCircle className="h-8 w-8 text-red-400" />
             </div>
           </div>
         </div>
       )}
 
       {/* Filtros */}
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-5 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-          <h3 className="text-sm font-semibold text-[#373435] flex items-center">
-            <Filter className="h-4 w-4 mr-2 text-[#EBA500]" />
-            Filtros
-          </h3>
-          {(searchTerm || statusFilter !== 'all' || roleFilter !== 'all' || companyFilter !== 'all') && (
-            <button
-              onClick={() => {
-                setSearchTerm('')
-                setStatusFilter('all')
-                setRoleFilter('all')
-                setCompanyFilter('all')
-              }}
-              className="text-xs text-[#EBA500] hover:text-[#EBA500]/80 font-medium flex items-center space-x-1 transition-colors min-h-[40px] touch-manipulation"
-            >
-              <XCircle className="h-3.5 w-3.5" />
-              <span>Limpar filtros</span>
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* Busca */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+      <div className="bg-white border border-gray-200/50 rounded-2xl p-4 sm:p-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative sm:col-span-2 lg:col-span-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
               placeholder="Buscar usuários..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 min-h-[44px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all text-sm sm:text-base touch-manipulation"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
             />
           </div>
+          
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+          >
+            <option value="all">Todos os status</option>
+            <option value="active">Ativo</option>
+            <option value="moderate">Moderado</option>
+            <option value="inactive">Inativo</option>
+            <option value="very_inactive">Muito Inativo</option>
+            <option value="never_accessed">Nunca Acessou</option>
+          </select>
 
-          {/* Filtro de Status */}
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 min-h-[44px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all appearance-none bg-white text-sm sm:text-base touch-manipulation"
-            >
-              <option value="all">Todos os status</option>
-              <option value="active">Ativo</option>
-              <option value="moderate">Moderado</option>
-              <option value="inactive">Inativo</option>
-              <option value="very_inactive">Muito Inativo</option>
-              <option value="never_accessed">Nunca Acessou</option>
-            </select>
-          </div>
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+          >
+            <option value="all">Todas as funções</option>
+            {isSuperAdmin() && <option value="super_admin">Super Admin</option>}
+            <option value="company_admin">Admin da Empresa</option>
+            <option value="gestor">Gestor</option>
+            <option value="user">Usuário</option>
+          </select>
 
-          {/* Filtro de Função */}
-          <div className="relative">
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all appearance-none bg-white"
-            >
-              <option value="all">Todas as funções</option>
-              {isSuperAdmin() && <option value="super_admin">Super Admin</option>}
-              <option value="company_admin">Admin da Empresa</option>
-              <option value="gestor">Gestor</option>
-              <option value="user">Usuário</option>
-            </select>
-          </div>
-
-          {/* Filtro de Empresa - Apenas para Super Admin */}
           {isSuperAdmin() && (
-            <div className="relative">
-              <select
-                value={companyFilter}
-                onChange={(e) => setCompanyFilter(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all appearance-none bg-white"
-              >
-                <option value="all">Todas as empresas</option>
-                {companies.map(company => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={companyFilter}
+              onChange={(e) => setCompanyFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+            >
+              <option value="all">Todas as empresas</option>
+              {companies.map(company => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
           )}
         </div>
       </div>
 
-      {/* Tabela de Usuários */}
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
-        <div className="-mx-4 sm:mx-0 overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200" style={{minWidth: '800px'}}>
-            <thead className="bg-gray-50">
+      {/* Lista de Usuários */}
+      <div className="bg-white border border-gray-200/50 rounded-2xl sm:rounded-3xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#373435] flex items-center">
+            <Users className="h-5 w-5 sm:h-6 sm:w-6 mr-3 text-[#EBA500]" />
+            Usuários ({filteredUsers.length})
+          </h2>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Usuário
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Função
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Empresa
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Último Login
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Logins
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Tarefas
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  Ações
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-50">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center">
+                  <td colSpan="8" className="px-6 py-12 text-center">
                     <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum usuário encontrado</h3>
                     <p className="text-gray-600">
@@ -880,12 +781,11 @@ function UserActivityPage() {
                       {getStatusBadge(user.activity_status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-900">
-                        <Clock className="h-4 w-4 mr-1.5 text-gray-400" />
+                      <div className="text-sm text-gray-900">
                         {formatDate(user.last_login_at)}
                       </div>
                       {user.days_since_last_login !== null && (
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500">
                           há {user.days_since_last_login} {user.days_since_last_login === 1 ? 'dia' : 'dias'}
                         </div>
                       )}
@@ -894,17 +794,21 @@ function UserActivityPage() {
                       <div className="font-semibold">{user.login_count || 0}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center justify-center">
-                        {/* Botão Ver Detalhes - sempre visível */}
-                        <button
-                          onClick={() => openTasksModal(user)}
-                          className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 hover:shadow-lg text-white rounded-lg text-sm font-medium transition-all duration-200 hover:-translate-y-0.5"
-                          title="Ver detalhes das tarefas"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver Tarefas
-                        </button>
+                      <div className="text-sm text-gray-900">
+                        <div className="font-semibold">{user.tasks_created || 0}</div>
+                        <div className="text-xs text-gray-500">
+                          {user.tasks_completed || 0} concluídas
+                        </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => openTasksModal(user)}
+                        className="text-[#EBA500] hover:text-[#EBA500]/80 font-medium"
+                      >
+                        <Eye className="h-4 w-4 inline mr-1" />
+                        Ver Detalhes
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -912,17 +816,157 @@ function UserActivityPage() {
             </tbody>
           </table>
         </div>
+      </div>
 
-        {/* Rodapé com total de resultados */}
-        {filteredUsers.length > 0 && (
-          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
-              Exibindo <span className="font-semibold text-gray-900">{filteredUsers.length}</span> de{' '}
-              <span className="font-semibold text-gray-900">{users.length}</span> usuário(s)
+      {/* Modal de Explicação dos Status */}
+      {showStatusModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowStatusModal(false)}>
+          <div 
+            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <AlertCircle className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Status de Atividade</h2>
+                    <p className="text-sm text-white/90 mt-1">Entenda como os usuários são classificados</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowStatusModal(false)}
+                  className="text-white hover:bg-white/20 p-2 rounded-xl transition-all"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="space-y-4">
+                {/* Ativo */}
+                <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-green-900 mb-2">Ativo</h3>
+                      <p className="text-sm text-green-800 leading-relaxed">
+                        Usuário realizou login <span className="font-semibold">nos últimos 7 dias</span>. 
+                        Demonstra engajamento regular e uso consistente da plataforma.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Moderado */}
+                <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="p-2 bg-yellow-100 rounded-lg">
+                        <AlertCircle className="h-5 w-5 text-yellow-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-yellow-900 mb-2">Moderado</h3>
+                      <p className="text-sm text-yellow-800 leading-relaxed">
+                        Último login realizado entre <span className="font-semibold">8 e 30 dias atrás</span>. 
+                        Uso ocasional da plataforma, pode necessitar de re-engajamento.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Inativo */}
+                <div className="bg-orange-50 border-l-4 border-orange-500 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <Clock className="h-5 w-5 text-orange-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-orange-900 mb-2">Inativo</h3>
+                      <p className="text-sm text-orange-800 leading-relaxed">
+                        Último login realizado entre <span className="font-semibold">31 e 60 dias atrás</span>. 
+                        Requer atenção para reativar o uso da plataforma.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Muito Inativo */}
+                <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="p-2 bg-red-100 rounded-lg">
+                        <XCircle className="h-5 w-5 text-red-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-red-900 mb-2">Muito Inativo</h3>
+                      <p className="text-sm text-red-800 leading-relaxed">
+                        Último login realizado <span className="font-semibold">há mais de 60 dias</span>. 
+                        Usuário pode estar desengajado ou não necessitar mais do acesso.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nunca Acessou */}
+                <div className="bg-gray-50 border-l-4 border-gray-400 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="p-2 bg-gray-100 rounded-lg">
+                        <XCircle className="h-5 w-5 text-gray-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Nunca Acessou</h3>
+                      <p className="text-sm text-gray-800 leading-relaxed">
+                        Usuário foi convidado mas <span className="font-semibold">ainda não realizou o primeiro login</span>. 
+                        Verifique se o convite foi recebido corretamente.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dica */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                  <div className="flex items-start space-x-3">
+                    <TrendingUp className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-sm font-semibold text-blue-900 mb-1">💡 Dica de Engajamento</h4>
+                      <p className="text-xs text-blue-800 leading-relaxed">
+                        Usuários com status <span className="font-semibold">Inativo</span> ou <span className="font-semibold">Muito Inativo</span> podem 
+                        se beneficiar de comunicação direta, treinamento adicional ou verificação se ainda necessitam do acesso à plataforma.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="w-full px-4 py-2 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 transition-all font-medium"
+              >
+                Entendi
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* 🔥 NOVO: Modal de Tarefas Detalhadas */}
       {showTasksModal && selectedUser && (
