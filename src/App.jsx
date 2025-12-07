@@ -31,6 +31,7 @@ import UsersManagementPage from './pages/admin/UsersManagementPage'
 import JourneyAssignmentsPage from './pages/admin/JourneyAssignmentsPage'
 import CompaniesManagementPage from './pages/admin/CompaniesManagementPage'
 import CategoriesManagementPage from './pages/admin/CategoriesManagementPage'
+import TaskPacksManagementPage from './pages/admin/TaskPacksManagementPage'
 import ProcessRequestsPage from './pages/ProcessRequestsPage'
 import AllProcessesPage from './pages/AllProcessesPage'
 import OperationalPoliciesPage from './pages/OperationalPoliciesPage'
@@ -291,6 +292,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin']}>
             <CategoriesManagementPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/admin/task-packs" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <TaskPacksManagementPage />
           </ProtectedRoute>
         }
       />

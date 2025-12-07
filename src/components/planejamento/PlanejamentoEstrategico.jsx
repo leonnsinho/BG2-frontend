@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock, CheckCircle, XCircle, Loader, Award, RotateCcw, FileSearch, GripVertical, Search } from 'lucide-react'
+import { Plus, User, Clock, CheckCircle2, AlertTriangle, Calendar, Edit3, Trash2, Save, X, Target, DollarSign, Users, TrendingUp, Settings, Sparkles, Lock, CheckCircle, XCircle, Loader, Award, RotateCcw, FileSearch, GripVertical, Search, Package } from 'lucide-react'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -148,6 +148,12 @@ const PlanejamentoEstrategico = () => {
   const [maturityModalOpen, setMaturityModalOpen] = useState(false)
   const [selectedProcessForMaturity, setSelectedProcessForMaturity] = useState(null)
   const [progressRefreshTrigger, setProgressRefreshTrigger] = useState(0) // 🔥 NOVO: Trigger para forçar refresh
+  
+  // Estados para importar pack de ações
+  const [modalImportarPackAberto, setModalImportarPackAberto] = useState(false)
+  const [processoParaImportarPack, setProcessoParaImportarPack] = useState(null)
+  const [packsDisponiveis, setPacksDisponiveis] = useState([])
+  const [loadingPacks, setLoadingPacks] = useState(false)
 
   // Adicionar CSS customizado para scrollbar
   useEffect(() => {
@@ -1059,6 +1065,116 @@ const PlanejamentoEstrategico = () => {
     }
   }
 
+  // Funções para gerenciar packs de ações
+  const carregarPacksDisponiveis = async (processoId) => {
+    try {
+      setLoadingPacks(true)
+      console.log('📦 Carregando packs para processo:', processoId)
+
+      const { data: packs, error } = await supabase
+        .from('process_task_packs')
+        .select(`
+          pack_id,
+          task_packs (
+            id,
+            name,
+            description,
+            task_pack_templates (
+              id,
+              title,
+              default_status,
+              order_in_pack
+            )
+          )
+        `)
+        .eq('process_id', processoId)
+
+      if (error) throw error
+
+      const packsFormatados = packs.map(p => ({
+        id: p.task_packs.id,
+        name: p.task_packs.name,
+        description: p.task_packs.description,
+        templates: p.task_packs.task_pack_templates.sort((a, b) => a.order_in_pack - b.order_in_pack)
+      }))
+
+      setPacksDisponiveis(packsFormatados)
+      console.log('📦 Packs carregados:', packsFormatados.length)
+    } catch (error) {
+      console.error('❌ Erro ao carregar packs:', error)
+      toast.error('Erro ao carregar packs disponíveis')
+    } finally {
+      setLoadingPacks(false)
+    }
+  }
+
+  const importarPack = async (pack) => {
+    if (!processoParaImportarPack) return
+
+    try {
+      console.log('📦 Importando pack:', pack.name)
+
+      // Buscar journey_id diretamente do processo
+      const { data: processData, error: processError } = await supabase
+        .from('processes')
+        .select('journey_id')
+        .eq('id', processoParaImportarPack.id)
+        .single()
+
+      if (processError || !processData?.journey_id) {
+        console.error('❌ Erro ao buscar journey_id do processo:', processError)
+        throw new Error('Não foi possível identificar a jornada deste processo.')
+      }
+
+      const journeyId = processData.journey_id
+      console.log('✅ Journey ID do processo:', journeyId)
+
+      // Calcular próxima ordem para as tarefas
+      const tarefasDoProcesso = tarefas[processoParaImportarPack.id] || []
+      const maxOrder = tarefasDoProcesso.length > 0 
+        ? Math.max(...tarefasDoProcesso.map(t => t.order || 0))
+        : -1
+
+      // Criar todas as tarefas do pack
+      let ordem = maxOrder + 1
+      for (const template of pack.templates) {
+        const taskData = {
+          title: template.title,
+          process_id: processoParaImportarPack.id,
+          company_id: companyId,
+          created_by: profile.id,
+          assigned_to: null, // Usuário define depois
+          journey_id: journeyId,
+          status: template.default_status || 'pending',
+          due_date: null, // Usuário define depois
+          priority: 3,
+          order: ordem
+        }
+
+        await createTask(taskData)
+        ordem++
+      }
+
+      // Recarregar tarefas e progresso
+      await loadTasks()
+      await reloadProcessProgress(processoParaImportarPack.id)
+
+      toast.success(`✅ ${pack.templates.length} ações importadas com sucesso!`)
+      setModalImportarPackAberto(false)
+      setProcessoParaImportarPack(null)
+      setPacksDisponiveis([])
+    } catch (error) {
+      console.error('❌ Erro ao importar pack:', error)
+      toast.error('Erro ao importar pack: ' + error.message)
+    }
+  }
+
+  const abrirModalImportarPack = async (processo) => {
+    setProcessoParaImportarPack(processo)
+    setModalImportarPackAberto(true)
+    await carregarPacksDisponiveis(processo.id)
+  }
+
   // Funções para controlar o sidebar de tarefa
   const abrirTaskSidebar = (tarefa) => {
     // 🔥 FIX: Garantir que responsavel e dataLimite estejam mapeados corretamente
@@ -1589,27 +1705,40 @@ const PlanejamentoEstrategico = () => {
                       </div>
                       
                       {/* Botão Adicionar Ação Elegante */}
-                      <button
-                        onClick={() => {
-                          // 🚨 VALIDAÇÃO: Só permitir se processo for REAL (UUID, não número mock)
-                          if (typeof processo.id === 'number') {
-                            alert('⚠️ Esta empresa ainda não possui processos criados nesta jornada.\n\nOs processos exibidos são apenas exemplos de demonstração. Para criar tarefas, primeiro é necessário criar processos reais através do sistema de Gestão de Processos.')
-                            return
-                          }
-                          // ✅ processo.id JÁ É UUID na tabela processes
-                          console.log('📝 Clicou adicionar tarefa:', { processo: processo.nome, id: processo.id, idType: typeof processo.id })
-                          // 🔥 NOVO: Abrir modal ao invés de inline form
-                          setProcessoParaTarefa(processo)
-                          setModalTarefaAberto(true)
-                          iniciarAdicaoTarefa(processo.id)
-                        }}
-                        disabled={typeof processo.id === 'number'}
-                        className={`w-full ${typeof processo.id === 'number' ? 'bg-gray-400 cursor-not-allowed opacity-60' : `${coresJornada.iconBg} hover:opacity-90`} text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs group-hover:scale-[1.02]`}
-                        title={typeof processo.id === 'number' ? 'Processos de exemplo - crie processos reais para adicionar ações' : 'Adicionar ação ao processo'}
-                      >
-                        <Plus className="h-3 w-3 flex-shrink-0" />
-                        <span className="truncate">{typeof processo.id === 'number' ? 'Processo Mock' : 'Adicionar Ação'}</span>
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            // 🚨 VALIDAÇÃO: Só permitir se processo for REAL (UUID, não número mock)
+                            if (typeof processo.id === 'number') {
+                              alert('⚠️ Esta empresa ainda não possui processos criados nesta jornada.\n\nOs processos exibidos são apenas exemplos de demonstração. Para criar tarefas, primeiro é necessário criar processos reais através do sistema de Gestão de Processos.')
+                              return
+                            }
+                            // ✅ processo.id JÁ É UUID na tabela processes
+                            console.log('📝 Clicou adicionar tarefa:', { processo: processo.nome, id: processo.id, idType: typeof processo.id })
+                            // 🔥 NOVO: Abrir modal ao invés de inline form
+                            setProcessoParaTarefa(processo)
+                            setModalTarefaAberto(true)
+                            iniciarAdicaoTarefa(processo.id)
+                          }}
+                          disabled={typeof processo.id === 'number'}
+                          className={`flex-1 ${typeof processo.id === 'number' ? 'bg-gray-400 cursor-not-allowed opacity-60' : `${coresJornada.iconBg} hover:opacity-90`} text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs group-hover:scale-[1.02]`}
+                          title={typeof processo.id === 'number' ? 'Processos de exemplo - crie processos reais para adicionar ações' : 'Adicionar ação ao processo'}
+                        >
+                          <Plus className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{typeof processo.id === 'number' ? 'Processo Mock' : 'Adicionar Ação'}</span>
+                        </button>
+
+                        {/* Botão Importar Pack (se houver packs disponíveis) */}
+                        {typeof processo.id !== 'number' && (
+                          <button
+                            onClick={() => abrirModalImportarPack(processo)}
+                            className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs group-hover:scale-[1.02]"
+                            title="Importar pack de ações pré-definidas"
+                          >
+                            <Package className="h-3 w-3 flex-shrink-0" />
+                          </button>
+                        )}
+                      </div>
 
                       {/* Barra de Progresso de Amadurecimento */}
                       <div className="mt-3">
@@ -2537,6 +2666,105 @@ const PlanejamentoEstrategico = () => {
                 <Trash2 className="h-4 w-4" />
                 <span>Excluir Tarefa</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Importar Pack de Ações */}
+      {modalImportarPackAberto && processoParaImportarPack && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div 
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-purple-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center">
+                    <Package className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-[#373435]">Importar Pack de Ações</h3>
+                    <p className="text-sm text-gray-600 mt-1">{processoParaImportarPack.nome}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setModalImportarPackAberto(false)
+                    setProcessoParaImportarPack(null)
+                    setPacksDisponiveis([])
+                  }}
+                  className="p-2 hover:bg-white rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {loadingPacks ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                  <p className="text-gray-600">Carregando packs disponíveis...</p>
+                </div>
+              ) : packsDisponiveis.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Package className="h-16 w-16 text-gray-300 mb-4" />
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Nenhum pack disponível</h4>
+                  <p className="text-gray-600 text-center max-w-md">
+                    Não há packs de ações associados a este processo. Entre em contato com o Super Admin para criar packs.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Selecione um pack para importar as ações pré-definidas. Você poderá editar responsáveis e prazos depois.
+                  </p>
+                  
+                  {packsDisponiveis.map((pack) => (
+                    <div
+                      key={pack.id}
+                      className="border-2 border-gray-200 rounded-xl p-4 hover:border-purple-300 transition-all cursor-pointer hover:shadow-md"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-[#373435] text-lg mb-1">{pack.name}</h4>
+                          {pack.description && (
+                            <p className="text-sm text-gray-600">{pack.description}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => importarPack(pack)}
+                          className="ml-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold text-sm flex items-center space-x-2"
+                        >
+                          <Package className="h-4 w-4" />
+                          <span>Importar</span>
+                        </button>
+                      </div>
+
+                      {/* Preview das ações */}
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs font-semibold text-gray-500 uppercase">
+                          {pack.templates.length} {pack.templates.length === 1 ? 'ação' : 'ações'}:
+                        </p>
+                        <div className="space-y-1.5">
+                          {pack.templates.map((template, index) => (
+                            <div key={template.id} className="flex items-start space-x-2 text-sm">
+                              <span className="flex-shrink-0 w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">
+                                {index + 1}
+                              </span>
+                              <p className="text-gray-700 flex-1">{template.title}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

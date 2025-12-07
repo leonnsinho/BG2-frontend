@@ -110,7 +110,8 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
           { name: 'Empresas', href: '/admin/companies' },
           { name: 'Categorias', href: '/admin/categories' },
           { name: 'Solicitações de Processos', href: '/admin/process-requests' },
-          { name: 'Todos os Processos', href: '/admin/all-processes' }
+          { name: 'Todos os Processos', href: '/admin/all-processes' },
+          { name: 'Packs de Tarefas', href: '/admin/task-packs' }
         ]
       },
       {
