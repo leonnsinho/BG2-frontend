@@ -86,6 +86,7 @@ export default function UsersManagementPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [companyFilter, setCompanyFilter] = useState('all')
   const [selectedUser, setSelectedUser] = useState(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
@@ -551,8 +552,11 @@ export default function UsersManagementPage() {
     const effectiveRole = user.company_role || user.role
     const matchesRole = !roleFilter || user.role === roleFilter || user.company_role === roleFilter
     const matchesStatus = !statusFilter || user.status === statusFilter
+    
+    // Filtro de empresa (apenas para super admins)
+    const matchesCompany = companyFilter === 'all' || user.companies?.id === companyFilter
 
-    return matchesSearch && matchesRole && matchesStatus
+    return matchesSearch && matchesRole && matchesStatus && matchesCompany
   })
 
   const getRoleInfo = (role) => ROLES[role] || ROLES.user
@@ -605,7 +609,7 @@ export default function UsersManagementPage() {
 
         {/* Filtros */}
         <div className="bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${isSuperAdmin() ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3 sm:gap-4`}>
             <div className="relative sm:col-span-2 lg:col-span-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -639,11 +643,26 @@ export default function UsersManagementPage() {
               <option value="pending">Pendente</option>
             </select>
 
+            {/* Filtro de Empresa - Apenas para Super Admins */}
+            {isSuperAdmin() && (
+              <select
+                value={companyFilter}
+                onChange={(e) => setCompanyFilter(e.target.value)}
+                className="px-3 py-3 sm:py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
+              >
+                <option value="all">Todas as empresas</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                ))}
+              </select>
+            )}
+
             <button
               onClick={() => {
                 setSearchTerm('')
                 setRoleFilter('')
                 setStatusFilter('')
+                setCompanyFilter('all')
               }}
               className="px-4 py-3 sm:py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
             >

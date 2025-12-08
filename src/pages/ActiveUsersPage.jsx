@@ -9,22 +9,8 @@ const ActiveUsersPage = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // 'all', 'active', 'inactive'
-  const [debugLogs, setDebugLogs] = useState([])
-
-  // Função para adicionar log de debug
-  const addLog = (message, data = null) => {
-    const timestamp = new Date().toLocaleTimeString('pt-BR')
-    const logEntry = {
-      timestamp,
-      message,
-      data: data ? JSON.stringify(data, null, 2) : null
-    }
-    console.log(`[ActiveUsersPage ${timestamp}]`, message, data)
-    setDebugLogs(prev => [...prev, logEntry])
-  }
 
   useEffect(() => {
-    addLog('Componente montado', { profile })
     loadUsers()
   }, [profile])
 
@@ -238,36 +224,6 @@ const ActiveUsersPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
-      {/* Debug Panel - Remover em produção */}
-      <div className="mb-6 bg-gray-900 text-white rounded-xl p-4 shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-yellow-400">🔍 Debug Logs - ActiveUsersPage</h3>
-            <button
-              onClick={() => setDebugLogs([])}
-              className="text-xs px-3 py-1 bg-red-600 hover:bg-red-700 rounded-md"
-            >
-              Limpar Logs
-            </button>
-          </div>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {debugLogs.length === 0 ? (
-              <p className="text-gray-400 text-xs">Nenhum log ainda...</p>
-            ) : (
-              debugLogs.map((log, index) => (
-                <div key={index} className="text-xs border-l-2 border-blue-500 pl-3 py-1">
-                  <span className="text-gray-400">[{log.timestamp}]</span>{' '}
-                  <span className="text-white">{log.message}</span>
-                  {log.data && (
-                    <pre className="mt-1 text-green-300 text-xs overflow-x-auto bg-gray-800 p-2 rounded">
-                      {log.data}
-                    </pre>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-2">
