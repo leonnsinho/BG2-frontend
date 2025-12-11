@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { DFC_CATEGORIAS } from '../config/dfcCategorias'
 import {
   Plus,
   Edit2,
@@ -17,7 +16,11 @@ import {
   Save,
   Building2,
   FileText,
-  ChevronDown
+  ChevronDown,
+  Upload,
+  Paperclip,
+  File,
+  Eye
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -26,11 +29,20 @@ function DFCPage() {
   const [saidas, setSaidas] = useState([])
   const [companies, setCompanies] = useState([])
   const [companyAvatars, setCompanyAvatars] = useState({})
+  const [categorias, setCategorias] = useState([])
+  const [itensDB, setItensDB] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const [editingId, setEditingId] = useState(null)
+  
+  // Estados para documentos
+  const [uploadedFiles, setUploadedFiles] = useState([])
+  const [uploadingFiles, setUploadingFiles] = useState(false)
+  const [documentos, setDocumentos] = useState([])
+  const [showDocumentosModal, setShowDocumentosModal] = useState(false)
+  const [selectedSaidaDocumentos, setSelectedSaidaDocumentos] = useState(null)
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState('')
@@ -46,7 +58,7 @@ function DFCPage() {
   const [formData, setFormData] = useState({
     company_id: '',
     categoria: '',
-    item: '',
+    item_id: '',
     descricao: '',
     valor: '',
     mes: '',
@@ -59,12 +71,39 @@ function DFCPage() {
     console.log('Profile:', profile)
     console.log('Is Super Admin:', isSuperAdmin())
     fetchCompanies()
+    fetchCategoriasEItens()
     fetchSaidas()
   }, [profile])
 
   useEffect(() => {
     fetchSaidas()
   }, [companyFilter, categoriaFilter])
+
+  const fetchCategoriasEItens = async () => {
+    try {
+      // Buscar categorias
+      const { data: categoriasData, error: categoriasError } = await supabase
+        .from('dfc_categorias')
+        .select('*')
+        .order('nome')
+
+      if (categoriasError) throw categoriasError
+
+      // Buscar itens
+      const { data: itensData, error: itensError } = await supabase
+        .from('dfc_itens')
+        .select('*')
+        .order('nome')
+
+      if (itensError) throw itensError
+
+      setCategorias(categoriasData || [])
+      setItensDB(itensData || [])
+    } catch (error) {
+      console.error('Erro ao buscar categorias e itens:', error)
+      toast.error('Erro ao carregar categorias e itens')
+    }
+  }
 
   const fetchCompanies = async () => {
     try {
@@ -135,7 +174,12 @@ function DFCPage() {
             id,
             name,
             logo_url
-          )
+          ),
+          dfc_itens (
+            id,
+            nome
+          ),
+          dfc_saidas_documentos (count)
         `)
         .order('vencimento', { ascending: false })
 
@@ -159,29 +203,50 @@ function DFCPage() {
     }
   }
 
-  const openModal = (saida = null) => {
+  const fetchDocumentos = async (saidaId) => {
+    try {
+      const { data, error } = await supabase
+        .from('dfc_saidas_documentos')
+        .select('*')
+        .eq('saida_id', saidaId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Erro ao buscar documentos:', error)
+      return []
+    }
+  }
+
+  const openModal = async (saida = null) => {
     if (saida) {
       setEditingId(saida.id)
       setFormData({
         company_id: saida.company_id,
         categoria: saida.categoria,
-        item: saida.item,
+        item_id: saida.item_id,
         descricao: saida.descricao,
         valor: saida.valor,
         mes: saida.mes.substring(0, 7), // Converter YYYY-MM-DD para YYYY-MM
         vencimento: saida.vencimento
       })
+      // Buscar documentos da saída
+      const docs = await fetchDocumentos(saida.id)
+      setDocumentos(docs)
     } else {
       setEditingId(null)
       setFormData({
         company_id: companies.length === 1 ? companies[0].id : '',
         categoria: '',
-        item: '',
+        item_id: '',
         descricao: '',
         valor: '',
         mes: '',
         vencimento: ''
       })
+      setDocumentos([])
+      setUploadedFiles([])
     }
     setShowModal(true)
   }
@@ -191,10 +256,12 @@ function DFCPage() {
     setEditingId(null)
     setCompanySearch('')
     setShowCompanyDropdown(false)
+    setUploadedFiles([])
+    setDocumentos([])
     setFormData({
       company_id: '',
       categoria: '',
-      item: '',
+      item_id: '',
       descricao: '',
       valor: '',
       mes: '',
@@ -210,7 +277,7 @@ function DFCPage() {
       toast.error('Selecione uma empresa')
       return
     }
-    if (!formData.categoria || !formData.item) {
+    if (!formData.categoria || !formData.item_id) {
       toast.error('Selecione uma categoria e um item')
       return
     }
@@ -227,6 +294,8 @@ function DFCPage() {
         created_by: profile.id
       }
 
+      let saidaId = editingId
+
       if (editingId) {
         // Atualizar
         const { error } = await supabase
@@ -238,12 +307,20 @@ function DFCPage() {
         toast.success('Saída atualizada com sucesso!')
       } else {
         // Criar
-        const { error } = await supabase
+        const { data: newSaida, error } = await supabase
           .from('dfc_saidas')
           .insert([dataToSave])
+          .select()
+          .single()
 
         if (error) throw error
+        saidaId = newSaida.id
         toast.success('Saída registrada com sucesso!')
+      }
+
+      // Upload de documentos
+      if (uploadedFiles.length > 0 && saidaId) {
+        await uploadDocumentos(saidaId)
       }
 
       closeModal()
@@ -252,6 +329,149 @@ function DFCPage() {
       console.error('Erro ao salvar saída:', error)
       toast.error('Erro ao salvar saída: ' + error.message)
     }
+  }
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files)
+    if (files.length > 0) {
+      setUploadedFiles(prev => [...prev, ...files])
+      toast.success(`${files.length} arquivo(s) selecionado(s)`)
+    }
+  }
+
+  const removeFile = (index) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const uploadDocumentos = async (saidaId) => {
+    if (uploadedFiles.length === 0) return
+
+    try {
+      setUploadingFiles(true)
+
+      for (const file of uploadedFiles) {
+        // Gerar nome único para o arquivo
+        const timestamp = Date.now()
+        const randomStr = Math.random().toString(36).substring(7)
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${timestamp}-${randomStr}.${fileExt}`
+        const filePath = `dfc-documentos/${saidaId}/${fileName}`
+
+        // Upload para o Storage
+        const { error: uploadError } = await supabase.storage
+          .from('dfc-documentos')
+          .upload(filePath, file)
+
+        if (uploadError) throw uploadError
+
+        // Salvar metadados no banco
+        const { error: dbError } = await supabase
+          .from('dfc_saidas_documentos')
+          .insert([{
+            saida_id: saidaId,
+            nome_arquivo: fileName,
+            nome_original: file.name,
+            tipo_arquivo: file.type,
+            tamanho: file.size,
+            storage_path: filePath,
+            created_by: profile.id
+          }])
+
+        if (dbError) throw dbError
+      }
+
+      toast.success('Documentos enviados com sucesso!')
+      setUploadedFiles([])
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error)
+      toast.error('Erro ao enviar documentos: ' + error.message)
+    } finally {
+      setUploadingFiles(false)
+    }
+  }
+
+  const deleteDocumento = async (documento) => {
+    try {
+      // Remover do storage
+      const { error: storageError } = await supabase.storage
+        .from('dfc-documentos')
+        .remove([documento.storage_path])
+
+      if (storageError) throw storageError
+
+      // Remover do banco
+      const { error: dbError } = await supabase
+        .from('dfc_saidas_documentos')
+        .delete()
+        .eq('id', documento.id)
+
+      if (dbError) throw dbError
+
+      // Atualizar lista de documentos local
+      setDocumentos(prev => prev.filter(d => d.id !== documento.id))
+      
+      // Atualizar contador na lista de saídas
+      setSaidas(prev => prev.map(saida => {
+        if (saida.id === documento.saida_id) {
+          return {
+            ...saida,
+            dfc_saidas_documentos: [{
+              count: Math.max(0, (saida.dfc_saidas_documentos?.[0]?.count || 1) - 1)
+            }]
+          }
+        }
+        return saida
+      }))
+      
+      toast.success('Documento excluído com sucesso!')
+    } catch (error) {
+      console.error('Erro ao excluir documento:', error)
+      toast.error('Erro ao excluir documento')
+    }
+  }
+
+  const downloadDocumento = async (documento) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('dfc-documentos')
+        .download(documento.storage_path)
+
+      if (error) throw error
+
+      // Criar URL e fazer download
+      const url = URL.createObjectURL(data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = documento.nome_original
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Erro ao baixar documento:', error)
+      toast.error('Erro ao baixar documento')
+    }
+  }
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+  }
+
+  const openDocumentosModal = async (saida) => {
+    setSelectedSaidaDocumentos(saida)
+    const docs = await fetchDocumentos(saida.id)
+    setDocumentos(docs)
+    setShowDocumentosModal(true)
+  }
+
+  const closeDocumentosModal = () => {
+    setShowDocumentosModal(false)
+    setSelectedSaidaDocumentos(null)
+    setDocumentos([])
   }
 
   const handleDelete = async (id) => {
@@ -285,15 +505,18 @@ function DFCPage() {
 
   const exportToCSV = () => {
     const headers = ['Empresa', 'Categoria', 'Item', 'Descrição', 'Valor', 'Mês', 'Vencimento']
-    const rows = filteredSaidas.map(s => [
-      s.companies?.name || '-',
-      DFC_CATEGORIAS.find(c => c.nome === s.categoria)?.sigla || s.categoria,
-      s.item,
-      s.descricao,
-      parseFloat(s.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      s.mes.substring(0, 7), // YYYY-MM
-      new Date(s.vencimento + 'T00:00:00').toLocaleDateString('pt-BR')
-    ])
+    const rows = filteredSaidas.map(s => {
+      const categoria = categorias.find(c => c.id === s.categoria)
+      return [
+        s.companies?.name || '-',
+        categoria?.sigla || s.categoria,
+        s.item,
+        s.descricao,
+        parseFloat(s.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        s.mes.substring(0, 7), // YYYY-MM
+        new Date(s.vencimento + 'T00:00:00').toLocaleDateString('pt-BR')
+      ]
+    })
 
     const csv = [headers, ...rows].map(row => row.join(';')).join('\n')
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -306,9 +529,8 @@ function DFCPage() {
   // Itens disponíveis baseado na categoria selecionada
   const itensDisponiveis = useMemo(() => {
     if (!formData.categoria) return []
-    const categoria = DFC_CATEGORIAS.find(c => c.nome === formData.categoria)
-    return categoria ? categoria.itens : []
-  }, [formData.categoria])
+    return itensDB.filter(item => item.categoria_id === formData.categoria)
+  }, [formData.categoria, itensDB])
 
   // Filtrar empresas para busca no formulário
   const filteredCompanies = useMemo(() => {
@@ -331,10 +553,10 @@ function DFCPage() {
   // Filtrar saídas
   const filteredSaidas = useMemo(() => {
     return saidas.filter(saida => {
+      const itemNome = saida.dfc_itens?.nome || ''
       const matchSearch = !searchTerm || 
         saida.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        saida.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        saida.categoria.toLowerCase().includes(searchTerm.toLowerCase())
+        itemNome.toLowerCase().includes(searchTerm.toLowerCase())
       
       // Filtro por mês
       const matchMes = mesFilter === 'all' || mesFilter === '' || 
@@ -497,8 +719,8 @@ function DFCPage() {
             className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
           >
             <option value="all">Todas as categorias</option>
-            {DFC_CATEGORIAS.map(cat => (
-              <option key={cat.id} value={cat.nome}>{cat.sigla}</option>
+            {categorias.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.sigla || cat.nome}</option>
             ))}
           </select>
 
@@ -587,11 +809,11 @@ function DFCPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm font-medium text-gray-900">
-                        {DFC_CATEGORIAS.find(c => c.nome === saida.categoria)?.sigla || saida.categoria}
+                        {categorias.find(c => c.id === saida.categoria)?.nome || '-'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-gray-900">{saida.item}</span>
+                      <span className="text-sm text-gray-900">{saida.dfc_itens?.nome || '-'}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-gray-600">{saida.descricao}</span>
@@ -610,6 +832,18 @@ function DFCPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
+                        {saida.dfc_saidas_documentos?.[0]?.count > 0 && (
+                          <button
+                            onClick={() => openDocumentosModal(saida)}
+                            className="relative text-blue-600 hover:text-blue-800"
+                            title="Ver documentos"
+                          >
+                            <Paperclip className="h-4 w-4" />
+                            <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] rounded-full h-3.5 w-3.5 flex items-center justify-center">
+                              {saida.dfc_saidas_documentos[0].count}
+                            </span>
+                          </button>
+                        )}
                         <button
                           onClick={() => openModal(saida)}
                           className="text-[#EBA500] hover:text-[#EBA500]/80"
@@ -767,13 +1001,13 @@ function DFCPage() {
                   </label>
                   <select
                     value={formData.categoria}
-                    onChange={(e) => setFormData({ ...formData, categoria: e.target.value, item: '' })}
+                    onChange={(e) => setFormData({ ...formData, categoria: e.target.value, item_id: '' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
                     required
                   >
                     <option value="">Selecione uma categoria</option>
-                    {DFC_CATEGORIAS.map(cat => (
-                      <option key={cat.id} value={cat.nome}>{cat.sigla} - {cat.nome}</option>
+                    {categorias.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.nome}</option>
                     ))}
                   </select>
                 </div>
@@ -784,15 +1018,15 @@ function DFCPage() {
                     Item *
                   </label>
                   <select
-                    value={formData.item}
-                    onChange={(e) => setFormData({ ...formData, item: e.target.value })}
+                    value={formData.item_id}
+                    onChange={(e) => setFormData({ ...formData, item_id: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
                     required
                     disabled={!formData.categoria}
                   >
                     <option value="">Selecione um item</option>
                     {itensDisponiveis.map(item => (
-                      <option key={item} value={item}>{item}</option>
+                      <option key={item.id} value={item.id}>{item.nome}</option>
                     ))}
                   </select>
                 </div>
@@ -859,6 +1093,98 @@ function DFCPage() {
                       required
                     />
                   </div>
+                </div>
+
+                {/* Upload de Documentos */}
+                <div className="border-t border-gray-200 pt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Documentos (Notas Fiscais, Comprovantes, etc.)
+                  </label>
+                  
+                  {/* Área de Upload */}
+                  <div className="mb-4">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#EBA500] hover:bg-[#EBA500]/5 transition-all">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600 mb-1">
+                          <span className="font-semibold text-[#EBA500]">Clique para selecionar</span> ou arraste arquivos
+                        </p>
+                        <p className="text-xs text-gray-500">PDF, PNG, JPG até 10MB</p>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        multiple
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        onChange={handleFileSelect}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Lista de Arquivos Selecionados */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Arquivos a enviar ({uploadedFiles.length})</p>
+                      <div className="space-y-2">
+                        {uploadedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center space-x-2 flex-1 min-w-0">
+                              <Paperclip className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-900 truncate">{file.name}</p>
+                                <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeFile(index)}
+                              className="ml-2 p-1 text-red-600 hover:bg-red-100 rounded transition-all flex-shrink-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Documentos Existentes (ao editar) */}
+                  {documentos.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Documentos anexados ({documentos.length})</p>
+                      <div className="space-y-2">
+                        {documentos.map((doc) => (
+                          <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="flex items-center space-x-2 flex-1 min-w-0">
+                              <File className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-900 truncate">{doc.nome_original}</p>
+                                <p className="text-xs text-gray-500">{formatFileSize(doc.tamanho)}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => downloadDocumento(doc)}
+                                className="p-1 text-[#EBA500] hover:bg-[#EBA500]/10 rounded transition-all"
+                                title="Baixar"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteDocumento(doc)}
+                                className="p-1 text-red-600 hover:bg-red-100 rounded transition-all"
+                                title="Excluir"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </form>
@@ -936,6 +1262,104 @@ function DFCPage() {
               >
                 <Trash2 className="h-4 w-4" />
                 <span>Excluir Saída</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Visualização de Documentos */}
+      {showDocumentosModal && selectedSaidaDocumentos && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closeDocumentosModal}>
+          <div 
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <Paperclip className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Documentos Anexados</h3>
+                    <p className="text-sm text-white/90 mt-0.5">
+                      {selectedSaidaDocumentos.companies?.name} - {selectedSaidaDocumentos.dfc_itens?.nome}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeDocumentosModal}
+                  className="text-white hover:bg-white/20 p-2 rounded-xl transition-all"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-140px)]">
+              {documentos.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-600">Nenhum documento anexado</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {documentos.map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all">
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                          <File className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{doc.nome_original}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <p className="text-xs text-gray-500">{formatFileSize(doc.tamanho)}</p>
+                            <span className="text-gray-300">•</span>
+                            <p className="text-xs text-gray-500">
+                              {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
+                        <button
+                          onClick={() => downloadDocumento(doc)}
+                          className="flex items-center space-x-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                          title="Baixar documento"
+                        >
+                          <Download className="h-4 w-4" />
+                          <span className="text-sm font-medium">Baixar</span>
+                        </button>
+                        {isSuperAdmin() && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Deseja realmente excluir este documento?')) {
+                                deleteDocumento(doc)
+                              }
+                            }}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                            title="Excluir documento"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+              <button
+                onClick={closeDocumentosModal}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium"
+              >
+                Fechar
               </button>
             </div>
           </div>

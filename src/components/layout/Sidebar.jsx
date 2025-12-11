@@ -140,7 +140,8 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         icon: TrendingDown,
         href: '/dfc',
         children: [
-          { name: 'Saídas', href: '/dfc/saidas' }
+          { name: 'Saídas', href: '/dfc/saidas' },
+          { name: 'Plano de Contas', href: '/dfc/plano-contas' }
         ]
       }
     ]
