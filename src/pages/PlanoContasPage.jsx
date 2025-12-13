@@ -12,13 +12,38 @@ import {
   Save,
   Tag,
   List,
-  ChevronDown
+  ChevronDown,
+  Building2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+
+// Estilos de animação para modais
+const modalStyles = `
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+`
 
 function PlanoContasPage() {
   const { profile } = useAuth()
   const [categorias, setCategorias] = useState([])
+  const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -30,10 +55,13 @@ function PlanoContasPage() {
   const [deletingCategoria, setDeletingCategoria] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoriaFilter, setCategoriaFilter] = useState('all')
+  const [companyFilter, setCompanyFilter] = useState('all')
   const [collapsedCategories, setCollapsedCategories] = useState({})
+  const [companySearchTerm, setCompanySearchTerm] = useState('') // Busca no modal
 
   // Formulário de item
   const [formData, setFormData] = useState({
+    company_ids: [], // Array de IDs de empresas
     categoria_id: '',
     nome: '',
     descricao: ''
@@ -42,10 +70,25 @@ function PlanoContasPage() {
   // Formulário de categoria
   const [categoriaFormData, setCategoriaFormData] = useState({
     nome: '',
+    tipo: 'saida',
     descricao: ''
   })
 
   const isSuperAdmin = () => profile?.role === 'super_admin'
+  
+  const isCompanyAdmin = () => {
+    return profile?.user_companies?.some(uc => uc.role === 'company_admin' && uc.is_active) || false
+  }
+  
+  const isAuthorized = () => isSuperAdmin() || isCompanyAdmin()
+  
+  const getCompanyAdminCompany = () => {
+    if (!isCompanyAdmin()) return null
+    const adminCompany = profile?.user_companies?.find(
+      uc => uc.role === 'company_admin' && uc.is_active
+    )
+    return adminCompany?.company_id || null
+  }
 
   const toggleCategory = (categoriaId) => {
     setCollapsedCategories(prev => ({
@@ -55,10 +98,40 @@ function PlanoContasPage() {
   }
 
   useEffect(() => {
-    if (isSuperAdmin()) {
+    if (isAuthorized()) {
+      fetchCompanies()
       fetchCategorias()
+      
+      // Auto-selecionar empresa para company_admin
+      if (isCompanyAdmin()) {
+        const companyId = getCompanyAdminCompany()
+        if (companyId) {
+          setCompanyFilter(companyId)
+        }
+      }
     }
   }, [profile])
+
+  useEffect(() => {
+    if (isAuthorized() && companies.length > 0) {
+      fetchCategorias()
+    }
+  }, [companyFilter])
+
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name')
+        .order('name')
+
+      if (error) throw error
+      setCompanies(data || [])
+    } catch (error) {
+      console.error('Erro ao buscar empresas:', error)
+      toast.error('Erro ao carregar empresas')
+    }
+  }
 
   const fetchCategorias = async () => {
     try {
@@ -72,7 +145,7 @@ function PlanoContasPage() {
 
       if (categoriasError) throw categoriasError
 
-      // Buscar itens de cada categoria
+      // Buscar itens
       const { data: itensData, error: itensError } = await supabase
         .from('dfc_itens')
         .select('*')
@@ -80,10 +153,43 @@ function PlanoContasPage() {
 
       if (itensError) throw itensError
 
+      // Buscar relacionamentos item-empresa
+      let empresasQuery = supabase
+        .from('dfc_itens_empresas')
+        .select('item_id, company_id, companies(id, name)')
+
+      if (companyFilter !== 'all') {
+        empresasQuery = empresasQuery.eq('company_id', companyFilter)
+      }
+
+      const { data: empresasData, error: empresasError } = await empresasQuery
+
+      if (empresasError) throw empresasError
+
+      // Agrupar empresas por item
+      const empresasPorItem = {}
+      empresasData?.forEach(rel => {
+        if (!empresasPorItem[rel.item_id]) {
+          empresasPorItem[rel.item_id] = []
+        }
+        empresasPorItem[rel.item_id].push(rel.companies)
+      })
+
+      // Combinar itens com suas empresas
+      const itensComEmpresas = itensData.map(item => ({
+        ...item,
+        empresas: empresasPorItem[item.id] || []
+      }))
+
+      // Filtrar itens se há filtro de empresa
+      const itensFiltrados = companyFilter !== 'all'
+        ? itensComEmpresas.filter(item => item.empresas.length > 0)
+        : itensComEmpresas
+
       // Organizar itens por categoria
       const categoriasComItens = (categoriasData || []).map(cat => ({
         ...cat,
-        itens: (itensData || []).filter(item => item.categoria_id === cat.id)
+        itens: itensFiltrados.filter(item => item.categoria_id === cat.id)
       }))
 
       setCategorias(categoriasComItens)
@@ -102,17 +208,27 @@ function PlanoContasPage() {
     }
   }
 
-  const openModal = (item = null, categoriaId = null) => {
+  const openModal = async (item = null, categoriaId = null) => {
     if (item) {
       setEditingItem(item)
+      
+      // Buscar empresas associadas ao item
+      const { data: empresasAssociadas } = await supabase
+        .from('dfc_itens_empresas')
+        .select('company_id')
+        .eq('item_id', item.id)
+
       setFormData({
+        company_ids: empresasAssociadas?.map(e => e.company_id) || [],
         categoria_id: item.categoria_id,
         nome: item.nome,
         descricao: item.descricao || ''
       })
     } else {
       setEditingItem(null)
+      const companyAdminId = getCompanyAdminCompany()
       setFormData({
+        company_ids: companyAdminId ? [companyAdminId] : (companyFilter !== 'all' ? [companyFilter] : []),
         categoria_id: categoriaId || '',
         nome: '',
         descricao: ''
@@ -124,7 +240,9 @@ function PlanoContasPage() {
   const closeModal = () => {
     setShowModal(false)
     setEditingItem(null)
+    setCompanySearchTerm('') // Limpar busca
     setFormData({
+      company_ids: [],
       categoria_id: '',
       nome: '',
       descricao: ''
@@ -136,12 +254,14 @@ function PlanoContasPage() {
       setEditingCategoria(categoria)
       setCategoriaFormData({
         nome: categoria.nome,
+        tipo: categoria.tipo || 'saida',
         descricao: categoria.descricao || ''
       })
     } else {
       setEditingCategoria(null)
       setCategoriaFormData({
         nome: '',
+        tipo: 'saida',
         descricao: ''
       })
     }
@@ -153,6 +273,7 @@ function PlanoContasPage() {
     setEditingCategoria(null)
     setCategoriaFormData({
       nome: '',
+      tipo: 'saida',
       descricao: ''
     })
   }
@@ -160,8 +281,8 @@ function PlanoContasPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!formData.categoria_id || !formData.nome) {
-      toast.error('Preencha todos os campos obrigatórios')
+    if (formData.company_ids.length === 0 || !formData.categoria_id || !formData.nome) {
+      toast.error('Preencha todos os campos obrigatórios e selecione ao menos uma empresa')
       return
     }
 
@@ -173,24 +294,49 @@ function PlanoContasPage() {
         created_by: profile.id
       }
 
+      let itemId
+
       if (editingItem) {
-        // Atualizar
+        // Atualizar item
         const { error } = await supabase
           .from('dfc_itens')
           .update(dataToSave)
           .eq('id', editingItem.id)
 
         if (error) throw error
-        toast.success('Item atualizado com sucesso!')
+        itemId = editingItem.id
+
+        // Remover associações antigas
+        await supabase
+          .from('dfc_itens_empresas')
+          .delete()
+          .eq('item_id', itemId)
       } else {
-        // Criar
-        const { error } = await supabase
+        // Criar novo item
+        const { data: newItem, error } = await supabase
           .from('dfc_itens')
           .insert([dataToSave])
+          .select()
+          .single()
 
         if (error) throw error
-        toast.success('Item criado com sucesso!')
+        itemId = newItem.id
       }
+
+      // Inserir novas associações item-empresa
+      const associacoes = formData.company_ids.map(companyId => ({
+        item_id: itemId,
+        company_id: companyId,
+        created_by: profile.id
+      }))
+
+      const { error: associacoesError } = await supabase
+        .from('dfc_itens_empresas')
+        .insert(associacoes)
+
+      if (associacoesError) throw associacoesError
+
+      toast.success(editingItem ? 'Item atualizado com sucesso!' : 'Item criado com sucesso!')
 
       closeModal()
       fetchCategorias()
@@ -211,6 +357,7 @@ function PlanoContasPage() {
     try {
       const dataToSave = {
         nome: categoriaFormData.nome.trim(),
+        tipo: categoriaFormData.tipo,
         descricao: categoriaFormData.descricao?.trim() || null,
         created_by: profile.id
       }
@@ -316,25 +463,27 @@ function PlanoContasPage() {
     return true
   })
 
-  if (!isSuperAdmin()) {
+  if (!isAuthorized()) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Acesso Negado</h2>
-          <p className="text-gray-600">Apenas Super Admins podem acessar esta página.</p>
+          <p className="text-gray-600">Apenas Administradores podem acessar esta página.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">
+    <>
+      <style>{modalStyles}</style>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">
               Plano de Contas
             </h1>
             <p className="mt-1 text-sm text-gray-600">
@@ -343,13 +492,15 @@ function PlanoContasPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2">
-            <button
-              onClick={() => openCategoriaModal()}
-              className="flex items-center justify-center space-x-2 px-4 py-2 bg-[#373435] text-white rounded-2xl hover:bg-[#373435]/90 transition-all font-medium"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Nova Categoria</span>
-            </button>
+            {isSuperAdmin() && (
+              <button
+                onClick={() => openCategoriaModal()}
+                className="flex items-center justify-center space-x-2 px-4 py-2 bg-[#373435] text-white rounded-2xl hover:bg-[#373435]/90 transition-all font-medium"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Nova Categoria</span>
+              </button>
+            )}
             <button
               onClick={() => openModal()}
               className="flex items-center justify-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-2xl hover:bg-[#EBA500]/90 transition-all font-medium"
@@ -363,7 +514,7 @@ function PlanoContasPage() {
 
       {/* Filtros */}
       <div className="bg-white border border-gray-200/50 rounded-2xl p-4 sm:p-6 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
@@ -374,6 +525,28 @@ function PlanoContasPage() {
               className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
             />
           </div>
+
+          {/* Filtro de Empresa - Apenas para Super Admin */}
+          {isSuperAdmin() && (
+            <select
+              value={companyFilter}
+              onChange={(e) => setCompanyFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+            >
+              <option value="all">Todas as empresas</option>
+              {companies.map(company => (
+                <option key={company.id} value={company.id}>{company.name}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Indicação da empresa para Company Admin */}
+          {isCompanyAdmin() && companyFilter !== 'all' && (
+            <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-2xl text-sm text-blue-700 font-medium flex items-center">
+              <Building2 className="h-4 w-4 mr-2" />
+              {companies.find(c => c.id === companyFilter)?.name || 'Empresa'}
+            </div>
+          )}
 
           <select
             value={categoriaFilter}
@@ -453,29 +626,31 @@ function PlanoContasPage() {
                       collapsedCategories[categoria.id] ? 'rotate-0' : 'rotate-180'
                     }`} />
                   </button>
-                  <div className="flex items-center space-x-2 ml-3">
-                    <button
-                      onClick={() => openCategoriaModal(categoria)}
-                      className="p-1.5 text-gray-600 hover:bg-gray-200/50 rounded-lg transition-colors"
-                      title="Editar categoria"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCategoria(categoria)}
-                      className="p-1.5 text-red-600 hover:bg-red-100/50 rounded-lg transition-colors"
-                      title="Excluir categoria"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => openModal(null, categoria.id)}
-                      className="flex items-center space-x-2 px-3 py-1.5 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 transition-all text-sm font-medium"
-                    >
-                      <Plus className="h-4 w-4" />
+                  {isSuperAdmin() && (
+                    <div className="flex items-center space-x-2 ml-3">
+                      <button
+                        onClick={() => openCategoriaModal(categoria)}
+                        className="p-1.5 text-gray-600 hover:bg-gray-200/50 rounded-lg transition-colors"
+                        title="Editar categoria"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategoria(categoria)}
+                        className="p-1.5 text-red-600 hover:bg-red-100/50 rounded-lg transition-colors"
+                        title="Excluir categoria"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => openModal(null, categoria.id)}
+                        className="flex items-center space-x-2 px-3 py-1.5 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 transition-all text-sm font-medium"
+                      >
+                        <Plus className="h-4 w-4\" />
                       <span>Adicionar Item</span>
                     </button>
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -499,6 +674,18 @@ function PlanoContasPage() {
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <h4 className="text-sm font-medium text-gray-900 truncate">{item.nome}</h4>
+                              {item.empresas && item.empresas.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {item.empresas.map((empresa, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-block px-1.5 py-0.5 text-xs bg-blue-50 text-blue-600 rounded border border-blue-200"
+                                    >
+                                      {empresa.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                               {item.descricao && (
                                 <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{item.descricao}</p>
                               )}
@@ -533,13 +720,18 @@ function PlanoContasPage() {
 
       {/* Modal de Formulário */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={closeModal}>
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-200" 
+          onClick={closeModal}
+          style={{ animation: 'fadeIn 0.2s ease-out' }}
+        >
           <div 
-            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            style={{ animation: 'slideUp 0.3s ease-out' }}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 px-6 py-5">
+            <div className="bg-gradient-to-r from-[#EBA500] to-[#EBA500]/80 px-6 py-5 flex-shrink-0 rounded-t-3xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-white/20 rounded-xl">
@@ -561,85 +753,204 @@ function PlanoContasPage() {
               </div>
             </div>
 
-            {/* Formulário */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {/* Categoria */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Categoria *
-                </label>
-                <select
-                  value={formData.categoria_id}
-                  onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
-                  required
+            {/* Formulário com Scroll */}
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {/* Empresas */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Empresas * <span className="text-xs text-gray-500">(Selecione uma ou mais)</span>
+                  </label>
+                  
+                  {/* Para Company Admin - Apenas mostrar sua empresa */}
+                  {isCompanyAdmin() ? (
+                    <div className="px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 font-medium flex items-center">
+                      <Building2 className="h-4 w-4 mr-2" />
+                      {companies.find(c => c.id === getCompanyAdminCompany())?.name || 'Empresa'}
+                    </div>
+                  ) : (
+                    /* Para Super Admin - Seleção múltipla */
+                    <>
+                      {/* Barra de Busca */}
+                      {companies.length > 3 && (
+                    <div className="relative mb-2">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={companySearchTerm}
+                        onChange={(e) => setCompanySearchTerm(e.target.value)}
+                        placeholder="Buscar empresa..."
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                      />
+                      {companySearchTerm && (
+                        <button
+                          type="button"
+                          onClick={() => setCompanySearchTerm('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5 text-gray-400" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Selecionar Todas */}
+                  {companies.length > 1 && (
+                    <div className="mb-2">
+                      <label className="flex items-center gap-2 p-2.5 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={formData.company_ids.length === companies.length && companies.length > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({
+                                ...formData,
+                                company_ids: companies.map(c => c.id)
+                              })
+                            } else {
+                              setFormData({
+                                ...formData,
+                                company_ids: []
+                              })
+                            }
+                          }}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-medium text-blue-700">
+                          Selecionar todas as empresas
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
+                  <div className="border border-gray-300 rounded-xl p-3 max-h-40 overflow-y-auto space-y-1 bg-gray-50">
+                    {companies.length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-2">Nenhuma empresa disponível</p>
+                    ) : (
+                      (() => {
+                        const filteredCompanies = companies.filter(company =>
+                          company.name.toLowerCase().includes(companySearchTerm.toLowerCase())
+                        )
+                        
+                        if (filteredCompanies.length === 0) {
+                          return (
+                            <p className="text-sm text-gray-500 text-center py-2">
+                              Nenhuma empresa encontrada
+                            </p>
+                          )
+                        }
+                        
+                        return filteredCompanies.map(company => (
+                          <label
+                            key={company.id}
+                            className="flex items-center gap-2 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.company_ids.includes(company.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormData({
+                                    ...formData,
+                                    company_ids: [...formData.company_ids, company.id]
+                                  })
+                                } else {
+                                  setFormData({
+                                    ...formData,
+                                    company_ids: formData.company_ids.filter(id => id !== company.id)
+                                  })
+                                }
+                              }}
+                              className="h-4 w-4 text-[#EBA500] border-gray-300 rounded focus:ring-[#EBA500]"
+                            />
+                            <span className="text-sm text-gray-700">{company.name}</span>
+                          </label>
+                        ))
+                      })()
+                    )}
+                  </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Categoria */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Categoria *
+                  </label>
+                  <select
+                    value={formData.categoria_id}
+                    onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                    required
+                  >
+                    <option value="">Selecione uma categoria</option>
+                    {categorias.map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Nome */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nome do Item *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nome}
+                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                    placeholder="Ex: Simples Nacional, Aluguel, etc."
+                    required
+                  />
+                </div>
+
+                {/* Descrição */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descrição (Opcional)
+                  </label>
+                  <textarea
+                    value={formData.descricao}
+                    onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] resize-none"
+                    rows="3"
+                    placeholder="Descrição adicional do item..."
+                  />
+                </div>
+              </div>
+
+              {/* Footer - Agora dentro do form */}
+              <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end space-x-3 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-medium"
                 >
-                  <option value="">Selecione uma categoria</option>
-                  {categorias.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Nome */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome do Item *
-                </label>
-                <input
-                  type="text"
-                  value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
-                  placeholder="Ex: Simples Nacional, Aluguel, etc."
-                  required
-                />
-              </div>
-
-              {/* Descrição */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descrição (Opcional)
-                </label>
-                <textarea
-                  value={formData.descricao}
-                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
-                  rows="3"
-                  placeholder="Descrição adicional do item..."
-                />
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 transition-all font-medium shadow-lg hover:shadow-xl"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>{editingItem ? 'Atualizar' : 'Salvar'}</span>
+                </button>
               </div>
             </form>
-
-            {/* Footer */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={closeModal}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 transition-all font-medium"
-              >
-                <Save className="h-4 w-4" />
-                <span>{editingItem ? 'Atualizar' : 'Salvar'}</span>
-              </button>
-            </div>
           </div>
         </div>
       )}
 
       {/* Modal de Confirmação de Exclusão */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md transform transition-all overflow-hidden" style={{ animation: 'slideUp 0.3s ease-out' }}>
             {/* Header */}
-            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-2xl">
+            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-3xl">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-white flex items-center">
                   <AlertCircle className="h-6 w-6 mr-2" />
@@ -672,7 +983,7 @@ function PlanoContasPage() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-end space-x-3">
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-3xl flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={cancelDelete}
@@ -694,8 +1005,8 @@ function PlanoContasPage() {
 
       {/* Modal de Categoria (Criar/Editar) */}
       {showCategoriaModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl transform transition-all">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl transform transition-all overflow-hidden" style={{ animation: 'slideUp 0.3s ease-out' }}>
             {/* Header */}
             <div className="bg-gradient-to-br from-[#EBA500] via-[#EBA500] to-[#d69500] px-8 py-6 rounded-t-3xl">
               <div className="flex items-center justify-between">
@@ -743,6 +1054,27 @@ function PlanoContasPage() {
                   <p className="mt-1.5 text-xs text-gray-500">Nome completo que será exibido no sistema</p>
                 </div>
 
+                {/* Tipo */}
+                <div>
+                  <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                    Tipo de Categoria
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={categoriaFormData.tipo}
+                      onChange={(e) => setCategoriaFormData({ ...categoriaFormData, tipo: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all text-gray-900 font-medium appearance-none bg-white"
+                      required
+                    >
+                      <option value="saida">Saída (Despesas)</option>
+                      <option value="entrada">Entrada (Receitas)</option>
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                  </div>
+                  <p className="mt-1.5 text-xs text-gray-500">Define se a categoria é para entradas (receitas) ou saídas (despesas)</p>
+                </div>
+
                 {/* Descrição */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -786,10 +1118,10 @@ function PlanoContasPage() {
 
       {/* Modal de Confirmação de Exclusão de Categoria */}
       {showDeleteCategoriaModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md transform transition-all overflow-hidden" style={{ animation: 'slideUp 0.3s ease-out' }}>
             {/* Header */}
-            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-2xl">
+            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-3xl">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-white flex items-center">
                   <AlertCircle className="h-6 w-6 mr-2" />
@@ -830,7 +1162,7 @@ function PlanoContasPage() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-end space-x-3">
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-3xl flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={cancelDeleteCategoria}
@@ -849,7 +1181,8 @@ function PlanoContasPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
 

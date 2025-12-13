@@ -44,6 +44,7 @@ import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage'
 import DrePage from './pages/financeiro/DrePage'
 import DfcPage from './pages/financeiro/DfcPage'
 import DFCSaidasPage from './pages/DFCPage'
+import DFCEntradasPage from './pages/DFCEntradasPage'
 import PlanoContasPage from './pages/PlanoContasPage'
 import CompanyMaturityProgressPage from './pages/reports/CompanyMaturityProgressPage'
 import CompanyMaturityProgressPageNew from './pages/reports/CompanyMaturityProgressPageNew'
@@ -350,21 +351,31 @@ function AppRoutes() {
         }
       />
 
-      {/* Rota DFC - Saídas (Super Admin apenas) */}
+      {/* Rota DFC - Saídas (Super Admin e Company Admin) */}
       <Route 
         path="/dfc/saidas" 
         element={
-          <ProtectedRoute requiredRole={['super_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <DFCSaidasPage />
           </ProtectedRoute>
         }
       />
 
-      {/* Rota Plano de Contas (Super Admin apenas) */}
+      {/* Rota DFC - Entradas (Super Admin e Company Admin) */}
+      <Route 
+        path="/dfc/entradas" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+            <DFCEntradasPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rota Plano de Contas (Super Admin e Company Admin) */}
       <Route 
         path="/dfc/plano-contas" 
         element={
-          <ProtectedRoute requiredRole={['super_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <PlanoContasPage />
           </ProtectedRoute>
         }

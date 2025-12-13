@@ -136,10 +136,11 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         ]
       },
       {
-        name: 'DFC',
+        name: 'Demonstrativo de Fluxo de Caixa',
         icon: TrendingDown,
         href: '/dfc',
         children: [
+          { name: 'Entradas', href: '/dfc/entradas' },
           { name: 'Saídas', href: '/dfc/saidas' },
           { name: 'Plano de Contas', href: '/dfc/plano-contas' }
         ]
@@ -261,6 +262,16 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         children: [
           { name: 'Atividade de Usuários', href: '/reports/user-activity' },
           { name: 'Uso por Empresa', href: '/reports/company-usage' }
+        ]
+      },
+      {
+        name: 'Demonstrativo de Fluxo de Caixa',
+        icon: TrendingDown,
+        href: '/dfc',
+        children: [
+          { name: 'Entradas', href: '/dfc/entradas' },
+          { name: 'Saídas', href: '/dfc/saidas' },
+          { name: 'Plano de Contas', href: '/dfc/plano-contas' }
         ]
       }
     ]
@@ -1002,50 +1013,45 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
             </button>
           )}
           
-          {/* Botão de Logout */}
-          <button
-            onClick={async () => {
-              await signOut()
-              onClose()
-            }}
-            className={cn(
-              "group flex items-center w-full px-3 py-2.5 sm:py-2 text-sm font-medium rounded-lg sm:rounded-md transition-all duration-200 text-neutral-100 hover:text-background hover:bg-red-500/80 hover:shadow-md active:scale-[0.98] touch-manipulation min-h-[44px] sm:min-h-0",
-              isCollapsed ? "justify-center" : "text-left"
-            )}
-            title={isCollapsed ? "Sair" : undefined}
-          >
-            <LogOut 
+          {/* Botões de Logout e Configurações na mesma linha */}
+          <div className={cn("flex gap-2", isCollapsed && "flex-col")}>
+            {/* Botão de Logout */}
+            <button
+              onClick={async () => {
+                await signOut()
+                onClose()
+              }}
               className={cn(
-                "h-5 w-5 text-neutral-300 group-hover:text-background transition-colors duration-200",
-                !isCollapsed && "mr-3"
+                "group flex items-center justify-center px-3 py-2.5 sm:py-2 text-sm font-medium rounded-lg sm:rounded-md transition-all duration-200 text-neutral-100 hover:text-background hover:bg-red-500/80 hover:shadow-md active:scale-[0.98] touch-manipulation min-h-[44px] sm:min-h-0 flex-1"
               )}
-            />
-            {!isCollapsed && <span className="flex-1 text-left">Sair</span>}
-          </button>
+              title="Sair"
+            >
+              <LogOut 
+                className="h-5 w-5 text-neutral-300 group-hover:text-background transition-colors duration-200"
+              />
+            </button>
 
-          {/* Link de Configurações do Perfil */}
-          <Link
-            to="/settings"
-            className={cn(
-              "group flex items-center px-3 py-2.5 sm:py-2 text-sm font-medium rounded-lg sm:rounded-md transition-all duration-200",
-              "hover:scale-[1.02] active:scale-[0.98] touch-manipulation min-h-[44px] sm:min-h-0",
-              isCurrentPath('/settings')
-                ? "bg-primary-500 text-background shadow-lg"
-                : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md",
-              isCollapsed ? "justify-center" : "text-left"
-            )}
-            onClick={onClose}
-            title={isCollapsed ? "Configurações" : undefined}
-          >
-            <Settings 
+            {/* Link de Configurações do Perfil */}
+            <Link
+              to="/settings"
               className={cn(
-                "h-5 w-5 transition-colors duration-200",
-                isCurrentPath('/settings') ? "text-background" : "text-neutral-300 group-hover:text-background",
-                !isCollapsed && "mr-3"
+                "group flex items-center justify-center px-3 py-2.5 sm:py-2 text-sm font-medium rounded-lg sm:rounded-md transition-all duration-200",
+                "hover:scale-[1.02] active:scale-[0.98] touch-manipulation min-h-[44px] sm:min-h-0 flex-1",
+                isCurrentPath('/settings')
+                  ? "bg-primary-500 text-background shadow-lg"
+                  : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md"
               )}
-            />
-            {!isCollapsed && <span className="flex-1 text-left">Configurações</span>}
-          </Link>
+              onClick={onClose}
+              title="Configurações"
+            >
+              <Settings 
+                className={cn(
+                  "h-5 w-5 transition-colors duration-200",
+                  isCurrentPath('/settings') ? "text-background" : "text-neutral-300 group-hover:text-background"
+                )}
+              />
+            </Link>
+          </div>
           
           {/* Botão Instalar App */}
           {!isCollapsed && isInstallable && (

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import SuperAdminBanner from '../components/SuperAdminBanner'
+import EmojiIconPicker from '../components/EmojiIconPicker'
+import { renderIcon } from '../utils/iconRenderer'
 import { useSearchParams } from 'react-router-dom' // 🔥 NOVO: Para ler query params
 import { 
   FileText, 
@@ -59,6 +61,7 @@ export default function OperationalPoliciesPage() {
   const [showSubSubblockModal, setShowSubSubblockModal] = useState(false) // 🔥 NOVO: Modal para sub-sub-blocos
   const [showContentModal, setShowContentModal] = useState(false)
   const [showAttachmentModal, setShowAttachmentModal] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false) // 🔥 NOVO: Emoji picker para ícones
   
   // 🔥 NOVO: Modais de visualização
   const [showBlockViewModal, setShowBlockViewModal] = useState(false)
@@ -2372,7 +2375,7 @@ export default function OperationalPoliciesPage() {
                                     className="w-full text-left px-3 py-2.5 hover:bg-green-50 rounded-lg transition-colors flex items-center gap-3 group border border-transparent hover:border-green-200"
                                   >
                                     <div className="p-2 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl flex-shrink-0 group-hover:from-green-50 group-hover:to-green-100/50 transition-all">
-                                      <span className="text-2xl">{block.icon}</span>
+                                      {renderIcon(block.icon, 'h-6 w-6')}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <span className="text-sm text-gray-700 group-hover:text-green-700 font-semibold block truncate">
@@ -2414,7 +2417,7 @@ export default function OperationalPoliciesPage() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                             <div className="p-2 sm:p-3 lg:p-4 bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl sm:rounded-2xl flex-shrink-0">
-                              <span className="text-3xl sm:text-4xl lg:text-5xl">{block.icon}</span>
+                              {renderIcon(block.icon, 'h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12')}
                             </div>
                             <div className="flex-1 min-w-0">
                               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#373435] mb-1 sm:mb-2 break-words">
@@ -2986,17 +2989,30 @@ export default function OperationalPoliciesPage() {
                   // VISUALIZAÇÃO EM LISTA
                   <div className="space-y-3 sm:space-y-4">
                     {filteredBlocks.map((block) => (
-                  <div key={block.id} className="group bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-sm border border-gray-200/50 overflow-hidden hover:shadow-md transition-all duration-200">
+                  <div 
+                    key={block.id} 
+                    className="group bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
+                    style={{ 
+                      border: `3px solid ${block.color}`,
+                      boxShadow: `0 8px 24px -4px ${block.color}40, 0 0 0 1px ${block.color}20, inset 0 0 0 1px ${block.color}10`,
+                      background: `linear-gradient(135deg, ${block.color}05 0%, white 50%)`
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = `0 12px 40px -4px ${block.color}60, 0 0 30px ${block.color}30, 0 0 0 1px ${block.color}40, inset 0 0 20px ${block.color}08`
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = `0 8px 24px -4px ${block.color}40, 0 0 0 1px ${block.color}20, inset 0 0 0 1px ${block.color}10`
+                    }}
+                  >
                     {/* Header do Bloco - Clicável */}
                     <div 
-                      className="p-4 sm:p-5 lg:p-6 cursor-pointer transition-colors relative hover:bg-gray-50/50"
-                      style={{ borderLeft: `5px solid ${block.color}` }}
+                      className="p-4 sm:p-5 lg:p-6 cursor-pointer transition-all relative"
                       onClick={() => openBlockInTab(block)}
                     >
                       {/* Conteúdo Principal */}
                       <div className="flex items-start gap-3 sm:gap-4 mb-3 lg:mb-0">
                         <div className="p-2 sm:p-2.5 lg:p-3 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl sm:rounded-2xl flex-shrink-0">
-                          <span className="text-2xl sm:text-3xl">{block.icon}</span>
+                          {renderIcon(block.icon, 'h-6 w-6 sm:h-8 sm:w-8')}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-0.5 break-words">{block.name}</h3>
@@ -3100,8 +3116,20 @@ export default function OperationalPoliciesPage() {
                   return (
                     <div
                       key={block.id}
-                      className="group bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border-2 border-gray-200/50 hover:border-[#EBA500]/30 hover:shadow-xl transition-all duration-300 overflow-hidden"
-                      style={{ borderLeftWidth: '6px', borderLeftColor: block.color || '#EBA500' }}
+                      className="group bg-white rounded-3xl overflow-hidden transition-all duration-300 hover:translate-y-[-6px]"
+                      style={{ 
+                        border: `3px solid ${block.color || '#EBA500'}`,
+                        boxShadow: `0 15px 35px -5px ${block.color}50, 0 0 0 1px ${block.color}25, inset 0 1px 0 ${block.color}15`,
+                        background: `linear-gradient(135deg, ${block.color}08 0%, white 60%)`
+                      }}
+                      onMouseEnter={(e) => {
+                        const color = block.color || '#EBA500'
+                        e.currentTarget.style.boxShadow = `0 20px 50px -5px ${color}70, 0 0 40px ${color}40, 0 0 0 1px ${color}50, inset 0 1px 0 ${color}20`
+                      }}
+                      onMouseLeave={(e) => {
+                        const color = block.color || '#EBA500'
+                        e.currentTarget.style.boxShadow = `0 15px 35px -5px ${color}50, 0 0 0 1px ${color}25, inset 0 1px 0 ${color}15`
+                      }}
                     >
                       {/* Área clicável para abrir visualização */}
                       <div 
@@ -3112,7 +3140,7 @@ export default function OperationalPoliciesPage() {
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
                             {block.icon && (
-                              <div className="text-4xl mb-3">{block.icon}</div>
+                              <div className="mb-3">{renderIcon(block.icon, 'h-10 w-10')}</div>
                             )}
                             <h3 className="text-lg font-bold text-[#373435] mb-2 line-clamp-2 break-words">
                               {block.name}
@@ -3199,12 +3227,16 @@ export default function OperationalPoliciesPage() {
             >
               {/* Header do Modal */}
               <div 
-                className="p-8 border-b border-gray-200"
-                style={{ borderLeft: `6px solid ${viewingBlock.color}` }}
+                className="p-8 relative"
+                style={{ 
+                  borderBottom: `3px solid ${viewingBlock.color}30`,
+                  background: `linear-gradient(135deg, ${viewingBlock.color}12 0%, ${viewingBlock.color}05 50%, white 100%)`,
+                  boxShadow: `inset 0 0 60px ${viewingBlock.color}08, 0 4px 20px ${viewingBlock.color}15`
+                }}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="text-5xl flex-shrink-0">{viewingBlock.icon}</div>
+                    <div className="flex-shrink-0">{renderIcon(viewingBlock.icon, 'h-12 w-12')}</div>
                     <div className="flex-1 min-w-0">
                       <h2 className="text-3xl font-bold text-[#373435] mb-2 break-words">
                         {viewingBlock.name}
@@ -3447,17 +3479,31 @@ export default function OperationalPoliciesPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 sm:gap-5">
-                  <div>
+                  <div className="relative">
                     <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-2.5">
-                      Ícone (Emoji)
+                      Ícone (Emoji ou SVG)
                     </label>
-                    <input
-                      type="text"
-                      value={blockForm.icon}
-                      onChange={(e) => setBlockForm(prev => ({ ...prev, icon: e.target.value }))}
-                      maxLength={2}
-                      className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white text-2xl sm:text-3xl text-center min-h-[44px] touch-manipulation"
-                    />
+                    <div className="relative">
+                      <div
+                        onClick={() => setShowEmojiPicker(true)}
+                        className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:border-[#EBA500] transition-colors bg-gray-50/50 hover:bg-white text-2xl sm:text-3xl flex items-center justify-center min-h-[44px] touch-manipulation cursor-pointer hover:border-[#EBA500]"
+                      >
+                        {blockForm.icon ? (
+                          <div className="flex items-center justify-center">
+                            {renderIcon(blockForm.icon, 'h-8 w-8 sm:h-10 sm:w-10')}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-base">Selecionar ícone</span>
+                        )}
+                      </div>
+                      {showEmojiPicker && (
+                        <EmojiIconPicker
+                          value={blockForm.icon}
+                          onChange={(icon) => setBlockForm(prev => ({ ...prev, icon }))}
+                          onClose={() => setShowEmojiPicker(false)}
+                        />
+                      )}
+                    </div>
                   </div>
 
                   <div>

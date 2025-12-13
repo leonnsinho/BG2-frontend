@@ -21,7 +21,9 @@ import {
   DollarSign,
   Target,
   TrendingUp,
-  Settings
+  Settings,
+  User,
+  Calendar
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
 
@@ -892,38 +894,58 @@ export default function UsersManagementPage() {
                 <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
               </div>
 
-              <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                    Detalhes do Usuário
-                  </h3>
+              <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div className="bg-gradient-to-br from-[#EBA500]/5 to-white px-6 pt-6 pb-5">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#EBA500] to-[#EBA500]/80 flex items-center justify-center shadow-lg">
+                      <User className="h-8 w-8 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-[#373435]">
+                        Detalhes de {selectedUser.full_name || selectedUser.email}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">Informações completas do usuário</p>
+                    </div>
+                  </div>
                   
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Nome Completo</label>
-                      <p className="text-sm text-gray-900">{selectedUser.full_name || 'Não informado'}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                        <User className="h-3.5 w-3.5" />
+                        Nome Completo
+                      </label>
+                      <p className="text-base text-gray-900 mt-2 font-medium">{selectedUser.full_name || 'Não informado'}</p>
                     </div>
                     
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Email</label>
-                      <p className="text-sm text-gray-900">{selectedUser.email}</p>
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                        <Mail className="h-3.5 w-3.5" />
+                        Email
+                      </label>
+                      <p className="text-base text-gray-900 mt-2 font-medium break-all">{selectedUser.email}</p>
                     </div>
                     
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Função</label>
-                      <p className="text-sm text-gray-900">
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                        <Shield className="h-3.5 w-3.5" />
+                        Função
+                      </label>
+                      <p className="text-base text-gray-900 mt-2 font-medium">
                         {getRoleInfo(selectedUser.company_role || selectedUser.role).label}
-                        {selectedUser.company_role && selectedUser.company_role !== selectedUser.role && (
-                          <span className="text-xs text-gray-500 ml-2">
-                            (Global: {getRoleInfo(selectedUser.role).label})
-                          </span>
-                        )}
                       </p>
+                      {selectedUser.company_role && selectedUser.company_role !== selectedUser.role && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Função global: {getRoleInfo(selectedUser.role).label}
+                        </p>
+                      )}
                     </div>
                     
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Empresa</label>
-                      <p className="text-sm text-gray-900">{selectedUser.companies?.name || 'Não vinculado'}</p>
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                        <Building2 className="h-3.5 w-3.5" />
+                        Empresa
+                      </label>
+                      <p className="text-base text-gray-900 mt-2 font-medium">{selectedUser.companies?.name || 'Não vinculado'}</p>
                       {selectedUser.company_role && (
                         <p className="text-xs text-gray-500 mt-1">
                           Função na empresa: {getRoleInfo(selectedUser.company_role).label}
@@ -931,17 +953,20 @@ export default function UsersManagementPage() {
                       )}
                     </div>
                     
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Data de Criação</label>
-                      <p className="text-sm text-gray-900">{formatDate(selectedUser.created_at)}</p>
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 md:col-span-2">
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                        <Calendar className="h-3.5 w-3.5" />
+                        Data de Criação
+                      </label>
+                      <p className="text-base text-gray-900 mt-2 font-medium">{formatDate(selectedUser.created_at)}</p>
                     </div>
                   </div>
                 </div>
                 
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <div className="bg-gray-50 px-6 py-4 flex justify-end">
                   <button
                     onClick={() => setIsViewModalOpen(false)}
-                    className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
+                    className="px-6 py-2.5 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 text-white rounded-2xl hover:from-[#EBA500]/90 hover:to-[#EBA500] shadow-md hover:shadow-lg font-semibold transition-all duration-200"
                   >
                     Fechar
                   </button>
@@ -962,6 +987,7 @@ export default function UsersManagementPage() {
             }}
             onLink={handleLinkToCompany}
             loading={updating}
+            currentUserProfile={profile}
           />
         )}
 
@@ -1129,10 +1155,16 @@ function EditUserModal({ user, onClose, onSave, loading }) {
 }
 
 // Componente Modal de Vinculação
-function LinkUserModal({ user, companies, onClose, onLink, loading }) {
+function LinkUserModal({ user, companies, onClose, onLink, loading, currentUserProfile }) {
   const isEdit = Boolean(user.companies?.id)
   const [selectedCompanyId, setSelectedCompanyId] = useState(user.companies?.id || '')
   const [selectedRole, setSelectedRole] = useState(user.company_role || 'user')
+  
+  // Verificar se o usuário atual é super_admin
+  const isSuperAdmin = currentUserProfile?.role === 'super_admin'
+  
+  // Company admin só pode alterar role, não a empresa
+  const canChangeCompany = isSuperAdmin
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -1161,45 +1193,39 @@ function LinkUserModal({ user, companies, onClose, onLink, loading }) {
           <form onSubmit={handleSubmit}>
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                {isEdit ? 'Alterar Empresa do Usuário' : 'Vincular Usuário à Empresa'}
+                {isEdit 
+                  ? (canChangeCompany 
+                      ? `Alterar a empresa e função de ${user.full_name || user.email}`
+                      : `Alterar a função de ${user.full_name || user.email}`)
+                  : `Vincular ${user.full_name || user.email} a uma empresa`
+                }
               </h3>
               
               <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-4">
-                  {isEdit 
-                    ? `Alterar a empresa de ${user.full_name || user.email}`
-                    : `Vincular ${user.full_name || user.email} a uma empresa`
-                  }
-                </p>
-                
-                {isEdit && (
-                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-sm text-yellow-800">
-                      <strong>Empresa atual:</strong> {user.companies?.name}
-                    </p>
-                    <p className="text-sm text-yellow-700">
-                      <strong>Função atual:</strong> {user.company_role || 'user'}
-                    </p>
-                  </div>
-                )}
                 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {isEdit ? 'Nova Empresa' : 'Empresa'}
+                    Empresa
                   </label>
-                  <select
-                    value={selectedCompanyId}
-                    onChange={(e) => setSelectedCompanyId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Selecione uma empresa...</option>
-                    {companies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </select>
+                  {canChangeCompany ? (
+                    <select
+                      value={selectedCompanyId}
+                      onChange={(e) => setSelectedCompanyId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Selecione uma empresa...</option>
+                      {companies.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {company.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-md text-gray-700">
+                      {companies.find(c => c.id === selectedCompanyId)?.name || 'Nenhuma empresa'}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-4">
@@ -1214,16 +1240,7 @@ function LinkUserModal({ user, companies, onClose, onLink, loading }) {
                     <option value="user">Usuário</option>
                     <option value="company_admin">Admin da Empresa</option>
                     <option value="gestor">Gestor Geral</option>
-                    <option value="gestor_financeiro">Gestor Financeiro</option>
-                    <option value="gestor_estrategico">Gestor Estratégico</option>
-                    <option value="gestor_pessoas_cultura">Gestor de Pessoas & Cultura</option>
-                    <option value="gestor_vendas_marketing">Gestor de Vendas & Marketing</option>
-                    <option value="gestor_operacional">Gestor Operacional</option>
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    💡 <strong>Gestor Geral</strong> tem acesso a todas as jornadas. 
-                    <strong>Gestores específicos</strong> têm acesso apenas às suas jornadas.
-                  </p>
                 </div>
               </div>
             </div>

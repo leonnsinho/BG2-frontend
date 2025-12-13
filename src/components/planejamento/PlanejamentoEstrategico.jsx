@@ -1542,7 +1542,7 @@ const PlanejamentoEstrategico = () => {
             <div className="h-5 sm:h-6 bg-gray-200 rounded w-36 sm:w-48 mx-auto mb-2 animate-pulse"></div>
             <div className="h-3 sm:h-4 bg-gray-100 rounded w-24 sm:w-32 mx-auto animate-pulse"></div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+          <div className="grid gap-3 sm:gap-4 lg:gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
             {[1, 2, 3, 4, 5].map((item) => (
               <div key={item} className="bg-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 animate-pulse">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gray-200 rounded-xl sm:rounded-2xl mx-auto mb-3 sm:mb-4"></div>
@@ -1577,8 +1577,8 @@ const PlanejamentoEstrategico = () => {
         </div>
       ) : (
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6 sm:space-y-8">
-        {/* Jornadas - 5 cards horizontais compactos e elegantes */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mt-6 sm:mt-8">
+        {/* Jornadas - cards horizontais distribuídos dinamicamente */}
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 mt-6 sm:mt-8" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${jornadas.length > 1 ? '180px' : '200px'}, 1fr))` }}>
         {jornadas.map((jornada) => {
           const cores = getJornadaCores(jornada.id)
           const isAtribuida = isJornadaAtribuida(jornada)
@@ -1737,12 +1737,14 @@ const PlanejamentoEstrategico = () => {
               processos={processos}
               onReorder={handleProcessReorder}
               cores={getJornadaCores(jornadaSelecionada.id)}
-              renderProcessCard={(processo, index) => {
+              renderProcessCard={(processo, index, totalProcessos) => {
               const coresJornada = getJornadaCores(jornadaSelecionada.id)
+              const isWideLayout = totalProcessos === 1 // Layout horizontal apenas para 1 processo
+              
               return (
-                <div className="group bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#373435]/10 hover:border-[#EBA500]/30 overflow-hidden flex flex-col h-fit min-h-[450px] sm:min-h-[500px]">
+                <div className={`group bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#373435]/10 hover:border-[#EBA500]/30 overflow-hidden ${isWideLayout ? 'flex flex-row h-fit min-h-[300px]' : 'flex flex-col h-fit min-h-[450px] sm:min-h-[500px]'}`}>
                   {/* Header do Processo Elegante */}
-                  <div className="relative p-3 sm:p-4 border-b border-[#373435]/10 bg-[#EBA500]/5 flex-shrink-0">
+                  <div className={`relative p-3 sm:p-4 ${isWideLayout ? 'border-r w-1/3' : 'border-b'} border-[#373435]/10 bg-[#EBA500]/5 flex-shrink-0`}>
                     {/* Background Pattern */}
                     <div className="absolute inset-0 bg-[#EBA500]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
@@ -1829,7 +1831,7 @@ const PlanejamentoEstrategico = () => {
                             iniciarAdicaoTarefa(processo.id)
                           }}
                           disabled={typeof processo.id === 'number'}
-                          className={`flex-1 ${typeof processo.id === 'number' ? 'bg-gray-400 cursor-not-allowed opacity-60' : `${coresJornada.iconBg} hover:opacity-90`} text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs group-hover:scale-[1.02]`}
+                          className={`flex-1 ${typeof processo.id === 'number' ? 'bg-gray-400 cursor-not-allowed opacity-60' : `${coresJornada.iconBg} hover:opacity-90`} text-white px-3 py-2 rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs`}
                           title={typeof processo.id === 'number' ? 'Processos de exemplo - crie processos reais para adicionar ações' : 'Adicionar ação ao processo'}
                         >
                           <Plus className="h-3 w-3 flex-shrink-0" />
@@ -1840,7 +1842,7 @@ const PlanejamentoEstrategico = () => {
                         {typeof processo.id !== 'number' && (
                           <button
                             onClick={() => abrirModalImportarPack(processo)}
-                            className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs group-hover:scale-[1.02]"
+                            className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs"
                             title="Importar pack de ações pré-definidas"
                           >
                             <Package className="h-3 w-3 flex-shrink-0" />
@@ -1888,7 +1890,7 @@ const PlanejamentoEstrategico = () => {
 
                 {/* Controles de Seleção Múltipla */}
                 {tarefas[processo.id]?.length > 0 && (
-                  <div className="px-3 sm:px-4 pt-3 pb-2 border-b border-[#373435]/10 bg-white">
+                  <div className={`px-3 sm:px-4 pt-3 pb-2 bg-white ${isWideLayout ? 'border-r' : 'border-b'} border-[#373435]/10`}>
                     {!modoSelecao ? (
                       <button
                         onClick={() => toggleModoSelecao()}
@@ -1943,7 +1945,7 @@ const PlanejamentoEstrategico = () => {
                 )}
 
                 {/* Lista de Tarefas Elegante */}
-                <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 max-h-64 sm:max-h-80 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 flex-1">
+                <div className={`p-3 sm:p-4 space-y-2 sm:space-y-3 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 flex-1 ${isWideLayout ? 'w-2/3 max-h-[500px]' : 'max-h-64 sm:max-h-80'}`}>
                   {/* Formulário de Nova Ação Inline */}
                   {(() => {
                     // ✅ processo.id JÁ É UUID

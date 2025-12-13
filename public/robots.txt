@@ -1,0 +1,13 @@
+# Arquivo robots.txt para BG2
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://partimap.netlify.app/sitemap.xml
+
+# Bloquear páginas de autenticação e áreas privadas
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /accept-invite

@@ -11,6 +11,7 @@ import {
   Calendar,
   DollarSign,
   TrendingDown,
+  TrendingUp,
   AlertCircle,
   X,
   Save,
@@ -24,9 +25,9 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-function DFCPage() {
+function DFCEntradasPage() {
   const { profile } = useAuth()
-  const [saidas, setSaidas] = useState([])
+  const [entradas, setEntradas] = useState([])
   const [companies, setCompanies] = useState([])
   const [companyAvatars, setCompanyAvatars] = useState({})
   const [categorias, setCategorias] = useState([])
@@ -92,20 +93,20 @@ function DFCPage() {
       }
     }
     
-    fetchSaidas()
+    fetchEntradas()
   }, [profile])
 
   useEffect(() => {
-    fetchSaidas()
+    fetchEntradas()
   }, [companyFilter, categoriaFilter])
 
   const fetchCategoriasEItens = async () => {
     try {
-      // Buscar categorias de saída (despesas)
+      // Buscar categorias de entrada (receitas)
       const { data: categoriasData, error: categoriasError } = await supabase
         .from('dfc_categorias')
         .select('*')
-        .eq('tipo', 'saida')
+        .eq('tipo', 'entrada')
         .order('nome')
 
       if (categoriasError) throw categoriasError
@@ -184,11 +185,11 @@ function DFCPage() {
     setCompanyAvatars(avatarUrls)
   }
 
-  const fetchSaidas = async () => {
+  const fetchEntradas = async () => {
     try {
       setLoading(true)
       let query = supabase
-        .from('dfc_saidas')
+        .from('dfc_entradas')
         .select(`
           *,
           companies (
@@ -200,7 +201,7 @@ function DFCPage() {
             id,
             nome
           ),
-          dfc_saidas_documentos (count)
+          dfc_entradas_documentos (count)
         `)
         .order('vencimento', { ascending: false })
 
@@ -215,21 +216,21 @@ function DFCPage() {
       const { data, error } = await query
 
       if (error) throw error
-      setSaidas(data || [])
+      setEntradas(data || [])
     } catch (error) {
-      console.error('Erro ao buscar saídas:', error)
-      toast.error('Erro ao carregar saídas')
+      console.error('Erro ao buscar entradas:', error)
+      toast.error('Erro ao carregar entradas')
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchDocumentos = async (saidaId) => {
+  const fetchDocumentos = async (entradaId) => {
     try {
       const { data, error } = await supabase
-        .from('dfc_saidas_documentos')
+        .from('dfc_entradas_documentos')
         .select('*')
-        .eq('saida_id', saidaId)
+        .eq('entrada_id', entradaId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -240,20 +241,20 @@ function DFCPage() {
     }
   }
 
-  const openModal = async (saida = null) => {
-    if (saida) {
-      setEditingId(saida.id)
+  const openModal = async (entrada = null) => {
+    if (entrada) {
+      setEditingId(entrada.id)
       setFormData({
-        company_id: saida.company_id,
-        categoria: saida.categoria,
-        item_id: saida.item_id,
-        descricao: saida.descricao,
-        valor: saida.valor,
-        mes: saida.mes.substring(0, 7), // Converter YYYY-MM-DD para YYYY-MM
-        vencimento: saida.vencimento
+        company_id: entrada.company_id,
+        categoria: entrada.categoria,
+        item_id: entrada.item_id,
+        descricao: entrada.descricao,
+        valor: entrada.valor,
+        mes: entrada.mes.substring(0, 7), // Converter YYYY-MM-DD para YYYY-MM
+        vencimento: entrada.vencimento
       })
-      // Buscar documentos da saída
-      const docs = await fetchDocumentos(saida.id)
+      // Buscar documentos da entrada
+      const docs = await fetchDocumentos(entrada.id)
       setDocumentos(docs)
     } else {
       setEditingId(null)
@@ -316,40 +317,40 @@ function DFCPage() {
         created_by: profile.id
       }
 
-      let saidaId = editingId
+      let entradaId = editingId
 
       if (editingId) {
         // Atualizar
         const { error } = await supabase
-          .from('dfc_saidas')
+          .from('dfc_entradas')
           .update(dataToSave)
           .eq('id', editingId)
 
         if (error) throw error
-        toast.success('Saída atualizada com sucesso!')
+        toast.success('Entrada atualizada com sucesso!')
       } else {
         // Criar
-        const { data: newSaida, error } = await supabase
-          .from('dfc_saidas')
+        const { data: newEntrada, error } = await supabase
+          .from('dfc_entradas')
           .insert([dataToSave])
           .select()
           .single()
 
         if (error) throw error
-        saidaId = newSaida.id
-        toast.success('Saída registrada com sucesso!')
+        entradaId = newEntrada.id
+        toast.success('Entrada registrada com sucesso!')
       }
 
       // Upload de documentos
-      if (uploadedFiles.length > 0 && saidaId) {
-        await uploadDocumentos(saidaId)
+      if (uploadedFiles.length > 0 && entradaId) {
+        await uploadDocumentos(entradaId)
       }
 
       closeModal()
-      fetchSaidas()
+      fetchEntradas()
     } catch (error) {
-      console.error('Erro ao salvar saída:', error)
-      toast.error('Erro ao salvar saída: ' + error.message)
+      console.error('Erro ao salvar entrada:', error)
+      toast.error('Erro ao salvar entrada: ' + error.message)
     }
   }
 
@@ -365,7 +366,7 @@ function DFCPage() {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
-  const uploadDocumentos = async (saidaId) => {
+  const uploadDocumentos = async (entradaId) => {
     if (uploadedFiles.length === 0) return
 
     try {
@@ -377,7 +378,7 @@ function DFCPage() {
         const randomStr = Math.random().toString(36).substring(7)
         const fileExt = file.name.split('.').pop()
         const fileName = `${timestamp}-${randomStr}.${fileExt}`
-        const filePath = `dfc-documentos/${saidaId}/${fileName}`
+        const filePath = `dfc-documentos/${entradaId}/${fileName}`
 
         // Upload para o Storage
         const { error: uploadError } = await supabase.storage
@@ -388,9 +389,9 @@ function DFCPage() {
 
         // Salvar metadados no banco
         const { error: dbError } = await supabase
-          .from('dfc_saidas_documentos')
+          .from('dfc_entradas_documentos')
           .insert([{
-            saida_id: saidaId,
+            entrada_id: entradaId,
             nome_arquivo: fileName,
             nome_original: file.name,
             tipo_arquivo: file.type,
@@ -423,7 +424,7 @@ function DFCPage() {
 
       // Remover do banco
       const { error: dbError } = await supabase
-        .from('dfc_saidas_documentos')
+        .from('dfc_entradas_documentos')
         .delete()
         .eq('id', documento.id)
 
@@ -432,17 +433,17 @@ function DFCPage() {
       // Atualizar lista de documentos local
       setDocumentos(prev => prev.filter(d => d.id !== documento.id))
       
-      // Atualizar contador na lista de saídas
-      setSaidas(prev => prev.map(saida => {
-        if (saida.id === documento.saida_id) {
+      // Atualizar contador na lista de entradas
+      setEntradas(prev => prev.map(entrada => {
+        if (entrada.id === documento.entrada_id) {
           return {
-            ...saida,
-            dfc_saidas_documentos: [{
-              count: Math.max(0, (saida.dfc_saidas_documentos?.[0]?.count || 1) - 1)
+            ...entrada,
+            dfc_entradas_documentos: [{
+              count: Math.max(0, (entrada.dfc_entradas_documentos?.[0]?.count || 1) - 1)
             }]
           }
         }
-        return saida
+        return entrada
       }))
       
       toast.success('Documento excluído com sucesso!')
@@ -483,16 +484,16 @@ function DFCPage() {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
   }
 
-  const openDocumentosModal = async (saida) => {
-    setSelectedSaidaDocumentos(saida)
-    const docs = await fetchDocumentos(saida.id)
+  const openDocumentosModal = async (entrada) => {
+    setSelectedEntradaDocumentos(entrada)
+    const docs = await fetchDocumentos(entrada.id)
     setDocumentos(docs)
     setShowDocumentosModal(true)
   }
 
   const closeDocumentosModal = () => {
     setShowDocumentosModal(false)
-    setSelectedSaidaDocumentos(null)
+    setSelectedEntradaDocumentos(null)
     setDocumentos([])
   }
 
@@ -504,16 +505,16 @@ function DFCPage() {
   const confirmDelete = async () => {
     try {
       const { error } = await supabase
-        .from('dfc_saidas')
+        .from('dfc_entradas')
         .delete()
         .eq('id', deletingId)
 
       if (error) throw error
-      toast.success('Saída excluída com sucesso!')
-      fetchSaidas()
+      toast.success('Entrada excluída com sucesso!')
+      fetchEntradas()
     } catch (error) {
-      console.error('Erro ao excluir saída:', error)
-      toast.error('Erro ao excluir saída')
+      console.error('Erro ao excluir entrada:', error)
+      toast.error('Erro ao excluir entrada')
     } finally {
       setShowDeleteModal(false)
       setDeletingId(null)
@@ -527,16 +528,16 @@ function DFCPage() {
 
   const exportToCSV = () => {
     const headers = ['Empresa', 'Categoria', 'Item', 'Descrição', 'Valor', 'Mês', 'Vencimento']
-    const rows = filteredSaidas.map(s => {
-      const categoria = categorias.find(c => c.id === s.categoria)
+    const rows = filteredEntradas.map(e => {
+      const categoria = categorias.find(c => c.id === e.categoria)
       return [
-        s.companies?.name || '-',
-        categoria?.sigla || s.categoria,
-        s.item,
-        s.descricao,
-        parseFloat(s.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        s.mes.substring(0, 7), // YYYY-MM
-        new Date(s.vencimento + 'T00:00:00').toLocaleDateString('pt-BR')
+        e.companies?.name || '-',
+        categoria?.sigla || e.categoria,
+        e.item,
+        e.descricao,
+        parseFloat(e.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        e.mes.substring(0, 7), // YYYY-MM
+        new Date(e.vencimento + 'T00:00:00').toLocaleDateString('pt-BR')
       ]
     })
 
@@ -544,7 +545,7 @@ function DFCPage() {
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `dfc_saidas_${new Date().toISOString().split('T')[0]}.csv`
+    link.download = `dfc_entradas_${new Date().toISOString().split('T')[0]}.csv`
     link.click()
   }
 
@@ -572,36 +573,36 @@ function DFCPage() {
     return company ? company.name : ''
   }, [companies, formData.company_id])
 
-  // Filtrar saídas
-  const filteredSaidas = useMemo(() => {
-    return saidas.filter(saida => {
-      const itemNome = saida.dfc_itens?.nome || ''
+  // Filtrar entradas
+  const filteredEntradas = useMemo(() => {
+    return entradas.filter(entrada => {
+      const itemNome = entrada.dfc_itens?.nome || ''
       const matchSearch = !searchTerm || 
-        saida.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entrada.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
         itemNome.toLowerCase().includes(searchTerm.toLowerCase())
       
       // Filtro por mês
       const matchMes = mesFilter === 'all' || mesFilter === '' || 
-        saida.mes.substring(0, 7) === mesFilter
+        entrada.mes.substring(0, 7) === mesFilter
       
       return matchSearch && matchMes
     })
-  }, [saidas, searchTerm, mesFilter])
+  }, [entradas, searchTerm, mesFilter])
 
   // Calcular totais
   const totais = useMemo(() => {
-    const total = filteredSaidas.reduce((sum, s) => sum + parseFloat(s.valor), 0)
+    const total = filteredEntradas.reduce((sum, e) => sum + parseFloat(e.valor), 0)
     const porCategoria = {}
     
-    filteredSaidas.forEach(s => {
-      if (!porCategoria[s.categoria]) {
-        porCategoria[s.categoria] = 0
+    filteredEntradas.forEach(e => {
+      if (!porCategoria[e.categoria]) {
+        porCategoria[e.categoria] = 0
       }
-      porCategoria[s.categoria] += parseFloat(s.valor)
+      porCategoria[e.categoria] += parseFloat(e.valor)
     })
 
     return { total, porCategoria }
-  }, [filteredSaidas])
+  }, [filteredEntradas])
 
   const formatCurrency = (value) => {
     return parseFloat(value).toLocaleString('pt-BR', {
@@ -650,10 +651,10 @@ function DFCPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">
-              DFC - Saídas Financeiras
+              DFC - Entradas Financeiras
             </h1>
             <p className="mt-1 text-sm text-gray-600">
-              Demonstrativo de Fluxo de Caixa - Registro de Saídas
+              Demonstrativo de Fluxo de Caixa - Registro de Entradas
             </p>
           </div>
 
@@ -671,7 +672,7 @@ function DFCPage() {
               className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-2xl hover:bg-[#EBA500]/90 transition-all font-medium"
             >
               <Plus className="h-4 w-4" />
-              <span>Nova Saída</span>
+              <span>Nova Entrada</span>
             </button>
           </div>
         </div>
@@ -682,8 +683,8 @@ function DFCPage() {
         <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total de Saídas</p>
-              <p className="text-2xl font-bold text-[#373435] mt-1">{filteredSaidas.length}</p>
+              <p className="text-sm text-gray-600">Total de Entradas</p>
+              <p className="text-2xl font-bold text-[#373435] mt-1">{filteredEntradas.length}</p>
             </div>
             <FileText className="h-8 w-8 text-gray-400" />
           </div>
@@ -693,9 +694,9 @@ function DFCPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Valor Total</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">{formatCurrency(totais.total)}</p>
+              <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(totais.total)}</p>
             </div>
-            <TrendingDown className="h-8 w-8 text-red-400" />
+            <TrendingUp className="h-8 w-8 text-green-400" />
           </div>
         </div>
 
@@ -770,8 +771,8 @@ function DFCPage() {
       <div className="bg-white border border-gray-200/50 rounded-2xl sm:rounded-3xl overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg sm:text-xl font-semibold text-[#373435] flex items-center">
-            <TrendingDown className="h-5 w-5 sm:h-6 sm:w-6 mr-3 text-red-500" />
-            Saídas Registradas ({filteredSaidas.length})
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 mr-3 text-green-500" />
+            Entradas Registradas ({filteredEntradas.length})
           </h2>
         </div>
 
@@ -806,84 +807,84 @@ function DFCPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-50">
-              {filteredSaidas.length === 0 ? (
+              {filteredEntradas.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="px-6 py-12 text-center">
-                    <TrendingDown className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma saída encontrada</h3>
+                    <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma entrada encontrada</h3>
                     <p className="text-gray-600">
                       {searchTerm || companyFilter !== 'all' || categoriaFilter !== 'all' || mesFilter !== 'all'
                         ? 'Tente ajustar os filtros de busca'
-                        : 'Registre a primeira saída clicando em "Nova Saída"'}
+                        : 'Registre a primeira entrada clicando em "Nova Entrada"'}
                     </p>
                   </td>
                 </tr>
               ) : (
-                filteredSaidas.map((saida) => (
-                  <tr key={saida.id} className="hover:bg-gray-50 transition-colors">
+                filteredEntradas.map((entrada) => (
+                  <tr key={entrada.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-900">
-                        {companyAvatars[saida.company_id] ? (
+                        {companyAvatars[entrada.company_id] ? (
                           <img 
-                            src={companyAvatars[saida.company_id]} 
-                            alt={saida.companies?.name}
+                            src={companyAvatars[entrada.company_id]} 
+                            alt={entrada.companies?.name}
                             className="h-6 w-6 rounded object-cover mr-2 flex-shrink-0"
                             onError={(e) => {
                               e.target.style.display = 'none'
                             }}
                           />
                         ) : null}
-                        {!companyAvatars[saida.company_id] && (
+                        {!companyAvatars[entrada.company_id] && (
                           <Building2 className="h-4 w-4 mr-2 text-gray-400" />
                         )}
-                        {saida.companies?.name || '-'}
+                        {entrada.companies?.name || '-'}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm font-medium text-gray-900">
-                        {categorias.find(c => c.id === saida.categoria)?.nome || '-'}
+                        {categorias.find(c => c.id === entrada.categoria)?.nome || '-'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-gray-900">{saida.dfc_itens?.nome || '-'}</span>
+                      <span className="text-sm text-gray-900">{entrada.dfc_itens?.nome || '-'}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600">{saida.descricao}</span>
+                      <span className="text-sm text-gray-600">{entrada.descricao}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-semibold text-red-600">{formatCurrency(saida.valor)}</span>
+                      <span className="text-sm font-semibold text-green-600">{formatCurrency(entrada.valor)}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
-                        {formatMonth(saida.mes)}
+                        {formatMonth(entrada.mes)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">{formatDate(saida.vencimento)}</span>
+                      <span className="text-sm text-gray-900">{formatDate(entrada.vencimento)}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
-                        {saida.dfc_saidas_documentos?.[0]?.count > 0 && (
+                        {entrada.dfc_entradas_documentos?.[0]?.count > 0 && (
                           <button
-                            onClick={() => openDocumentosModal(saida)}
+                            onClick={() => openDocumentosModal(entrada)}
                             className="relative text-blue-600 hover:text-blue-800"
                             title="Ver documentos"
                           >
                             <Paperclip className="h-4 w-4" />
                             <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] rounded-full h-3.5 w-3.5 flex items-center justify-center">
-                              {saida.dfc_saidas_documentos[0].count}
+                              {entrada.dfc_entradas_documentos[0].count}
                             </span>
                           </button>
                         )}
                         <button
-                          onClick={() => openModal(saida)}
+                          onClick={() => openModal(entrada)}
                           className="text-[#EBA500] hover:text-[#EBA500]/80"
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(saida.id)}
+                          onClick={() => handleDelete(entrada.id)}
                           className="text-red-600 hover:text-red-800"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -910,13 +911,13 @@ function DFCPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-white/20 rounded-xl">
-                    <TrendingDown className="h-6 w-6 text-white" />
+                    <TrendingUp className="h-6 w-6 text-white" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-white">
-                      {editingId ? 'Editar Saída' : 'Nova Saída'}
+                      {editingId ? 'Editar Entrada' : 'Nova Entrada'}
                     </h2>
-                    <p className="text-sm text-white/90 mt-1">Preencha os dados da saída financeira</p>
+                    <p className="text-sm text-white/90 mt-1">Preencha os dados da entrada financeira</p>
                   </div>
                 </div>
                 <button
@@ -1280,10 +1281,10 @@ function DFCPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-gray-900 font-medium mb-2">
-                    Tem certeza que deseja excluir esta saída?
+                    Tem certeza que deseja excluir esta entrada?
                   </p>
                   <p className="text-sm text-gray-600">
-                    Esta ação não pode ser desfeita. A saída será removida permanentemente do sistema.
+                    Esta ação não pode ser desfeita. A entrada será removida permanentemente do sistema.
                   </p>
                 </div>
               </div>
@@ -1303,7 +1304,7 @@ function DFCPage() {
                 className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all font-medium"
               >
                 <Trash2 className="h-4 w-4" />
-                <span>Excluir Saída</span>
+                <span>Excluir Entrada</span>
               </button>
             </div>
           </div>
@@ -1311,7 +1312,7 @@ function DFCPage() {
       )}
 
       {/* Modal de Visualização de Documentos */}
-      {showDocumentosModal && selectedSaidaDocumentos && (
+      {showDocumentosModal && selectedEntradaDocumentos && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closeDocumentosModal}>
           <div 
             className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
@@ -1327,7 +1328,7 @@ function DFCPage() {
                   <div>
                     <h3 className="text-xl font-bold text-white">Documentos Anexados</h3>
                     <p className="text-sm text-white/90 mt-0.5">
-                      {selectedSaidaDocumentos.companies?.name} - {selectedSaidaDocumentos.dfc_itens?.nome}
+                      {selectedEntradaDocumentos.companies?.name} - {selectedEntradaDocumentos.dfc_itens?.nome}
                     </p>
                   </div>
                 </div>
@@ -1411,4 +1412,4 @@ function DFCPage() {
   )
 }
 
-export default DFCPage
+export default DFCEntradasPage

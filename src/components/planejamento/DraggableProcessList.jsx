@@ -135,7 +135,7 @@ const DraggableProcessList = ({
         items={processos.map(p => p.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
+        <div className="grid gap-4 sm:gap-5 lg:gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
           {processos.map((processo, index) => (
             <SortableProcessCard
               key={processo.id}
@@ -144,7 +144,7 @@ const DraggableProcessList = ({
               hasCustomOrder={processo.strategic_priority_order != null}
               cores={cores}
             >
-              {renderProcessCard(processo, index)}
+              {renderProcessCard(processo, index, processos.length)}
             </SortableProcessCard>
           ))}
         </div>
