@@ -89,123 +89,93 @@ const MaturityConfirmationModal = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn">
-      <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl transform transition-all animate-slideUp">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
+      <div className="bg-white rounded-2xl max-w-md w-full max-h-[95vh] overflow-y-auto shadow-2xl transform transition-all animate-slideUp">
         {/* Header */}
-        <div className="relative p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-blue-50">
+        <div className="sticky top-0 bg-gradient-to-r from-green-500 to-emerald-600 p-3 sm:p-4">
           <button
             onClick={onClose}
             disabled={loading}
-            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-full transition-all"
+            className="absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-all"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
 
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-green-100 rounded-full">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">
-                Solicitar Validação de Amadurecimento
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Processo pronto para aprovação final
-              </p>
-            </div>
+          <div className="flex items-center space-x-2 pr-8">
+            <CheckCircle className="h-5 w-5 text-white flex-shrink-0" />
+            <h3 className="text-base sm:text-lg font-bold text-white">
+              Solicitar Validação
+            </h3>
           </div>
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-6">
-          {/* Informações do Processo */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-200">
-            <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-              Processo
-            </h4>
-            <p className="text-gray-700 font-medium">{process.nome || process.name}</p>
-            {process.description && (
-              <p className="text-sm text-gray-600 mt-1">{process.description}</p>
-            )}
-          </div>
-
-          {/* Métricas */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-              <div className="text-2xl font-bold text-green-600">100%</div>
-              <div className="text-xs text-green-700 font-medium mt-1">
-                Tarefas Concluídas
-              </div>
-            </div>
-            <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-              <div className="text-2xl font-bold text-blue-600">
-                {process.total_tasks || 0}
-              </div>
-              <div className="text-xs text-blue-700 font-medium mt-1">
-                Total de Tarefas
+        <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+          {/* Processo */}
+          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <div className="flex items-start space-x-2">
+              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 break-words">{process.nome || process.name}</p>
+                {process.total_tasks && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    {process.total_tasks} {process.total_tasks === 1 ? 'tarefa concluída' : 'tarefas concluídas'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
           {/* Aviso */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start space-x-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h5 className="text-sm font-semibold text-amber-900 mb-1">
-                Confirme que todas as tarefas foram executadas
-              </h5>
-              <p className="text-xs text-amber-700 leading-relaxed">
-                Ao enviar esta solicitação, você confirma que todas as {process.total_tasks || 0} tarefas 
-                foram realmente concluídas e implementadas. O Company Admin fará a validação final.
-              </p>
-            </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start space-x-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-800 leading-relaxed">
+              Confirme que todas as tarefas foram concluídas. O admin fará a validação final.
+            </p>
           </div>
 
-          {/* Campo de Observações (Opcional) */}
+          {/* Campo de Observações */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
               Observações (Opcional)
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Adicione comentários sobre a execução das tarefas, desafios encontrados ou resultados obtidos..."
-              rows={4}
+              placeholder="Comentários sobre a execução..."
+              rows={3}
+              maxLength={500}
               disabled={loading}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all resize-none text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all resize-none text-sm"
             />
             <div className="text-xs text-gray-500 mt-1">
-              {notes.length}/500 caracteres
+              {notes.length}/500
             </div>
           </div>
 
           {/* Mensagem de Erro */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3">
-              <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h5 className="text-sm font-semibold text-red-900 mb-1">Erro ao enviar solicitação</h5>
-                <p className="text-xs text-red-700">{error}</p>
-              </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start space-x-2">
+              <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-700">{error}</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-3xl">
-          <div className="flex items-center justify-end space-x-3">
+        <div className="sticky bottom-0 p-3 sm:p-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
               onClick={onClose}
               disabled={loading}
-              className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 font-medium transition-all disabled:opacity-50"
+              className="flex-1 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-all disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               onClick={handleConfirm}
               disabled={loading}
-              className="flex items-center space-x-2 px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm rounded-lg hover:from-green-600 hover:to-green-700 font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -215,7 +185,7 @@ const MaturityConfirmationModal = ({
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  <span>Enviar para Aprovação</span>
+                  <span>Enviar</span>
                 </>
               )}
             </button>

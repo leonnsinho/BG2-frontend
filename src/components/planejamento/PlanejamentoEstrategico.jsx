@@ -11,6 +11,7 @@ import { supabase } from '../../services/supabase'
 import TaskSidebar from './TaskSidebar'
 import ProcessProgressBar from '../process/ProcessProgressBar'
 import MaturityConfirmationModal from '../process/MaturityConfirmationModal'
+import MaturityConfirmModal from '../modals/MaturityConfirmModal'
 import SuperAdminBanner from '../SuperAdminBanner'
 import DraggableProcessList from './DraggableProcessList'
 import toast from 'react-hot-toast'
@@ -180,6 +181,10 @@ const PlanejamentoEstrategico = () => {
   // 🔥 NOVO: Estados para seleção múltipla e exclusão em massa
   const [tarefasSelecionadas, setTarefasSelecionadas] = useState({}) // { processoId: [tarefaId1, tarefaId2] }
   const [modoSelecao, setModoSelecao] = useState(false) // Ativa/desativa modo de seleção
+  
+  // 🔥 NOVO: Estado para modal de confirmação de amadurecimento
+  const [maturityConfirmModalOpen, setMaturityConfirmModalOpen] = useState(false)
+  const [processForMaturityConfirm, setProcessForMaturityConfirm] = useState(null)
 
   // Adicionar CSS customizado para scrollbar
   useEffect(() => {
@@ -783,11 +788,16 @@ const PlanejamentoEstrategico = () => {
   const handleRequestMaturityApproval = (processo) => {
     const progress = processProgressMap[processo.id]
     
+    // 🔥 CORRIGIDO: Usar journey_id diretamente do processo ao invés de depender do estado jornadaUUID
+    const journeyIdToUse = processo.journey_id || jornadaUUID
+    
     console.log('🔍 Validando solicitação de amadurecimento:', {
       processo: processo,
       processId: processo.id,
       companyId: companyId,
-      journeyUUID: jornadaUUID,
+      journeyUUID: journeyIdToUse,
+      journeyIdFromProcess: processo.journey_id,
+      journeyIdFromState: jornadaUUID,
       gestorId: profile?.id,
       progress: progress
     })
@@ -798,7 +808,7 @@ const PlanejamentoEstrategico = () => {
       return
     }
     
-    if (!jornadaUUID) {
+    if (!journeyIdToUse) {
       alert('❌ Erro: UUID da jornada não disponível. Tente selecionar a jornada novamente.')
       return
     }
@@ -841,18 +851,18 @@ const PlanejamentoEstrategico = () => {
       return
     }
 
-    const confirmacao = window.confirm(
-      `🎯 Confirmar Amadurecimento do Processo?\n\n` +
-      `Processo: ${processo.nome || processo.name}\n` +
-      `Progresso: 100% completo\n\n` +
-      `Esta ação irá:\n` +
-      `✅ Marcar o processo como AMADURECIDO\n` +
-      `✅ Remover da lista de Processos Prioritários\n` +
-      `✅ Registrar em Journey Management/Overview\n\n` +
-      `Deseja confirmar?`
-    )
+    // 🔥 ABRIR MODAL PERSONALIZADO em vez de window.confirm
+    setProcessForMaturityConfirm(processo)
+    setMaturityConfirmModalOpen(true)
+  }
 
-    if (!confirmacao) return
+  // 🔥 NOVA FUNÇÃO: Executar confirmação após modal
+  const executeMaturityConfirmation = async () => {
+    const processo = processForMaturityConfirm
+    
+    // Fechar modal
+    setMaturityConfirmModalOpen(false)
+    setProcessForMaturityConfirm(null)
 
     try {
       // 🔥 BUSCAR journey_id diretamente do processo
@@ -2533,7 +2543,7 @@ const PlanejamentoEstrategico = () => {
           }}
           process={selectedProcessForMaturity}
           companyId={companyId}
-          journeyId={jornadaUUID}
+          journeyId={selectedProcessForMaturity.journey_id || jornadaUUID}
           gestorId={profile?.id}
           onSuccess={handleMaturityApprovalSuccess}
         />
@@ -3059,6 +3069,18 @@ const PlanejamentoEstrategico = () => {
           </div>
         </div>
       )}
+
+      {/* 🔥 MODAL DE CONFIRMAÇÃO DE AMADURECIMENTO */}
+      <MaturityConfirmModal
+        isOpen={maturityConfirmModalOpen}
+        onClose={() => {
+          setMaturityConfirmModalOpen(false)
+          setProcessForMaturityConfirm(null)
+        }}
+        onConfirm={executeMaturityConfirmation}
+        processName={processForMaturityConfirm?.nome || processForMaturityConfirm?.name}
+        progress={processProgressMap[processForMaturityConfirm?.id]}
+      />
     </div>
   )
 }

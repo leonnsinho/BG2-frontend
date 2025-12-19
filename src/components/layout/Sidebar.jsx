@@ -32,7 +32,8 @@ import {
   ChevronRight,
   Menu,
   ThumbsUp,
-  Download
+  Download,
+  Bell
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -83,7 +84,11 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       icon: Home,
       href: '/dashboard',
       roles: ['super_admin', 'gestor', 'gestor_financeiro', 'gestor_estrategico', 'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional', 'company_admin', 'user']
-    },
+    }
+  ]
+  
+  // 🔥 Itens após Dashboard (excluindo Super Admin)
+  const afterDashboardItems = [
     {
       name: 'Minhas Tarefas',
       icon: CheckSquare,
@@ -155,6 +160,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     
     return [
       ...baseItems,
+      ...afterDashboardItems,
       {
         name: 'Planejamento Estratégico',
         icon: Kanban,
@@ -181,6 +187,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     
     return [
       ...baseItems,
+      ...afterDashboardItems,
       {
         name: 'Planejamento Estratégico',
         icon: Kanban,
@@ -207,6 +214,19 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     return [
       ...baseItems,
       {
+        name: 'Aprovações',
+        icon: Bell,
+        href: '/approvals',
+        hasPendingNotification: pendingApprovalsCount > 0, // 🔥 Indicador de ponto vermelho
+        children: [
+          { 
+            name: 'Maturidade', 
+            href: '/maturity-approvals'
+          }
+        ]
+      },
+      ...afterDashboardItems,
+      {
         name: 'Modelo de Negócio',
         icon: Building2,
         href: '/business-model',
@@ -231,19 +251,6 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
           { name: 'Pessoas e Cultura', href: '/operational-policies?journey=pessoas-cultura' },
           { name: 'Receita', href: '/operational-policies?journey=receita' },
           { name: 'Operação', href: '/operational-policies?journey=operacional' }
-        ]
-      },
-      {
-        name: 'Aprovações',
-        icon: ThumbsUp,
-        href: '/approvals',
-        badge: pendingApprovalsCount, // 🔥 Badge apenas no menu principal
-        children: [
-          { 
-            name: 'Maturidade', 
-            href: '/maturity-approvals'
-            // 🔥 Badge removido do submódulo
-          }
         ]
       },
       {
@@ -853,8 +860,15 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                       {isCollapsed ? (
                         <div className="relative">
                           <ItemIcon className="h-5 w-5 flex-shrink-0" />
-                          {/* 🔥 Badge quando colapsado */}
-                          {item.badge && item.badge > 0 && (
+                          {/* 🔥 Ponto vermelho para notificações pendentes */}
+                          {item.hasPendingNotification && (
+                            <span className="absolute top-0 right-0 flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                          )}
+                          {/* Badge numérico para outros itens */}
+                          {item.badge && item.badge > 0 && !item.hasPendingNotification && (
                             <span className="absolute -top-1 -right-1 flex h-4 w-4">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center text-[8px] font-bold text-white">
@@ -872,8 +886,15 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                             )}
                           />
                           <span className="flex-1 text-left">{item.name}</span>
-                          {/* 🔥 Badge quando expandido */}
-                          {item.badge && item.badge > 0 && (
+                          {/* 🔥 Ponto vermelho para notificações pendentes */}
+                          {item.hasPendingNotification && (
+                            <span className="flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                          )}
+                          {/* Badge numérico para outros itens */}
+                          {item.badge && item.badge > 0 && !item.hasPendingNotification && (
                             <NotificationBadge count={item.badge} size="sm" pulse={true} />
                           )}
                         </>
@@ -896,7 +917,15 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                       {isCollapsed ? (
                         <div className="relative">
                           <ItemIcon className="h-5 w-5 flex-shrink-0" />
-                          {item.badge && item.badge > 0 && (
+                          {/* 🔥 Ponto vermelho para notificações pendentes */}
+                          {item.hasPendingNotification && (
+                            <span className="absolute top-0 right-0 flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                          )}
+                          {/* Badge numérico para outros itens */}
+                          {item.badge && item.badge > 0 && !item.hasPendingNotification && (
                             <span className="absolute -top-1 -right-1 flex h-4 w-4">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center text-[8px] font-bold text-white">
@@ -920,7 +949,15 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                             />
                           )}
                           <span className="flex-1 text-left">{item.name}</span>
-                          {item.badge && item.badge > 0 && (
+                          {/* 🔥 Ponto vermelho para notificações pendentes */}
+                          {item.hasPendingNotification && (
+                            <span className="flex h-2 w-2 mr-1">
+                              <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                          )}
+                          {/* Badge numérico para outros itens */}
+                          {item.badge && item.badge > 0 && !item.hasPendingNotification && (
                             <NotificationBadge count={item.badge} size="sm" pulse={true} />
                           )}
                         </>
