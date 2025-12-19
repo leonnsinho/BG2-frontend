@@ -5,6 +5,7 @@ const UpdateNotification = () => {
   const [showUpdate, setShowUpdate] = useState(false)
   const [newVersion, setNewVersion] = useState(null)
   const [currentVersion, setCurrentVersion] = useState(null)
+  const [isReloading, setIsReloading] = useState(false)
   const checkIntervalRef = useRef(null)
 
   useEffect(() => {
@@ -14,7 +15,6 @@ const UpdateNotification = () => {
     
     console.log('🚀 UpdateNotification montado')
     console.log('📦 Versão salva no localStorage:', savedVersion)
-    console.log('🔍 LocalStorage completo:', { ...localStorage })
     
     // Verificar se está rodando como PWA
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
@@ -22,7 +22,7 @@ const UpdateNotification = () => {
     console.log('📱 Rodando como PWA?', isPWA)
     
     // Função para verificar versão do Service Worker
-    const checkVersion = () => {
+    const checkVersion = async () => {
       if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         console.log('🔍 Verificando versão do Service Worker...')
         
@@ -38,8 +38,6 @@ const UpdateNotification = () => {
               console.log('🆕 Versão diferente detectada! Mostrando banner...')
               setNewVersion(swVersion)
               setShowUpdate(true)
-              // Salvar a versão detectada
-              localStorage.setItem('app-version', swVersion)
             } else {
               console.log('✅ Versão atual está atualizada')
             }
@@ -73,6 +71,16 @@ const UpdateNotification = () => {
       }
     }
 
+    // Listener para quando detecta novo SW instalado
+    const handleUpdateFound = async () => {
+      console.log('🆕 Update found no registration!')
+      const registration = await navigator.serviceWorker.getRegistration()
+      if (registration && registration.waiting) {
+        console.log('⏳ Novo SW waiting - mostrando notificação')
+        setShowUpdate(true)
+      }
+    }
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', handleMessage)
       
@@ -81,14 +89,19 @@ const UpdateNotification = () => {
         console.log('✅ Service Worker pronto')
         checkVersion()
         
+        // Listener para updatefound
+        registration.addEventListener('updatefound', handleUpdateFound)
+        
         // Forçar update do Service Worker
         registration.update().then(() => {
           console.log('🔄 Service Worker update disparado')
+        }).catch(err => {
+          console.error('❌ Erro ao atualizar SW:', err)
         })
       })
       
-      // Para PWAs: Verificar a cada 1 minuto (mais agressivo)
-      const intervalTime = isPWA ? 60 * 1000 : 2 * 60 * 1000 // 1min PWA, 2min browser
+      // Verificar mais frequentemente - a cada 1 minuto
+      const intervalTime = 60 * 1000 // 1 minuto
       console.log(`⏰ Configurando verificação automática a cada ${intervalTime/1000}s`)
       
       checkIntervalRef.current = setInterval(() => {
@@ -145,32 +158,46 @@ const UpdateNotification = () => {
     }
   }, [])
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     console.log('🔄 Iniciando atualização...')
+    setIsReloading(true)
     
-    // Salvar nova versão
-    if (newVersion) {
-      localStorage.setItem('app-version', newVersion)
-      console.log('💾 Versão salva:', newVersion)
-    }
-    
-    // Enviar mensagem para Service Worker pular waiting
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' })
-    }
-    
-    // Limpar todos os caches antes de recarregar
-    if ('caches' in window) {
-      caches.keys().then(names => {
-        console.log('🗑️ Limpando caches:', names)
-        return Promise.all(names.map(name => caches.delete(name)))
-      }).then(() => {
-        console.log('🔄 Recarregando página...')
-        window.location.reload()
-      })
-    } else {
-      console.log('🔄 Recarregando página...')
-      window.location.reload()
+    try {
+      // Salvar nova versão
+      if (newVersion) {
+        localStorage.setItem('app-version', newVersion)
+        console.log('💾 Versão salva:', newVersion)
+      }
+      
+      // Enviar mensagem para Service Worker pular waiting
+      const registration = await navigator.serviceWorker.getRegistration()
+      
+      if (registration && registration.waiting) {
+        console.log('⏭️ Enviando SKIP_WAITING para o SW')
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+        
+        // Aguardar o SW assumir controle
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.log('🔄 Controller mudou, recarregando página...')
+          window.location.reload(true)
+        }, { once: true })
+      } else {
+        // Forçar reload mesmo sem SW waiting
+        console.log('🔄 Recarregando página (hard refresh)...')
+        
+        // Limpar todos os caches antes de recarregar
+        if ('caches' in window) {
+          const cacheNames = await caches.keys()
+          await Promise.all(cacheNames.map(name => caches.delete(name)))
+          console.log('🗑️ Todos os caches limpos')
+        }
+        
+        window.location.reload(true)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao atualizar:', error)
+      // Fallback: reload forçado de qualquer forma
+      window.location.reload(true)
     }
   }
 
@@ -213,14 +240,16 @@ const UpdateNotification = () => {
             <div className="flex gap-2">
               <button
                 onClick={handleUpdate}
-                className="flex-1 bg-white text-[#EBA500] hover:bg-white/90 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
+                disabled={isReloading}
+                className="flex-1 bg-white text-[#EBA500] hover:bg-white/90 disabled:bg-white/60 disabled:cursor-not-allowed px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
               >
-                <RefreshCw className="h-3 w-3" />
-                Atualizar Agora
+                <RefreshCw className={`h-3 w-3 ${isReloading ? 'animate-spin' : ''}`} />
+                {isReloading ? 'Atualizando...' : 'Atualizar Agora'}
               </button>
               <button
                 onClick={handleDismiss}
-                className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-200"
+                disabled={isReloading}
+                className="px-3 py-2 bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed rounded-xl transition-all duration-200"
                 title="Lembrar depois"
               >
                 <X className="h-4 w-4" />

@@ -148,10 +148,13 @@ const CompanyMaturityProgressPageNew = () => {
       const fromDate = formatDate(startDate)
       const toDate = formatDate(now)
 
-      console.log('📊 Carregando snapshots:', { 
+      console.log('�🔍🔍 BUSCANDO SNAPSHOTS NA TELA DE RELATÓRIOS 🔍🔍🔍')
+      console.log('📊 Parâmetros de busca:', { 
         companyId: selectedCompany.id,
+        companyName: selectedCompany.name,
         from: fromDate,
-        to: toDate
+        to: toDate,
+        timeRange
       })
 
       // Buscar snapshots do período
@@ -167,11 +170,13 @@ const CompanyMaturityProgressPageNew = () => {
         .order('snapshot_date', { ascending: true })
 
       if (error) {
-        console.error('❌ Erro ao buscar snapshots:', error)
+        console.error('❌❌❌ ERRO AO BUSCAR SNAPSHOTS:', error)
+        console.error('Detalhes:', JSON.stringify(error, null, 2))
         throw error
       }
 
-      console.log('✅ Snapshots encontrados:', snapshots)
+      console.log('✅✅✅ SNAPSHOTS ENCONTRADOS:', snapshots)
+      console.log('📊 Quantidade:', snapshots?.length || 0)
 
       // Agrupar por jornada
       const journeyMap = {}

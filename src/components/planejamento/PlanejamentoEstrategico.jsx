@@ -510,9 +510,12 @@ const PlanejamentoEstrategico = () => {
   }
 
   const iniciarEdicaoTarefa = (tarefa) => {
+    console.log('✏️ Iniciando edição da tarefa:', tarefa)
+    
     // Determinar se é usuário cadastrado ou nome manual
     if (tarefa.responsavelManual) {
       // É um nome manual
+      console.log('👤 Modo: Manual | Responsável:', tarefa.responsavelManual)
       setTipoResponsavelEdicao('manual')
       setEditandoTarefa({
         id: tarefa.id,
@@ -520,13 +523,24 @@ const PlanejamentoEstrategico = () => {
         responsavel: tarefa.responsavelManual,
         dataLimite: tarefa.dataLimite || ''
       })
-    } else {
-      // É um usuário cadastrado
+    } else if (tarefa.responsavelId) {
+      // É um usuário cadastrado - usar apenas o ID, não o nome!
+      console.log('👤 Modo: Usuário | ID:', tarefa.responsavelId)
       setTipoResponsavelEdicao('usuario')
       setEditandoTarefa({
         id: tarefa.id,
         texto: tarefa.texto,
-        responsavel: tarefa.responsavelId || tarefa.responsavel,
+        responsavel: tarefa.responsavelId, // Sempre usar o ID para usuários cadastrados
+        dataLimite: tarefa.dataLimite || ''
+      })
+    } else {
+      // Fallback - sem responsável definido
+      console.log('👤 Modo: Usuário | Sem responsável')
+      setTipoResponsavelEdicao('usuario')
+      setEditandoTarefa({
+        id: tarefa.id,
+        texto: tarefa.texto,
+        responsavel: '',
         dataLimite: tarefa.dataLimite || ''
       })
     }
@@ -538,14 +552,20 @@ const PlanejamentoEstrategico = () => {
   }
 
   const salvarEdicaoTarefa = async (processoId) => {
-    if (!editandoTarefa.texto.trim() || !editandoTarefa.responsavel) return
+    if (!editandoTarefa.texto.trim() || !editandoTarefa.responsavel) {
+      toast.error('Preencha todos os campos obrigatórios')
+      return
+    }
 
     try {
       console.log('💾 Salvando edição da tarefa:', editandoTarefa.id)
+      console.log('📋 Modo:', tipoResponsavelEdicao)
+      console.log('👤 Responsável:', editandoTarefa.responsavel)
       
       // Atualizar no banco de dados com lógica condicional
       const updateData = {
         title: editandoTarefa.texto,
+        description: editandoTarefa.texto,
         assigned_to: tipoResponsavelEdicao === 'manual' ? null : editandoTarefa.responsavel,
         assigned_to_name: tipoResponsavelEdicao === 'manual' ? editandoTarefa.responsavel : null,
         due_date: editandoTarefa.dataLimite || null
@@ -553,19 +573,22 @@ const PlanejamentoEstrategico = () => {
       
       console.log('📋 Dados da atualização:', updateData)
       
-      await updateTask(editandoTarefa.id, updateData)
+      const resultado = await updateTask(editandoTarefa.id, updateData)
+      console.log('✅ Resultado da atualização:', resultado)
       
-      // Recarregar tarefas e cancelar edição
+      // Recarregar tarefas
       await loadTasks()
       
       // 🔥 NOVO: Recarregar progresso após editar ação
-      await reloadProcessProgress(processoId)
+      if (processoId) {
+        await reloadProcessProgress(processoId)
+      }
       
-      cancelarEdicao()
+      // NÃO cancelar edição aqui - será feito pelo botão após fechar o modal
       
     } catch (error) {
       console.error('❌ Erro ao salvar edição:', error)
-      alert('Erro ao salvar edição da ação')
+      throw error // Lançar erro para ser capturado pelo botão
     }
   }
 
@@ -931,6 +954,111 @@ const PlanejamentoEstrategico = () => {
       }
 
       console.log('✅ Process evaluation atualizada:', evaluationData)
+
+      // 🔥 CRIAR SNAPSHOT DA JORNADA APÓS AMADURECER O PROCESSO
+      try {
+        console.log('�🔥🔥 INICIANDO CRIAÇÃO DE SNAPSHOT 🔥🔥🔥')
+        console.log('📊 Dados iniciais:', { companyId, journeyUUID, profileId: profile?.id })
+        
+        // Buscar todos os processos da jornada
+        console.log('1️⃣ Buscando todos os processos da jornada...')
+        const { data: allProcesses, error: processesError } = await supabase
+          .from('processes')
+          .select('id')
+          .eq('journey_id', journeyUUID)
+          .eq('is_active', true)
+
+        if (processesError) {
+          console.error('❌ Erro ao buscar processos:', processesError)
+          throw processesError
+        }
+
+        console.log('✅ Processos encontrados:', allProcesses)
+        const totalProcesses = allProcesses?.length || 0
+
+        // Buscar processos maduros desta jornada para esta empresa
+        console.log('2️⃣ Buscando processos maduros...')
+        const { data: matureEvals, error: matureError } = await supabase
+          .from('process_evaluations')
+          .select('process_id')
+          .eq('company_id', companyId)
+          .eq('has_process', true)
+          .in('process_id', allProcesses.map(p => p.id))
+
+        if (matureError) {
+          console.error('❌ Erro ao buscar processos maduros:', matureError)
+          throw matureError
+        }
+
+        console.log('✅ Processos maduros encontrados:', matureEvals)
+        const matureProcesses = matureEvals?.length || 0
+        const maturityPercentage = totalProcesses > 0 ? (matureProcesses / totalProcesses) * 100 : 0
+
+        // Buscar processos com tarefas em progresso
+        console.log('3️⃣ Buscando processos em progresso...')
+        const { data: inProgressTasks, error: inProgressError } = await supabase
+          .from('tasks')
+          .select('process_id')
+          .eq('company_id', companyId)
+          .eq('journey_id', journeyUUID)
+          .in('status', ['pending', 'in_progress'])
+
+        if (inProgressError) {
+          console.error('❌ Erro ao buscar tarefas em progresso:', inProgressError)
+          throw inProgressError
+        }
+
+        console.log('✅ Tarefas em progresso encontradas:', inProgressTasks)
+        const inProgressCount = new Set(inProgressTasks?.map(t => t.process_id)).size
+
+        console.log('📊 MÉTRICAS CALCULADAS:', {
+          totalProcesses,
+          matureProcesses,
+          maturityPercentage: maturityPercentage.toFixed(2),
+          inProgressCount,
+          pendingProcesses: totalProcesses - matureProcesses
+        })
+
+        // Inserir snapshot diretamente na tabela
+        const today = new Date().toISOString().split('T')[0]
+        console.log('4️⃣ Inserindo snapshot na tabela... Data:', today)
+        
+        const snapshotData = {
+          company_id: companyId,
+          journey_id: journeyUUID,
+          snapshot_date: today,
+          snapshot_type: 'weekly',
+          total_processes: totalProcesses,
+          mature_processes: matureProcesses,
+          maturity_percentage: maturityPercentage.toFixed(2),
+          in_progress_processes: inProgressCount,
+          pending_processes: totalProcesses - matureProcesses,
+          created_by: profile?.id
+        }
+        
+        console.log('📝 Dados do snapshot a ser inserido:', snapshotData)
+        
+        const { data: snapshot, error: snapshotError } = await supabase
+          .from('journey_maturity_snapshots')
+          .upsert(snapshotData, {
+            onConflict: 'company_id,journey_id,snapshot_date,snapshot_type'
+          })
+          .select()
+
+        if (snapshotError) {
+          console.error('❌❌❌ ERRO AO INSERIR SNAPSHOT:', snapshotError)
+          console.error('Detalhes do erro:', JSON.stringify(snapshotError, null, 2))
+          throw snapshotError
+        }
+
+        console.log('✅✅✅ SNAPSHOT CRIADO COM SUCESSO:', snapshot)
+        toast.success('📸 Snapshot criado! Dados registrados em Relatórios.')
+      } catch (snapshotError) {
+        // Não bloquear o fluxo se o snapshot falhar, apenas logar
+        console.error('⚠️⚠️⚠️ ERRO AO CRIAR SNAPSHOT (não crítico):', snapshotError)
+        console.error('Stack trace:', snapshotError.stack)
+        toast.error('⚠️ Snapshot não foi criado. Verifique o console.')
+      }
 
       // 🔥 ATUALIZAR EM TEMPO REAL
       console.log('🔄 Atualizando lista de processos...')
@@ -2293,17 +2421,13 @@ const PlanejamentoEstrategico = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
+                                console.log('🔍 Abrindo edição para tarefa:', tarefa)
                                 setTarefaParaEditar(tarefa)
                                 setProcessoParaEdicao(processo)
-                                setEditandoTarefa({ 
-                                  id: tarefa.id, 
-                                  texto: tarefa.texto, 
-                                  responsavel: tarefa.responsavel, 
-                                  dataLimite: tarefa.dataLimite || '' 
-                                })
-                                // Detectar se é manual ou usuário
-                                const isManual = !usuarios.find(u => u.id === tarefa.assigned_to)
-                                setTipoResponsavelEdicao(isManual ? 'manual' : 'usuario')
+                                
+                                // Usar a função iniciarEdicaoTarefa que já tem a lógica correta
+                                iniciarEdicaoTarefa(tarefa)
+                                
                                 setModalEdicaoAberto(true)
                               }}
                               className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-blue-200 hover:border-blue-300"
@@ -2747,11 +2871,20 @@ const PlanejamentoEstrategico = () => {
                 <span className="text-sm sm:text-base">Cancelar</span>
               </button>
               <button
-                onClick={() => {
-                  salvarEdicaoTarefa(processoParaEdicao?.id)
-                  setModalEdicaoAberto(false)
-                  setTarefaParaEditar(null)
-                  setProcessoParaEdicao(null)
+                onClick={async () => {
+                  console.log('🔵 Botão Salvar clicado')
+                  try {
+                    await salvarEdicaoTarefa(processoParaEdicao?.id)
+                    // Limpar todos os estados após salvar
+                    setModalEdicaoAberto(false)
+                    setTarefaParaEditar(null)
+                    setProcessoParaEdicao(null)
+                    cancelarEdicao() // Limpar estado de edição
+                    toast.success('✅ Ação editada com sucesso!')
+                  } catch (error) {
+                    console.error('❌ Erro ao salvar:', error)
+                    toast.error('Erro ao salvar edição')
+                  }
                 }}
                 disabled={!editandoTarefa.texto}
                 className="w-full sm:w-auto px-5 sm:px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:shadow-none min-h-[44px] touch-manipulation"

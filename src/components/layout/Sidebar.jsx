@@ -636,11 +636,25 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   }
 
   const isCurrentPath = (href) => {
+    // Se o href contém query parameters, comparar pathname + search
+    if (href.includes('?')) {
+      const [path, query] = href.split('?')
+      return location.pathname === path && location.search === `?${query}`
+    }
+    // Caso contrário, comparar apenas pathname
     return location.pathname === href
   }
 
   const hasActiveChild = (children) => {
-    return children?.some(child => location.pathname === child.href)
+    return children?.some(child => {
+      // Se o child.href contém query parameters, comparar pathname + search
+      if (child.href.includes('?')) {
+        const [path, query] = child.href.split('?')
+        return location.pathname === path && location.search === `?${query}`
+      }
+      // Caso contrário, comparar apenas pathname
+      return location.pathname === child.href
+    })
   }
 
   // Handler para abrir dropdown quando colapsado
@@ -851,7 +865,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                         </div>
                       ) : (
                         <>
-                          <ChevronLeft
+                          <ChevronRight
                             className={cn(
                               "mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-300",
                               expandedItems.includes(item.name) ? "rotate-90" : ""
@@ -901,7 +915,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                               )}
                             />
                           ) : (
-                            <ChevronLeft
+                            <ChevronRight
                               className="mr-3 h-5 w-5 flex-shrink-0 text-neutral-400 transition-colors duration-200"
                             />
                           )}

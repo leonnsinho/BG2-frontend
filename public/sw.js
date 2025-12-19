@@ -1,10 +1,16 @@
 // Service Worker para PWA
-const CACHE_NAME = 'bg2-v5' // Incrementar para forçar atualização
-const APP_VERSION = '2.3.21' // Incrementar quando houver updates - IMPORTANTE: Mudar isso dispara atualização!
+const CACHE_NAME = 'bg2-v6' // Incrementar para forçar atualização
+const APP_VERSION = '2.4.4' // Incrementar quando houver updates - IMPORTANTE: Mudar isso dispara atualização!
 const urlsToCache = [
   '/',
   '/index.html',
   '/favicon.png'
+]
+
+// Lista de recursos que NUNCA devem ser cacheados (sempre buscar do servidor)
+const NEVER_CACHE = [
+  '/sw.js',
+  '/index.html'
 ]
 
 // Armazenar versão no cache para comparação
@@ -99,35 +105,41 @@ self.addEventListener('message', (event) => {
   }
 })
 
-// Interceptar requisições
+// Interceptar requisições - Estratégia Network First com fallback para cache
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url)
+  
+  // Sempre buscar do servidor para recursos críticos
+  if (NEVER_CACHE.some(path => url.pathname.endsWith(path))) {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => caches.match(event.request))
+    )
+    return
+  }
+
+  // Estratégia: Network First (tenta rede primeiro, fallback para cache)
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then((response) => {
-        // Cache hit - retorna a resposta do cache
-        if (response) {
+        // Verifica se a resposta é válida
+        if (!response || response.status !== 200 || response.type !== 'basic') {
           return response
         }
 
-        // Clone da requisição
-        const fetchRequest = event.request.clone()
+        // Clone da resposta para cachear
+        const responseToCache = response.clone()
 
-        return fetch(fetchRequest).then((response) => {
-          // Verifica se a resposta é válida
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response
-          }
+        caches.open(CACHE_NAME)
+          .then((cache) => {
+            cache.put(event.request, responseToCache)
+          })
 
-          // Clone da resposta
-          const responseToCache = response.clone()
-
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache)
-            })
-
-          return response
-        })
+        return response
+      })
+      .catch(() => {
+        // Se falhar na rede, tenta cache
+        return caches.match(event.request)
       })
   )
 })

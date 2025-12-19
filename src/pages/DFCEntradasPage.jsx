@@ -62,9 +62,29 @@ function DFCEntradasPage() {
     item_id: '',
     descricao: '',
     valor: '',
+    moeda: 'BRL',
     mes: '',
     vencimento: ''
   })
+
+  // Lista de moedas suportadas
+  const moedas = [
+    { code: 'BRL', symbol: 'R$', name: 'Real Brasileiro' },
+    { code: 'USD', symbol: '$', name: 'Dólar Americano' },
+    { code: 'EUR', symbol: '€', name: 'Euro' },
+    { code: 'GBP', symbol: '£', name: 'Libra Esterlina' },
+    { code: 'JPY', symbol: '¥', name: 'Iene Japonês' },
+    { code: 'CAD', symbol: 'C$', name: 'Dólar Canadense' },
+    { code: 'AUD', symbol: 'A$', name: 'Dólar Australiano' },
+    { code: 'CHF', symbol: 'CHF', name: 'Franco Suíço' },
+    { code: 'CNY', symbol: '¥', name: 'Yuan Chinês' }
+  ]
+
+  const getMoedaAtual = () => {
+    console.log('🔍 FormData.moeda:', formData.moeda)
+    console.log('💰 Moedas disponíveis:', moedas.length)
+    return moedas.find(m => m.code === formData.moeda) || moedas[0]
+  }
 
   const isSuperAdmin = () => profile?.role === 'super_admin'
   const isCompanyAdmin = () => {
@@ -250,6 +270,7 @@ function DFCEntradasPage() {
         item_id: entrada.item_id,
         descricao: entrada.descricao,
         valor: entrada.valor,
+        moeda: entrada.moeda || 'BRL',
         mes: entrada.mes.substring(0, 7), // Converter YYYY-MM-DD para YYYY-MM
         vencimento: entrada.vencimento
       })
@@ -265,6 +286,7 @@ function DFCEntradasPage() {
         item_id: '',
         descricao: '',
         valor: '',
+        moeda: 'BRL',
         mes: '',
         vencimento: ''
       })
@@ -287,6 +309,7 @@ function DFCEntradasPage() {
       item_id: '',
       descricao: '',
       valor: '',
+      moeda: 'BRL',
       mes: '',
       vencimento: ''
     })
@@ -604,10 +627,25 @@ function DFCEntradasPage() {
     return { total, porCategoria }
   }, [filteredEntradas])
 
-  const formatCurrency = (value) => {
-    return parseFloat(value).toLocaleString('pt-BR', {
+  const formatCurrency = (value, currencyCode = 'BRL') => {
+    const moeda = moedas.find(m => m.code === currencyCode) || moedas[0]
+    const localeMap = {
+      'BRL': 'pt-BR',
+      'USD': 'en-US',
+      'EUR': 'de-DE',
+      'GBP': 'en-GB',
+      'JPY': 'ja-JP',
+      'CAD': 'en-CA',
+      'AUD': 'en-AU',
+      'CHF': 'de-CH',
+      'CNY': 'zh-CN'
+    }
+    
+    const locale = localeMap[currencyCode] || 'pt-BR'
+    
+    return parseFloat(value).toLocaleString(locale, {
       style: 'currency',
-      currency: 'BRL'
+      currency: currencyCode
     })
   }
 
@@ -852,7 +890,7 @@ function DFCEntradasPage() {
                       <span className="text-sm text-gray-600">{entrada.descricao}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-semibold text-green-600">{formatCurrency(entrada.valor)}</span>
+                      <span className="text-sm font-semibold text-green-600">{formatCurrency(entrada.valor, entrada.moeda)}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-600">
@@ -1089,24 +1127,46 @@ function DFCEntradasPage() {
                   />
                 </div>
 
-                {/* Valor */}
+                {/* Valor e Moeda */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Valor (R$) *
+                    Valor ({getMoedaAtual().symbol}) *
                   </label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.valor}
-                      onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
-                      placeholder="0,00"
-                      required
-                    />
+                  <div className="flex gap-2">
+                    {/* Seletor de Moeda */}
+                    <div className="relative" style={{ width: '140px' }}>
+                      <select
+                        value={formData.moeda}
+                        onChange={(e) => setFormData({ ...formData, moeda: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white appearance-none cursor-pointer pr-8"
+                      >
+                        {moedas.map(moeda => (
+                          <option key={moeda.code} value={moeda.code}>
+                            {moeda.symbol} {moeda.code}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    </div>
+                    
+                    {/* Campo de Valor */}
+                    <div className="relative flex-1">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.valor}
+                        onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                        placeholder={`${getMoedaAtual().symbol} 0,00`}
+                        required
+                      />
+                    </div>
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Moeda: {getMoedaAtual().name}
+                  </p>
                 </div>
 
                 {/* Mês e Vencimento */}

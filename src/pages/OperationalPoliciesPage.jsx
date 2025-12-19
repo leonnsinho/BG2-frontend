@@ -3,6 +3,7 @@ import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import SuperAdminBanner from '../components/SuperAdminBanner'
 import EmojiIconPicker from '../components/EmojiIconPicker'
+import BlockCardModal from '../components/BlockCardModal'
 import { renderIcon } from '../utils/iconRenderer'
 import { useSearchParams } from 'react-router-dom' // 🔥 NOVO: Para ler query params
 import { 
@@ -29,7 +30,8 @@ import {
   Edit2,
   Search,
   ExternalLink,
-  ChevronUp
+  ChevronUp,
+  GripVertical
 } from 'lucide-react'
 import { formatDate } from '../utils/dateUtils'
 
@@ -48,12 +50,18 @@ export default function OperationalPoliciesPage() {
   const [subblockSearchQuery, setSubblockSearchQuery] = useState('') // 🔥 NOVO: Busca de sub-blocos
   const [journeyDescription, setJourneyDescription] = useState('') // Descrição editável da jornada
   const [editingDescription, setEditingDescription] = useState(false) // Se está editando a descrição
+  const [draggedBlock, setDraggedBlock] = useState(null) // 🔥 NOVO: Bloco sendo arrastado
+  const [dragOverBlock, setDragOverBlock] = useState(null) // 🔥 NOVO: Bloco sobre o qual está arrastando
   const [inlineEditingContent, setInlineEditingContent] = useState(null) // 🔥 NOVO: ID do conteúdo sendo editado inline
   const [inlineTableData, setInlineTableData] = useState(null) // 🔥 NOVO: Dados temporários da tabela sendo editada
   
   // 🔥 NOVO: Sistema de abas POR JORNADA
   const [tabsByJourney, setTabsByJourney] = useState({}) // { journeyId: { openTabs: [], activeTabId: null } }
   const [showQuickAddDropdown, setShowQuickAddDropdown] = useState(false)
+  
+  // 🔥 NOVO: Modal de visualização estilo Trello
+  const [showBlockCardModal, setShowBlockCardModal] = useState(false)
+  const [selectedBlockForCard, setSelectedBlockForCard] = useState(null)
   
   // Modais
   const [showBlockModal, setShowBlockModal] = useState(false)
@@ -254,82 +262,23 @@ export default function OperationalPoliciesPage() {
         journey_name: selectedJourney.name
       })
       
-      // Carregar blocos
+      // Carregar blocos (SEM subblocks - estrutura flat agora)
       const { data: blocksData, error: blocksError } = await supabase
         .from('policy_blocks')
-        .select(`
-          *,
-          policy_subblocks!policy_subblocks_block_id_fkey (
-            *,
-            policy_contents (*),
-            policy_attachments (*)
-          )
-        `)
+        .select('*')
         .eq('company_id', userCompanyId)
         .eq('journey_id', selectedJourney.id)
         .eq('is_active', true)
-        .order('order_index')
+        .order('display_order', { ascending: true, nullsFirst: false })
+        .order('order_index', { ascending: true })
 
       if (blocksError) {
         console.error('❌ Erro ao carregar blocos:', blocksError)
         throw blocksError
       }
 
-      // 🔥 Carregar conteúdos e anexos dos blocos principais separadamente
-      const blockIds = (blocksData || []).map(b => b.id)
-      
-      let blockContents = []
-      let blockAttachments = []
-      
-      if (blockIds.length > 0) {
-        // Buscar conteúdos dos blocos
-        const { data: contentsData } = await supabase
-          .from('policy_contents')
-          .select('*')
-          .in('block_id', blockIds)
-          .is('subblock_id', null)
-          .order('order_index')
-        
-        blockContents = contentsData || []
-        
-        // Buscar anexos dos blocos
-        const { data: attachmentsData } = await supabase
-          .from('policy_attachments')
-          .select('*')
-          .in('block_id', blockIds)
-          .is('subblock_id', null)
-        
-        blockAttachments = attachmentsData || []
-      }
-
-      // 🔥 NOVO: Organizar sub-blocos em hierarquia de 3 níveis e adicionar conteúdos/anexos do bloco
-      const organizedBlocks = (blocksData || []).map(block => {
-        const allSubblocks = block.policy_subblocks || []
-        
-        // Separar sub-blocos de nível 1 (sem parent) e nível 2 (com parent)
-        const level1Subblocks = allSubblocks
-          .filter(sb => !sb.parent_subblock_id || sb.level === 1)
-          .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
-        
-        const level2Subblocks = allSubblocks
-          .filter(sb => sb.parent_subblock_id && sb.level === 2)
-          .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
-        
-        // Adicionar children aos sub-blocos de nível 1
-        const hierarchicalSubblocks = level1Subblocks.map(parentSubblock => ({
-          ...parentSubblock,
-          children: level2Subblocks.filter(child => child.parent_subblock_id === parentSubblock.id)
-        }))
-        
-        return {
-          ...block,
-          policy_subblocks: hierarchicalSubblocks,
-          policy_contents: blockContents.filter(c => c.block_id === block.id),
-          policy_attachments: blockAttachments.filter(a => a.block_id === block.id)
-        }
-      })
-
-      console.log('✅ Blocos carregados com hierarquia:', organizedBlocks.length)
+      console.log('✅ Blocos carregados:', (blocksData || []).length)
+      const organizedBlocks = blocksData || []
       setBlocks(organizedBlocks)
     } catch (error) {
       console.error('Erro ao carregar blocos:', error)
@@ -1238,51 +1187,45 @@ export default function OperationalPoliciesPage() {
   // Abrir bloco em aba
   const openBlockInTab = async (block) => {
     const { openTabs, activeTabId } = getCurrentJourneyTabs()
-    const existingTab = openTabs.find(tab => tab.id === block.id && tab.type === 'block')
     
+    // Verificar se já está aberto
+    const existingTab = openTabs.find(tab => tab.id === block.id && tab.type === 'block')
     if (existingTab) {
+      // Já existe, apenas ativar
       setCurrentJourneyTabs(openTabs, block.id)
       return
     }
-
-    // Buscar dados completos do bloco
-    const { data: fullBlock, error } = await supabase
-      .from('policy_blocks')
-      .select(`
-        *,
-        policy_subblocks!policy_subblocks_block_id_fkey (
-          *,
-          policy_contents (*),
-          policy_attachments (*)
-        )
-      `)
-      .eq('id', block.id)
-      .single()
-
-    if (error) {
-      console.error('Erro ao carregar bloco:', error)
-      alert('Erro ao abrir bloco')
-      return
-    }
-
-    // Reorganizar hierarquia
-    const allSubblocks = fullBlock.policy_subblocks || []
-    const level1 = allSubblocks.filter(sb => !sb.parent_subblock_id || sb.level === 1)
-    const level2 = allSubblocks.filter(sb => sb.parent_subblock_id && sb.level === 2)
     
-    fullBlock.policy_subblocks = level1.map(parent => ({
-      ...parent,
-      children: level2.filter(child => child.parent_subblock_id === parent.id)
-    }))
-
+    // Criar nova aba para o bloco
     const newTab = {
       id: block.id,
       type: 'block',
-      data: fullBlock,
-      title: block.name
+      name: block.name,
+      icon: block.icon,
+      color: block.color,
+      data: block
     }
+    
+    const updatedTabs = [...openTabs, newTab]
+    setCurrentJourneyTabs(updatedTabs, block.id)
+  }
 
-    setCurrentJourneyTabs([...openTabs, newTab], block.id)
+  const closeBlockCardModal = () => {
+    setShowBlockCardModal(false)
+    setSelectedBlockForCard(null)
+  }
+
+  const handleBlockCardUpdate = (updatedBlock) => {
+    // Atualizar apenas o bloco específico ao invés de recarregar tudo
+    if (updatedBlock) {
+      setBlocks(blocks.map(block => 
+        block.id === updatedBlock.id 
+          ? { ...block, ...updatedBlock }
+          : block
+      ))
+      // Atualizar também o bloco selecionado no modal
+      setSelectedBlockForCard({ ...selectedBlockForCard, ...updatedBlock })
+    }
   }
 
   // Abrir todos os sub-blocos de um bloco
@@ -1498,6 +1441,83 @@ export default function OperationalPoliciesPage() {
           : tab
       )
       setCurrentJourneyTabs(updatedTabs, activeTabId)
+    }
+  }
+
+  // 🔥 NOVO: Funções de Drag and Drop para reordenar blocos
+  const handleDragStart = (e, block) => {
+    setDraggedBlock(block)
+    e.dataTransfer.effectAllowed = 'move'
+    e.currentTarget.style.opacity = '0.5'
+  }
+
+  const handleDragEnd = (e) => {
+    e.currentTarget.style.opacity = '1'
+    setDraggedBlock(null)
+    setDragOverBlock(null)
+  }
+
+  const handleDragOver = (e, block) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    
+    if (draggedBlock && draggedBlock.id !== block.id) {
+      setDragOverBlock(block.id)
+    }
+  }
+
+  const handleDragLeave = (e) => {
+    // Só limpar se realmente saiu do card (não de um filho)
+    if (e.currentTarget === e.target) {
+      setDragOverBlock(null)
+    }
+  }
+
+  const handleDrop = async (e, targetBlock) => {
+    e.preventDefault()
+    
+    if (!draggedBlock || draggedBlock.id === targetBlock.id) {
+      setDraggedBlock(null)
+      setDragOverBlock(null)
+      return
+    }
+
+    // Criar nova ordem dos blocos
+    const currentBlocks = [...blocks]
+    const draggedIndex = currentBlocks.findIndex(b => b.id === draggedBlock.id)
+    const targetIndex = currentBlocks.findIndex(b => b.id === targetBlock.id)
+
+    // Remover o bloco arrastado
+    const [removed] = currentBlocks.splice(draggedIndex, 1)
+    // Inserir na nova posição
+    currentBlocks.splice(targetIndex, 0, removed)
+
+    // Atualizar ordem local imediatamente
+    setBlocks(currentBlocks)
+    setDraggedBlock(null)
+    setDragOverBlock(null)
+
+    // Salvar nova ordem no banco de dados
+    try {
+      const updates = currentBlocks.map((block, index) => ({
+        id: block.id,
+        display_order: index
+      }))
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('policy_blocks')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id)
+
+        if (error) throw error
+      }
+
+      console.log('✅ Ordem dos blocos atualizada com sucesso')
+    } catch (error) {
+      console.error('❌ Erro ao salvar ordem dos blocos:', error)
+      // Reverter em caso de erro
+      loadBlocks()
     }
   }
 
@@ -2176,19 +2196,23 @@ export default function OperationalPoliciesPage() {
                         <div key={tab.id} className="flex flex-col items-start gap-0">
                           {/* NÍVEL 1: BLOCO */}
                           <div className="flex items-start gap-0">
-                            <button
-                              onClick={() => {
-                                const { openTabs } = getCurrentJourneyTabs()
-                                setCurrentJourneyTabs(openTabs, tab.id)
-                              }}
+                            <div
                               className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-200 min-w-fit ${
                                 activeTabId === tab.id
                                   ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md shadow-green-500/20'
                                   : 'bg-green-100 text-green-700 hover:bg-green-200'
                               }`}
                             >
-                              <Layers className="h-4 w-4 flex-shrink-0" />
-                              <span className="max-w-[200px] truncate">{tab.title}</span>
+                              <button
+                                onClick={() => {
+                                  const { openTabs } = getCurrentJourneyTabs()
+                                  setCurrentJourneyTabs(openTabs, tab.id)
+                                }}
+                                className="flex items-center gap-2 flex-1"
+                              >
+                                <Layers className="h-4 w-4 flex-shrink-0" />
+                                <span className="max-w-[200px] truncate">{tab.name || tab.title}</span>
+                              </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -2200,7 +2224,7 @@ export default function OperationalPoliciesPage() {
                               >
                                 <X className="h-3.5 w-3.5" />
                               </button>
-                            </button>
+                            </div>
                           </div>
 
                           {/* NÍVEL 2: SUB-BLOCOS (abaixo do bloco) */}
@@ -2405,233 +2429,19 @@ export default function OperationalPoliciesPage() {
             {activeTabId && openTabs.find(t => t.id === activeTabId) && (() => {
               const activeTab = openTabs.find(t => t.id === activeTabId)
               
-              // 🔥 NOVO: Renderização de Aba de Bloco
+              // 🔥 NOVO: Renderização de Aba de Bloco (Modal Inline)
               if (activeTab.type === 'block') {
                 const block = activeTab.data
                 
                 return (
                   <div className="mb-6">
-                    <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
-                      {/* Header do Bloco */}
-                      <div className="p-4 sm:p-6 lg:p-8 border-b border-gray-200 bg-gradient-to-r from-green-500/5 to-transparent">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                            <div className="p-2 sm:p-3 lg:p-4 bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl sm:rounded-2xl flex-shrink-0">
-                              {renderIcon(block.icon, 'h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12')}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#373435] mb-1 sm:mb-2 break-words">
-                                {block.name}
-                              </h2>
-                              {block.description && (
-                                <p className="text-gray-600 leading-relaxed break-words">
-                                  {block.description}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Lista de Sub-blocos */}
-                      <div className="p-4 sm:p-6 lg:p-8">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
-                          <h3 className="text-lg sm:text-xl font-bold text-[#373435]">
-                            Sub-blocos ({block.policy_subblocks?.length || 0})
-                          </h3>
-                          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                            <button
-                              onClick={() => openSubblockModal(block.id)}
-                              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:shadow-lg hover:shadow-[#EBA500]/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5 min-h-[44px] touch-manipulation"
-                              title="Criar novo sub-bloco"
-                            >
-                              <Plus className="h-4 w-4" />
-                              <span>Novo Sub-bloco</span>
-                            </button>
-                            <button
-                              onClick={() => openAllSubblocksInTabs(block)}
-                              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg hover:shadow-green-500/30 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5 min-h-[44px] touch-manipulation"
-                            >
-                              <Layers className="h-4 w-4" />
-                              <span>Abrir Todos</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Conteúdos e Anexos do Bloco Principal */}
-                        {(block.policy_contents?.length > 0 || block.policy_attachments?.length > 0) && (
-                          <div className="mb-6 p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-blue-50/50 to-purple-50/50 border border-blue-200/50">
-                            <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-4 flex items-center gap-2">
-                              <Layers className="h-5 w-5 text-[#EBA500]" />
-                              Conteúdo do Bloco
-                            </h4>
-                            
-                            {/* Conteúdos */}
-                            {block.policy_contents?.length > 0 && (
-                              <div className="mb-4">
-                                <h5 className="text-sm font-semibold text-gray-700 mb-2">Conteúdos:</h5>
-                                <div className="space-y-2">
-                                  {block.policy_contents.map((content) => (
-                                    <div key={content.id} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                                      {content.content_type === 'text' && (
-                                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{content.content_data.text}</p>
-                                      )}
-                                      {content.content_type === 'checklist' && (
-                                        <div className="space-y-1">
-                                          {content.content_data.items?.map((item, i) => (
-                                            <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                                              <span>{item.checked ? '☑' : '☐'}</span>
-                                              <span>{item.text}</span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                      {content.content_type === 'table' && (
-                                        <div className="overflow-x-auto">
-                                          <table className="min-w-full text-sm">
-                                            <thead>
-                                              <tr>
-                                                {content.content_data.headers?.map((header, i) => (
-                                                  <th key={i} className="px-3 py-2 bg-gray-100 border text-left">{header}</th>
-                                                ))}
-                                              </tr>
-                                            </thead>
-                                            <tbody>
-                                              {content.content_data.rows?.map((row, i) => (
-                                                <tr key={i}>
-                                                  {row.map((cell, j) => (
-                                                    <td key={j} className="px-3 py-2 border">{cell}</td>
-                                                  ))}
-                                                </tr>
-                                              ))}
-                                            </tbody>
-                                          </table>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Anexos */}
-                            {block.policy_attachments?.length > 0 && (
-                              <div>
-                                <h5 className="text-sm font-semibold text-gray-700 mb-2">Anexos:</h5>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  {block.policy_attachments.map((attachment) => (
-                                    <a
-                                      key={attachment.id}
-                                      href={attachment.file_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-2 bg-white p-3 rounded-lg border border-gray-200 hover:border-[#EBA500] hover:shadow-md transition-all"
-                                    >
-                                      <Paperclip className="h-4 w-4 text-[#EBA500] flex-shrink-0" />
-                                      <span className="text-sm text-gray-700 truncate flex-1">{attachment.file_name}</span>
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {block.policy_subblocks && block.policy_subblocks.length > 0 ? (
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                            {block.policy_subblocks.map((subblock) => (
-                              <div
-                                key={subblock.id}
-                                className="group relative bg-gradient-to-br from-[#EBA500]/5 to-white border-2 border-[#EBA500]/20 rounded-xl sm:rounded-2xl overflow-hidden hover:shadow-lg hover:border-[#EBA500]/40 transition-all duration-200"
-                              >
-                                {/* Conteúdo clicável */}
-                                <div
-                                  className="p-4 sm:p-5 lg:p-6 cursor-pointer"
-                                  onClick={() => openSubblockInTab(subblock, null, block.id)}
-                                >
-                                  <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-1 sm:mb-2 break-words">
-                                    {subblock.name}
-                                  </h4>
-                                  {subblock.description && (
-                                    <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 break-words line-clamp-2">
-                                      {subblock.description}
-                                    </p>
-                                  )}
-                                  <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-500">
-                                    <span className="flex items-center gap-1">
-                                      <FileText className="h-3 w-3" />
-                                      {subblock.policy_contents?.length || 0} conteúdos
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                      <Paperclip className="h-3 w-3" />
-                                      {subblock.policy_attachments?.length || 0} anexos
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Botões de ação - Mobile */}
-                                <div className="flex items-center gap-2 px-4 pb-4 lg:hidden">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setEditingSubblock(subblock)
-                                      setSubblockForm({ name: subblock.name, description: subblock.description || '' })
-                                      setSelectedBlock(block.id)
-                                      setShowSubblockModal(true)
-                                    }}
-                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all min-h-[44px] touch-manipulation"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                    <span className="text-xs font-medium">Editar</span>
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleDeleteSubblock(subblock.id)
-                                    }}
-                                    className="flex items-center justify-center px-3 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all min-h-[44px] min-w-[44px] touch-manipulation"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </div>
-
-                                {/* Botões Desktop */}
-                                <div className="hidden lg:flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 right-4">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setEditingSubblock(subblock)
-                                      setSubblockForm({ name: subblock.name, description: subblock.description || '' })
-                                      setSelectedBlock(block.id)
-                                      setShowSubblockModal(true)
-                                    }}
-                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                                    title="Editar Sub-bloco"
-                                  >
-                                    <Edit2 className="h-5 w-5" />
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleDeleteSubblock(subblock.id)
-                                    }}
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                                    title="Deletar Sub-bloco"
-                                  >
-                                    <Trash2 className="h-5 w-5" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-12 text-gray-400">
-                            <Layers className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                            <p>Nenhum sub-bloco ainda</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <BlockCardModal
+                      block={block}
+                      isOpen={true}
+                      isInline={true}
+                      onClose={() => closeTab(block.id)}
+                      onUpdate={handleBlockCardUpdate}
+                    />
                   </div>
                 )
               }
@@ -2857,12 +2667,9 @@ export default function OperationalPoliciesPage() {
             {/* Header da seção de blocos */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
               <div className="flex-1 min-w-0">
-                <h2 className="text-xl sm:text-2xl font-bold text-[#373435] mb-1 truncate">
+                <h2 className="text-xl sm:text-2xl font-bold text-[#373435] truncate">
                   Blocos de Políticas
                 </h2>
-                <p className="text-xs sm:text-sm text-gray-500">
-                  {selectedJourney.name} • {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
-                </p>
               </div>
               
               <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
@@ -2906,14 +2713,13 @@ export default function OperationalPoliciesPage() {
             {/* 🔥 NOVO: Barra de Busca */}
             <div className="mb-4 sm:mb-6">
               <div className="relative max-w-full sm:max-w-md">
-                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Buscar blocos por nome..."
+                  placeholder="Buscar..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white text-sm sm:text-base min-h-[44px] touch-manipulation"
-                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white/80 backdrop-blur-sm placeholder:text-gray-400"
+                  className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white text-sm sm:text-base min-h-[44px] touch-manipulation"
                 />
                 {searchQuery && (
                   <button
@@ -2990,8 +2796,16 @@ export default function OperationalPoliciesPage() {
                   <div className="space-y-3 sm:space-y-4">
                     {filteredBlocks.map((block) => (
                   <div 
-                    key={block.id} 
-                    className="group bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
+                    key={block.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, block)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => handleDragOver(e, block)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, block)}
+                    className={`group bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-move ${
+                      dragOverBlock === block.id ? 'ring-4 ring-[#EBA500] ring-opacity-50' : ''
+                    }`}
                     style={{ 
                       border: `3px solid ${block.color}`,
                       boxShadow: `0 8px 24px -4px ${block.color}40, 0 0 0 1px ${block.color}20, inset 0 0 0 1px ${block.color}10`,
@@ -3019,31 +2833,11 @@ export default function OperationalPoliciesPage() {
                           {block.description && (
                             <p className="text-xs sm:text-sm text-gray-500 leading-relaxed break-words line-clamp-2">{block.description}</p>
                           )}
-                          <div className="flex items-center gap-3 sm:gap-4 mt-2">
-                            <span className="text-xs text-gray-400 flex items-center gap-1">
-                              <Layers className="h-3 w-3 inline mr-1" />
-                              {block.policy_subblocks?.length || 0} sub-blocos
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              <FileText className="h-3 w-3 inline mr-1" />
-                              {block.policy_subblocks?.reduce((sum, sb) => sum + (sb.policy_contents?.length || 0), 0) || 0} conteúdos
-                            </span>
-                          </div>
                         </div>
                       </div>
                       
                       {/* Botões de Ação - Abaixo em mobile, ao lado em desktop */}
                       <div className="flex items-center gap-2 pt-3 mt-3 border-t border-gray-100 lg:hidden">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openBlockInTab(block);
-                          }}
-                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-all min-h-[44px] touch-manipulation"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          <span className="text-xs font-medium">Abrir</span>
-                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -3059,24 +2853,22 @@ export default function OperationalPoliciesPage() {
                             e.stopPropagation();
                             handleDeleteBlock(block.id);
                           }}
-                          className="flex items-center justify-center px-3 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all min-h-[44px] min-w-[44px] touch-manipulation"
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all min-h-[44px] touch-manipulation"
                         >
                           <Trash2 className="h-4 w-4" />
+                          <span className="text-xs font-medium">Excluir</span>
+                        </button>
+                        <button
+                          onMouseDown={(e) => e.stopPropagation()}
+                          className="flex items-center justify-center px-3 py-2.5 text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all min-h-[44px] min-w-[44px] touch-manipulation cursor-move"
+                          title="Mover"
+                        >
+                          <GripVertical className="h-4 w-4" />
                         </button>
                       </div>
                       
                       {/* Botões Desktop - Hidden em mobile */}
                       <div className="hidden lg:flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 right-4">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openBlockInTab(block);
-                          }}
-                          className="p-2.5 text-green-600 hover:bg-green-50 rounded-xl transition-all hover:scale-105"
-                          title="Abrir em Aba"
-                        >
-                          <ExternalLink className="h-5 w-5" />
-                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -3096,6 +2888,13 @@ export default function OperationalPoliciesPage() {
                           title="Deletar Bloco"
                         >
                           <Trash2 className="h-5 w-5" />
+                        </button>
+                        <button
+                          onMouseDown={(e) => e.stopPropagation()}
+                          className="p-2.5 text-gray-600 hover:bg-gray-50 rounded-xl transition-all hover:scale-105 cursor-move"
+                          title="Mover Bloco"
+                        >
+                          <GripVertical className="h-5 w-5" />
                         </button>
                       </div>
                     </div>
@@ -4136,6 +3935,14 @@ export default function OperationalPoliciesPage() {
       </div>
       </div>
     </div>
+
+    {/* Modal de Cartão Estilo Trello */}
+    <BlockCardModal
+      block={selectedBlockForCard}
+      isOpen={showBlockCardModal}
+      onClose={closeBlockCardModal}
+      onUpdate={handleBlockCardUpdate}
+    />
     </>
   )
 }
