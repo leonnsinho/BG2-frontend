@@ -116,7 +116,7 @@ const PlanejamentoEstrategico = () => {
   
   // 🔥 NOVO: Passar urlCompanyId e limite de processos para os hooks
   const { priorityProcesses, loading: processesLoading, error: processesError, getProcessesByJourney, refetch, debugLogs } = usePriorityProcesses(urlCompanyId, limiteProcessos)
-  const { getTasks, getCompanyUsers, createTask, updateTask, deleteTask, loading: tasksLoading } = useTasks(urlCompanyId)
+  const { getTasks, getCompanyUsers, createTask, updateTask, deleteTask, updateTaskAssignees, toggleAssigneeCompletion, getTaskAssignees, loading: tasksLoading } = useTasks(urlCompanyId)
   
   // Debug: log do companyId
   useEffect(() => {
@@ -134,8 +134,10 @@ const PlanejamentoEstrategico = () => {
   const [usuarios, setUsuarios] = useState([]) // Para mapear UUID -> nome
   const [editandoTarefa, setEditandoTarefa] = useState({ id: null, texto: '', responsavel: '', dataLimite: '' })
   const [tipoResponsavelEdicao, setTipoResponsavelEdicao] = useState('usuario') // Para edição: 'usuario' ou 'manual'
-  const [adicionandoTarefa, setAdicionandoTarefa] = useState({ processoId: null, titulo: '', descricao: '', responsavel: '', dataLimite: '', status: 'pending' })
+  const [responsaveisEdicaoSelecionados, setResponsaveisEdicaoSelecionados] = useState([]) // 🔥 NOVO: Responsáveis na edição
+  const [adicionandoTarefa, setAdicionandoTarefa] = useState({ processoId: null, titulo: '', descricao: '', responsaveis: [], dataLimite: '', status: 'pending' })
   const [tipoResponsavel, setTipoResponsavel] = useState('usuario') // 'usuario' ou 'manual'
+  const [responsaveisSelecionados, setResponsaveisSelecionados] = useState([]) // 🔥 NOVO: Array de user IDs
   
   // Configurar sensores para drag and drop
   const sensors = useSensors(
@@ -400,7 +402,10 @@ const PlanejamentoEstrategico = () => {
           created_at: task.created_at, // Adicionar para ordenação
           criadoPor: 'Sistema', // Pode ser melhorado depois
           prioridade: task.priority || 3,
-          order: task.order || 0 // Ordem customizada
+          order: task.order || 0, // Ordem customizada
+          assignees: task.assignees || [], // 🔥 PRESERVAR array de responsáveis
+          total_assignees: task.total_assignees || 0,
+          completed_assignees: task.completed_assignees || 0
         }
         
         // 🔥 DEBUG: Log da data
@@ -557,22 +562,20 @@ const PlanejamentoEstrategico = () => {
   }
 
   const salvarEdicaoTarefa = async (processoId) => {
-    if (!editandoTarefa.texto.trim() || !editandoTarefa.responsavel) {
-      toast.error('Preencha todos os campos obrigatórios')
+    // 🔥 Validar se há pelo menos um responsável
+    if (!editandoTarefa.texto.trim() || responsaveisEdicaoSelecionados.length === 0) {
+      toast.error('Preencha a descrição e selecione pelo menos um responsável')
       return
     }
 
     try {
       console.log('💾 Salvando edição da tarefa:', editandoTarefa.id)
-      console.log('📋 Modo:', tipoResponsavelEdicao)
-      console.log('👤 Responsável:', editandoTarefa.responsavel)
+      console.log('👥 Responsáveis selecionados:', responsaveisEdicaoSelecionados)
       
-      // Atualizar no banco de dados com lógica condicional
+      // Atualizar dados básicos da tarefa
       const updateData = {
         title: editandoTarefa.texto,
         description: editandoTarefa.texto,
-        assigned_to: tipoResponsavelEdicao === 'manual' ? null : editandoTarefa.responsavel,
-        assigned_to_name: tipoResponsavelEdicao === 'manual' ? editandoTarefa.responsavel : null,
         due_date: editandoTarefa.dataLimite || null
       }
       
@@ -580,6 +583,10 @@ const PlanejamentoEstrategico = () => {
       
       const resultado = await updateTask(editandoTarefa.id, updateData)
       console.log('✅ Resultado da atualização:', resultado)
+      
+      // 🔥 NOVO: Atualizar responsáveis
+      await updateTaskAssignees(editandoTarefa.id, responsaveisEdicaoSelecionados)
+      console.log('✅ Responsáveis atualizados')
       
       // Recarregar tarefas
       await loadTasks()
@@ -1224,11 +1231,14 @@ const PlanejamentoEstrategico = () => {
   }
 
   const salvarNovaTarefa = async () => {
-    // Obter responsável (se fornecido)
-    const responsavelFinal = tipoResponsavel === 'manual' ? responsavelManual : adicionandoTarefa.responsavel
-
     try {
       console.log('💾 Salvando nova ação')
+      
+      // 🔥 Validar se há pelo menos um responsável selecionado
+      if (responsaveisSelecionados.length === 0) {
+        alert('⚠️ Selecione pelo menos um responsável para a tarefa')
+        return
+      }
       
       // 🔥 CORREÇÃO: Validar se o processo é REAL (UUID) ou MOCK (número)
       const processUUID = adicionandoTarefa.processoId
@@ -1271,19 +1281,21 @@ const PlanejamentoEstrategico = () => {
       const taskData = {
         title: adicionandoTarefa.descricao || 'Sem título',
         description: adicionandoTarefa.descricao || '',
-        // Se for manual, assigned_to fica NULL e usamos assigned_to_name
-        // Se responsavelFinal estiver vazio, coloca null
-        assigned_to: tipoResponsavel === 'manual' ? null : (responsavelFinal || null),
-        assigned_to_name: tipoResponsavel === 'manual' ? (responsavelFinal || null) : null,
+        // 🔥 NOVO: Não usar assigned_to, apenas assignedUserIds
+        assigned_to: null,
+        assigned_to_name: null,
         process_id: processUUID,
         journey_id: journeyUUID,
         status: adicionandoTarefa.status,
         due_date: adicionandoTarefa.dataLimite || null,
         priority: 3,
-        order: nextOrder // Adicionar order para nova ação
+        order: nextOrder,
+        // 🔥 NOVO: Array de responsáveis
+        assignedUserIds: responsaveisSelecionados
       }
       
       console.log('📋 Dados da tarefa:', taskData)
+      console.log('👥 Responsáveis selecionados:', responsaveisSelecionados)
       
       await createTask(taskData)
       await loadTasks()
@@ -1294,6 +1306,7 @@ const PlanejamentoEstrategico = () => {
       // 🔥 NOVO: Fechar modal e limpar estados
       setModalTarefaAberto(false)
       setProcessoParaTarefa(null)
+      setResponsaveisSelecionados([]) // Limpar seleção
       cancelarAdicaoTarefa()
       
       toast.success('✅ Ação criada com sucesso!')
@@ -2384,11 +2397,60 @@ const PlanejamentoEstrategico = () => {
                             <p className="text-xs text-[#373435] font-medium flex-1 leading-relaxed break-words overflow-wrap-anywhere pr-2" style={{wordBreak: 'break-word', overflowWrap: 'anywhere'}}>{tarefa.texto}</p>
                           </div>
                           
-                          <div className="flex items-center space-x-2">
-                            <div className="w-4 h-4 bg-[#EBA500]/20 rounded-full flex items-center justify-center flex-shrink-0">
-                              <User className="h-2 w-2 text-[#373435]" />
+                          {/* 🔥 NOVO: Múltiplos Responsáveis com Indicador de Conclusão */}
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-4 h-4 bg-[#EBA500]/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Users className="h-2 w-2 text-[#373435]" />
+                              </div>
+                              <span className="text-xs text-[#373435]/80 font-semibold">
+                                {tarefa.assignees && tarefa.assignees.length > 0 
+                                  ? `${tarefa.assignees.length} ${tarefa.assignees.length === 1 ? 'Responsável' : 'Responsáveis'}`
+                                  : 'Responsável'
+                                }
+                              </span>
                             </div>
-                            <span className="text-xs text-[#373435]/80 font-medium break-words">{tarefa.responsavel}</span>
+                            
+                            {/* Lista de Responsáveis */}
+                            {tarefa.assignees && tarefa.assignees.length > 0 ? (
+                              <div className="ml-6 space-y-1">
+                                {tarefa.assignees.map((assignee, idx) => (
+                                  <div key={idx} className="flex items-center space-x-2">
+                                    {assignee.hasCompleted ? (
+                                      <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                                    ) : (
+                                      <div className="h-3 w-3 border-2 border-gray-300 rounded-full flex-shrink-0"></div>
+                                    )}
+                                    <span className={`text-xs ${assignee.hasCompleted ? 'text-green-600 font-medium' : 'text-gray-600'}`}>
+                                      {assignee.name}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="ml-6">
+                                <span className="text-xs text-gray-600">{tarefa.responsavel || 'Sem responsável'}</span>
+                              </div>
+                            )}
+                            
+                            {/* Progresso de Conclusão */}
+                            {tarefa.assignees && tarefa.assignees.length > 1 && (
+                              <div className="ml-6 mt-1">
+                                <div className="flex items-center space-x-2">
+                                  <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+                                    <div 
+                                      className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                                      style={{ 
+                                        width: `${(tarefa.assignees.filter(a => a.hasCompleted).length / tarefa.assignees.length) * 100}%` 
+                                      }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-xs text-gray-600 font-medium whitespace-nowrap">
+                                    {tarefa.assignees.filter(a => a.hasCompleted).length}/{tarefa.assignees.length}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                           
                           {/* Data Limite */}
@@ -2429,7 +2491,7 @@ const PlanejamentoEstrategico = () => {
                           {/* Botões de Ação */}
                           <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                             <button
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation()
                                 console.log('🔍 Abrindo edição para tarefa:', tarefa)
                                 setTarefaParaEditar(tarefa)
@@ -2437,6 +2499,12 @@ const PlanejamentoEstrategico = () => {
                                 
                                 // Usar a função iniciarEdicaoTarefa que já tem a lógica correta
                                 iniciarEdicaoTarefa(tarefa)
+                                
+                                // 🔥 NOVO: Buscar responsáveis atuais da tarefa
+                                const assignees = await getTaskAssignees(tarefa.id)
+                                const assigneeIds = assignees.map(a => a.userId)
+                                setResponsaveisEdicaoSelecionados(assigneeIds)
+                                console.log('👥 Responsáveis carregados para edição:', assigneeIds)
                                 
                                 setModalEdicaoAberto(true)
                               }}
@@ -2599,73 +2667,49 @@ const PlanejamentoEstrategico = () => {
                 />
               </div>
 
-              {/* Tipo de Responsável */}
-              <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 sm:mb-3 flex items-center space-x-2">
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
-                  <span>Tipo de Responsável</span>
-                </label>
-                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                  <label className={`flex-1 flex items-center space-x-3 cursor-pointer bg-white border-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 transition-all touch-manipulation min-h-[44px] ${
-                    tipoResponsavel === 'usuario' 
-                      ? 'border-[#EBA500] bg-[#EBA500]/5' 
-                      : 'border-gray-200 hover:border-[#EBA500]/50'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="tipoResponsavel"
-                      value="usuario"
-                      checked={tipoResponsavel === 'usuario'}
-                      onChange={(e) => setTipoResponsavel(e.target.value)}
-                      className="text-[#EBA500] focus:ring-[#EBA500] w-4 h-4 flex-shrink-0"
-                    />
-                    <span className="text-xs sm:text-sm font-medium text-[#373435]">Usuário do Sistema</span>
-                  </label>
-                  <label className={`flex-1 flex items-center space-x-3 cursor-pointer bg-white border-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 transition-all touch-manipulation min-h-[44px] ${
-                    tipoResponsavel === 'manual' 
-                      ? 'border-[#EBA500] bg-[#EBA500]/5' 
-                      : 'border-gray-200 hover:border-[#EBA500]/50'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="tipoResponsavel"
-                      value="manual"
-                      checked={tipoResponsavel === 'manual'}
-                      onChange={(e) => setTipoResponsavel(e.target.value)}
-                      className="text-[#EBA500] focus:ring-[#EBA500] w-4 h-4 flex-shrink-0"
-                    />
-                    <span className="text-xs sm:text-sm font-medium text-[#373435]">Nome Manual</span>
-                  </label>
-                </div>
-              </div>
+              {/* Tipo de Responsável - REMOVIDO, agora sempre permite múltiplos usuários */}
 
-              {/* Responsável */}
+              {/* Responsáveis (Múltipla Seleção) */}
               <div className="group">
                 <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
-                  <User className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
-                  <span>Responsável</span>
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
+                  <span>Responsáveis * (selecione um ou mais)</span>
                 </label>
-                {tipoResponsavel === 'usuario' ? (
-                  <select
-                    value={adicionandoTarefa.responsavel}
-                    onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, responsavel: e.target.value })}
-                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
-                  >
-                    <option value="">Selecionar responsável</option>
-                    {usuarios.map(usuario => (
-                      <option key={usuario.id} value={usuario.id}>
-                        {usuario.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={responsavelManual}
-                    onChange={(e) => setResponsavelManual(e.target.value)}
-                    placeholder="Digite o nome do responsável"
-                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
-                  />
+                <div className="border-2 border-gray-200 rounded-xl p-3 max-h-48 overflow-y-auto bg-white">
+                  {usuarios.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-2">Nenhum usuário disponível</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {usuarios.map(usuario => (
+                        <label
+                          key={usuario.id}
+                          className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                            responsaveisSelecionados.includes(usuario.id) ? 'bg-[#EBA500]/5' : ''
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={responsaveisSelecionados.includes(usuario.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setResponsaveisSelecionados([...responsaveisSelecionados, usuario.id])
+                              } else {
+                                setResponsaveisSelecionados(responsaveisSelecionados.filter(id => id !== usuario.id))
+                              }
+                            }}
+                            className="w-4 h-4 text-[#EBA500] border-gray-300 rounded focus:ring-[#EBA500]"
+                          />
+                          <span className="text-sm text-gray-700">{usuario.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {responsaveisSelecionados.length > 0 && (
+                  <p className="text-xs text-[#EBA500] mt-2 flex items-center space-x-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>{responsaveisSelecionados.length} {responsaveisSelecionados.length === 1 ? 'responsável selecionado' : 'responsáveis selecionados'}</span>
+                  </p>
                 )}
               </div>
 
@@ -2781,73 +2825,47 @@ const PlanejamentoEstrategico = () => {
                 />
               </div>
 
-              {/* Tipo de Responsável */}
-              <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 sm:mb-3 flex items-center space-x-2">
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                  <span>Tipo de Responsável</span>
-                </label>
-                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                  <label className={`flex-1 flex items-center space-x-3 cursor-pointer bg-white border-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 transition-all touch-manipulation min-h-[44px] ${
-                    tipoResponsavelEdicao === 'usuario' 
-                      ? 'border-blue-500 bg-blue-500/5' 
-                      : 'border-gray-200 hover:border-blue-500/50'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="tipoResponsavelEdicao"
-                      value="usuario"
-                      checked={tipoResponsavelEdicao === 'usuario'}
-                      onChange={(e) => setTipoResponsavelEdicao(e.target.value)}
-                      className="text-blue-500 focus:ring-blue-500 w-4 h-4 flex-shrink-0"
-                    />
-                    <span className="text-xs sm:text-sm font-medium text-[#373435]">Usuário do Sistema</span>
-                  </label>
-                  <label className={`flex-1 flex items-center space-x-3 cursor-pointer bg-white border-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 transition-all touch-manipulation min-h-[44px] ${
-                    tipoResponsavelEdicao === 'manual' 
-                      ? 'border-blue-500 bg-blue-500/5' 
-                      : 'border-gray-200 hover:border-blue-500/50'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="tipoResponsavelEdicao"
-                      value="manual"
-                      checked={tipoResponsavelEdicao === 'manual'}
-                      onChange={(e) => setTipoResponsavelEdicao(e.target.value)}
-                      className="text-blue-500 focus:ring-blue-500 w-4 h-4 flex-shrink-0"
-                    />
-                    <span className="text-xs sm:text-sm font-medium text-[#373435]">Nome Manual</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Responsável */}
+              {/* Responsáveis (Múltipla Seleção) */}
               <div className="group">
                 <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
-                  <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                  <span>Responsável</span>
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+                  <span>Responsáveis * (selecione um ou mais)</span>
                 </label>
-                {tipoResponsavelEdicao === 'usuario' ? (
-                  <select
-                    value={editandoTarefa.responsavel}
-                    onChange={(e) => setEditandoTarefa({ ...editandoTarefa, responsavel: e.target.value })}
-                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
-                  >
-                    <option value="">Selecionar responsável</option>
-                    {usuarios.map(usuario => (
-                      <option key={usuario.id} value={usuario.id}>
-                        {usuario.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={editandoTarefa.responsavel}
-                    onChange={(e) => setEditandoTarefa({ ...editandoTarefa, responsavel: e.target.value })}
-                    placeholder="Digite o nome do responsável"
-                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
-                  />
+                <div className="border-2 border-gray-200 rounded-xl p-3 max-h-48 overflow-y-auto bg-white">
+                  {usuarios.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-2">Nenhum usuário disponível</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {usuarios.map(usuario => (
+                        <label
+                          key={usuario.id}
+                          className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                            responsaveisEdicaoSelecionados.includes(usuario.id) ? 'bg-blue-500/5' : ''
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={responsaveisEdicaoSelecionados.includes(usuario.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setResponsaveisEdicaoSelecionados([...responsaveisEdicaoSelecionados, usuario.id])
+                              } else {
+                                setResponsaveisEdicaoSelecionados(responsaveisEdicaoSelecionados.filter(id => id !== usuario.id))
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{usuario.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {responsaveisEdicaoSelecionados.length > 0 && (
+                  <p className="text-xs text-blue-500 mt-2 flex items-center space-x-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>{responsaveisEdicaoSelecionados.length} {responsaveisEdicaoSelecionados.length === 1 ? 'responsável selecionado' : 'responsáveis selecionados'}</span>
+                  </p>
                 )}
               </div>
 

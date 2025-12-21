@@ -118,7 +118,9 @@ export const useTasks = (overrideCompanyId = null) => {
           due_date,
           created_at,
           created_by,
-          company_id
+          company_id,
+          total_assignees,
+          completed_assignees
         `)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
@@ -128,6 +130,61 @@ export const useTasks = (overrideCompanyId = null) => {
         throw tasksError
       }
 
+      console.log('✅ getTasks: Tarefas encontradas:', tasks?.length || 0)
+      
+      // 🔥 NOVO: Buscar responsáveis de cada tarefa
+      if (tasks && tasks.length > 0) {
+        const taskIds = tasks.map(t => t.id)
+        
+        const { data: assignees, error: assigneesError } = await supabase
+          .from('task_assignees')
+          .select(`
+            task_id,
+            user_id,
+            has_completed,
+            completed_at
+          `)
+          .in('task_id', taskIds)
+        
+        console.log('👥 Assignees do banco:', assignees?.length || 0, assignees)
+        
+        if (!assigneesError && assignees) {
+          // Buscar dados dos responsáveis
+          const userIds = [...new Set(assignees.map(a => a.user_id))]
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', userIds)
+          
+          // Mapear responsáveis por tarefa
+          const assigneesByTask = {}
+          assignees.forEach(assignee => {
+            if (!assigneesByTask[assignee.task_id]) {
+              assigneesByTask[assignee.task_id] = []
+            }
+            const user = profiles?.find(p => p.id === assignee.user_id)
+            assigneesByTask[assignee.task_id].push({
+              userId: assignee.user_id,
+              name: user?.full_name || user?.email || 'Usuário',
+              hasCompleted: assignee.has_completed,
+              completedAt: assignee.completed_at
+            })
+          })
+          
+          console.log('📊 Assignees mapeados por tarefa:', assigneesByTask)
+          
+          // Adicionar responsáveis às tarefas
+          tasks.forEach(task => {
+            task.assignees = assigneesByTask[task.id] || []
+            if (task.assignees.length > 0) {
+              console.log(`✅ Tarefa ${task.id}:`, task.assignees)
+            }
+          })
+        } else if (assigneesError) {
+          console.error('❌ Erro ao buscar assignees:', assigneesError)
+        }
+      }
+      
       console.log('✅ getTasks: Tarefas encontradas:', tasks?.length || 0)
       
       // 🔥 Buscar dados adicionais de criadores e jornadas
@@ -189,10 +246,14 @@ export const useTasks = (overrideCompanyId = null) => {
         throw new Error('Dados de usuário ou empresa não encontrados')
       }
 
+      // 🔥 NOVO: Separar assignedUserIds do taskData
+      const { assignedUserIds, ...restTaskData } = taskData
+
       const newTask = {
-        ...taskData,
+        ...restTaskData,
         company_id: companyId,
-        created_by: profile.id
+        created_by: profile.id,
+        total_assignees: assignedUserIds?.length || 0
       }
 
       console.log('💾 Criando tarefa com dados:', JSON.stringify(newTask, null, 2))
@@ -214,6 +275,27 @@ export const useTasks = (overrideCompanyId = null) => {
       }
 
       console.log('✅ Tarefa criada com sucesso:', data)
+
+      // 🔥 NOVO: Inserir responsáveis na tabela task_assignees
+      if (assignedUserIds && assignedUserIds.length > 0) {
+        const assignees = assignedUserIds.map(userId => ({
+          task_id: data.id,
+          user_id: userId,
+          assigned_by: profile.id
+        }))
+
+        const { error: assigneesError } = await supabase
+          .from('task_assignees')
+          .insert(assignees)
+
+        if (assigneesError) {
+          console.error('❌ Erro ao atribuir responsáveis:', assigneesError)
+          // Não falhar completamente se a tarefa foi criada
+        } else {
+          console.log('✅ Responsáveis atribuídos:', assignedUserIds.length)
+        }
+      }
+
       return data
 
     } catch (err) {
@@ -397,6 +479,148 @@ export const useTasks = (overrideCompanyId = null) => {
     }
   }
 
+  // 🔥 NOVO: Adicionar/Remover responsáveis de uma tarefa
+  const updateTaskAssignees = async (taskId, userIds) => {
+    try {
+      setLoading(true)
+      console.log('👥 Atualizando responsáveis da tarefa:', taskId, userIds)
+
+      // Deletar responsáveis antigos
+      await supabase
+        .from('task_assignees')
+        .delete()
+        .eq('task_id', taskId)
+
+      // Inserir novos responsáveis
+      if (userIds && userIds.length > 0) {
+        const assignees = userIds.map(userId => ({
+          task_id: taskId,
+          user_id: userId,
+          assigned_by: profile.id
+        }))
+
+        const { error: assigneesError } = await supabase
+          .from('task_assignees')
+          .insert(assignees)
+
+        if (assigneesError) {
+          console.error('❌ Erro ao atribuir responsáveis:', assigneesError)
+          throw assigneesError
+        }
+      }
+
+      // Atualizar total de responsáveis na tarefa
+      await supabase
+        .from('tasks')
+        .update({ total_assignees: userIds?.length || 0 })
+        .eq('id', taskId)
+
+      console.log('✅ Responsáveis atualizados')
+      return true
+
+    } catch (err) {
+      console.error('❌ Erro ao atualizar responsáveis:', err)
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 🔥 NOVO: Marcar/desmarcar conclusão individual de responsável
+  const toggleAssigneeCompletion = async (taskId, userId = null, hasCompleted) => {
+    try {
+      setLoading(true)
+      const targetUserId = userId || profile?.id
+      
+      if (!targetUserId) {
+        throw new Error('ID do usuário não encontrado')
+      }
+
+      console.log('✅ Marcando conclusão individual:', { taskId, userId: targetUserId, hasCompleted })
+
+      const updates = {
+        has_completed: hasCompleted,
+        completed_at: hasCompleted ? new Date().toISOString() : null
+      }
+
+      const { error: updateError } = await supabase
+        .from('task_assignees')
+        .update(updates)
+        .eq('task_id', taskId)
+        .eq('user_id', targetUserId)
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar conclusão:', updateError)
+        throw updateError
+      }
+
+      console.log('✅ Conclusão individual atualizada')
+      
+      // Trigger no banco vai atualizar automaticamente o status da tarefa
+      // se todos os responsáveis confirmarem
+      
+      return true
+
+    } catch (err) {
+      console.error('❌ Erro ao marcar conclusão:', err)
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 🔥 NOVO: Buscar responsáveis de uma tarefa
+  const getTaskAssignees = async (taskId) => {
+    try {
+      console.log('👥 Buscando responsáveis da tarefa:', taskId)
+
+      const { data: assignees, error: assigneesError } = await supabase
+        .from('task_assignees')
+        .select(`
+          task_id,
+          user_id,
+          has_completed,
+          completed_at,
+          assigned_at
+        `)
+        .eq('task_id', taskId)
+
+      if (assigneesError) {
+        console.error('❌ Erro ao buscar responsáveis:', assigneesError)
+        throw assigneesError
+      }
+
+      // Buscar dados dos usuários
+      if (assignees && assignees.length > 0) {
+        const userIds = assignees.map(a => a.user_id)
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds)
+
+        return assignees.map(assignee => {
+          const user = profiles?.find(p => p.id === assignee.user_id)
+          return {
+            userId: assignee.user_id,
+            name: user?.full_name || user?.email || 'Usuário',
+            hasCompleted: assignee.has_completed,
+            completedAt: assignee.completed_at,
+            assignedAt: assignee.assigned_at
+          }
+        })
+      }
+
+      return []
+
+    } catch (err) {
+      console.error('❌ Erro ao buscar responsáveis:', err)
+      setError(err.message)
+      return []
+    }
+  }
+
   return {
     loading,
     error,
@@ -407,6 +631,10 @@ export const useTasks = (overrideCompanyId = null) => {
     updateTask,
     deleteTask,
     getTaskComments,
-    addComment
+    addComment,
+    // 🔥 NOVAS FUNÇÕES
+    updateTaskAssignees,
+    toggleAssigneeCompletion,
+    getTaskAssignees
   }
 }

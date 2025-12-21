@@ -27,6 +27,39 @@ export default function CompanyAdminDashboard() {
   })
   const [recentActivities, setRecentActivities] = useState([])
   const [companyName, setCompanyName] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [companyLogo, setCompanyLogo] = useState('')
+
+  // Carregar avatar do perfil
+  useEffect(() => {
+    const loadAvatar = async () => {
+      if (!profile?.id) return
+
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', profile.id)
+          .single()
+
+        if (profileError) throw profileError
+
+        if (profileData?.avatar_url) {
+          const { data: urlData, error: urlError } = await supabase.storage
+            .from('profile-avatars')
+            .createSignedUrl(profileData.avatar_url, 3600)
+
+          if (!urlError && urlData?.signedUrl) {
+            setAvatarUrl(urlData.signedUrl)
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar avatar:', error)
+      }
+    }
+
+    loadAvatar()
+  }, [profile?.id])
 
   useEffect(() => {
     if (profile?.company_id || (profile?.user_companies && profile.user_companies.length > 0)) {
@@ -48,15 +81,30 @@ export default function CompanyAdminDashboard() {
         return
       }
 
-      // Buscar nome da empresa
+      // Buscar nome e logo da empresa
       const { data: companyData } = await supabase
         .from('companies')
-        .select('name')
+        .select('name, logo_url')
         .eq('id', companyId)
         .single()
       
       if (companyData) {
         setCompanyName(companyData.name)
+        
+        // Carregar logo se existir
+        if (companyData.logo_url) {
+          try {
+            const { data: logoData, error: logoError } = await supabase.storage
+              .from('company-avatars')
+              .createSignedUrl(companyData.logo_url, 3600)
+
+            if (!logoError && logoData?.signedUrl) {
+              setCompanyLogo(logoData.signedUrl)
+            }
+          } catch (logoError) {
+            console.error('Erro ao carregar logo:', logoError)
+          }
+        }
       }
 
       // Buscar total de usuários da empresa
@@ -160,21 +208,42 @@ export default function CompanyAdminDashboard() {
             <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
               <div className="flex-1 min-w-0 w-full">
                 <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                  <div className="relative flex-shrink-0">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#EBA500] to-[#d99500] rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
-                      <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  {/* Foto de perfil */}
+                  {avatarUrl && (
+                    <div className="relative flex-shrink-0">
+                      <img 
+                        src={avatarUrl} 
+                        alt={profile?.full_name || 'Administrador'}
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-[#EBA500]"
+                        onError={(e) => {
+                          e.target.parentElement.style.display = 'none'
+                        }}
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full" />
                     </div>
-                    <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#EBA500] rounded-full animate-pulse" />
-                  </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] tracking-tight truncate">
                       {getGreeting()}, {profile?.full_name?.split(' ')[0] || 'Administrador'}!
                     </h1>
                     {companyName && (
-                      <p className="text-sm sm:text-base lg:text-lg text-gray-600 font-medium flex items-center mt-1 truncate">
-                        <Building2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 text-[#EBA500] flex-shrink-0" />
-                        Administrando: {companyName}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1 text-gray-600">
+                        {companyLogo ? (
+                          <img 
+                            src={companyLogo} 
+                            alt={companyName}
+                            className="w-4 h-4 sm:w-5 sm:h-5 object-contain rounded"
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                            }}
+                          />
+                        ) : (
+                          <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-[#EBA500] flex-shrink-0" />
+                        )}
+                        <p className="text-sm sm:text-base lg:text-lg font-medium truncate">
+                          Administrando: {companyName}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>

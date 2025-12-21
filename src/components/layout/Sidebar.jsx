@@ -284,16 +284,31 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     ]
   }
 
-  // Usuário comum - Verificar se tem jornadas atribuídas para adicionar menus especiais
+  // 🔥 Usuário comum - APENAS Dashboard e Minhas Tarefas (se tiver empresa)
   const userItems = [...baseItems]
   
-  // Se o usuário tem jornadas atribuídas, adicionar funcionalidades específicas
-  if (accessibleJourneys && accessibleJourneys.length > 0) {
-    // Adicionar itens específicos baseados nas jornadas (como Financeiro)
-    const specialItems = getManagerSpecificItems(accessibleJourneys)
-    userItems.push(...specialItems)
+  console.log('🔍 DEBUG SIDEBAR USUÁRIO:', {
+    hasCompanyId: !!profile?.company_id,
+    companyId: profile?.company_id,
+    hasUserCompanies: !!(profile?.user_companies && profile.user_companies.length > 0),
+    userCompaniesLength: profile?.user_companies?.length,
+    profileRole: profile?.role
+  })
+  
+  // Se o usuário está associado a uma empresa (via user_companies)
+  const hasCompany = profile?.company_id || (profile?.user_companies && profile.user_companies.length > 0)
+  
+  if (hasCompany) {
+    console.log('✅ Adicionando Minhas Tarefas ao sidebar do usuário')
+    userItems.push({
+      name: 'Minhas Tarefas',
+      icon: CheckSquare,
+      href: '/tarefas',
+      roles: ['user']
+    })
   }
   
+  console.log('📋 Items do sidebar do usuário:', userItems)
   return userItems
 }
 

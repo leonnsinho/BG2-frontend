@@ -29,7 +29,7 @@ import { formatDate } from '../utils/dateUtils'
 
 export default function TasksPage() {
   const { profile } = useAuth()
-  const { getTasks, getCompanyUsers, updateTask, deleteTask, loading } = useTasks()
+  const { getTasks, getCompanyUsers, updateTask, deleteTask, toggleAssigneeCompletion, loading } = useTasks()
   
   // 🔒 Bloquear acesso para Super Admin
   if (profile?.role === 'super_admin') {
@@ -83,10 +83,32 @@ export default function TasksPage() {
         getCompanyUsers()
       ])
       
-      // 🔥 Filtrar apenas tarefas atribuídas ao usuário logado
-      const myTasks = (tasksData || []).filter(task => 
-        task.assigned_to === profile?.id
-      )
+      // 🔥 ATUALIZADO: Filtrar tarefas onde o usuário é responsável (assigned_to OU em assignees)
+      const myTasks = (tasksData || []).filter(task => {
+        // Verificar assigned_to (legado/compatibilidade)
+        if (task.assigned_to === profile?.id) {
+          return true
+        }
+        
+        // Verificar se está na lista de assignees (múltiplos responsáveis)
+        if (task.assignees && task.assignees.length > 0) {
+          const isAssigned = task.assignees.some(assignee => assignee.userId === profile?.id)
+          
+          // 🔥 DEBUG: Verificar status do assignee atual
+          if (isAssigned) {
+            const myAssignee = task.assignees.find(a => a.userId === profile?.id)
+            console.log(`📋 Tarefa ${task.id} - Meu status:`, myAssignee?.hasCompleted ? 'CONCLUÍDO' : 'PENDENTE')
+            console.log(`   Todos assignees:`, task.assignees.map(a => ({ name: a.name, completed: a.hasCompleted })))
+          }
+          
+          return isAssigned
+        }
+        
+        return false
+      })
+      
+      console.log('📋 Total de tarefas:', tasksData?.length || 0)
+      console.log('✅ Minhas tarefas:', myTasks.length)
       
       setTasks(myTasks)
       setUsers(usersData || [])
@@ -173,7 +195,20 @@ export default function TasksPage() {
 
   const handleStatusChange = async (taskId, newStatus) => {
     try {
-      await updateTask(taskId, { status: newStatus })
+      // 🔥 ATUALIZADO: Para tarefas com múltiplos responsáveis, atualizar status individual
+      const task = tasks.find(t => t.id === taskId)
+      
+      if (task && task.assignees && task.assignees.length > 0) {
+        // Tarefa com múltiplos responsáveis - atualizar apenas conclusão do usuário atual
+        const hasCompleted = newStatus === 'completed'
+        await toggleAssigneeCompletion(taskId, profile?.id, hasCompleted)
+        console.log(`✅ Status individual atualizado para ${newStatus} pelo usuário ${profile?.id}`)
+      } else {
+        // Tarefa antiga (compatibilidade) - atualizar status geral
+        await updateTask(taskId, { status: newStatus })
+        console.log(`✅ Status geral atualizado para ${newStatus}`)
+      }
+      
       await loadData()
     } catch (error) {
       console.error('Erro ao atualizar status:', error)
@@ -458,32 +493,50 @@ export default function TasksPage() {
                           <span className="text-sm">Comentários</span>
                         </button>
                         
-                        {task.status === 'pending' && (
-                          <button
-                            onClick={() => handleStatusChange(task.id, 'in_progress')}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
-                          >
-                            <Clock className="h-4 w-4" />
-                            Começar Tarefa
-                          </button>
-                        )}
-                        
-                        {task.status === 'in_progress' && (
-                          <button
-                            onClick={() => handleStatusChange(task.id, 'completed')}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                            Concluir Tarefa
-                          </button>
-                        )}
-                        
-                        {task.status === 'completed' && (
-                          <div className="px-4 py-2 bg-green-50 text-green-700 rounded-lg font-medium flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4" />
-                            Tarefa Concluída
-                          </div>
-                        )}
+                        {/* 🔥 CORRIGIDO: Verificar status individual do usuário */}
+                        {(() => {
+                          // Para tarefas com múltiplos responsáveis, verificar status individual
+                          let myStatus = task.status // Default: usar status geral
+                          
+                          if (task.assignees && task.assignees.length > 0) {
+                            const myAssignee = task.assignees.find(a => a.userId === profile?.id)
+                            if (myAssignee) {
+                              // Se já concluiu, mostrar como completed
+                              myStatus = myAssignee.hasCompleted ? 'completed' : 'in_progress'
+                            }
+                          }
+                          
+                          // Renderizar botões baseado no status individual
+                          if (myStatus === 'pending') {
+                            return (
+                              <button
+                                onClick={() => handleStatusChange(task.id, 'in_progress')}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
+                              >
+                                <Clock className="h-4 w-4" />
+                                Começar Tarefa
+                              </button>
+                            )
+                          } else if (myStatus === 'in_progress') {
+                            return (
+                              <button
+                                onClick={() => handleStatusChange(task.id, 'completed')}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                                Concluir Tarefa
+                              </button>
+                            )
+                          } else if (myStatus === 'completed') {
+                            return (
+                              <div className="px-4 py-2 bg-green-50 text-green-700 rounded-lg font-medium flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4" />
+                                Tarefa Concluída
+                              </div>
+                            )
+                          }
+                          return null
+                        })()}
                         
                         <button
                           onClick={() => handleDeleteTask(task.id)}

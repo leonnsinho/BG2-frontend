@@ -1,68 +1,28 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
-import { Card } from '../ui/Card'
-import TaskSidebar from '../planejamento/TaskSidebar'
 import { 
-  Target, 
   CheckCircle2, 
   Clock, 
   AlertCircle,
-  ChevronRight,
   Sparkles,
-  MessageCircle,
   Building2,
-  TrendingUp,
-  DollarSign,
+  CheckSquare,
   Users,
-  BarChart3,
-  Settings
+  MessageCircle,
+  ArrowRight,
+  Play,
+  BarChart3
 } from 'lucide-react'
-import toast from 'react-hot-toast'
-
-// Ícones SVG das jornadas (usando Lucide React)
-const journeyIcons = {
-  'estrategica': Target,
-  'financeira': DollarSign,
-  'pessoas-cultura': Users,
-  'receita-crm': BarChart3,
-  'operacional': Settings
-}
-
-const journeyColors = {
-  'estrategica': 'from-purple-500/10 to-purple-600/10',
-  'financeira': 'from-green-500/10 to-green-600/10',
-  'pessoas-cultura': 'from-pink-500/10 to-pink-600/10',
-  'receita-crm': 'from-blue-500/10 to-blue-600/10',
-  'operacional': 'from-orange-500/10 to-orange-600/10'
-}
-
-const journeyBorderColors = {
-  'estrategica': 'border-purple-200 hover:border-purple-400',
-  'financeira': 'border-green-200 hover:border-green-400',
-  'pessoas-cultura': 'border-pink-200 hover:border-pink-400',
-  'receita-crm': 'border-blue-200 hover:border-blue-400',
-  'operacional': 'border-orange-200 hover:border-orange-400'
-}
-
-const journeyIconColors = {
-  'estrategica': 'text-purple-600',
-  'financeira': 'text-green-600',
-  'pessoas-cultura': 'text-pink-600',
-  'receita-crm': 'text-blue-600',
-  'operacional': 'text-orange-600'
-}
 
 export const UserDashboard = () => {
   const { profile } = useAuth()
-  const [tasks, setTasks] = useState([])
-  const [journeys, setJourneys] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [selectedJourney, setSelectedJourney] = useState(null)
-  const [selectedTask, setSelectedTask] = useState(null)
-  const [isCommentsSidebarOpen, setIsCommentsSidebarOpen] = useState(false)
+  const navigate = useNavigate()
   const [companyName, setCompanyName] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({ pending: 0, inProgress: 0, completed: 0 })
+  const [activeStep, setActiveStep] = useState(0)
 
   // Log para debug do profile
   useEffect(() => {
@@ -88,8 +48,6 @@ export const UserDashboard = () => {
     const loadCompanyName = async () => {
       if (profile?.id) {
         try {
-          console.log('🏢 Tentando carregar empresa para user_id:', profile.id)
-          
           const { data, error } = await supabase
             .from('user_companies')
             .select('companies(name)')
@@ -97,7 +55,57 @@ export const UserDashboard = () => {
             .eq('is_active', true)
             .limit(1)
 
-          if (error) {
+          if (error) throw error
+          if (data && data.length > 0 && data[0].companies) {
+            setCompanyName(data[0].companies.name)
+          }
+        } catch (error) {
+          console.error('Erro ao carregar empresa:', error)
+        }
+      }
+    }
+
+    loadCompanyName()
+  }, [profile?.id])
+
+  // Carregar estatísticas de tarefas
+  useEffect(() => {
+    const loadTaskStats = async () => {
+      if (!profile?.id) return
+
+      try {
+        // Buscar estatísticas das tarefas do usuário
+        const { data: tasks, error } = await supabase
+          .from('tasks')
+          .select('status')
+          .eq('assigned_to', profile.id)
+
+        if (error) throw error
+
+        const statsData = {
+          pending: tasks.filter(t => t.status === 'pending').length,
+          inProgress: tasks.filter(t => t.status === 'in_progress').length,
+          completed: tasks.filter(t => t.status === 'completed').length
+        }
+
+        setStats(statsData)
+      } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadTaskStats()
+  }, [profile?.id])
+
+  // Animação automática dos steps
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % 4)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [])
             console.error('❌ Erro ao carregar empresa:', error)
             return
           }

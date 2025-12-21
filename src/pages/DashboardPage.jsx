@@ -9,7 +9,7 @@ import { Button } from '../components/ui/Button'
 import { DashboardSkeleton, SmartLoader } from '../components/ui/DashboardLoaders'
 import UnlinkedUserMessage from '../components/common/UnlinkedUserMessage'
 import { GestorDashboard } from '../components/dashboard/GestorDashboard'
-import { UserDashboard } from '../components/dashboard/UserDashboard'
+import { UserDashboard } from '../components/dashboard/UserDashboardNew'
 import CompanyAdminDashboard from '../components/dashboard/CompanyAdminDashboard'
 import { ProgressMetric } from '../components/dashboard/ProgressMetric'
 import { 

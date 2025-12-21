@@ -388,107 +388,98 @@ function TasksInProgressNew() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-white to-[#EBA500]/5 border-b border-gray-200/50 shadow-sm -mx-8 -mt-8 px-8 py-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[#373435] mb-1">Tarefas em Andamento</h1>
-            <p className="mt-2 text-base text-gray-600">
-              Gerencie e acompanhe todas as tarefas do sistema
-            </p>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-500 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/20 px-4 py-2.5 rounded-2xl border border-[#EBA500]/20">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 md:p-8 space-y-6">
+        
+        {/* Header */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-gray-100">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] tracking-tight">
+                Tarefas em Andamento
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
+                Gerencie e acompanhe todas as tarefas do sistema
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 bg-[#EBA500]/10 px-4 py-2.5 rounded-xl border border-[#EBA500]/20 flex-shrink-0">
               <CheckSquare className="h-4 w-4 text-[#EBA500]" />
-              <span className="text-[#373435] font-semibold">{stats.total} Tarefas</span>
+              <span className="font-semibold text-[#373435]">{stats.total} Tarefas</span>
             </div>
           </div>
         </div>
-      </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-all duration-200">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="p-3 bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/30 rounded-xl shadow-sm">
-                <CheckSquare className="h-6 w-6 text-[#EBA500]" />
-              </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/30 rounded-lg shadow-sm flex-shrink-0">
+              <CheckSquare className="h-5 w-5 sm:h-6 sm:w-6 text-[#EBA500]" />
             </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-[#373435]">{stats.total}</div>
-              <div className="text-xs text-gray-500 font-medium mt-0.5">Total</div>
+            <div>
+              <div className="text-xl sm:text-2xl font-bold text-[#373435]">{stats.total}</div>
+              <div className="text-xs text-gray-500 font-medium">Total</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-white to-yellow-50/30 rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-all duration-200">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="p-3 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-xl shadow-sm">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-lg shadow-sm flex-shrink-0">
+              <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
             </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-[#373435]">{stats.pending}</div>
-              <div className="text-xs text-gray-500 font-medium mt-0.5">Pendentes</div>
+            <div>
+              <div className="text-xl sm:text-2xl font-bold text-[#373435]">{stats.pending}</div>
+              <div className="text-xs text-gray-500 font-medium">Pendentes</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-all duration-200">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl shadow-sm">
-                <AlertCircle className="h-6 w-6 text-blue-600" />
-              </div>
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg shadow-sm flex-shrink-0">
+              <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
             </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-[#373435]">{stats.in_progress}</div>
-              <div className="text-xs text-gray-500 font-medium mt-0.5">Em Andamento</div>
+            <div>
+              <div className="text-xl sm:text-2xl font-bold text-[#373435]">{stats.in_progress}</div>
+              <div className="text-xs text-gray-500 font-medium">Em Andamento</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-white to-green-50/30 rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-all duration-200">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="p-3 bg-gradient-to-br from-green-100 to-green-200 rounded-xl shadow-sm">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-green-100 to-green-200 rounded-lg shadow-sm flex-shrink-0">
+              <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
             </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-[#373435]">{stats.completed}</div>
-              <div className="text-xs text-gray-500 font-medium mt-0.5">Concluídas</div>
+            <div>
+              <div className="text-xl sm:text-2xl font-bold text-[#373435]">{stats.completed}</div>
+              <div className="text-xs text-gray-500 font-medium">Concluídas</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-white to-red-50/30 rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-all duration-200">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="p-3 bg-gradient-to-br from-red-100 to-red-200 rounded-xl shadow-sm">
-                <XCircle className="h-6 w-6 text-red-600" />
-              </div>
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-red-100 to-red-200 rounded-lg shadow-sm flex-shrink-0">
+              <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
             </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-[#373435]">{stats.cancelled}</div>
-              <div className="text-xs text-gray-500 font-medium mt-0.5">Canceladas</div>
+            <div>
+              <div className="text-xl sm:text-2xl font-bold text-[#373435]">{stats.cancelled}</div>
+              <div className="text-xs text-gray-500 font-medium">Canceladas</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6 mb-6">
-        {/* Header dos Filtros com botão Limpar */}
+      <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100">
+        {/* Header dos Filtros */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-[#373435] flex items-center">
-            <Filter className="h-4 w-4 mr-2 text-[#EBA500]" />
-            Filtros
-          </h3>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-[#EBA500]" />
+            <h3 className="text-sm font-semibold text-[#373435]">Filtros</h3>
+          </div>
           {(searchTerm || statusFilter !== 'all' || userFilter || journeyFilter !== 'all') && (
             <button
               onClick={() => {
@@ -497,7 +488,7 @@ function TasksInProgressNew() {
                 setUserFilter('')
                 setJourneyFilter('all')
               }}
-              className="text-xs text-[#EBA500] hover:text-[#EBA500]/80 font-medium flex items-center space-x-1 transition-colors"
+              className="text-xs text-[#EBA500] hover:text-[#d99500] font-medium flex items-center gap-1 transition-colors px-3 py-1.5 rounded-lg hover:bg-[#EBA500]/5"
             >
               <XCircle className="h-3.5 w-3.5" />
               <span>Limpar filtros</span>
@@ -879,6 +870,7 @@ function TasksInProgressNew() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
