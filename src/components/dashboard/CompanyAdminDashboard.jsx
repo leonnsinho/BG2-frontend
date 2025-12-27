@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
+import { useNavigate } from 'react-router-dom'
 import { 
   Users, 
   Target, 
@@ -10,8 +11,175 @@ import {
   TrendingUp,
   Calendar,
   FileText,
-  Building2
+  Building2,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  UserCircle,
+  Award,
+  Sun,
+  Moon
 } from 'lucide-react'
+
+// Componente de Atalhos Rápidos
+const QuickAppsCard = () => {
+  const navigate = useNavigate()
+
+  const apps = [
+    {
+      name: 'Entradas',
+      icon: ArrowUpCircle,
+      gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      shadowColor: 'rgba(16, 185, 129, 0.4)',
+      href: '/dfc/entradas'
+    },
+    {
+      name: 'Saídas',
+      icon: ArrowDownCircle,
+      gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+      shadowColor: 'rgba(239, 68, 68, 0.4)',
+      href: '/dfc/saidas'
+    },
+    {
+      name: 'CRM',
+      icon: UserCircle,
+      gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+      shadowColor: 'rgba(59, 130, 246, 0.4)',
+      href: '/crm',
+      disabled: true
+    },
+    {
+      name: 'Avaliação',
+      icon: Award,
+      gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)',
+      shadowColor: 'rgba(168, 85, 247, 0.4)',
+      href: '/avaliacao-desempenho',
+      disabled: true
+    }
+  ]
+
+  return (
+    <div className="mb-6 sm:mb-8">
+      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 shadow-xl">
+        {/* Fundo com gradiente animado */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#EBA500]/10 via-[#373435]/5 to-purple-500/10"></div>
+        
+        {/* Padrão de grid sutil */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(235, 165, 0, 0.03) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(235, 165, 0, 0.03) 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px'
+        }}></div>
+        
+        {/* Círculos decorativos blur */}
+        <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#EBA500]/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-purple-500/15 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+        
+        {/* Brilho superior */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
+        
+        {/* Conteúdo */}
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-[#EBA500] to-[#d89500] shadow-lg">
+              <div className="grid grid-cols-2 gap-0.5">
+                <div className="w-1 h-1 bg-white rounded-sm"></div>
+                <div className="w-1 h-1 bg-white rounded-sm"></div>
+                <div className="w-1 h-1 bg-white rounded-sm"></div>
+                <div className="w-1 h-1 bg-white rounded-sm"></div>
+              </div>
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#373435] to-[#5a5556] bg-clip-text text-transparent">
+              Aplicativos
+            </h2>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-4 lg:grid-cols-8 gap-3 sm:gap-4">
+          {apps.map((app) => {
+            const Icon = app.icon
+            const isDisabled = app.disabled
+            
+            return (
+              <div key={app.name} className="flex flex-col items-center group">
+                <button
+                  onClick={() => !isDisabled && navigate(app.href)}
+                  disabled={isDisabled}
+                  className={`relative w-full aspect-square rounded-[28%] transition-all duration-300 ${
+                    isDisabled 
+                      ? 'cursor-not-allowed opacity-60 scale-95' 
+                      : 'cursor-pointer hover:scale-105 active:scale-95'
+                  }`}
+                  style={{
+                    background: app.gradient,
+                    boxShadow: isDisabled 
+                      ? '0 4px 12px rgba(0,0,0,0.1)'
+                      : `0 8px 24px ${app.shadowColor}, 0 4px 12px rgba(0,0,0,0.1)`
+                  }}
+                >
+                  {/* Badge "Em breve" */}
+                  {isDisabled && (
+                    <div className="absolute -top-1 -right-1 z-10">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full blur opacity-75"></div>
+                        <span className="relative flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-yellow-400 to-orange-500 text-white text-[8px] font-black rounded-full shadow-lg border-2 border-white">
+                          !
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Brilho superior */}
+                  <div className="absolute inset-0 rounded-[28%] bg-gradient-to-b from-white/30 via-transparent to-transparent pointer-events-none"></div>
+                  
+                  {/* Ícone do App */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Icon 
+                      className={`w-6 h-6 sm:w-8 sm:h-8 text-white transition-all duration-300 ${
+                        !isDisabled && 'group-hover:scale-110'
+                      }`}
+                      strokeWidth={2}
+                      style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
+                    />
+                  </div>
+                </button>
+                
+                {/* Nome do App */}
+                <span className={`mt-2 text-[10px] sm:text-xs font-semibold text-center leading-tight transition-all duration-300 ${
+                  isDisabled 
+                    ? 'text-gray-400' 
+                    : 'text-[#373435] group-hover:text-[#EBA500] group-hover:scale-105'
+                }`}>
+                  {app.name}
+                </span>
+                
+                {/* Indicador "Em breve" */}
+                {isDisabled && (
+                  <span className="mt-1 text-[8px] sm:text-[9px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
+                    Em breve
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Função auxiliar para obter cores do gradiente
+const getGradientColors = (colorClass) => {
+  const colorMap = {
+    'from-green-500 to-emerald-600': '#10b981, #059669',
+    'from-red-500 to-rose-600': '#ef4444, #e11d48',
+    'from-blue-500 to-indigo-600': '#3b82f6, #4f46e5',
+    'from-purple-500 to-violet-600': '#a855f7, #7c3aed'
+  }
+  return colorMap[colorClass] || '#EBA500, #373435'
+}
 
 export default function CompanyAdminDashboard() {
   const { profile } = useAuth()
@@ -251,9 +419,48 @@ export default function CompanyAdminDashboard() {
                   Acompanhe as métricas e o progresso da sua empresa
                 </p>
               </div>
+              
+              {/* Ícone decorativo Sol/Lua - apenas desktop */}
+              <div className="hidden lg:flex items-center justify-center">
+                {(() => {
+                  const hour = new Date().getHours()
+                  const isDay = hour >= 6 && hour < 18
+                  
+                  if (isDay) {
+                    return (
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full blur-2xl opacity-30 animate-pulse"></div>
+                        <div className="relative w-24 h-24 lg:w-32 lg:h-32 flex items-center justify-center">
+                          <img 
+                            src="/sun.gif" 
+                            alt="Sol"
+                            className="w-full h-full object-contain drop-shadow-2xl"
+                          />
+                        </div>
+                      </div>
+                    )
+                  } else {
+                    return (
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full blur-2xl opacity-30 animate-pulse"></div>
+                        <div className="relative w-24 h-24 lg:w-32 lg:h-32 flex items-center justify-center">
+                          <img 
+                            src="/moon.gif" 
+                            alt="Lua"
+                            className="w-full h-full object-contain drop-shadow-2xl"
+                          />
+                        </div>
+                      </div>
+                    )
+                  }
+                })()}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Card de Aplicativos / Atalhos Rápidos */}
+        <QuickAppsCard />
 
         {/* Cards de Estatísticas Principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-6 mb-6 sm:mb-8">

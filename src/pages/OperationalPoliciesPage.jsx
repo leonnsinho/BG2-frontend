@@ -2803,21 +2803,27 @@ export default function OperationalPoliciesPage() {
                     onDragOver={(e) => handleDragOver(e, block)}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, block)}
-                    className={`group bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-move ${
+                    className={`group bg-gradient-to-br from-gray-50/50 to-white rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-move ${
                       dragOverBlock === block.id ? 'ring-4 ring-[#EBA500] ring-opacity-50' : ''
                     }`}
                     style={{ 
-                      border: `3px solid ${block.color}`,
-                      boxShadow: `0 8px 24px -4px ${block.color}40, 0 0 0 1px ${block.color}20, inset 0 0 0 1px ${block.color}10`,
-                      background: `linear-gradient(135deg, ${block.color}05 0%, white 50%)`
+                      boxShadow: `0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 30px -10px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.03)`,
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = `0 12px 40px -4px ${block.color}60, 0 0 30px ${block.color}30, 0 0 0 1px ${block.color}40, inset 0 0 20px ${block.color}08`
+                      e.currentTarget.style.boxShadow = `0 4px 20px -4px rgba(0, 0, 0, 0.1), 0 12px 40px -8px ${block.color}30, 0 0 0 1px rgba(0, 0, 0, 0.05)`
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = `0 8px 24px -4px ${block.color}40, 0 0 0 1px ${block.color}20, inset 0 0 0 1px ${block.color}10`
+                      e.currentTarget.style.boxShadow = `0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 30px -10px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.03)`
                     }}
                   >
+                    {/* Barra colorida no topo */}
+                    <div 
+                      className="h-1.5 w-full" 
+                      style={{ 
+                        background: `linear-gradient(90deg, ${block.color} 0%, ${block.color}CC 100%)`
+                      }}
+                    />
+                    
                     {/* Header do Bloco - Clicável */}
                     <div 
                       className="p-4 sm:p-5 lg:p-6 cursor-pointer transition-all relative"
@@ -2825,8 +2831,16 @@ export default function OperationalPoliciesPage() {
                     >
                       {/* Conteúdo Principal */}
                       <div className="flex items-start gap-3 sm:gap-4 mb-3 lg:mb-0">
-                        <div className="p-2 sm:p-2.5 lg:p-3 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl sm:rounded-2xl flex-shrink-0">
-                          {renderIcon(block.icon, 'h-6 w-6 sm:h-8 sm:w-8')}
+                        <div 
+                          className="p-2 sm:p-2.5 lg:p-3 rounded-xl sm:rounded-2xl flex-shrink-0"
+                          style={{
+                            background: `linear-gradient(135deg, ${block.color}15 0%, ${block.color}08 100%)`,
+                            border: `1px solid ${block.color}20`
+                          }}
+                        >
+                          <div style={{ color: block.color }}>
+                            {renderIcon(block.icon, 'h-6 w-6 sm:h-8 sm:w-8')}
+                          </div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-0.5 break-words">{block.name}</h3>
@@ -2915,21 +2929,26 @@ export default function OperationalPoliciesPage() {
                   return (
                     <div
                       key={block.id}
-                      className="group bg-white rounded-3xl overflow-hidden transition-all duration-300 hover:translate-y-[-6px]"
+                      className="group bg-gradient-to-br from-gray-50/50 to-white rounded-3xl overflow-hidden transition-all duration-300 hover:translate-y-[-6px]"
                       style={{ 
-                        border: `3px solid ${block.color || '#EBA500'}`,
-                        boxShadow: `0 15px 35px -5px ${block.color}50, 0 0 0 1px ${block.color}25, inset 0 1px 0 ${block.color}15`,
-                        background: `linear-gradient(135deg, ${block.color}08 0%, white 60%)`
+                        boxShadow: `0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 30px -10px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.03)`,
                       }}
                       onMouseEnter={(e) => {
                         const color = block.color || '#EBA500'
-                        e.currentTarget.style.boxShadow = `0 20px 50px -5px ${color}70, 0 0 40px ${color}40, 0 0 0 1px ${color}50, inset 0 1px 0 ${color}20`
+                        e.currentTarget.style.boxShadow = `0 4px 20px -4px rgba(0, 0, 0, 0.1), 0 20px 50px -10px ${color}30, 0 0 0 1px rgba(0, 0, 0, 0.05)`
                       }}
                       onMouseLeave={(e) => {
-                        const color = block.color || '#EBA500'
-                        e.currentTarget.style.boxShadow = `0 15px 35px -5px ${color}50, 0 0 0 1px ${color}25, inset 0 1px 0 ${color}15`
+                        e.currentTarget.style.boxShadow = `0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 30px -10px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.03)`
                       }}
                     >
+                      {/* Barra colorida no topo */}
+                      <div 
+                        className="h-1.5 w-full" 
+                        style={{ 
+                          background: `linear-gradient(90deg, ${block.color} 0%, ${block.color}CC 100%)`
+                        }}
+                      />
+                      
                       {/* Área clicável para abrir visualização */}
                       <div 
                         className="p-6 cursor-pointer"
@@ -2939,7 +2958,17 @@ export default function OperationalPoliciesPage() {
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
                             {block.icon && (
-                              <div className="mb-3">{renderIcon(block.icon, 'h-10 w-10')}</div>
+                              <div 
+                                className="mb-3 p-3 rounded-2xl inline-block"
+                                style={{
+                                  background: `linear-gradient(135deg, ${block.color}15 0%, ${block.color}08 100%)`,
+                                  border: `1px solid ${block.color}20`
+                                }}
+                              >
+                                <div style={{ color: block.color }}>
+                                  {renderIcon(block.icon, 'h-10 w-10')}
+                                </div>
+                              </div>
                             )}
                             <h3 className="text-lg font-bold text-[#373435] mb-2 line-clamp-2 break-words">
                               {block.name}
@@ -2953,20 +2982,6 @@ export default function OperationalPoliciesPage() {
                             {block.description}
                           </p>
                         )}
-
-                        {/* Estatísticas */}
-                        <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-200">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Layers className="h-4 w-4 text-[#EBA500]" />
-                            <span className="font-semibold">{subblockCount}</span>
-                            <span>sub-blocos</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <FileText className="h-4 w-4 text-[#EBA500]" />
-                            <span className="font-semibold">{totalContent}</span>
-                            <span>conteúdos</span>
-                          </div>
-                        </div>
                       </div>
 
                       {/* Ações (fora da área clicável) */}

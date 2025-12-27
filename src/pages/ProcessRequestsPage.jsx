@@ -529,7 +529,7 @@ export default function ProcessRequestsPage() {
                             Revisar
                           </button>
                         </>
-                      )}>
+                      )}
                     </div>
                   </div>
                 </div>

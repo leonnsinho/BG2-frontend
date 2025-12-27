@@ -1890,12 +1890,11 @@ const PlanejamentoEstrategico = () => {
               cores={getJornadaCores(jornadaSelecionada.id)}
               renderProcessCard={(processo, index, totalProcessos) => {
               const coresJornada = getJornadaCores(jornadaSelecionada.id)
-              const isWideLayout = totalProcessos === 1 // Layout horizontal apenas para 1 processo
               
               return (
-                <div className={`group bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#373435]/10 hover:border-[#EBA500]/30 overflow-hidden ${isWideLayout ? 'flex flex-row h-fit min-h-[300px]' : 'flex flex-col h-fit min-h-[450px] sm:min-h-[500px]'}`}>
+                <div className="group bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#373435]/10 hover:border-[#EBA500]/30 overflow-hidden flex flex-col md:flex-row h-fit min-h-[300px]">
                   {/* Header do Processo Elegante */}
-                  <div className={`relative p-3 sm:p-4 ${isWideLayout ? 'border-r w-1/3' : 'border-b'} border-[#373435]/10 bg-[#EBA500]/5 flex-shrink-0`}>
+                  <div className="relative p-3 sm:p-4 border-b md:border-b-0 md:border-r md:w-1/3 border-[#373435]/10 bg-[#EBA500]/5 flex-shrink-0">
                     {/* Background Pattern */}
                     <div className="absolute inset-0 bg-[#EBA500]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
@@ -1993,7 +1992,7 @@ const PlanejamentoEstrategico = () => {
                         {typeof processo.id !== 'number' && (
                           <button
                             onClick={() => abrirModalImportarPack(processo)}
-                            className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs"
+                            className={`px-3 py-2 ${coresJornada.iconBg} hover:opacity-90 text-white rounded-2xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold text-xs`}
                             title="Importar pack de ações pré-definidas"
                           >
                             <Package className="h-3 w-3 flex-shrink-0" />
@@ -2039,64 +2038,65 @@ const PlanejamentoEstrategico = () => {
                     </div>
                   </div>
 
-                {/* Controles de Seleção Múltipla */}
-                {tarefas[processo.id]?.length > 0 && (
-                  <div className={`px-3 sm:px-4 pt-3 pb-2 bg-white ${isWideLayout ? 'border-r' : 'border-b'} border-[#373435]/10`}>
-                    {!modoSelecao ? (
-                      <button
-                        onClick={() => toggleModoSelecao()}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      >
-                        <CheckSquare className="h-3 w-3" />
-                        Selecionar
-                      </button>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs text-gray-600 font-medium">
-                            {tarefasSelecionadas[processo.id]?.length || 0} selecionada(s)
-                          </span>
-                          <button
-                            onClick={() => toggleModoSelecao()}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-red-500 text-white hover:bg-red-600"
-                          >
-                            <X className="h-3 w-3" />
-                            Cancelar
-                          </button>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <button
-                            onClick={() => selecionarTodasTarefas(processo.id)}
-                            className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all font-medium"
-                          >
-                            Todas
-                          </button>
-                          
-                          <button
-                            onClick={() => deselecionarTodasTarefas(processo.id)}
-                            className="px-3 py-1.5 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all font-medium"
-                          >
-                            Nenhuma
-                          </button>
-                          
-                          {tarefasSelecionadas[processo.id]?.length > 0 && (
-                            <button
-                              onClick={() => excluirTarefasSelecionadas(processo.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 transition-all ml-auto"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              Excluir ({tarefasSelecionadas[processo.id]?.length})
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* Lista de Tarefas Elegante */}
-                <div className={`p-3 sm:p-4 space-y-2 sm:space-y-3 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 flex-1 ${isWideLayout ? 'w-2/3 max-h-[500px]' : 'max-h-64 sm:max-h-80'}`}>
+                <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 flex-1 max-h-64 sm:max-h-80 md:w-2/3 md:max-h-[500px]">
+                  {/* Controles de Seleção Múltipla */}
+                  {tarefas[processo.id]?.length > 0 && (
+                    <div className="mb-3 pb-3 border-b border-[#373435]/10">
+                      {!modoSelecao ? (
+                        <button
+                          onClick={() => toggleModoSelecao()}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                        >
+                          <CheckSquare className="h-3 w-3" />
+                          Selecionar
+                        </button>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-gray-600 font-medium">
+                              {tarefasSelecionadas[processo.id]?.length || 0} selecionada(s)
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => selecionarTodasTarefas(processo.id)}
+                              className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all font-medium"
+                            >
+                              Todas
+                            </button>
+                            
+                            <button
+                              onClick={() => deselecionarTodasTarefas(processo.id)}
+                              className="px-3 py-1.5 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all font-medium"
+                            >
+                              Nenhuma
+                            </button>
+                            
+                            <button
+                              onClick={() => toggleModoSelecao()}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-red-500 text-white hover:bg-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                              Cancelar
+                            </button>
+                            
+                            {tarefasSelecionadas[processo.id]?.length > 0 && (
+                              <button
+                                onClick={() => excluirTarefasSelecionadas(processo.id)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 transition-all ml-auto"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                Excluir ({tarefasSelecionadas[processo.id]?.length})
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Formulário de Nova Ação Inline */}
                   {(() => {
                     // ✅ processo.id JÁ É UUID

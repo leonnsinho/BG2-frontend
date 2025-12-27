@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, FileText, CheckSquare, Paperclip, Plus, Save, Trash2, Edit2, Download, ExternalLink, GripVertical, Bold, Italic, Link as LinkIcon, List, Heading, Upload, Loader2 } from 'lucide-react'
+import { X, FileText, CheckSquare, Paperclip, Plus, Save, Trash2, Edit2, Download, ExternalLink, GripVertical, Bold, Italic, Link as LinkIcon, List, Heading, Upload, Loader2, Eye } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { renderIcon } from '../utils/iconRenderer'
 
@@ -12,6 +12,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
   const [tags, setTags] = useState([])
   const [checklists, setChecklists] = useState([])
   const [attachments, setAttachments] = useState([])
+  const [selectedAttachments, setSelectedAttachments] = useState([])
   const [showChecklistForm, setShowChecklistForm] = useState(false)
   const [showAttachmentForm, setShowAttachmentForm] = useState(false)
   const [newChecklistName, setNewChecklistName] = useState('')
@@ -310,54 +311,85 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
   }
 
   // ========== ATTACHMENT FUNCTIONS ==========
-  const handleUploadFile = async (file) => {
-    if (!file) return
+  const handleUploadFile = async (files) => {
+    if (!files || files.length === 0) return
 
-    console.log('📎 Iniciando upload:', file.name)
     setSaving(true)
-    const fileName = `${Date.now()}_${file.name}`
-    const filePath = `${block.company_id}/${fileName}` // Sem 'attachments/' no início
+    const fileArray = Array.isArray(files) ? files : [files]
+    let uploadedCount = 0
+    let failedCount = 0
+    const newAttachments = []
 
-    // Upload para Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('policy-attachments')
-      .upload(filePath, file)
+    for (const file of fileArray) {
+      try {
+        console.log('📎 Iniciando upload:', file.name)
+        const fileName = `${Date.now()}_${file.name}`
+        const filePath = `${block.company_id}/${fileName}` // Sem 'attachments/' no início
 
-    if (uploadError) {
-      console.error('❌ Erro no upload para storage:', uploadError)
-      alert(`Erro ao fazer upload: ${uploadError.message}`)
-      setSaving(false)
-      return
+        // Upload para Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('policy-attachments')
+          .upload(filePath, file)
+
+        if (uploadError) {
+          console.error('❌ Erro no upload para storage:', uploadError)
+          failedCount++
+          continue
+        }
+
+        console.log('✅ Upload para storage OK:', uploadData)
+
+        // Obter URL pública
+        const { data: { publicUrl } } = supabase.storage
+          .from('policy-attachments')
+          .getPublicUrl(filePath)
+
+        console.log('📝 Salvando no banco de dados...')
+
+        // Salvar no banco - usando campos corretos da tabela
+        const { data, error } = await supabase
+          .from('policy_attachments')
+          .insert({
+            block_id: block.id,
+            company_id: block.company_id,
+            name: file.name,
+            file_path: filePath,
+            url: publicUrl,
+            type: 'file',
+            file_size: file.size
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('❌ Erro ao salvar no banco:', error)
+          failedCount++
+          continue
+        }
+
+        console.log('✅ Anexo salvo com sucesso!')
+        uploadedCount++
+        newAttachments.push(data)
+      } catch (err) {
+        console.error('❌ Erro ao processar arquivo:', err)
+        failedCount++
+      }
     }
 
-    console.log('✅ Upload para storage OK:', uploadData)
+    // Atualizar lista de anexos uma vez com todos os novos arquivos
+    if (newAttachments.length > 0) {
+      setAttachments([...attachments, ...newAttachments])
+    }
 
-    // Obter URL pública
-    const { data: { publicUrl } } = supabase.storage
-      .from('policy-attachments')
-      .getPublicUrl(filePath)
+    setSaving(false)
 
-    console.log('📝 Salvando no banco de dados...')
-
-    // Salvar no banco - usando campos corretos da tabela
-    const { data, error } = await supabase
-      .from('policy_attachments')
-      .insert({
-        block_id: block.id,
-        company_id: block.company_id,
-        name: file.name,
-        file_path: filePath,
-        url: publicUrl,
-        type: 'file',
-        file_size: file.size
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('❌ Erro ao salvar no banco:', error)
-      alert(`Erro ao salvar anexo: ${error.message}`)
-      setSaving(false)
+    // Mostrar resultado
+    if (uploadedCount > 0 && failedCount === 0) {
+      alert(`✅ ${uploadedCount} arquivo(s) enviado(s) com sucesso!`)
+    } else if (uploadedCount > 0 && failedCount > 0) {
+      alert(`⚠️ ${uploadedCount} arquivo(s) enviado(s), ${failedCount} falharam.`)
+    } else if (failedCount > 0) {
+      alert(`❌ Falha ao enviar todos os arquivos`)
       return
     }
 
@@ -367,6 +399,194 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
       setShowAttachmentForm(false)
     }
     setSaving(false)
+  }
+
+  const handleDownloadAttachment = async (attachment) => {
+    try {
+      // Suportar tanto file_path quanto usar url
+      const filePath = attachment.file_path
+      
+      if (!filePath) {
+        console.error('❌ Caminho do arquivo não encontrado')
+        alert('Erro: caminho do arquivo não encontrado')
+        return
+      }
+
+      const { data, error } = await supabase.storage
+        .from('policy-attachments')
+        .download(filePath)
+
+      if (error) {
+        console.error('❌ Erro ao baixar arquivo:', error)
+        alert('Erro ao baixar arquivo')
+        return
+      }
+
+      // Criar URL temporária e fazer download
+      const url = window.URL.createObjectURL(data)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = attachment.name || attachment.file_name || 'arquivo'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('❌ Erro ao baixar:', err)
+      alert('Erro ao baixar arquivo')
+    }
+  }
+
+  const handleViewAttachment = async (attachment) => {
+    try {
+      // Verificar se tem file_path
+      const filePath = attachment.file_path
+      
+      if (!filePath) {
+        console.error('❌ Caminho do arquivo não encontrado')
+        alert('Erro: caminho do arquivo não encontrado')
+        return
+      }
+
+      // Criar URL assinada (funciona com RLS)
+      const { data, error } = await supabase.storage
+        .from('policy-attachments')
+        .createSignedUrl(filePath, 3600) // URL válida por 1 hora
+
+      if (error) {
+        console.error('❌ Erro ao gerar URL:', error)
+        alert('Erro ao visualizar arquivo')
+        return
+      }
+
+      // Arquivos de imagem e PDF podem ser visualizados diretamente
+      const fileName = attachment.name || attachment.file_name || ''
+      const fileExtension = fileName.split('.').pop().toLowerCase()
+      const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']
+      const viewableExtensions = [...imageExtensions, 'pdf']
+
+      if (viewableExtensions.includes(fileExtension)) {
+        // Abrir URL assinada em nova aba
+        window.open(data.signedUrl, '_blank')
+      } else {
+        // Para outros tipos, fazer download
+        handleDownloadAttachment(attachment)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao visualizar:', err)
+      alert('Erro ao visualizar arquivo')
+    }
+  }
+
+  const toggleAttachmentSelection = (attachmentId) => {
+    setSelectedAttachments(prev => 
+      prev.includes(attachmentId) 
+        ? prev.filter(id => id !== attachmentId)
+        : [...prev, attachmentId]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedAttachments.length === attachments.length) {
+      setSelectedAttachments([])
+    } else {
+      setSelectedAttachments(attachments.map(a => a.id))
+    }
+  }
+
+  const handleBulkDownload = async () => {
+    if (selectedAttachments.length === 0) return
+    
+    setSaving(true)
+    let successCount = 0
+    let failCount = 0
+
+    for (const attachmentId of selectedAttachments) {
+      const attachment = attachments.find(a => a.id === attachmentId)
+      if (!attachment) continue
+
+      try {
+        await handleDownloadAttachment(attachment)
+        successCount++
+        // Pequeno delay entre downloads
+        await new Promise(resolve => setTimeout(resolve, 300))
+      } catch (err) {
+        console.error('❌ Erro ao baixar:', err)
+        failCount++
+      }
+    }
+
+    setSaving(false)
+    setSelectedAttachments([])
+    
+    if (successCount > 0 && failCount === 0) {
+      alert(`✅ ${successCount} arquivo(s) baixado(s) com sucesso!`)
+    } else if (successCount > 0 && failCount > 0) {
+      alert(`⚠️ ${successCount} arquivo(s) baixado(s), ${failCount} falharam.`)
+    } else {
+      alert('❌ Falha ao baixar arquivos')
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedAttachments.length === 0) return
+    
+    const confirmDelete = window.confirm(
+      `Tem certeza que deseja excluir ${selectedAttachments.length} anexo(s)?`
+    )
+    
+    if (!confirmDelete) return
+
+    setSaving(true)
+    let successCount = 0
+    let failCount = 0
+
+    for (const attachmentId of selectedAttachments) {
+      const attachment = attachments.find(a => a.id === attachmentId)
+      if (!attachment) continue
+
+      try {
+        // Deletar do storage
+        if (attachment.file_path) {
+          const { error: storageError } = await supabase.storage
+            .from('policy-attachments')
+            .remove([attachment.file_path])
+          
+          if (storageError) {
+            console.error('❌ Erro ao deletar do storage:', storageError)
+          }
+        }
+
+        // Deletar do banco
+        const { error: dbError } = await supabase
+          .from('policy_attachments')
+          .delete()
+          .eq('id', attachmentId)
+
+        if (dbError) {
+          console.error('❌ Erro ao deletar do banco:', dbError)
+          failCount++
+        } else {
+          successCount++
+        }
+      } catch (err) {
+        console.error('❌ Erro ao deletar anexo:', err)
+        failCount++
+      }
+    }
+
+    // Atualizar lista de anexos
+    setAttachments(attachments.filter(a => !selectedAttachments.includes(a.id)))
+    setSelectedAttachments([])
+    setSaving(false)
+    
+    if (successCount > 0 && failCount === 0) {
+      alert(`✅ ${successCount} anexo(s) excluído(s) com sucesso!`)
+    } else if (successCount > 0 && failCount > 0) {
+      alert(`⚠️ ${successCount} anexo(s) excluído(s), ${failCount} falharam.`)
+    } else {
+      alert('❌ Falha ao excluir anexos')
+    }
   }
 
   const handleAddLink = async () => {
@@ -607,7 +827,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
               >
                 {internalDescription ? (
                   <div 
-                    className="text-gray-700 prose prose-sm max-w-none [&_a]:text-blue-600 [&_a]:hover:underline [&_a]:cursor-pointer"
+                    className="text-gray-700 prose prose-sm max-w-none break-words overflow-wrap-anywhere [&_a]:text-blue-600 [&_a]:hover:underline [&_a]:cursor-pointer"
                     dangerouslySetInnerHTML={{ __html: internalDescription }}
                     onClick={(e) => {
                       // Garantir que links abram em nova aba
@@ -704,7 +924,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     <input
                       type="checkbox"
                       checked={item.is_completed}
-                      onChange={() => handleToggleChecklistItem(item.id, item.checklist_id, !item.is_completed)}
+                      onChange={() => handleToggleChecklistItem(item.checklist_id, item.id, item.is_completed)}
                       className="mt-1 h-4 w-4 text-green-500 rounded border-gray-300 focus:ring-green-500"
                     />
                     <span className={`flex-1 text-sm ${item.is_completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
@@ -790,7 +1010,8 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     )}
                     <input
                       type="file"
-                      onChange={(e) => e.target.files[0] && handleUploadFile(e.target.files[0])}
+                      multiple
+                      onChange={(e) => e.target.files.length > 0 && handleUploadFile(Array.from(e.target.files))}
                       className="hidden"
                       disabled={saving}
                     />
@@ -837,10 +1058,55 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
           {/* Anexos */}
           {attachments.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
-                <Paperclip className="h-4 w-4" />
-                Anexos ({attachments.length})
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Paperclip className="h-4 w-4" />
+                  Anexos ({attachments.length})
+                </h3>
+                
+                {/* Botões de ação em massa */}
+                {selectedAttachments.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-600 font-medium">
+                      {selectedAttachments.length} selecionado(s)
+                    </span>
+                    <button
+                      onClick={handleBulkDownload}
+                      disabled={saving}
+                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                      title="Baixar selecionados"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Baixar
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={saving}
+                      className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                      title="Excluir selecionados"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Excluir
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Checkbox selecionar todos */}
+              {attachments.length > 1 && (
+                <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg">
+                  <input
+                    type="checkbox"
+                    checked={selectedAttachments.length === attachments.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-medium text-gray-700">
+                    Selecionar todos
+                  </span>
+                </div>
+              )}
+
               <div className="space-y-2">
                 {attachments.map((attachment) => (
                   <div
@@ -848,6 +1114,14 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {/* Checkbox de seleção */}
+                      <input
+                        type="checkbox"
+                        checked={selectedAttachments.includes(attachment.id)}
+                        onChange={() => toggleAttachmentSelection(attachment.id)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      />
                       <FileText className="h-5 w-5 text-gray-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">{attachment.name}</p>
@@ -860,13 +1134,22 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     </div>
                     <div className="flex items-center gap-2">
                       {attachment.type === 'file' && attachment.file_path && (
-                        <button
-                          onClick={() => handleDownloadAttachment(attachment)}
-                          className="p-1.5 hover:bg-blue-100 rounded text-blue-600"
-                          title="Baixar"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleViewAttachment(attachment)}
+                            className="p-1.5 hover:bg-green-100 rounded text-green-600"
+                            title="Visualizar"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDownloadAttachment(attachment)}
+                            className="p-1.5 hover:bg-blue-100 rounded text-blue-600"
+                            title="Baixar"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                        </>
                       )}
                       {attachment.type === 'link' && attachment.url && (
                         <a
@@ -1034,7 +1317,8 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                 <div>
                   <input
                     type="file"
-                    onChange={(e) => e.target.files[0] && handleUploadFile(e.target.files[0])}
+                    multiple
+                    onChange={(e) => e.target.files.length > 0 && handleUploadFile(Array.from(e.target.files))}
                     className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                 </div>
@@ -1107,7 +1391,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                 className="p-4 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors min-h-[80px]"
               >
                 {internalDescription ? (
-                  <p className="text-gray-700 whitespace-pre-wrap">{internalDescription}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap break-words overflow-wrap-anywhere">{internalDescription}</p>
                 ) : (
                   <p className="text-gray-400">Clique para adicionar uma descrição...</p>
                 )}
@@ -1135,9 +1419,54 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
           {/* Attachments */}
           {attachments.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                Anexos ({attachments.length})
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-700">
+                  Anexos ({attachments.length})
+                </h3>
+                
+                {/* Botões de ação em massa */}
+                {selectedAttachments.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-600 font-medium">
+                      {selectedAttachments.length} selecionado(s)
+                    </span>
+                    <button
+                      onClick={handleBulkDownload}
+                      disabled={saving}
+                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                      title="Baixar selecionados"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Baixar
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={saving}
+                      className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                      title="Excluir selecionados"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Excluir
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Checkbox selecionar todos */}
+              {attachments.length > 1 && (
+                <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <input
+                    type="checkbox"
+                    checked={selectedAttachments.length === attachments.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-medium text-gray-700">
+                    Selecionar todos
+                  </span>
+                </div>
+              )}
+
               <div className="space-y-2">
                 {attachments.map((attachment) => (
                   <div
@@ -1145,6 +1474,14 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {/* Checkbox de seleção */}
+                      <input
+                        type="checkbox"
+                        checked={selectedAttachments.includes(attachment.id)}
+                        onChange={() => toggleAttachmentSelection(attachment.id)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      />
                       <Paperclip className="h-5 w-5 text-gray-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
@@ -1159,14 +1496,22 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     </div>
                     <div className="flex items-center gap-1">
                       {attachment.file_type !== 'link' ? (
-                        <a
-                          href={attachment.file_url}
-                          download
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Baixar"
-                        >
-                          <Download className="h-4 w-4" />
-                        </a>
+                        <>
+                          <button
+                            onClick={() => handleViewAttachment(attachment)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                            title="Visualizar"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDownloadAttachment(attachment)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Baixar"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                        </>
                       ) : (
                         <a
                           href={attachment.file_url}

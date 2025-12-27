@@ -90,7 +90,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
   // 🔥 Itens após Dashboard (excluindo Super Admin)
   const afterDashboardItems = [
     {
-      name: 'Minhas Tarefas',
+      name: 'Minhas Ações',
       icon: CheckSquare,
       href: '/tarefas',
       roles: ['gestor', 'gestor_financeiro', 'gestor_estrategico', 'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional', 'company_admin', 'user']
@@ -299,9 +299,9 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
   const hasCompany = profile?.company_id || (profile?.user_companies && profile.user_companies.length > 0)
   
   if (hasCompany) {
-    console.log('✅ Adicionando Minhas Tarefas ao sidebar do usuário')
+    console.log('✅ Adicionando Minhas Ações ao sidebar do usuário')
     userItems.push({
-      name: 'Minhas Tarefas',
+      name: 'Minhas Ações',
       icon: CheckSquare,
       href: '/tarefas',
       roles: ['user']
@@ -894,19 +894,42 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                         </div>
                       ) : (
                         <>
-                          <ChevronRight
-                            className={cn(
-                              "mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-300",
-                              expandedItems.includes(item.name) ? "rotate-90" : ""
-                            )}
-                          />
-                          <span className="flex-1 text-left">{item.name}</span>
-                          {/* 🔥 Ponto vermelho para notificações pendentes */}
-                          {item.hasPendingNotification && (
-                            <span className="flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-red-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                            </span>
+                          {item.name === 'Aprovações' && item.icon ? (
+                            <>
+                              <div className="relative mr-3">
+                                <item.icon className="h-5 w-5 flex-shrink-0" />
+                                {item.hasPendingNotification && (
+                                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                  </span>
+                                )}
+                              </div>
+                              <span className="flex-1 text-left">{item.name}</span>
+                              <ChevronRight
+                                className={cn(
+                                  "h-4 w-4 flex-shrink-0 transition-transform duration-300",
+                                  expandedItems.includes(item.name) ? "rotate-90" : ""
+                                )}
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <ChevronRight
+                                className={cn(
+                                  "mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-300",
+                                  expandedItems.includes(item.name) ? "rotate-90" : ""
+                                )}
+                              />
+                              <span className="flex-1 text-left">{item.name}</span>
+                              {/* 🔥 Ponto vermelho para notificações pendentes */}
+                              {item.hasPendingNotification && (
+                                <span className="flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-red-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                </span>
+                              )}
+                            </>
                           )}
                           {/* Badge numérico para outros itens */}
                           {item.badge && item.badge > 0 && !item.hasPendingNotification && (
@@ -1118,21 +1141,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
               />
             </Link>
           </div>
-          
-          {/* Botão Instalar App */}
-          {!isCollapsed && isInstallable && (
-            <div className="mt-4 pt-4 border-t border-neutral-700/50">
-              <div className="px-3">
-                  <button
-                    onClick={handleInstallPWA}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:from-[#d99500] hover:to-[#c88500] text-white rounded-lg font-medium text-xs transition-all duration-200 shadow-md hover:shadow-lg"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    <span>Instalar App</span>
-                  </button>
-              </div>
-            </div>
-          )}
         </div>
       </aside>
 
