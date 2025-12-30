@@ -46,6 +46,7 @@ import DfcPage from './pages/financeiro/DfcPage'
 import DFCSaidasPage from './pages/DFCPage'
 import DFCEntradasPage from './pages/DFCEntradasPage'
 import PlanoContasPage from './pages/PlanoContasPage'
+import PerformanceEvaluationPage from './pages/PerformanceEvaluationPage'
 import CompanyMaturityProgressPage from './pages/reports/CompanyMaturityProgressPage'
 import CompanyMaturityProgressPageNew from './pages/reports/CompanyMaturityProgressPageNew'
 import BusinessModelPage from './pages/BusinessModelPage'
@@ -319,6 +320,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin']}>
             <CompaniesManagementPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Rota de Avaliação de Desempenho - Nine Box (Super Admin e Company Admin) */}
+      <Route 
+        path="/performance-evaluation" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+            <PerformanceEvaluationPage />
           </ProtectedRoute>
         }
       />

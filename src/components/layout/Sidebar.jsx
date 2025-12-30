@@ -33,7 +33,8 @@ import {
   Menu,
   ThumbsUp,
   Download,
-  Bell
+  Bell,
+  Grid3x3
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -129,6 +130,11 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         name: 'Criar Empresa',
         icon: Building2,
         href: '/companies/new'
+      },
+      {
+        name: 'Avaliação de Desempenho',
+        icon: Grid3x3,
+        href: '/performance-evaluation'
       },
       {
         name: 'Relatórios de Uso',
@@ -252,6 +258,11 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
           { name: 'Receita', href: '/operational-policies?journey=receita' },
           { name: 'Operação', href: '/operational-policies?journey=operacional' }
         ]
+      },
+      {
+        name: 'Avaliação de Desempenho',
+        icon: Grid3x3,
+        href: '/performance-evaluation'
       },
       {
         name: 'Gestão do Sistema',
