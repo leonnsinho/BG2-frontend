@@ -151,6 +151,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         icon: TrendingDown,
         href: '/dfc',
         children: [
+          { name: 'Dashboard', href: '/dfc' },
           { name: 'Entradas', href: '/dfc/entradas' },
           { name: 'Saídas', href: '/dfc/saidas' },
           { name: 'Plano de Contas', href: '/dfc/plano-contas' }
@@ -287,6 +288,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         icon: TrendingDown,
         href: '/dfc',
         children: [
+          { name: 'Dashboard', href: '/dfc' },
           { name: 'Entradas', href: '/dfc/entradas' },
           { name: 'Saídas', href: '/dfc/saidas' },
           { name: 'Plano de Contas', href: '/dfc/plano-contas' }

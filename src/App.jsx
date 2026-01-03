@@ -45,6 +45,7 @@ import DrePage from './pages/financeiro/DrePage'
 import DfcPage from './pages/financeiro/DfcPage'
 import DFCSaidasPage from './pages/DFCPage'
 import DFCEntradasPage from './pages/DFCEntradasPage'
+import DFCDashboardPage from './pages/DFCDashboardPage'
 import PlanoContasPage from './pages/PlanoContasPage'
 import PerformanceEvaluationPage from './pages/PerformanceEvaluationPage'
 import CompanyMaturityProgressPage from './pages/reports/CompanyMaturityProgressPage'
@@ -358,6 +359,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <MaturityApprovalsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rota DFC - Dashboard Principal (Super Admin e Company Admin) */}
+      <Route 
+        path="/dfc" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+            <DFCDashboardPage />
           </ProtectedRoute>
         }
       />

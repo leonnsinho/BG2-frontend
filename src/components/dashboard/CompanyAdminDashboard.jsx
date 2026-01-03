@@ -26,33 +26,25 @@ const QuickAppsCard = () => {
 
   const apps = [
     {
-      name: 'Entradas',
-      icon: ArrowUpCircle,
+      name: 'Fluxo De Caixa',
+      image: '/fluxo de caixa.png',
       gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
       shadowColor: 'rgba(16, 185, 129, 0.4)',
-      href: '/dfc/entradas'
+      href: '/dfc'
     },
     {
-      name: 'Saídas',
-      icon: ArrowDownCircle,
-      gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-      shadowColor: 'rgba(239, 68, 68, 0.4)',
-      href: '/dfc/saidas'
+      name: 'Avaliação De Desempenho',
+      image: '/avaliação de desempenho.png',
+      gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)',
+      shadowColor: 'rgba(168, 85, 247, 0.4)',
+      href: '/performance-evaluation'
     },
     {
       name: 'CRM',
-      icon: UserCircle,
+      image: '/crm.png',
       gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
       shadowColor: 'rgba(59, 130, 246, 0.4)',
       href: '/crm',
-      disabled: true
-    },
-    {
-      name: 'Avaliação',
-      icon: Award,
-      gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)',
-      shadowColor: 'rgba(168, 85, 247, 0.4)',
-      href: '/avaliacao-desempenho',
       disabled: true
     }
   ]
@@ -92,14 +84,13 @@ const QuickAppsCard = () => {
               </div>
             </div>
             <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#373435] to-[#5a5556] bg-clip-text text-transparent">
-              Aplicativos
+              Biblioteca de Ferramentas
             </h2>
           </div>
         </div>
         
-        <div className="grid grid-cols-4 lg:grid-cols-8 gap-3 sm:gap-4">
+        <div className="grid grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3">
           {apps.map((app) => {
-            const Icon = app.icon
             const isDisabled = app.disabled
             
             return (
@@ -135,12 +126,13 @@ const QuickAppsCard = () => {
                   <div className="absolute inset-0 rounded-[28%] bg-gradient-to-b from-white/30 via-transparent to-transparent pointer-events-none"></div>
                   
                   {/* Ícone do App */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Icon 
-                      className={`w-6 h-6 sm:w-8 sm:h-8 text-white transition-all duration-300 ${
+                  <div className="absolute inset-0 flex items-center justify-center p-3">
+                    <img 
+                      src={app.image}
+                      alt={app.name}
+                      className={`w-full h-full object-contain transition-all duration-300 ${
                         !isDisabled && 'group-hover:scale-110'
                       }`}
-                      strokeWidth={2}
                       style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
                     />
                   </div>
