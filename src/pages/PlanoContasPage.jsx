@@ -58,6 +58,8 @@ function PlanoContasPage() {
   const [companyFilter, setCompanyFilter] = useState('all')
   const [collapsedCategories, setCollapsedCategories] = useState({})
   const [companySearchTerm, setCompanySearchTerm] = useState('') // Busca no modal
+  const [multipleMode, setMultipleMode] = useState(false) // Modo de criação múltipla
+  const [multipleNames, setMultipleNames] = useState('') // Nomes múltiplos (um por linha)
 
   // Formulário de item
   const [formData, setFormData] = useState({
@@ -88,6 +90,21 @@ function PlanoContasPage() {
       uc => uc.role === 'company_admin' && uc.is_active
     )
     return adminCompany?.company_id || null
+  }
+
+  // Verificar se o item pode ser editado/deletado pelo usuário
+  const canEditItem = (item) => {
+    // Super admin pode editar tudo
+    if (isSuperAdmin()) return true
+    
+    // Company admin só pode editar itens associados à sua empresa
+    if (isCompanyAdmin()) {
+      const userCompanyId = getCompanyAdminCompany()
+      // Verifica se o item tem empresas associadas e se a empresa do usuário está entre elas
+      return item.empresas?.some(empresa => empresa.id === userCompanyId) || false
+    }
+    
+    return false
   }
 
   const toggleCategory = (categoriaId) => {
@@ -181,9 +198,12 @@ function PlanoContasPage() {
         empresas: empresasPorItem[item.id] || []
       }))
 
-      // Filtrar itens se há filtro de empresa
+      // Filtrar itens se há filtro de empresa (mas sempre incluir itens globais)
       const itensFiltrados = companyFilter !== 'all'
-        ? itensComEmpresas.filter(item => item.empresas.length > 0)
+        ? itensComEmpresas.filter(item => 
+            item.empresas.length > 0 || // Itens da empresa filtrada
+            !empresasPorItem[item.id]   // OU itens globais (sem nenhuma empresa)
+          )
         : itensComEmpresas
 
       // Organizar itens por categoria
@@ -241,6 +261,8 @@ function PlanoContasPage() {
     setShowModal(false)
     setEditingItem(null)
     setCompanySearchTerm('') // Limpar busca
+    setMultipleMode(false) // Resetar modo múltiplo
+    setMultipleNames('') // Limpar nomes múltiplos
     setFormData({
       company_ids: [],
       categoria_id: '',
@@ -281,62 +303,122 @@ function PlanoContasPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (formData.company_ids.length === 0 || !formData.categoria_id || !formData.nome) {
-      toast.error('Preencha todos os campos obrigatórios e selecione ao menos uma empresa')
+    if (!formData.categoria_id) {
+      toast.error('Selecione uma categoria')
       return
     }
 
+    // Validação para modo múltiplo
+    if (multipleMode) {
+      const names = multipleNames.split('\n').filter(n => n.trim())
+      if (names.length === 0) {
+        toast.error('Digite ao menos um nome de item')
+        return
+      }
+    } else {
+      // Validação para modo único
+      if (!formData.nome) {
+        toast.error('Preencha o nome do item')
+        return
+      }
+    }
+
     try {
-      const dataToSave = {
-        categoria_id: formData.categoria_id,
-        nome: formData.nome.trim(),
-        descricao: formData.descricao?.trim() || null,
-        created_by: profile.id
-      }
+      // Modo múltiplo - criar vários itens
+      if (multipleMode) {
+        const names = multipleNames.split('\n').filter(n => n.trim())
+        
+        const itemsToCreate = names.map(name => ({
+          categoria_id: formData.categoria_id,
+          nome: name.trim(),
+          descricao: formData.descricao?.trim() || null,
+          created_by: profile.id
+        }))
 
-      let itemId
-
-      if (editingItem) {
-        // Atualizar item
-        const { error } = await supabase
+        // Criar todos os itens
+        const { data: createdItems, error: itemsError } = await supabase
           .from('dfc_itens')
-          .update(dataToSave)
-          .eq('id', editingItem.id)
-
-        if (error) throw error
-        itemId = editingItem.id
-
-        // Remover associações antigas
-        await supabase
-          .from('dfc_itens_empresas')
-          .delete()
-          .eq('item_id', itemId)
-      } else {
-        // Criar novo item
-        const { data: newItem, error } = await supabase
-          .from('dfc_itens')
-          .insert([dataToSave])
+          .insert(itemsToCreate)
           .select()
-          .single()
 
-        if (error) throw error
-        itemId = newItem.id
+        if (itemsError) throw itemsError
+
+        // Criar associações se houver empresas selecionadas
+        if (formData.company_ids.length > 0) {
+          const allAssociations = []
+          createdItems.forEach(item => {
+            formData.company_ids.forEach(companyId => {
+              allAssociations.push({
+                item_id: item.id,
+                company_id: companyId,
+                created_by: profile.id
+              })
+            })
+          })
+
+          const { error: associacoesError } = await supabase
+            .from('dfc_itens_empresas')
+            .insert(allAssociations)
+
+          if (associacoesError) throw associacoesError
+        }
+
+        toast.success(`${createdItems.length} itens criados com sucesso!`)
+      } else {
+        // Modo único - criar/editar um item
+        const dataToSave = {
+          categoria_id: formData.categoria_id,
+          nome: formData.nome.trim(),
+          descricao: formData.descricao?.trim() || null,
+          created_by: profile.id
+        }
+
+        let itemId
+
+        if (editingItem) {
+          // Atualizar item
+          const { error } = await supabase
+            .from('dfc_itens')
+            .update(dataToSave)
+            .eq('id', editingItem.id)
+
+          if (error) throw error
+          itemId = editingItem.id
+
+          // Remover associações antigas
+          await supabase
+            .from('dfc_itens_empresas')
+            .delete()
+            .eq('item_id', itemId)
+        } else {
+          // Criar novo item
+          const { data: newItem, error } = await supabase
+            .from('dfc_itens')
+            .insert([dataToSave])
+            .select()
+            .single()
+
+          if (error) throw error
+          itemId = newItem.id
+        }
+
+        // Inserir novas associações item-empresa (apenas se houver empresas selecionadas)
+        if (formData.company_ids.length > 0) {
+          const associacoes = formData.company_ids.map(companyId => ({
+            item_id: itemId,
+            company_id: companyId,
+            created_by: profile.id
+          }))
+
+          const { error: associacoesError } = await supabase
+            .from('dfc_itens_empresas')
+            .insert(associacoes)
+
+          if (associacoesError) throw associacoesError
+        }
+
+        toast.success(editingItem ? 'Item atualizado com sucesso!' : 'Item criado com sucesso!')
       }
-
-      // Inserir novas associações item-empresa
-      const associacoes = formData.company_ids.map(companyId => ({
-        item_id: itemId,
-        company_id: companyId,
-        created_by: profile.id
-      }))
-
-      const { error: associacoesError } = await supabase
-        .from('dfc_itens_empresas')
-        .insert(associacoes)
-
-      if (associacoesError) throw associacoesError
-
-      toast.success(editingItem ? 'Item atualizado com sucesso!' : 'Item criado com sucesso!')
 
       closeModal()
       fetchCategorias()
@@ -690,22 +772,24 @@ function PlanoContasPage() {
                                 <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{item.descricao}</p>
                               )}
                             </div>
-                            <div className="flex items-center space-x-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                              <button
-                                onClick={() => openModal(item)}
-                                className="p-1 text-[#EBA500] hover:bg-[#EBA500]/10 rounded transition-all"
-                                title="Editar item"
-                              >
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(item)}
-                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-all"
-                                title="Excluir item"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
+                            {canEditItem(item) && (
+                              <div className="flex items-center space-x-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                <button
+                                  onClick={() => openModal(item)}
+                                  className="p-1 text-[#EBA500] hover:bg-[#EBA500]/10 rounded transition-all"
+                                  title="Editar item"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(item)}
+                                  className="p-1 text-red-600 hover:bg-red-50 rounded transition-all"
+                                  title="Excluir item"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -759,7 +843,7 @@ function PlanoContasPage() {
                 {/* Empresas */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Empresas * <span className="text-xs text-gray-500">(Selecione uma ou mais)</span>
+                    Empresas <span className="text-xs text-gray-500">(Deixe vazio para criar item global)</span>
                   </label>
                   
                   {/* Para Company Admin - Apenas mostrar sua empresa */}
@@ -791,35 +875,6 @@ function PlanoContasPage() {
                           <X className="h-3.5 w-3.5 text-gray-400" />
                         </button>
                       )}
-                    </div>
-                  )}
-
-                  {/* Selecionar Todas */}
-                  {companies.length > 1 && (
-                    <div className="mb-2">
-                      <label className="flex items-center gap-2 p-2.5 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={formData.company_ids.length === companies.length && companies.length > 0}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFormData({
-                                ...formData,
-                                company_ids: companies.map(c => c.id)
-                              })
-                            } else {
-                              setFormData({
-                                ...formData,
-                                company_ids: []
-                              })
-                            }
-                          }}
-                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm font-medium text-blue-700">
-                          Selecionar todas as empresas
-                        </span>
-                      </label>
                     </div>
                   )}
 
@@ -893,34 +948,81 @@ function PlanoContasPage() {
                   </select>
                 </div>
 
-                {/* Nome */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nome do Item *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nome}
-                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
-                    placeholder="Ex: Simples Nacional, Aluguel, etc."
-                    required
-                  />
-                </div>
+                {/* Modo de criação (apenas ao criar novo, não ao editar) */}
+                {!editingItem && (
+                  <div className="flex items-center gap-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={!multipleMode}
+                        onChange={() => setMultipleMode(false)}
+                        className="h-4 w-4 text-[#EBA500] border-gray-300 focus:ring-[#EBA500]"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Criar item único</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={multipleMode}
+                        onChange={() => setMultipleMode(true)}
+                        className="h-4 w-4 text-[#EBA500] border-gray-300 focus:ring-[#EBA500]"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Criar múltiplos itens</span>
+                    </label>
+                  </div>
+                )}
 
-                {/* Descrição */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Descrição (Opcional)
-                  </label>
-                  <textarea
-                    value={formData.descricao}
-                    onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] resize-none"
-                    rows="3"
-                    placeholder="Descrição adicional do item..."
-                  />
-                </div>
+                {/* Modo único - Nome e Descrição */}
+                {!multipleMode ? (
+                  <>
+                    {/* Nome */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nome do Item *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.nome}
+                        onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                        placeholder="Ex: Simples Nacional, Aluguel, etc."
+                        required
+                      />
+                    </div>
+
+                    {/* Descrição */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Descrição (Opcional)
+                      </label>
+                      <textarea
+                        value={formData.descricao}
+                        onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] resize-none"
+                        rows="3"
+                        placeholder="Descrição adicional do item..."
+                      />
+                    </div>
+                  </>
+                ) : (
+                  /* Modo múltiplo - Lista de nomes */
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nomes dos Itens * <span className="text-xs text-gray-500">(Um por linha)</span>
+                    </label>
+                    <textarea
+                      value={multipleNames}
+                      onChange={(e) => setMultipleNames(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] resize-none font-mono text-sm"
+                      placeholder="Salários&#10;Encargos Sociais&#10;Comissões&#10;Férias&#10;13º Salário"
+                      rows={8}
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {multipleNames.split('\n').filter(n => n.trim()).length} itens para criar
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Footer - Agora dentro do form */}
