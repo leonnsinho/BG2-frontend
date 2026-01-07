@@ -483,6 +483,30 @@ function PlanoContasPage() {
 
   const confirmDelete = async () => {
     try {
+      // Primeiro, deletar todas as entradas e saídas relacionadas
+      const { error: entradasError } = await supabase
+        .from('dfc_entradas')
+        .delete()
+        .eq('item_id', deletingItem.id)
+
+      if (entradasError) throw entradasError
+
+      const { error: saidasError } = await supabase
+        .from('dfc_saidas')
+        .delete()
+        .eq('item_id', deletingItem.id)
+
+      if (saidasError) throw saidasError
+
+      // Depois, deletar as associações item-empresa
+      const { error: associacoesError } = await supabase
+        .from('dfc_itens_empresas')
+        .delete()
+        .eq('item_id', deletingItem.id)
+
+      if (associacoesError) throw associacoesError
+
+      // Por fim, deletar o item
       const { error } = await supabase
         .from('dfc_itens')
         .delete()
@@ -493,7 +517,7 @@ function PlanoContasPage() {
       fetchCategorias()
     } catch (error) {
       console.error('Erro ao excluir item:', error)
-      toast.error('Erro ao excluir item')
+      toast.error('Erro ao excluir item: ' + (error.message || 'Erro desconhecido'))
     } finally {
       setShowDeleteModal(false)
       setDeletingItem(null)

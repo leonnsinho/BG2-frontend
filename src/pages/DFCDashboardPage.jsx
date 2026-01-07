@@ -18,7 +18,8 @@ import {
   Download,
   History,
   X,
-  Eye
+  Eye,
+  Search
 } from 'lucide-react'
 import { BarChart, Bar, LineChart, Line, PieChart as RechartPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
@@ -27,6 +28,11 @@ const COLORS = ['#EBA500', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'
 export default function DFCDashboardPage() {
   const { profile } = useAuth()
   const [loading, setLoading] = useState(true)
+  const [companies, setCompanies] = useState([]) // Lista de empresas
+  const [companyAvatars, setCompanyAvatars] = useState({}) // Avatars das empresas
+  const [selectedCompanyId, setSelectedCompanyId] = useState('all') // Empresa selecionada (super admin)
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false) // Controle do dropdown customizado
+  const [companySearch, setCompanySearch] = useState('') // Busca de empresa
   
   // Estados de período
   const [periodoTipo, setPeriodoTipo] = useState('ultimos6meses') // ultimos30dias, ultimos3meses, ultimos6meses, ultimo12meses, personalizado
@@ -37,6 +43,8 @@ export default function DFCDashboardPage() {
     totalEntradas: 0,
     totalSaidas: 0,
     saldoTotal: 0,
+    saldoInicial: 0,
+    saldoFinal: 0,
     entradasMes: 0,
     saidasMes: 0,
     saldoMes: 0
@@ -53,17 +61,79 @@ export default function DFCDashboardPage() {
   // Verificar se é super_admin
   const isSuperAdmin = () => profile?.role === 'super_admin'
 
+  // Carregar empresas (apenas para super admin)
+  useEffect(() => {
+    if (profile && isSuperAdmin()) {
+      loadCompanies()
+    }
+  }, [profile])
+
+  const loadCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name, logo_url')
+        .order('name')
+
+      if (error) throw error
+      setCompanies(data || [])
+      
+      // Carregar avatars
+      if (data) {
+        loadCompanyAvatars(data)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar empresas:', error)
+    }
+  }
+
+  const loadCompanyAvatars = async (companiesList) => {
+    console.log('🔍 Carregando avatars para:', companiesList)
+    const avatarUrls = {}
+    
+    for (const company of companiesList) {
+      console.log(`Processando empresa ${company.name}, logo_url:`, company.logo_url)
+      if (company.logo_url) {
+        try {
+          const { data, error } = await supabase.storage
+            .from('company-avatars')
+            .createSignedUrl(company.logo_url, 3600)
+          
+          if (error) {
+            console.error(`❌ Erro ao criar signed URL para ${company.name}:`, error)
+            continue
+          }
+          
+          console.log(`✅ URL assinada para ${company.name}:`, data?.signedUrl)
+          
+          if (data?.signedUrl) {
+            avatarUrls[company.id] = data.signedUrl
+          }
+        } catch (error) {
+          console.error(`❌ Erro ao carregar logo de ${company.name}:`, error)
+        }
+      } else {
+        console.log(`⚠️ Empresa ${company.name} não tem logo_url`)
+      }
+    }
+    
+    console.log('📦 Avatars carregados:', avatarUrls)
+    setCompanyAvatars(avatarUrls)
+  }
+
   // Carregar histórico de relatórios do Supabase
   useEffect(() => {
     if (profile) {
       loadHistoricoRelatorios()
     }
-  }, [profile])
+  }, [profile, selectedCompanyId])
 
   const loadHistoricoRelatorios = async () => {
     try {
       const currentCompany = getCurrentUserCompany()
-      const companyId = isSuperAdmin() ? null : currentCompany?.id
+      const companyId = isSuperAdmin() 
+        ? (selectedCompanyId === 'all' ? null : selectedCompanyId)
+        : currentCompany?.id
 
       let query = supabase
         .from('dfc_relatorios_historico')
@@ -97,7 +167,7 @@ export default function DFCDashboardPage() {
     if (profile) {
       loadDashboardData()
     }
-  }, [profile, periodoTipo, dataInicio, dataFim])
+  }, [profile, periodoTipo, dataInicio, dataFim, selectedCompanyId])
 
   // Função para calcular datas do período
   const getPeriodoDatas = () => {
@@ -171,14 +241,55 @@ export default function DFCDashboardPage() {
     setLoading(true)
     try {
       const currentCompany = getCurrentUserCompany()
-      const companyId = isSuperAdmin() ? null : currentCompany?.id
+      const companyId = isSuperAdmin() 
+        ? (selectedCompanyId === 'all' ? null : selectedCompanyId)
+        : currentCompany?.id
       const { inicio, fim } = getPeriodoDatas()
 
       console.log('🔍 DFC Dashboard - Debug:', {
         isSuperAdmin: isSuperAdmin(),
+        selectedCompanyId,
         companyId,
         currentCompany: currentCompany?.name,
         periodo: { inicio, fim, tipo: periodoTipo }
+      })
+
+      console.log('🔍 FILTROS APLICADOS:')
+      console.log('  - Data início:', inicio)
+      console.log('  - Data fim:', fim)
+      console.log('  - Company ID:', companyId)
+
+      // ====== CALCULAR SALDO INICIAL (antes do período) ======
+      let saldoAnteriorQuery = supabase
+        .from('dfc_entradas')
+        .select('valor')
+        .lt('vencimento', inicio)
+
+      if (companyId) {
+        saldoAnteriorQuery = saldoAnteriorQuery.eq('company_id', companyId)
+      }
+
+      const { data: entradasAnteriores } = await saldoAnteriorQuery
+      
+      let saidasAnteriorQuery = supabase
+        .from('dfc_saidas')
+        .select('valor')
+        .lt('vencimento', inicio)
+
+      if (companyId) {
+        saidasAnteriorQuery = saidasAnteriorQuery.eq('company_id', companyId)
+      }
+
+      const { data: saidasAnteriores } = await saidasAnteriorQuery
+
+      const totalEntradasAnteriores = entradasAnteriores?.reduce((sum, e) => sum + (e.valor || 0), 0) || 0
+      const totalSaidasAnteriores = saidasAnteriores?.reduce((sum, s) => sum + (s.valor || 0), 0) || 0
+      const saldoInicial = totalEntradasAnteriores - totalSaidasAnteriores
+
+      console.log('💰 Saldo Inicial (antes do período):', {
+        entradasAnteriores: totalEntradasAnteriores,
+        saidasAnteriores: totalSaidasAnteriores,
+        saldoInicial
       })
 
       // Carregar entradas do período
@@ -198,9 +309,18 @@ export default function DFCDashboardPage() {
       if (entradasError) {
         console.error('❌ Erro ao carregar entradas:', entradasError)
       } else {
-        console.log('✅ Entradas carregadas:', entradas?.length, entradas)
+        console.log('✅ Entradas carregadas:', entradas?.length)
         if (entradas && entradas.length > 0) {
-          console.log('📝 Primeira entrada:', JSON.stringify(entradas[0], null, 2))
+          console.log('📝 Primeira entrada:', entradas[0])
+          console.log('📝 Última entrada:', entradas[entradas.length - 1])
+          console.log('📅 Todas as datas de vencimento:', entradas.map(e => e.vencimento).slice(0, 10))
+          
+          // Verificar se há entradas fora do período
+          const foraDoPerido = entradas.filter(e => e.vencimento < inicio || e.vencimento > fim)
+          if (foraDoPerido.length > 0) {
+            console.warn('⚠️ ATENÇÃO: Encontradas', foraDoPerido.length, 'entradas FORA do período!')
+            console.log('Exemplos:', foraDoPerido.slice(0, 3))
+          }
         }
       }
 
@@ -221,9 +341,18 @@ export default function DFCDashboardPage() {
       if (saidasError) {
         console.error('❌ Erro ao carregar saídas:', saidasError)
       } else {
-        console.log('✅ Saídas carregadas:', saidas?.length, saidas)
+        console.log('✅ Saídas carregadas:', saidas?.length)
         if (saidas && saidas.length > 0) {
-          console.log('📝 Primeira saída:', JSON.stringify(saidas[0], null, 2))
+          console.log('📝 Primeira saída:', saidas[0])
+          console.log('📝 Última saída:', saidas[saidas.length - 1])
+          console.log('📅 Todas as datas de vencimento:', saidas.map(s => s.vencimento).slice(0, 10))
+          
+          // Verificar se há saídas fora do período
+          const foraDoPerido = saidas.filter(s => s.vencimento < inicio || s.vencimento > fim)
+          if (foraDoPerido.length > 0) {
+            console.warn('⚠️ ATENÇÃO: Encontradas', foraDoPerido.length, 'saídas FORA do período!')
+            console.log('Exemplos:', foraDoPerido.slice(0, 3))
+          }
         }
       }
 
@@ -258,9 +387,16 @@ export default function DFCDashboardPage() {
       // Calcular estatísticas
       const totalEntradas = entradas?.reduce((sum, e) => sum + (e.valor || 0), 0) || 0
       const totalSaidas = saidas?.reduce((sum, s) => sum + (s.valor || 0), 0) || 0
-      const saldoTotal = totalEntradas - totalSaidas
+      const saldoPeriodo = totalEntradas - totalSaidas
+      const saldoFinal = saldoInicial + saldoPeriodo
 
-      console.log('💰 Totais calculados:', { totalEntradas, totalSaidas, saldoTotal })
+      console.log('💰 Totais calculados:', { 
+        totalEntradas, 
+        totalSaidas, 
+        saldoPeriodo,
+        saldoInicial,
+        saldoFinal 
+      })
 
       // Estatísticas do mês atual
       const currentMonth = new Date().getMonth()
@@ -287,7 +423,9 @@ export default function DFCDashboardPage() {
       setStats({
         totalEntradas,
         totalSaidas,
-        saldoTotal,
+        saldoTotal: saldoPeriodo,
+        saldoInicial,
+        saldoFinal,
         entradasMes,
         saidasMes,
         saldoMes: entradasMes - saidasMes
@@ -400,12 +538,30 @@ export default function DFCDashboardPage() {
     const currentCompany = getCurrentUserCompany()
     const { inicio, fim } = getPeriodoDatas()
     
+    // Determinar empresa para o relatório
+    const companyId = isSuperAdmin() 
+      ? (selectedCompanyId === 'all' ? null : selectedCompanyId)
+      : currentCompany?.id
+    
+    const companyName = isSuperAdmin()
+      ? (selectedCompanyId === 'all' 
+          ? 'Todas as Empresas' 
+          : companies.find(c => c.id === selectedCompanyId)?.name || 'Empresa')
+      : (currentCompany?.name || 'Empresa')
+    
+    // Obter avatar da empresa
+    const companyAvatar = isSuperAdmin()
+      ? (selectedCompanyId === 'all' 
+          ? null 
+          : companyAvatars[selectedCompanyId])
+      : companyAvatars[currentCompany?.id]
+    
     // Salvar no Supabase
     try {
       const { data, error } = await supabase
         .from('dfc_relatorios_historico')
         .insert({
-          company_id: currentCompany?.id,
+          company_id: companyId,
           created_by: profile?.id,
           periodo_tipo: periodoTipo,
           periodo_inicio: inicio,
@@ -415,7 +571,7 @@ export default function DFCDashboardPage() {
           saldo_total: stats.saldoTotal,
           quantidade_entradas: entradasData.length,
           quantidade_saidas: saidasData.length,
-          empresa_nome: currentCompany?.name || 'Empresa',
+          empresa_nome: companyName,
           usuario_nome: profile?.full_name || 'Usuário'
         })
         .select()
@@ -424,9 +580,9 @@ export default function DFCDashboardPage() {
       if (error) {
         console.error('❌ Erro ao salvar relatório no histórico:', error)
       } else {
-        console.log('✅ Relatório salvo no histórico')
-        // Recarregar histórico
-        loadHistoricoRelatorios()
+        console.log('✅ Relatório salvo no histórico:', data)
+        // Adicionar ao histórico imediatamente
+        setHistoricoRelatorios(prev => [data, ...prev])
       }
     } catch (error) {
       console.error('❌ Erro ao salvar relatório:', error)
@@ -470,6 +626,16 @@ export default function DFCDashboardPage() {
     .company-info {
       text-align: right;
       color: #666;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .company-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 2px solid #EBA500;
     }
     .period { 
       background: #fff8e1; 
@@ -557,8 +723,11 @@ export default function DFCDashboardPage() {
         <h1>Relatório Financeiro - DFC</h1>
       </div>
       <div class="company-info">
-        <strong>${currentCompany?.name || 'Empresa'}</strong><br>
-        <small>Gerado em: ${new Date().toLocaleString('pt-BR')}</small>
+        ${companyAvatar ? `<img src="${companyAvatar}" alt="${companyName}" class="company-avatar" />` : ''}
+        <div>
+          <strong>${companyName}</strong><br>
+          <small>Gerado em: ${new Date().toLocaleString('pt-BR')}</small>
+        </div>
       </div>
     </div>
 
@@ -568,6 +737,11 @@ export default function DFCDashboardPage() {
     </div>
 
     <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Saldo Inicial</div>
+        <div class="stat-value">${formatCurrency(stats.saldoInicial)}</div>
+        <small style="color: #666;">Acumulado até ${formatDateBR(inicio)}</small>
+      </div>
       <div class="stat-card entrada">
         <div class="stat-label">Total de Entradas</div>
         <div class="stat-value">${formatCurrency(stats.totalEntradas)}</div>
@@ -577,8 +751,15 @@ export default function DFCDashboardPage() {
         <div class="stat-value">${formatCurrency(stats.totalSaidas)}</div>
       </div>
       <div class="stat-card saldo">
-        <div class="stat-label">Saldo do Período</div>
+        <div class="stat-label">Movimentação do Período</div>
         <div class="stat-value">${formatCurrency(stats.saldoTotal)}</div>
+      </div>
+      <div class="stat-card" style="grid-column: span 2; border-left-color: #EBA500; background: #fff8e1;">
+        <div class="stat-label" style="font-size: 14px;">Saldo Final (Acumulado)</div>
+        <div class="stat-value" style="font-size: 32px; color: ${stats.saldoFinal >= 0 ? '#10B981' : '#EF4444'};">
+          ${formatCurrency(stats.saldoFinal)}
+        </div>
+        <small style="color: #666;">Saldo inicial + movimentações = saldo final</small>
       </div>
     </div>
 
@@ -715,7 +896,7 @@ export default function DFCDashboardPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Filtrar Período</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Filtros</h3>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
@@ -737,6 +918,125 @@ export default function DFCDashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Seletor de Empresa (apenas para Super Admin) */}
+            {isSuperAdmin() && (
+              <div className="lg:col-span-2 space-y-2">
+                <label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Empresa
+                </label>
+                
+                {/* Dropdown Customizado */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white text-left flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      {selectedCompanyId === 'all' ? (
+                        <>
+                          <Building2 className="h-4 w-4 text-gray-400" />
+                          <span>Todas as Empresas</span>
+                        </>
+                      ) : (
+                        <>
+                          {companyAvatars[selectedCompanyId] ? (
+                            <img 
+                              src={companyAvatars[selectedCompanyId]} 
+                              alt="Logo"
+                              className="h-6 w-6 rounded object-cover"
+                            />
+                          ) : (
+                            <Building2 className="h-4 w-4 text-gray-400" />
+                          )}
+                          <span>{companies.find(c => c.id === selectedCompanyId)?.name || 'Empresa'}</span>
+                        </>
+                      )}
+                    </div>
+                    <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${showCompanyDropdown ? 'rotate-90' : ''}`} />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {showCompanyDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+                      {/* Busca */}
+                      {companies.length > 5 && (
+                        <div className="p-2 border-b border-gray-200">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                              type="text"
+                              value={companySearch}
+                              onChange={(e) => setCompanySearch(e.target.value)}
+                              placeholder="Buscar empresa..."
+                              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Lista de empresas */}
+                      <div className="overflow-y-auto max-h-48">
+                        {/* Opção "Todas as Empresas" */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCompanyId('all')
+                            setShowCompanyDropdown(false)
+                            setCompanySearch('')
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                            selectedCompanyId === 'all' ? 'bg-primary-50 text-primary-600 font-medium' : 'text-gray-900'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-gray-400" />
+                            <span>Todas as Empresas</span>
+                          </div>
+                        </button>
+
+                        {/* Empresas filtradas */}
+                        {companies
+                          .filter(company => 
+                            company.name.toLowerCase().includes(companySearch.toLowerCase())
+                          )
+                          .map(company => (
+                            <button
+                              key={company.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCompanyId(company.id)
+                                setShowCompanyDropdown(false)
+                                setCompanySearch('')
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                                selectedCompanyId === company.id ? 'bg-primary-50 text-primary-600 font-medium' : 'text-gray-900'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                {companyAvatars[company.id] ? (
+                                  <img 
+                                    src={companyAvatars[company.id]} 
+                                    alt={company.name}
+                                    className="h-6 w-6 rounded object-cover"
+                                  />
+                                ) : (
+                                  <Building2 className="h-4 w-4 text-gray-400" />
+                                )}
+                                <span className="truncate">{company.name}</span>
+                              </div>
+                            </button>
+                          ))
+                        }
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Períodos Pré-definidos */}
             <div className="space-y-2">
               <label className="text-xs sm:text-sm font-medium text-gray-700">Períodos Rápidos</label>
@@ -905,19 +1205,93 @@ export default function DFCDashboardPage() {
           </Link>
         </div>
 
-        {/* Saldo Total */}
-        <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg text-white">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-primary-100 text-xs sm:text-sm font-medium">Saldo do Período</p>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mt-1 sm:mt-2">{formatCurrency(stats.saldoTotal)}</h2>
-              <p className="text-primary-100 text-xs sm:text-sm mt-1 sm:mt-2">
-                Saldo do mês atual: {formatCurrency(stats.saldoMes)}
+        {/* Resumo Financeiro */}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4">
+            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+              <DollarSign className="h-6 w-6" />
+              Resumo Financeiro do Período
+            </h2>
+          </div>
+
+          {/* Grid de valores */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
+            {/* Saldo Inicial */}
+            <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100/50">
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Saldo Inicial</p>
+                <div className="p-2 bg-blue-200/50 rounded-lg">
+                  <TrendingUp className="h-4 w-4 text-blue-700" />
+                </div>
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-bold text-blue-900 mb-1">{formatCurrency(stats.saldoInicial)}</h3>
+              <p className="text-xs text-blue-600">Até {formatDateBR(getPeriodoDatas().inicio)}</p>
+            </div>
+
+            {/* Entradas e Saídas */}
+            <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100/50">
+              <div className="space-y-4">
+                {/* Entradas */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Entradas</p>
+                    <ArrowUpCircle className="h-4 w-4 text-green-600" />
+                  </div>
+                  <h4 className="text-xl sm:text-2xl font-bold text-green-700">{formatCurrency(stats.totalEntradas)}</h4>
+                </div>
+
+                <div className="border-t border-gray-300"></div>
+
+                {/* Saídas */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">Saídas</p>
+                    <ArrowDownCircle className="h-4 w-4 text-red-600" />
+                  </div>
+                  <h4 className="text-xl sm:text-2xl font-bold text-red-700">{formatCurrency(stats.totalSaidas)}</h4>
+                </div>
+
+                <div className="border-t border-gray-300"></div>
+
+                {/* Movimentação */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">Movimentação</p>
+                  <h4 className={`text-lg sm:text-xl font-bold ${stats.saldoTotal >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    {formatCurrency(stats.saldoTotal)}
+                  </h4>
+                </div>
+              </div>
+            </div>
+
+            {/* Saldo Final */}
+            <div className={`p-6 ${stats.saldoFinal >= 0 ? 'bg-gradient-to-br from-green-50 to-green-100/50' : 'bg-gradient-to-br from-red-50 to-red-100/50'}`}>
+              <div className="flex items-start justify-between mb-2">
+                <p className={`text-xs font-semibold uppercase tracking-wide ${stats.saldoFinal >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  Saldo Final
+                </p>
+                <div className={`p-2 rounded-lg ${stats.saldoFinal >= 0 ? 'bg-green-200/50' : 'bg-red-200/50'}`}>
+                  <DollarSign className={`h-5 w-5 ${stats.saldoFinal >= 0 ? 'text-green-700' : 'text-red-700'}`} />
+                </div>
+              </div>
+              <h2 className={`text-3xl sm:text-4xl font-bold mb-1 ${stats.saldoFinal >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                {formatCurrency(stats.saldoFinal)}
+              </h2>
+              <p className={`text-xs mb-3 ${stats.saldoFinal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                Acumulado total
               </p>
+              <div className={`text-xs px-3 py-2 rounded-lg ${stats.saldoFinal >= 0 ? 'bg-green-200/50 text-green-800' : 'bg-red-200/50 text-red-800'}`}>
+                <strong>Mês atual:</strong> {formatCurrency(stats.saldoMes)}
+              </div>
             </div>
-            <div className="p-3 sm:p-6 bg-white/20 rounded-xl sm:rounded-2xl backdrop-blur-sm flex-shrink-0">
-              <DollarSign className="h-8 w-8 sm:h-12 sm:w-12" />
-            </div>
+          </div>
+
+          {/* Rodapé informativo */}
+          <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+            <p className="text-xs text-gray-600 text-center">
+              <strong>Período:</strong> {formatDateBR(getPeriodoDatas().inicio)} até {formatDateBR(getPeriodoDatas().fim)}
+              {periodoTipo !== 'personalizado' && ` • ${getPeriodoLabel()}`}
+            </p>
           </div>
         </div>
 
