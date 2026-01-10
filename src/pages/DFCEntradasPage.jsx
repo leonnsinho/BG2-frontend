@@ -43,7 +43,7 @@ function DFCEntradasPage() {
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [documentos, setDocumentos] = useState([])
   const [showDocumentosModal, setShowDocumentosModal] = useState(false)
-  const [selectedSaidaDocumentos, setSelectedSaidaDocumentos] = useState(null)
+  const [selectedEntradaDocumentos, setSelectedEntradaDocumentos] = useState(null)
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState('')

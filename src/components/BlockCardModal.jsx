@@ -323,7 +323,13 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
     for (const file of fileArray) {
       try {
         console.log('📎 Iniciando upload:', file.name)
-        const fileName = `${Date.now()}_${file.name}`
+        
+        // Sanitizar nome do arquivo (remover espaços e caracteres especiais)
+        const sanitizedName = file.name
+          .replace(/\s+/g, '_')  // Substituir espaços por underscore
+          .replace(/[^a-zA-Z0-9._-]/g, '')  // Remover caracteres especiais
+        
+        const fileName = `${Date.now()}_${sanitizedName}`
         const filePath = `${block.company_id}/${fileName}` // Sem 'attachments/' no início
 
         // Upload para Supabase Storage
