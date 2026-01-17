@@ -44,6 +44,11 @@ function DFCPage() {
   const [showDocumentosModal, setShowDocumentosModal] = useState(false)
   const [selectedSaidaDocumentos, setSelectedSaidaDocumentos] = useState(null)
   
+  // Estados para parcelas
+  const [showParcelasModal, setShowParcelasModal] = useState(false)
+  const [parcelas, setParcelas] = useState([])
+  const [selectedSaidaParcelas, setSelectedSaidaParcelas] = useState(null)
+  
   // Filtros
   const [searchTerm, setSearchTerm] = useState('')
   const [companyFilter, setCompanyFilter] = useState('all')
@@ -53,6 +58,10 @@ function DFCPage() {
   // Busca de empresa no formulário
   const [companySearch, setCompanySearch] = useState('')
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false)
+
+  // Sistema de parcelamento
+  const [isParcelado, setIsParcelado] = useState(false)
+  const [numeroParcelas, setNumeroParcelas] = useState(1)
 
   // Formulário
   const [formData, setFormData] = useState({
@@ -202,6 +211,7 @@ function DFCPage() {
           ),
           dfc_saidas_documentos (count)
         `)
+        .is('lancamento_pai_id', null) // Apenas lançamentos principais (não parcelas filhas)
         .order('vencimento', { ascending: false })
 
       if (companyFilter !== 'all') {
@@ -255,6 +265,14 @@ function DFCPage() {
       // Buscar documentos da saída
       const docs = await fetchDocumentos(saida.id)
       setDocumentos(docs)
+      
+      // Se for lançamento parcelado, buscar as parcelas
+      if (saida.is_parcelado) {
+        setIsParcelado(true)
+        setNumeroParcelas(saida.numero_parcelas)
+        const parcelasData = await fetchParcelas(saida.id)
+        setParcelas(parcelasData)
+      }
     } else {
       setEditingId(null)
       const companyAdminId = getCompanyAdminCompany()
@@ -280,6 +298,9 @@ function DFCPage() {
     setShowCompanyDropdown(false)
     setUploadedFiles([])
     setDocumentos([])
+    setIsParcelado(false)
+    setNumeroParcelas(1)
+    setParcelas([])
     setFormData({
       company_id: '',
       categoria: '',
@@ -307,28 +328,78 @@ function DFCPage() {
       toast.error('Preencha todos os campos obrigatórios')
       return
     }
+    if (isParcelado && numeroParcelas < 2) {
+      toast.error('Para lançamento parcelado, informe pelo menos 2 parcelas')
+      return
+    }
 
     try {
-      const dataToSave = {
-        ...formData,
-        valor: parseFloat(formData.valor),
-        mes: formData.mes + '-01', // Converter YYYY-MM para YYYY-MM-01
-        created_by: profile.id
-      }
-
-      let saidaId = editingId
-
+      // EDIÇÃO de lançamento
       if (editingId) {
-        // Atualizar
+        const dataToSave = {
+          ...formData,
+          valor: parseFloat(formData.valor),
+          mes: formData.mes + '-01',
+          created_by: profile.id
+        }
+
+        // Atualizar lançamento pai
         const { error } = await supabase
           .from('dfc_saidas')
           .update(dataToSave)
           .eq('id', editingId)
 
         if (error) throw error
-        toast.success('Saída atualizada com sucesso!')
-      } else {
-        // Criar
+
+        // Se for parcelado, atualizar todas as parcelas filhas
+        if (isParcelado && parcelas.length > 0) {
+          const valorTotal = parseFloat(formData.valor)
+          const valorParcela = valorTotal / numeroParcelas
+          const dataVencimentoBase = new Date(formData.vencimento + 'T00:00:00')
+          const mesBase = new Date(formData.mes + '-01T00:00:00')
+
+          // Atualizar cada parcela
+          for (let i = 0; i < parcelas.length; i++) {
+            const parcela = parcelas[i]
+            const vencimentoParcela = new Date(dataVencimentoBase)
+            vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i)
+            
+            const mesParcela = new Date(mesBase)
+            mesParcela.setMonth(mesParcela.getMonth() + i)
+
+            const { error: errorParcela } = await supabase
+              .from('dfc_saidas')
+              .update({
+                categoria: formData.categoria,
+                item_id: formData.item_id,
+                descricao: `${formData.descricao} - Parcela ${i + 1}/${numeroParcelas}`,
+                valor: valorParcela,
+                mes: mesParcela.toISOString().substring(0, 10),
+                vencimento: vencimentoParcela.toISOString().substring(0, 10)
+              })
+              .eq('id', parcela.id)
+
+            if (errorParcela) throw errorParcela
+          }
+          toast.success('Lançamento parcelado atualizado com sucesso!')
+        } else {
+          toast.success('Saída atualizada com sucesso!')
+        }
+
+        // Upload de documentos
+        if (uploadedFiles.length > 0) {
+          await uploadDocumentos(editingId)
+        }
+      }
+      // CRIAÇÃO de lançamento simples
+      else if (!isParcelado) {
+        const dataToSave = {
+          ...formData,
+          valor: parseFloat(formData.valor),
+          mes: formData.mes + '-01',
+          created_by: profile.id
+        }
+
         const { data: newSaida, error } = await supabase
           .from('dfc_saidas')
           .insert([dataToSave])
@@ -336,13 +407,78 @@ function DFCPage() {
           .single()
 
         if (error) throw error
-        saidaId = newSaida.id
+        
+        // Upload de documentos
+        if (uploadedFiles.length > 0) {
+          await uploadDocumentos(newSaida.id)
+        }
+        
         toast.success('Saída registrada com sucesso!')
       }
+      // CRIAÇÃO de lançamento parcelado
+      else {
+        // Lançamento parcelado - criar registro PAI + parcelas FILHAS
+        const valorTotal = parseFloat(formData.valor)
+        const valorParcela = valorTotal / numeroParcelas
+        
+        // 1. Criar lançamento PAI
+        const lancamentoPai = {
+          company_id: formData.company_id,
+          categoria: formData.categoria,
+          item_id: formData.item_id,
+          descricao: formData.descricao,
+          valor: valorTotal, // Valor total
+          mes: formData.mes + '-01',
+          vencimento: formData.vencimento,
+          is_parcelado: true,
+          numero_parcelas: numeroParcelas,
+          parcela_numero: null, // Pai não tem número de parcela
+          lancamento_pai_id: null, // Pai não tem pai
+          created_by: profile.id
+        }
 
-      // Upload de documentos
-      if (uploadedFiles.length > 0 && saidaId) {
-        await uploadDocumentos(saidaId)
+        const { data: paiCriado, error: errorPai } = await supabase
+          .from('dfc_saidas')
+          .insert([lancamentoPai])
+          .select()
+          .single()
+
+        if (errorPai) throw errorPai
+
+        // 2. Criar parcelas FILHAS vinculadas ao pai
+        const dataVencimentoBase = new Date(formData.vencimento + 'T00:00:00')
+        const mesBase = new Date(formData.mes + '-01T00:00:00')
+
+        const parcelasFilhas = []
+        for (let i = 0; i < numeroParcelas; i++) {
+          const vencimentoParcela = new Date(dataVencimentoBase)
+          vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i)
+          
+          const mesParcela = new Date(mesBase)
+          mesParcela.setMonth(mesParcela.getMonth() + i)
+          
+          parcelasFilhas.push({
+            company_id: formData.company_id,
+            categoria: formData.categoria,
+            item_id: formData.item_id,
+            descricao: `${formData.descricao} - Parcela ${i + 1}/${numeroParcelas}`,
+            valor: valorParcela,
+            mes: mesParcela.toISOString().substring(0, 10),
+            vencimento: vencimentoParcela.toISOString().substring(0, 10),
+            is_parcelado: false,
+            numero_parcelas: 1,
+            parcela_numero: i + 1,
+            lancamento_pai_id: paiCriado.id, // Vincula ao pai
+            created_by: profile.id
+          })
+        }
+
+        const { error: errorFilhas } = await supabase
+          .from('dfc_saidas')
+          .insert(parcelasFilhas)
+
+        if (errorFilhas) throw errorFilhas
+        toast.success(`Lançamento parcelado criado: ${numeroParcelas}x de ${formatCurrency(valorParcela)}`)
       }
 
       closeModal()
@@ -363,6 +499,38 @@ function DFCPage() {
 
   const removeFile = (index) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const fetchParcelas = async (saidaId) => {
+    try {
+      const { data, error } = await supabase
+        .from('dfc_saidas')
+        .select('*')
+        .eq('lancamento_pai_id', saidaId)
+        .order('parcela_numero', { ascending: true })
+
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Erro ao buscar parcelas:', error)
+      toast.error('Erro ao carregar parcelas')
+      return []
+    }
+  }
+
+  const openParcelasModal = async (saida) => {
+    if (!saida.is_parcelado) return
+    
+    setSelectedSaidaParcelas(saida)
+    const parcelasData = await fetchParcelas(saida.id)
+    setParcelas(parcelasData)
+    setShowParcelasModal(true)
+  }
+
+  const closeParcelasModal = () => {
+    setShowParcelasModal(false)
+    setSelectedSaidaParcelas(null)
+    setParcelas([])
   }
 
   const uploadDocumentos = async (saidaId) => {
@@ -849,9 +1017,21 @@ function DFCPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-gray-600">{saida.descricao}</span>
+                      {saida.is_parcelado && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            {saida.numero_parcelas}x de {formatCurrency(saida.valor / saida.numero_parcelas)}
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-semibold text-red-600">{formatCurrency(saida.valor)}</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-red-600">{formatCurrency(saida.valor)}</span>
+                        {saida.is_parcelado && (
+                          <span className="text-xs text-gray-500 mt-0.5">Valor total</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-600">
@@ -864,6 +1044,15 @@ function DFCPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
+                        {saida.is_parcelado && (
+                          <button
+                            onClick={() => openParcelasModal(saida)}
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Ver parcelas"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </button>
+                        )}
                         {saida.dfc_saidas_documentos?.[0]?.count > 0 && (
                           <button
                             onClick={() => openDocumentosModal(saida)}
@@ -1137,6 +1326,154 @@ function DFCPage() {
                   </div>
                 </div>
 
+                {/* Sistema de Parcelamento - Apenas ao criar novo lançamento */}
+                {!editingId && (
+                  <div className="border border-gray-200 rounded-xl p-4 bg-blue-50/30">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isParcelado}
+                          onChange={(e) => {
+                            setIsParcelado(e.target.checked)
+                            if (!e.target.checked) {
+                              setNumeroParcelas(1)
+                            } else {
+                              setNumeroParcelas(2)
+                            }
+                          }}
+                          className="w-4 h-4 text-[#EBA500] border-gray-300 rounded focus:ring-[#EBA500]"
+                        />
+                        <span className="text-sm font-medium text-gray-900">
+                          Lançamento Parcelado
+                        </span>
+                      </label>
+                    </div>
+
+                    {isParcelado && (
+                      <>
+                        <div className="mb-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Número de Parcelas
+                          </label>
+                          <input
+                            type="number"
+                            min="2"
+                            max="120"
+                            value={numeroParcelas}
+                            onChange={(e) => setNumeroParcelas(parseInt(e.target.value) || 2)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                            placeholder="Ex: 10"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Valor por parcela: {formData.valor ? formatCurrency(parseFloat(formData.valor) / numeroParcelas) : 'R$ 0,00'}
+                          </p>
+                        </div>
+
+                        {/* Preview das Parcelas */}
+                        {formData.valor && formData.vencimento && formData.mes && numeroParcelas >= 2 && (
+                          <div className="bg-white border border-blue-200 rounded-lg p-3 max-h-48 overflow-y-auto">
+                            <p className="text-xs font-semibold text-gray-700 mb-2">
+                              Preview das {numeroParcelas} parcelas:
+                            </p>
+                            <div className="space-y-1.5">
+                              {Array.from({ length: Math.min(numeroParcelas, 12) }, (_, i) => {
+                                const dataVencimentoBase = new Date(formData.vencimento + 'T00:00:00')
+                                const mesBase = new Date(formData.mes + '-01T00:00:00')
+                                const vencimentoParcela = new Date(dataVencimentoBase)
+                                vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i)
+                                const mesParcela = new Date(mesBase)
+                                mesParcela.setMonth(mesParcela.getMonth() + i)
+                                const valorParcela = parseFloat(formData.valor) / numeroParcelas
+
+                                return (
+                                  <div key={i} className="flex items-center justify-between text-xs py-1.5 px-2 bg-gray-50 rounded">
+                                    <span className="text-gray-900 font-medium">
+                                      Parcela {i + 1}/{numeroParcelas}
+                                    </span>
+                                    <div className="flex items-center space-x-3 text-gray-600">
+                                      <span>
+                                        {mesParcela.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
+                                      </span>
+                                      <span>
+                                        Venc: {vencimentoParcela.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                                      </span>
+                                      <span className="font-semibold text-[#EBA500]">
+                                        {formatCurrency(valorParcela)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                              {numeroParcelas > 12 && (
+                                <p className="text-xs text-gray-500 text-center pt-1">
+                                  ... e mais {numeroParcelas - 12} parcelas
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Visualização de Parcelas ao Editar Lançamento Parcelado */}
+                {editingId && isParcelado && parcelas.length > 0 && (
+                  <div className="border border-blue-200 rounded-xl p-4 bg-blue-50/30">
+                    <div className="mb-3">
+                      <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+                        <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                        Lançamento Parcelado - {numeroParcelas} parcelas
+                      </h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Ao salvar, todas as parcelas serão atualizadas automaticamente
+                      </p>
+                    </div>
+
+                    <div className="bg-white border border-blue-200 rounded-lg p-3 max-h-64 overflow-y-auto">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">
+                        Preview das {numeroParcelas} parcelas:
+                      </p>
+                      <div className="space-y-1.5">
+                        {parcelas.slice(0, 12).map((parcela, i) => {
+                          const dataVencimentoBase = new Date(formData.vencimento + 'T00:00:00')
+                          const mesBase = new Date(formData.mes + '-01T00:00:00')
+                          const vencimentoParcela = new Date(dataVencimentoBase)
+                          vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i)
+                          const mesParcela = new Date(mesBase)
+                          mesParcela.setMonth(mesParcela.getMonth() + i)
+                          const valorParcela = parseFloat(formData.valor) / numeroParcelas
+
+                          return (
+                            <div key={parcela.id} className="flex items-center justify-between text-xs py-1.5 px-2 bg-gray-50 rounded">
+                              <span className="text-gray-900 font-medium">
+                                Parcela {i + 1}/{numeroParcelas}
+                              </span>
+                              <div className="flex items-center space-x-3 text-gray-600">
+                                <span>
+                                  {mesParcela.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
+                                </span>
+                                <span>
+                                  Venc: {vencimentoParcela.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                                </span>
+                                <span className="font-semibold text-blue-600">
+                                  {formatCurrency(valorParcela)}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                        {numeroParcelas > 12 && (
+                          <p className="text-xs text-gray-500 text-center pt-1">
+                            ... e mais {numeroParcelas - 12} parcelas
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Upload de Documentos */}
                 <div className="border-t border-gray-200 pt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -1375,19 +1712,17 @@ function DFCPage() {
                           <Download className="h-4 w-4" />
                           <span className="text-sm font-medium">Baixar</span>
                         </button>
-                        {isSuperAdmin() && (
-                          <button
-                            onClick={() => {
-                              if (window.confirm('Deseja realmente excluir este documento?')) {
-                                deleteDocumento(doc)
-                              }
-                            }}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                            title="Excluir documento"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Deseja realmente excluir este documento?')) {
+                              deleteDocumento(doc)
+                            }
+                          }}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                          title="Excluir documento"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1399,6 +1734,143 @@ function DFCPage() {
             <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
               <button
                 onClick={closeDocumentosModal}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Parcelas */}
+      {showParcelasModal && selectedSaidaParcelas && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={closeParcelasModal}>
+          <div 
+            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <FileText className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Parcelas do Lançamento</h3>
+                    <p className="text-sm text-white/90 mt-0.5">
+                      {selectedSaidaParcelas.descricao}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeParcelasModal}
+                  className="text-white hover:bg-white/20 p-2 rounded-xl transition-all"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Resumo */}
+            <div className="bg-blue-50 border-b border-blue-100 px-6 py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Valor Total</p>
+                  <p className="text-lg font-bold text-gray-900">{formatCurrency(selectedSaidaParcelas.valor)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Número de Parcelas</p>
+                  <p className="text-lg font-bold text-gray-900">{selectedSaidaParcelas.numero_parcelas}x</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Valor por Parcela</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {formatCurrency(selectedSaidaParcelas.valor / selectedSaidaParcelas.numero_parcelas)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body - Lista de Parcelas */}
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-280px)]">
+              {parcelas.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-600">Nenhuma parcela encontrada</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {parcelas.map((parcela, index) => {
+                    const hoje = new Date()
+                    const vencimento = new Date(parcela.vencimento + 'T00:00:00')
+                    const vencida = vencimento < hoje
+                    const proximoVencimento = index === 0 || (parcelas[index - 1] && new Date(parcelas[index - 1].vencimento + 'T00:00:00') < hoje && vencimento >= hoje)
+
+                    return (
+                      <div 
+                        key={parcela.id} 
+                        className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                          vencida 
+                            ? 'bg-red-50 border-red-200' 
+                            : proximoVencimento 
+                            ? 'bg-yellow-50 border-yellow-300 shadow-md' 
+                            : 'bg-gray-50 border-gray-200 hover:border-blue-300'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-4 flex-1">
+                          <div className={`flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg ${
+                            vencida 
+                              ? 'bg-red-100 text-red-600' 
+                              : proximoVencimento 
+                              ? 'bg-yellow-100 text-yellow-700' 
+                              : 'bg-blue-100 text-blue-600'
+                          }`}>
+                            {parcela.parcela_numero}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <p className="text-sm font-semibold text-gray-900">
+                                Parcela {parcela.parcela_numero}/{selectedSaidaParcelas.numero_parcelas}
+                              </p>
+                              {vencida && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                  Vencida
+                                </span>
+                              )}
+                              {proximoVencimento && !vencida && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  Próximo vencimento
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-4 text-xs text-gray-600">
+                              <div className="flex items-center">
+                                <Calendar className="h-3.5 w-3.5 mr-1" />
+                                <span>Ref: {formatMonth(parcela.mes)}</span>
+                              </div>
+                              <div className="flex items-center">
+                                <DollarSign className="h-3.5 w-3.5 mr-1" />
+                                <span>Venc: {formatDate(parcela.vencimento)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-lg font-bold text-gray-900">{formatCurrency(parcela.valor)}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+              <button
+                onClick={closeParcelasModal}
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium"
               >
                 Fechar

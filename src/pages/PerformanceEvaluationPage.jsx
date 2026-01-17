@@ -28,15 +28,15 @@ import {
 } from 'lucide-react'
 
 const CLASSIFICATIONS = {
-  star: { label: 'Estrela', color: '#10B981', description: 'Alto potencial + Alto desempenho' },
-  promise: { label: 'Promessa', color: '#3B82F6', description: 'Alto potencial + Médio desempenho' },
-  enigma: { label: 'Enigma', color: '#F59E0B', description: 'Alto potencial + Baixo desempenho' },
-  pillar: { label: 'Pilar', color: '#059669', description: 'Médio potencial + Alto desempenho' },
-  core: { label: 'Core Player', color: '#6366F1', description: 'Médio potencial + Médio desempenho' },
-  risk: { label: 'Risco', color: '#EF4444', description: 'Médio potencial + Baixo desempenho' },
-  specialist: { label: 'Especialista', color: '#8B5CF6', description: 'Baixo potencial + Alto desempenho' },
-  maintainer: { label: 'Mantenedor', color: '#64748B', description: 'Baixo potencial + Médio desempenho' },
-  low_performer: { label: 'Baixo Desempenho', color: '#DC2626', description: 'Baixo potencial + Baixo desempenho' }
+  star: { label: 'Alto Potencial', color: '#10B981', description: 'Alto alinhamento cultural + Alto desempenho técnico' },
+  promise: { label: 'Forte Desempenho', color: '#3B82F6', description: 'Alto alinhamento cultural + Médio desempenho técnico' },
+  enigma: { label: 'Enigma', color: '#F59E0B', description: 'Alto alinhamento cultural + Baixo desempenho técnico' },
+  pillar: { label: 'Forte Desempenho', color: '#059669', description: 'Médio alinhamento cultural + Alto desempenho técnico' },
+  core: { label: 'Mantenedor', color: '#6366F1', description: 'Médio alinhamento cultural + Médio desempenho técnico' },
+  risk: { label: 'Questionável', color: '#EF4444', description: 'Médio alinhamento cultural + Baixo desempenho técnico' },
+  specialist: { label: 'Comprometido', color: '#8B5CF6', description: 'Baixo alinhamento cultural + Alto desempenho técnico' },
+  maintainer: { label: 'Eficaz', color: '#64748B', description: 'Baixo alinhamento cultural + Médio desempenho técnico' },
+  low_performer: { label: 'Insuficiente', color: '#DC2626', description: 'Baixo alinhamento cultural + Baixo desempenho técnico' }
 }
 
 export default function PerformanceEvaluationPage() {
@@ -443,7 +443,7 @@ export default function PerformanceEvaluationPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Nine Box - Avaliação de Desempenho</h1>
-              <p className="text-gray-600 mt-1">Gestão de talentos e potencial da equipe</p>
+              <p className="text-gray-600 mt-1">Gestão de talentos e alinhamento cultural da equipe</p>
             </div>
           </div>
         </div>
@@ -453,19 +453,19 @@ export default function PerformanceEvaluationPage() {
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-200">
           <div className="grid grid-cols-4 gap-0">
-            {/* Label lateral esquerdo - Potencial */}
+            {/* Label lateral esquerdo - Alinhamento Cultural */}
             <div className="col-span-1 flex flex-col justify-center items-center border-r border-gray-300 pr-4">
               <div className="transform -rotate-90 whitespace-nowrap">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-purple-600" />
-                  <span className="text-lg font-bold text-gray-700">POTENCIAL</span>
+                  <span className="text-lg font-bold text-gray-700">ALINHAMENTO CULTURAL</span>
                 </div>
               </div>
             </div>
 
             {/* Matriz 3x3 */}
             <div className="col-span-3 grid grid-cols-3 gap-4">
-              {/* Linha superior - Alto Potencial */}
+              {/* Linha superior - Alto Alinhamento Cultural */}
               {[1, 2, 3].map(perf => {
                 const key = `${perf}-3`
                 const usersInBox = matrix[key] || []
@@ -486,9 +486,9 @@ export default function PerformanceEvaluationPage() {
                         <h3 className="font-bold text-sm" style={{ color: classInfo.color }}>
                           {classInfo.label}
                         </h3>
-                        <p className="text-xs text-gray-600 mt-1">Alto Potencial</p>
+                        <p className="text-xs text-gray-600 mt-1">Alto Alinhamento</p>
                         <p className="text-xs text-gray-600">
-                          {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desempenho
+                          {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desempenho Téc.
                         </p>
                       </div>
                       
@@ -526,7 +526,7 @@ export default function PerformanceEvaluationPage() {
                 )
               })}
 
-              {/* Linha média - Médio Potencial */}
+              {/* Linha média - Médio Alinhamento Cultural */}
               {[1, 2, 3].map(perf => {
                 const key = `${perf}-2`
                 const usersInBox = matrix[key] || []
@@ -547,9 +547,9 @@ export default function PerformanceEvaluationPage() {
                         <h3 className="font-bold text-sm" style={{ color: classInfo.color }}>
                           {classInfo.label}
                         </h3>
-                        <p className="text-xs text-gray-600 mt-1">Médio Potencial</p>
+                        <p className="text-xs text-gray-600 mt-1">Médio Alinhamento</p>
                         <p className="text-xs text-gray-600">
-                          {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desempenho
+                          {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desempenho Téc.
                         </p>
                       </div>
                       
@@ -587,7 +587,7 @@ export default function PerformanceEvaluationPage() {
                 )
               })}
 
-              {/* Linha inferior - Baixo Potencial */}
+              {/* Linha inferior - Baixo Alinhamento Cultural */}
               {[1, 2, 3].map(perf => {
                 const key = `${perf}-1`
                 const usersInBox = matrix[key] || []
@@ -608,9 +608,9 @@ export default function PerformanceEvaluationPage() {
                         <h3 className="font-bold text-sm" style={{ color: classInfo.color }}>
                           {classInfo.label}
                         </h3>
-                        <p className="text-xs text-gray-600 mt-1">Baixo Potencial</p>
+                        <p className="text-xs text-gray-600 mt-1">Baixo Alinhamento</p>
                         <p className="text-xs text-gray-600">
-                          {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desempenho
+                          {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desempenho Téc.
                         </p>
                       </div>
                       
@@ -650,11 +650,11 @@ export default function PerformanceEvaluationPage() {
             </div>
           </div>
 
-          {/* Label inferior - Desempenho */}
+          {/* Label inferior - Desempenho Técnico */}
           <div className="mt-6 text-center">
             <div className="inline-flex items-center gap-2 px-6 py-2 bg-blue-50 rounded-xl border border-blue-200">
               <ChevronRight className="h-5 w-5 text-blue-600" />
-              <span className="text-lg font-bold text-gray-700">DESEMPENHO</span>
+              <span className="text-lg font-bold text-gray-700">DESEMPENHO TÉCNICO</span>
             </div>
           </div>
         </div>
@@ -821,11 +821,11 @@ export default function PerformanceEvaluationPage() {
                   Avaliação Nine Box
                 </h3>
 
-                {/* Desempenho */}
+                {/* Desempenho Técnico */}
                 <div className="mb-6">
                   <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-primary-600" />
-                    Nível de Desempenho
+                    Nível de Desempenho Técnico
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
@@ -853,11 +853,11 @@ export default function PerformanceEvaluationPage() {
                   </div>
                 </div>
 
-                {/* Potencial */}
+                {/* Alinhamento Cultural */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-primary-600" />
-                    Nível de Potencial
+                    Nível de Alinhamento Cultural
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
@@ -1051,7 +1051,7 @@ export default function PerformanceEvaluationPage() {
                         </div>
                         <div>
                           <h3 className="text-lg font-bold text-gray-900">Evolução ao Longo do Tempo</h3>
-                          <p className="text-sm text-gray-600">Progressão de desempenho e potencial</p>
+                          <p className="text-sm text-gray-600">Progressão de desempenho técnico e alinhamento cultural</p>
                         </div>
                       </div>
                       
@@ -1063,8 +1063,8 @@ export default function PerformanceEvaluationPage() {
                               const date = new Date(year, month - 1, day)
                               return {
                                 data: date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
-                                Desempenho: ev.performance_level,
-                                Potencial: ev.potential_level
+                                'Desempenho Técnico': ev.performance_level,
+                                'Alinhamento Cultural': ev.potential_level
                               }
                             })}
                             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -1096,7 +1096,7 @@ export default function PerformanceEvaluationPage() {
                             />
                             <Line 
                               type="monotone" 
-                              dataKey="Desempenho" 
+                              dataKey="Desempenho Técnico" 
                               stroke="#EBA500" 
                               strokeWidth={3}
                               dot={{ fill: '#EBA500', strokeWidth: 2, r: 5 }}
@@ -1104,7 +1104,7 @@ export default function PerformanceEvaluationPage() {
                             />
                             <Line 
                               type="monotone" 
-                              dataKey="Potencial" 
+                              dataKey="Alinhamento Cultural" 
                               stroke="#3b82f6" 
                               strokeWidth={3}
                               dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}

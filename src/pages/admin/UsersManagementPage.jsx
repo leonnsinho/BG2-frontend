@@ -23,7 +23,12 @@ import {
   TrendingUp,
   Settings,
   User,
-  Calendar
+  Calendar,
+  GraduationCap,
+  BarChart3,
+  Heart,
+  MoreVertical,
+  X
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
 
@@ -99,6 +104,29 @@ export default function UsersManagementPage() {
   const [newUserEmail, setNewUserEmail] = useState('')
   const [creatingUser, setCreatingUser] = useState(false)
   const [avatarUrls, setAvatarUrls] = useState({})
+  
+  // Estado para o modal de ações do usuário
+  const [showActionsModal, setShowActionsModal] = useState(false)
+  const [selectedUserForActions, setSelectedUserForActions] = useState(null)
+  const [actionsModalAnimating, setActionsModalAnimating] = useState(false)
+
+  // Estados para gerenciamento de jornadas
+  const [journeys, setJourneys] = useState([])
+  const [assignments, setAssignments] = useState([])
+  const [modalAssignments, setModalAssignments] = useState([]) // Assignments específicos do modal
+  const [showJourneyModal, setShowJourneyModal] = useState(false)
+  const [selectedUserForJourney, setSelectedUserForJourney] = useState(null)
+  const [modalAnimating, setModalAnimating] = useState(false)
+
+  // Ícones das jornadas
+  const journeyIcons = {
+    'estrategica': GraduationCap,
+    'financeira': BarChart3,
+    'pessoas-cultura': Users,
+    'processos-tecnologia': Settings,
+    'vendas-marketing': TrendingUp,
+    'ambiental-social': Heart
+  }
 
   // Obter empresa do usuário atual se for company_admin
   const getCurrentUserCompany = () => {
@@ -145,6 +173,33 @@ export default function UsersManagementPage() {
       loadAvatars()
     }
   }, [users])
+
+  // Carregar jornadas e atribuições
+  useEffect(() => {
+    loadJourneys()
+    loadAssignments()
+  }, [])
+
+  // ESC para fechar modal de jornadas
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && showJourneyModal) {
+        closeJourneyModal()
+      }
+    }
+    
+    window.addEventListener('keydown', handleEsc)
+    if (showJourneyModal) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    
+    return () => {
+      window.removeEventListener('keydown', handleEsc)
+      document.body.style.overflow = ''
+    }
+  }, [showJourneyModal])
 
   const loadUsers = async () => {
     try {
@@ -312,6 +367,291 @@ export default function UsersManagementPage() {
       alert('Erro ao atualizar usuário: ' + error.message)
     } finally {
       setUpdating(false)
+    }
+  }
+
+  // Funções de Jornadas
+  const loadJourneys = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('journeys')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      setJourneys(data || [])
+    } catch (error) {
+      console.error('Erro ao carregar jornadas:', error)
+    }
+  }
+
+  const loadAssignments = async () => {
+    try {
+      let query = supabase
+        .from('user_journey_assignments')
+        .select(`
+          *,
+          journey:journeys(name, slug)
+        `)
+      
+      // Filtrar por empresa se não for 'all'
+      if (companyFilter && companyFilter !== 'all') {
+        query = query.eq('company_id', companyFilter)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+      setAssignments(data || [])
+    } catch (error) {
+      console.error('Erro ao carregar atribuições:', error)
+    }
+  }
+
+  const getManualAssignments = (userId) => {
+    const user = users.find(u => u.id === userId)
+    const userCompany = user?.company_id
+    
+    const userAssignments = assignments.filter(a => 
+      a.user_id === userId && 
+      a.is_active && 
+      (!userCompany || a.company_id === userCompany)
+    )
+    
+    return userAssignments.map(a => a.journey?.slug).filter(Boolean)
+  }
+
+  const isManuallyAssigned = (userId, journeySlug) => {
+    // Usar modalAssignments dentro do modal
+    const assignmentsToCheck = showJourneyModal ? modalAssignments : assignments
+    return assignmentsToCheck.some(a => 
+      a.user_id === userId && 
+      a.journey?.slug === journeySlug && 
+      a.is_active === true
+    )
+  }
+
+  const openJourneyModal = async (user) => {
+    setSelectedUserForJourney(user)
+    setShowJourneyModal(true)
+    setTimeout(() => setModalAnimating(true), 10)
+    
+    // Carregar assignments apenas da empresa do usuário no state separado
+    try {
+      const { data: userCompany } = await supabase
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single()
+      
+      if (userCompany) {
+        const { data: userAssignments } = await supabase
+          .from('user_journey_assignments')
+          .select(`
+            *,
+            journey:journeys(name, slug)
+          `)
+          .eq('company_id', userCompany.company_id)
+        
+        setModalAssignments(userAssignments || [])
+        console.log('📝 Assignments carregados para modal (empresa do usuário):', userCompany.company_id, userAssignments)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar assignments do usuário:', error)
+    }
+  }
+
+  const closeJourneyModal = () => {
+    setModalAnimating(false)
+    setTimeout(() => {
+      setShowJourneyModal(false)
+      setSelectedUserForJourney(null)
+      setModalAssignments([]) // Limpar assignments do modal
+    }, 200)
+  }
+
+  const closeActionsModal = () => {
+    setActionsModalAnimating(false)
+    setTimeout(() => {
+      setShowActionsModal(false)
+      setSelectedUserForActions(null)
+    }, 200)
+  }
+
+  const assignJourney = async (journeyId) => {
+    if (!selectedUserForJourney) return
+
+    try {
+      // Buscar company_id do usuário
+      const { data: userCompany } = await supabase
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', selectedUserForJourney.id)
+        .eq('is_active', true)
+        .single()
+
+      if (!userCompany) {
+        alert('Usuário não está vinculado a nenhuma empresa')
+        return
+      }
+
+      const { error } = await supabase.rpc('assign_journey_to_user', {
+        p_user_id: selectedUserForJourney.id,
+        p_journey_id: journeyId,
+        p_company_id: userCompany.company_id
+      })
+
+      if (error) throw error
+
+      // Recarregar assignments apenas da empresa do usuário no modal
+      const { data: userAssignments } = await supabase
+        .from('user_journey_assignments')
+        .select(`
+          *,
+          journey:journeys(name, slug)
+        `)
+        .eq('company_id', userCompany.company_id)
+      
+      setModalAssignments(userAssignments || [])
+      
+      // Também atualizar assignments globais para refletir na tabela
+      await loadAssignments()
+    } catch (error) {
+      console.error('Erro ao atribuir jornada:', error)
+      alert('Erro ao atribuir jornada: ' + error.message)
+    }
+  }
+
+  const revokeJourneyAccess = async (journeyId) => {
+    if (!selectedUserForJourney) return
+
+    try {
+      console.log('🗑️ Removendo jornada:', { userId: selectedUserForJourney.id, journeyId })
+      
+      // Buscar company_id do usuário
+      const { data: userCompany, error: companyError } = await supabase
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', selectedUserForJourney.id)
+        .eq('is_active', true)
+        .single()
+
+      console.log('🏢 Company encontrada:', userCompany, 'Erro:', companyError)
+
+      if (!userCompany) {
+        alert('Usuário não está vinculado a nenhuma empresa')
+        return
+      }
+
+      console.log('📞 Chamando RPC remove_journey_assignment:', {
+        p_user_id: selectedUserForJourney.id,
+        p_journey_id: journeyId,
+        p_company_id: userCompany.company_id
+      })
+
+      const { data, error } = await supabase.rpc('remove_journey_assignment', {
+        p_user_id: selectedUserForJourney.id,
+        p_journey_id: journeyId,
+        p_company_id: userCompany.company_id
+      })
+
+      console.log('✅ Resposta RPC completa:', JSON.stringify({ data, error }, null, 2))
+      
+      // Verificar se a função retornou erro no JSON
+      if (data && !data.success) {
+        console.error('❌ RPC retornou success=false:', data)
+        throw new Error(data.error || 'Falha ao remover jornada')
+      }
+
+      if (error) throw error
+
+      console.log('🔄 Recarregando assignments...')
+      
+      // Recarregar apenas da empresa do usuário no modal
+      const { data: updatedAssignments } = await supabase
+        .from('user_journey_assignments')
+        .select(`
+          *,
+          journey:journeys(name, slug)
+        `)
+        .eq('company_id', userCompany.company_id)
+      
+      setModalAssignments(updatedAssignments || [])
+      
+      // Também atualizar assignments globais para refletir na tabela
+      await loadAssignments()
+      
+      // Verificar o que ficou ativo após a remoção
+      const remainingAssignments = (updatedAssignments || []).filter(a => 
+        a.user_id === selectedUserForJourney.id && a.is_active
+      )
+      console.log('🔍 Assignments restantes após remoção (filtrados por company:', userCompany.company_id, '):', JSON.stringify(remainingAssignments.map(a => ({
+        assignment_id: a.id,
+        journey_id: a.journey_id,
+        company_id: a.company_id,
+        journey_name: a.journey?.name,
+        is_active: a.is_active,
+        TENTOU_REMOVER_ESTE: journeyId === a.journey_id && userCompany.company_id === a.company_id ? '❌ SIM! BUG!' : '✅ Não'
+      })), null, 2))
+      
+      console.log('✅ Jornada removida com sucesso!')
+    } catch (error) {
+      console.error('❌ Erro ao remover acesso:', error)
+      alert('Erro ao remover acesso: ' + error.message)
+    }
+  }
+
+  const clearAllJourneys = async () => {
+    if (!selectedUserForJourney) return
+    
+    if (!confirm(`Tem certeza que deseja remover TODAS as jornadas de ${selectedUserForJourney.full_name}?`)) {
+      return
+    }
+
+    try {
+      // Buscar company_id do usuário
+      const { data: userCompany } = await supabase
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', selectedUserForJourney.id)
+        .eq('is_active', true)
+        .single()
+
+      if (!userCompany) {
+        alert('Usuário não está vinculado a nenhuma empresa')
+        return
+      }
+
+      // Desativar todas as atribuições do usuário nesta empresa
+      const { error } = await supabase
+        .from('user_journey_assignments')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('user_id', selectedUserForJourney.id)
+        .eq('company_id', userCompany.company_id)
+        .eq('is_active', true)
+
+      if (error) throw error
+
+      // Recarregar assignments do modal
+      const { data: updatedAssignments } = await supabase
+        .from('user_journey_assignments')
+        .select(`
+          *,
+          journey:journeys(name, slug)
+        `)
+        .eq('company_id', userCompany.company_id)
+      
+      setModalAssignments(updatedAssignments || [])
+      
+      // Atualizar assignments globais
+      await loadAssignments()
+      
+      alert('Todas as jornadas foram removidas!')
+    } catch (error) {
+      console.error('Erro ao limpar jornadas:', error)
+      alert('Erro ao limpar jornadas: ' + error.message)
     }
   }
 
@@ -697,6 +1037,9 @@ export default function UsersManagementPage() {
             <table className="min-w-full divide-y divide-gray-100">
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
                 <tr>
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-center text-xs font-semibold text-[#373435] uppercase tracking-wider w-20">
+                    Ações
+                  </th>
                   <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Usuário
                   </th>
@@ -707,10 +1050,10 @@ export default function UsersManagementPage() {
                     Empresa
                   </th>
                   <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
-                    Status
+                    Jornadas
                   </th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-right text-xs font-semibold text-[#373435] uppercase tracking-wider">
-                    Ações
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                    Status
                   </th>
                 </tr>
               </thead>
@@ -720,9 +1063,32 @@ export default function UsersManagementPage() {
                   const effectiveRole = user.company_role || user.role
                   const roleInfo = getRoleInfo(effectiveRole)
                   const RoleIcon = roleInfo.icon
+                  const isGestor = user.company_role === 'gestor' || user.role === 'gestor'
 
                   return (
-                    <tr key={user.id} className="hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5 transition-all duration-200">
+                    <tr 
+                      key={user.id} 
+                      className={`transition-all duration-200 ${
+                        isGestor 
+                          ? 'bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 hover:from-[#EBA500]/20 hover:to-[#EBA500]/10 border-l-4 border-[#EBA500]'
+                          : 'hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5'
+                      }`}
+                    >
+                      {/* Coluna de Ações - Primeira coluna com botão único */}
+                      <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-center">
+                        <button
+                          onClick={() => {
+                            setSelectedUserForActions(user)
+                            setShowActionsModal(true)
+                            setTimeout(() => setActionsModalAnimating(true), 10)
+                          }}
+                          className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-[#EBA500]/10 to-[#EBA500]/20 hover:from-[#EBA500]/20 hover:to-[#EBA500]/30 text-[#EBA500] transition-all duration-200 border border-[#EBA500]/30 hover:border-[#EBA500]/50"
+                          title="Abrir menu de ações"
+                        >
+                          <MoreVertical className="h-5 w-5" />
+                        </button>
+                      </td>
+                      
                       <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -808,6 +1174,17 @@ export default function UsersManagementPage() {
                         </div>
                       </td>
                       
+                      {/* Coluna Jornadas */}
+                      <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+                        {(user.company_role === 'gestor' || user.role === 'gestor') ? (
+                          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-sm">
+                            {getManualAssignments(user.id).length}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
+                      </td>
+                      
                       <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap">
                         <div className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-2xl text-xs font-medium bg-gradient-to-r ${
                           user.status === 'active' 
@@ -820,48 +1197,6 @@ export default function UsersManagementPage() {
                           {user.status === 'inactive' && <XCircle className="h-3 w-3 mr-1 flex-shrink-0" />}
                           {user.status === 'pending' && <AlertCircle className="h-3 w-3 mr-1 flex-shrink-0" />}
                           <span className="hidden sm:inline">{user.status === 'active' ? 'Ativo' : user.status === 'inactive' ? 'Inativo' : 'Pendente'}</span>
-                        </div>
-                      </td>
-                      
-                      <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-1 sm:space-x-2">
-                          <button
-                            onClick={() => {
-                              setSelectedUser(user)
-                              setIsViewModalOpen(true)
-                            }}
-                            className="text-gray-600 hover:text-gray-800 p-2 sm:p-2 rounded-2xl hover:bg-gray-100 transition-all duration-200 min-h-[40px] sm:min-h-0 touch-manipulation"
-                            title="Ver detalhes"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          
-                          <button
-                            onClick={() => {
-                              setSelectedUser(user)
-                              setIsEditModalOpen(true)
-                            }}
-                            className="text-blue-600 hover:text-blue-800 p-2 sm:p-2 rounded-2xl hover:bg-blue-50 transition-all duration-200 min-h-[40px] sm:min-h-0 touch-manipulation"
-                            title="Editar usuário"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className={`p-2 sm:p-2 rounded-2xl transition-all duration-200 min-h-[40px] sm:min-h-0 touch-manipulation ${
-                              user.is_active 
-                                ? "text-red-600 hover:text-red-900 hover:bg-red-50" 
-                                : "text-green-600 hover:text-green-900 hover:bg-green-50"
-                            }`}
-                            title={user.is_active ? "Desativar usuário" : "Ativar usuário"}
-                          >
-                            {user.is_active ? (
-                              <Trash2 className="h-4 w-4" />
-                            ) : (
-                              <CheckCircle className="h-4 w-4" />
-                            )}
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1050,6 +1385,209 @@ export default function UsersManagementPage() {
           </div>
         )}
 
+        {/* Modal de Ações do Usuário */}
+        {showActionsModal && selectedUserForActions && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={closeActionsModal}
+          >
+            <div 
+              className={`relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col transition-all duration-300 ${
+                actionsModalAnimating ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header Fixo */}
+              <div className="flex-shrink-0 relative px-8 py-6 border-b border-gray-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#EBA500] to-[#d49400] flex items-center justify-center shadow-lg">
+                    {avatarUrls[selectedUserForActions.id] ? (
+                      <img 
+                        src={avatarUrls[selectedUserForActions.id]} 
+                        alt={selectedUserForActions.full_name || 'Avatar'}
+                        className="w-full h-full object-cover rounded-2xl"
+                      />
+                    ) : (
+                      <span className="text-2xl font-bold text-white">
+                        {selectedUserForActions.full_name?.charAt(0) || selectedUserForActions.email?.charAt(0) || 'U'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {selectedUserForActions.full_name || 'Usuário'}
+                    </h3>
+                    <p className="text-sm text-gray-500 flex items-center gap-2 mt-1">
+                      <Mail className="h-3.5 w-3.5" />
+                      {selectedUserForActions.email}
+                    </p>
+                  </div>
+                  <button
+                    onClick={closeActionsModal}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-xl hover:bg-gray-100 transition-all"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Conteúdo com Scroll Interno */}
+              <div className="flex-1 overflow-y-auto px-8 py-6">
+                {/* Info Cards */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl p-4 border border-blue-200/50">
+                    <p className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">Função</p>
+                    <p className="text-sm font-bold text-blue-900">
+                      {getRoleInfo(selectedUserForActions.company_role || selectedUserForActions.role).label}
+                    </p>
+                  </div>
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl p-4 border border-purple-200/50">
+                    <p className="text-xs font-medium text-purple-600 uppercase tracking-wide mb-1">Empresa</p>
+                    <p className="text-sm font-bold text-purple-900 truncate" title={selectedUserForActions.companies?.name}>
+                      {selectedUserForActions.companies?.name || 'Sem vínculo'}
+                    </p>
+                  </div>
+                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl p-4 border border-emerald-200/50">
+                    <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-1">Status</p>
+                    <span className={`inline-flex items-center gap-1 text-sm font-bold ${
+                      selectedUserForActions.status === 'active' 
+                        ? 'text-emerald-700'
+                        : selectedUserForActions.status === 'inactive'
+                        ? 'text-red-700'
+                        : 'text-yellow-700'
+                    }`}>
+                      {selectedUserForActions.status === 'active' && <CheckCircle className="h-3.5 w-3.5" />}
+                      {selectedUserForActions.status === 'inactive' && <XCircle className="h-3.5 w-3.5" />}
+                      {selectedUserForActions.status === 'pending' && <AlertCircle className="h-3.5 w-3.5" />}
+                      {selectedUserForActions.status === 'active' ? 'Ativo' : selectedUserForActions.status === 'inactive' ? 'Inativo' : 'Pendente'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Ações */}
+                <div className="space-y-3">
+                  {/* Editar Nome */}
+                  <button
+                    onClick={() => {
+                      setSelectedUser(selectedUserForActions)
+                      setIsEditModalOpen(true)
+                      closeActionsModal()
+                    }}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-blue-100/30 hover:from-blue-100 hover:to-blue-200/50 border border-blue-200/50 hover:border-blue-300 transition-all duration-200 group hover:shadow-md"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Edit className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-gray-900">Editar Nome</p>
+                      <p className="text-xs text-gray-600">Alterar o nome de exibição</p>
+                    </div>
+                  </button>
+
+                  {/* Vincular/Alterar Empresa */}
+                  <button
+                    onClick={() => {
+                      setSelectedUser(selectedUserForActions)
+                      setIsLinkModalOpen(true)
+                      closeActionsModal()
+                    }}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-purple-50 to-purple-100/30 hover:from-purple-100 hover:to-purple-200/50 border border-purple-200/50 hover:border-purple-300 transition-all duration-200 group hover:shadow-md"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Building2 className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-gray-900">
+                        {selectedUserForActions.companies?.name ? 'Alterar Empresa/Função' : 'Vincular à Empresa'}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {selectedUserForActions.companies?.name ? 'Modificar vinculação' : 'Associar a empresa'}
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Gerenciar Jornadas */}
+                  {(selectedUserForActions.company_role === 'gestor' || selectedUserForActions.role === 'gestor') && (
+                    <button
+                      onClick={() => {
+                        openJourneyModal(selectedUserForActions)
+                        closeActionsModal()
+                      }}
+                      className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-emerald-100/30 hover:from-emerald-100 hover:to-emerald-200/50 border border-emerald-200/50 hover:border-emerald-300 transition-all duration-200 group hover:shadow-md"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <GraduationCap className="h-5 w-5 text-emerald-600" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-semibold text-gray-900">Gerenciar Jornadas</p>
+                        <p className="text-xs text-gray-600">{getManualAssignments(selectedUserForActions.id).length} atribuída(s)</p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Desvincular da Empresa */}
+                  {selectedUserForActions.companies?.name && (
+                    <button
+                      onClick={() => {
+                        handleUnlinkFromCompany(selectedUserForActions.id)
+                        closeActionsModal()
+                      }}
+                      className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-orange-100/30 hover:from-orange-100 hover:to-orange-200/50 border border-orange-200/50 hover:border-orange-300 transition-all duration-200 group hover:shadow-md"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <XCircle className="h-5 w-5 text-orange-600" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-semibold text-gray-900">Desvincular da Empresa</p>
+                        <p className="text-xs text-gray-600">Remover vinculação atual</p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Ativar/Desativar */}
+                  <button
+                    onClick={() => {
+                      handleDeleteUser(selectedUserForActions.id)
+                      closeActionsModal()
+                    }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 group hover:shadow-md ${
+                      selectedUserForActions.is_active
+                        ? 'bg-gradient-to-r from-red-50 to-red-100/30 hover:from-red-100 hover:to-red-200/50 border border-red-200/50 hover:border-red-300'
+                        : 'bg-gradient-to-r from-green-50 to-green-100/30 hover:from-green-100 hover:to-green-200/50 border border-green-200/50 hover:border-green-300'
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                      {selectedUserForActions.is_active ? (
+                        <Trash2 className="h-5 w-5 text-red-600" />
+                      ) : (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-gray-900">
+                        {selectedUserForActions.is_active ? 'Desativar Usuário' : 'Ativar Usuário'}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {selectedUserForActions.is_active ? 'Bloquear acesso ao sistema' : 'Reativar acesso'}
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Footer Fixo */}
+              <div className="flex-shrink-0 px-8 py-4 border-t border-gray-100">
+                <button
+                  onClick={closeActionsModal}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-xl hover:from-gray-900 hover:to-black transition-all font-medium shadow-lg hover:shadow-xl"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Modal de Edição */}
         {isEditModalOpen && selectedUser && (
           <EditUserModal
@@ -1061,6 +1599,140 @@ export default function UsersManagementPage() {
             onSave={handleUpdateUser}
             loading={updating}
           />
+        )}
+
+        {/* Modal de Gerenciamento de Jornadas - Design Moderno */}
+        {showJourneyModal && selectedUserForJourney && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={closeJourneyModal}
+          >
+            <div 
+              className={`bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col transition-all duration-300 ${
+                modalAnimating ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header Fixo */}
+              <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg">
+                    <GraduationCap className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      Gerenciar Jornadas
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-0.5">
+                      {selectedUserForJourney.full_name || selectedUserForJourney.email}
+                    </p>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={closeJourneyModal}
+                  className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 hover:scale-105"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+
+              {/* Conteúdo Scrollável */}
+              <div className="flex-1 overflow-y-auto px-8 py-6">
+                <div className="space-y-3">
+                  {journeys.map(journey => {
+                    const Icon = journeyIcons[journey.slug] || GraduationCap
+                    const isManuallyAssignedToUser = isManuallyAssigned(selectedUserForJourney.id, journey.slug)
+                    
+                    return (
+                      <div
+                        key={journey.id}
+                        className={`rounded-2xl p-5 transition-all duration-200 ${
+                          isManuallyAssignedToUser
+                            ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-300 shadow-md' 
+                            : 'bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 hover:border-gray-300 hover:shadow-md'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
+                            isManuallyAssignedToUser
+                              ? 'bg-white text-emerald-600' 
+                              : 'bg-white text-gray-600'
+                          }`}>
+                            <Icon className="w-6 h-6" />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <h4 className="font-bold text-gray-900 text-lg">
+                                  {journey.name}
+                                </h4>
+                              </div>
+                              
+                              {isManuallyAssignedToUser && (
+                                <span className="px-3 py-1 bg-emerald-500 text-white text-xs font-semibold rounded-full whitespace-nowrap">
+                                  Ativa
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="mt-4">
+                              {isManuallyAssignedToUser ? (
+                                <button
+                                  onClick={() => revokeJourneyAccess(journey.id)}
+                                  className="w-full px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] flex items-center justify-center gap-2"
+                                >
+                                  <X className="w-4 h-4" />
+                                  Remover Jornada
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => assignJourney(journey.id)}
+                                  className="w-full px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] flex items-center justify-center gap-2"
+                                >
+                                  <GraduationCap className="w-4 h-4" />
+                                  Atribuir Jornada
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {journeys.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                      <GraduationCap className="w-10 h-10 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 font-medium">Nenhuma jornada disponível</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer Fixo */}
+              <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 rounded-b-3xl">
+                <div className="flex gap-3">
+                  <button
+                    onClick={clearAllJourneys}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] flex items-center justify-center gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Limpar Todas
+                  </button>
+                  <button
+                    onClick={closeJourneyModal}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl hover:from-gray-800 hover:to-gray-900 transition-all duration-200 font-semibold shadow-md hover:shadow-lg hover:scale-[1.02]"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
