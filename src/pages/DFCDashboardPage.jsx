@@ -264,6 +264,7 @@ export default function DFCDashboardPage() {
         .from('dfc_entradas')
         .select('valor')
         .lt('vencimento', inicio)
+        .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
 
       if (companyId) {
         saldoAnteriorQuery = saldoAnteriorQuery.eq('company_id', companyId)
@@ -275,6 +276,7 @@ export default function DFCDashboardPage() {
         .from('dfc_saidas')
         .select('valor')
         .lt('vencimento', inicio)
+        .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
 
       if (companyId) {
         saidasAnteriorQuery = saidasAnteriorQuery.eq('company_id', companyId)
@@ -298,6 +300,7 @@ export default function DFCDashboardPage() {
         .select('*')
         .gte('vencimento', inicio)
         .lte('vencimento', fim)
+        .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
         .order('vencimento', { ascending: false })
 
       if (companyId) {
@@ -330,6 +333,7 @@ export default function DFCDashboardPage() {
         .select('*')
         .gte('vencimento', inicio)
         .lte('vencimento', fim)
+        .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
         .order('vencimento', { ascending: false })
 
       if (companyId) {
