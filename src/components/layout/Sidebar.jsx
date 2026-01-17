@@ -113,7 +113,6 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/admin',
         children: [
           { name: 'Usuários', href: '/admin/users' },
-          { name: 'Atribuição de Jornadas', href: '/admin/journey-assignments' },
           { name: 'Empresas', href: '/admin/companies' },
           { name: 'Categorias', href: '/admin/categories' },
           { name: 'Solicitações de Processos', href: '/admin/process-requests' },
@@ -270,8 +269,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         icon: Shield,
         href: '/admin',
         children: [
-          { name: 'Usuários', href: '/admin/users' },
-          { name: 'Atribuição de Jornadas', href: '/admin/journey-assignments' }
+          { name: 'Usuários', href: '/admin/users' }
         ]
       },
       {

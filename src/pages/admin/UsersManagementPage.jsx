@@ -104,6 +104,7 @@ export default function UsersManagementPage() {
   const [newUserEmail, setNewUserEmail] = useState('')
   const [creatingUser, setCreatingUser] = useState(false)
   const [avatarUrls, setAvatarUrls] = useState({})
+  const [companyLogoUrls, setCompanyLogoUrls] = useState({})
   
   // Estado para o modal de ações do usuário
   const [showActionsModal, setShowActionsModal] = useState(false)
@@ -233,7 +234,8 @@ export default function UsersManagementPage() {
           *,
           companies (
             id,
-            name
+            name,
+            logo_url
           )
         `)
         .eq('is_active', true)
@@ -306,6 +308,23 @@ export default function UsersManagementPage() {
 
       console.log('✅ Usuários finais para exibir:', combinedUsers.length)
       setUsers(combinedUsers)
+      
+      // Carregar logos das empresas
+      const logoUrls = {}
+      const uniqueCompanies = [...new Set(combinedUsers.map(u => u.companies).filter(Boolean))]
+      
+      for (const company of uniqueCompanies) {
+        if (company.logo_url) {
+          const { data } = await supabase.storage
+            .from('company-avatars')
+            .createSignedUrl(company.logo_url, 3600) // 1 hora
+          
+          if (data?.signedUrl) {
+            logoUrls[company.id] = data.signedUrl
+          }
+        }
+      }
+      setCompanyLogoUrls(logoUrls)
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
     } finally {
@@ -1131,45 +1150,28 @@ export default function UsersManagementPage() {
                       </td>
                       
                       <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 whitespace-nowrap">
-                        <div className="text-xs sm:text-sm text-gray-900 flex items-center">
-                          <Building2 className="h-3 w-3 mr-1 text-gray-400 flex-shrink-0" />
-                          {user.companies?.name ? (
-                            <div className="flex items-center gap-1 sm:gap-2">
-                              <span className="truncate max-w-[100px] sm:max-w-none">{user.companies.name}</span>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => {
-                                    setSelectedUser(user)
-                                    setIsLinkModalOpen(true)
+                        <div className="flex items-center justify-center">
+                          {user.companies ? (
+                            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {companyLogoUrls[user.companies.id] ? (
+                                <img 
+                                  src={companyLogoUrls[user.companies.id]} 
+                                  alt={user.companies.name}
+                                  className="w-full h-full object-cover"
+                                  title={user.companies.name}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none'
+                                    e.target.nextSibling.style.display = 'flex'
                                   }}
-                                  className="text-blue-600 hover:text-blue-800 p-1.5 sm:p-1 h-auto min-h-[32px] sm:min-h-0 rounded-md hover:bg-blue-50 transition-colors duration-200 touch-manipulation"
-                                  title="Alterar empresa"
-                                >
-                                  <Edit className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
-                                </button>
-                                <button
-                                  onClick={() => handleUnlinkFromCompany(user.id)}
-                                  className="text-red-600 hover:text-red-800 p-1.5 sm:p-1 h-auto min-h-[32px] sm:min-h-0 rounded-md hover:bg-red-50 transition-colors duration-200 touch-manipulation"
-                                  title="Desvincular da empresa"
-                                >
-                                  <XCircle className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
-                                </button>
-                              </div>
+                                />
+                              ) : null}
+                              <Building2 
+                                className="h-5 w-5 sm:h-6 sm:w-6 text-[#EBA500]" 
+                                style={{ display: companyLogoUrls[user.companies.id] ? 'none' : 'flex' }}
+                              />
                             </div>
                           ) : (
-                            <div className="flex items-center gap-1 sm:gap-2">
-                              <span className="text-gray-500 text-xs sm:text-sm">Não vinculado</span>
-                              <button
-                                onClick={() => {
-                                  setSelectedUser(user)
-                                  setIsLinkModalOpen(true)
-                                }}
-                                className="text-blue-600 hover:text-blue-800 p-1.5 sm:p-1 h-auto min-h-[32px] sm:min-h-0 rounded-md hover:bg-blue-50 transition-colors duration-200 touch-manipulation"
-                                title="Vincular à empresa"
-                              >
-                                <LinkIcon className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
-                              </button>
-                            </div>
+                            <span className="text-gray-400 text-xs sm:text-sm">-</span>
                           )}
                         </div>
                       </td>
