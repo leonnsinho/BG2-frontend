@@ -354,41 +354,41 @@ function AppRoutes() {
         }
       />
 
-      {/* Rota DFC - Dashboard Principal (Super Admin e Company Admin) */}
+      {/* Rota DFC - Dashboard Principal (Super Admin, Company Admin e Gestores) */}
       <Route 
         path="/dfc" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor']}>
             <DFCDashboardPage />
           </ProtectedRoute>
         }
       />
 
-      {/* Rota DFC - Saídas (Super Admin e Company Admin) */}
+      {/* Rota DFC - Saídas (Super Admin, Company Admin e Gestores) */}
       <Route 
         path="/dfc/saidas" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor']}>
             <DFCSaidasPage />
           </ProtectedRoute>
         }
       />
 
-      {/* Rota DFC - Entradas (Super Admin e Company Admin) */}
+      {/* Rota DFC - Entradas (Super Admin, Company Admin e Gestores) */}
       <Route 
         path="/dfc/entradas" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor']}>
             <DFCEntradasPage />
           </ProtectedRoute>
         }
       />
 
-      {/* Rota Plano de Contas (Super Admin e Company Admin) */}
+      {/* Rota Plano de Contas (Super Admin, Company Admin e Gestores) */}
       <Route 
         path="/dfc/plano-contas" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor']}>
             <PlanoContasPage />
           </ProtectedRoute>
         }

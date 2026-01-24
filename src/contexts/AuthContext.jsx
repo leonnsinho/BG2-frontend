@@ -671,6 +671,38 @@ export function AuthProvider({ children }) {
     return () => clearInterval(interval)
   }, [])
 
+  // Salvar usuário no localStorage para "Contas Salvas" no login
+  useEffect(() => {
+    if (user && profile) {
+      try {
+        const savedUsers = JSON.parse(localStorage.getItem('saved_users') || '[]')
+        
+        // Encontra dados existentes para preservar campos extras (como senha salva no Login)
+        const existingUser = savedUsers.find(u => u.id === user.id) || {}
+
+        // Remove a entrada existente para este usuário (para atualizar e mover pro topo)
+        const otherUsers = savedUsers.filter(u => u.id !== user.id)
+        
+        // Cria objeto do usuário mantendo dados antigos
+        const userData = {
+          ...existingUser,
+          id: user.id,
+          email: user.email,
+          full_name: profile.full_name || user.email,
+          avatar_url: profile.avatar_url,
+          last_login: new Date().toISOString()
+        }
+        
+        // Adiciona ao topo e mantém apenas os últimos 5
+        const newSavedUsers = [userData, ...otherUsers].slice(0, 5)
+        
+        localStorage.setItem('saved_users', JSON.stringify(newSavedUsers))
+      } catch (error) {
+        console.error('Erro ao salvar usuário no histórico:', error)
+      }
+    }
+  }, [user, profile])
+
   // Efeito para monitorar mudanças de autenticação  
   useEffect(() => {
     let mounted = true

@@ -20,7 +20,8 @@ import {
   Upload,
   Paperclip,
   File,
-  Eye
+  Eye,
+  Check
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -48,6 +49,8 @@ function DFCPage() {
   const [showParcelasModal, setShowParcelasModal] = useState(false)
   const [parcelas, setParcelas] = useState([])
   const [selectedSaidaParcelas, setSelectedSaidaParcelas] = useState(null)
+  const [editingParcelaId, setEditingParcelaId] = useState(null)
+  const [editingVencimento, setEditingVencimento] = useState('')
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState('')
@@ -62,6 +65,7 @@ function DFCPage() {
   // Sistema de parcelamento
   const [isParcelado, setIsParcelado] = useState(false)
   const [numeroParcelas, setNumeroParcelas] = useState(1)
+  const [parcelasDatas, setParcelasDatas] = useState([])
 
   // Formulário
   const [formData, setFormData] = useState({
@@ -78,7 +82,10 @@ function DFCPage() {
   const isCompanyAdmin = () => {
     return profile?.user_companies?.some(uc => uc.role === 'company_admin' && uc.is_active) || false
   }
-  const isAuthorized = () => isSuperAdmin() || isCompanyAdmin()
+  const isGestor = () => {
+    return profile?.user_companies?.some(uc => uc.role === 'gestor' && uc.is_active) || false
+  }
+  const isAuthorized = () => isSuperAdmin() || isCompanyAdmin() || isGestor()
   
   // Obter empresa do company admin
   const getCompanyAdminCompany = () => {
@@ -87,18 +94,28 @@ function DFCPage() {
     return adminCompany?.company_id || null
   }
 
+  // Obter empresa do gestor
+  const getGestorCompany = () => {
+    if (!isGestor()) return null
+    const gestorCompany = profile?.user_companies?.find(uc => uc.role === 'gestor' && uc.is_active)
+    return gestorCompany?.company_id || null
+  }
+
+  // Obter empresa atual (company_admin ou gestor)
+  const getCurrentUserCompany = () => {
+    return getCompanyAdminCompany() || getGestorCompany()
+  }
+
   useEffect(() => {
     console.log('Profile:', profile)
     console.log('Is Authorized:', isAuthorized())
     fetchCompanies()
     fetchCategoriasEItens()
     
-    // Se for company admin, auto-selecionar sua empresa
-    if (isCompanyAdmin()) {
-      const companyId = getCompanyAdminCompany()
-      if (companyId) {
-        setCompanyFilter(companyId)
-      }
+    // Se for company admin ou gestor, auto-selecionar sua empresa
+    const userCompanyId = getCurrentUserCompany()
+    if (userCompanyId) {
+      setCompanyFilter(userCompanyId)
     }
     
     fetchSaidas()
@@ -107,6 +124,24 @@ function DFCPage() {
   useEffect(() => {
     fetchSaidas()
   }, [companyFilter, categoriaFilter])
+
+  // Gerar automaticamente as datas das parcelas quando houver mudanças
+  useEffect(() => {
+    if (isParcelado && formData.vencimento && numeroParcelas >= 2) {
+      const dataVencimentoBase = new Date(formData.vencimento + 'T00:00:00')
+      const novasDatas = []
+      
+      for (let i = 0; i < numeroParcelas; i++) {
+        const vencimentoParcela = new Date(dataVencimentoBase)
+        vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i)
+        novasDatas.push(vencimentoParcela.toISOString().substring(0, 10))
+      }
+      
+      setParcelasDatas(novasDatas)
+    } else {
+      setParcelasDatas([])
+    }
+  }, [isParcelado, formData.vencimento, numeroParcelas])
 
   const fetchCategoriasEItens = async () => {
     try {
@@ -137,10 +172,20 @@ function DFCPage() {
 
   const fetchCompanies = async () => {
     try {
-      const { data, error } = await supabase
+      // Se for gestor ou company admin, buscar apenas sua empresa
+      const userCompanyId = getCurrentUserCompany()
+      
+      let query = supabase
         .from('companies')
         .select('id, name, logo_url')
         .order('name')
+      
+      // Filtrar por empresa se não for super admin
+      if (userCompanyId) {
+        query = query.eq('id', userCompanyId)
+      }
+
+      const { data, error } = await query
 
       if (error) {
         console.error('Erro na query de empresas:', error)
@@ -300,6 +345,7 @@ function DFCPage() {
     setDocumentos([])
     setIsParcelado(false)
     setNumeroParcelas(1)
+    setParcelasDatas([])
     setParcelas([])
     setFormData({
       company_id: '',
@@ -451,8 +497,15 @@ function DFCPage() {
 
         const parcelasFilhas = []
         for (let i = 0; i < numeroParcelas; i++) {
-          const vencimentoParcela = new Date(dataVencimentoBase)
-          vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i)
+          // Usa data customizada se existir, senão calcula automaticamente
+          let vencimentoParcela
+          if (parcelasDatas[i]) {
+            vencimentoParcela = parcelasDatas[i]
+          } else {
+            const dataAuto = new Date(dataVencimentoBase)
+            dataAuto.setMonth(dataAuto.getMonth() + i)
+            vencimentoParcela = dataAuto.toISOString().substring(0, 10)
+          }
           
           const mesParcela = new Date(mesBase)
           mesParcela.setMonth(mesParcela.getMonth() + i)
@@ -464,7 +517,7 @@ function DFCPage() {
             descricao: `${formData.descricao} - Parcela ${i + 1}/${numeroParcelas}`,
             valor: valorParcela,
             mes: mesParcela.toISOString().substring(0, 10),
-            vencimento: vencimentoParcela.toISOString().substring(0, 10),
+            vencimento: vencimentoParcela,
             is_parcelado: false,
             numero_parcelas: 1,
             parcela_numero: i + 1,
@@ -531,6 +584,41 @@ function DFCPage() {
     setShowParcelasModal(false)
     setSelectedSaidaParcelas(null)
     setParcelas([])
+    setEditingParcelaId(null)
+    setEditingVencimento('')
+  }
+
+  const handleEditVencimento = (parcela) => {
+    setEditingParcelaId(parcela.id)
+    setEditingVencimento(parcela.vencimento)
+  }
+
+  const handleSaveVencimento = async (parcelaId) => {
+    try {
+      const { error } = await supabase
+        .from('dfc_saidas')
+        .update({ vencimento: editingVencimento })
+        .eq('id', parcelaId)
+
+      if (error) throw error
+
+      toast.success('Data de vencimento atualizada!')
+      
+      // Recarregar parcelas
+      const parcelasData = await fetchParcelas(selectedSaidaParcelas.id)
+      setParcelas(parcelasData)
+      
+      setEditingParcelaId(null)
+      setEditingVencimento('')
+    } catch (error) {
+      console.error('Erro ao atualizar vencimento:', error)
+      toast.error('Erro ao atualizar data de vencimento')
+    }
+  }
+
+  const handleCancelEditVencimento = () => {
+    setEditingParcelaId(null)
+    setEditingVencimento('')
   }
 
   const uploadDocumentos = async (saidaId) => {
@@ -1372,22 +1460,20 @@ function DFCPage() {
 
                         {/* Preview das Parcelas */}
                         {formData.valor && formData.vencimento && formData.mes && numeroParcelas >= 2 && (
-                          <div className="bg-white border border-blue-200 rounded-lg p-3 max-h-48 overflow-y-auto">
+                          <div className="bg-white border border-blue-200 rounded-lg p-3 max-h-64 overflow-y-auto">
                             <p className="text-xs font-semibold text-gray-700 mb-2">
-                              Preview das {numeroParcelas} parcelas:
+                              Preview das {numeroParcelas} parcelas (clique na data para editar):
                             </p>
                             <div className="space-y-1.5">
-                              {Array.from({ length: Math.min(numeroParcelas, 12) }, (_, i) => {
-                                const dataVencimentoBase = new Date(formData.vencimento + 'T00:00:00')
+                              {Array.from({ length: numeroParcelas }, (_, i) => {
                                 const mesBase = new Date(formData.mes + '-01T00:00:00')
-                                const vencimentoParcela = new Date(dataVencimentoBase)
-                                vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i)
                                 const mesParcela = new Date(mesBase)
                                 mesParcela.setMonth(mesParcela.getMonth() + i)
                                 const valorParcela = parseFloat(formData.valor) / numeroParcelas
+                                const vencimentoParcela = parcelasDatas[i] || formData.vencimento
 
                                 return (
-                                  <div key={i} className="flex items-center justify-between text-xs py-1.5 px-2 bg-gray-50 rounded">
+                                  <div key={i} className="flex items-center justify-between text-xs py-1.5 px-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
                                     <span className="text-gray-900 font-medium">
                                       Parcela {i + 1}/{numeroParcelas}
                                     </span>
@@ -1395,9 +1481,19 @@ function DFCPage() {
                                       <span>
                                         {mesParcela.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
                                       </span>
-                                      <span>
-                                        Venc: {vencimentoParcela.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                                      </span>
+                                      <div className="flex items-center space-x-1">
+                                        <span className="text-gray-500">Venc:</span>
+                                        <input
+                                          type="date"
+                                          value={vencimentoParcela}
+                                          onChange={(e) => {
+                                            const novasDatas = [...parcelasDatas]
+                                            novasDatas[i] = e.target.value
+                                            setParcelasDatas(novasDatas)
+                                          }}
+                                          className="px-2 py-0.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-[#EBA500] focus:border-[#EBA500]"
+                                        />
+                                      </div>
                                       <span className="font-semibold text-[#EBA500]">
                                         {formatCurrency(valorParcela)}
                                       </span>
@@ -1405,11 +1501,6 @@ function DFCPage() {
                                   </div>
                                 )
                               })}
-                              {numeroParcelas > 12 && (
-                                <p className="text-xs text-gray-500 text-center pt-1">
-                                  ... e mais {numeroParcelas - 12} parcelas
-                                </p>
-                              )}
                             </div>
                           </div>
                         )}
@@ -1852,13 +1943,48 @@ function DFCPage() {
                               </div>
                               <div className="flex items-center">
                                 <DollarSign className="h-3.5 w-3.5 mr-1" />
-                                <span>Venc: {formatDate(parcela.vencimento)}</span>
+                                {editingParcelaId === parcela.id ? (
+                                  <input
+                                    type="date"
+                                    value={editingVencimento}
+                                    onChange={(e) => setEditingVencimento(e.target.value)}
+                                    className="px-2 py-1 border border-blue-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                ) : (
+                                  <span>Venc: {formatDate(parcela.vencimento)}</span>
+                                )}
                               </div>
                             </div>
                           </div>
                         </div>
-                        <div className="ml-4">
+                        <div className="ml-4 flex items-center space-x-2">
                           <p className="text-lg font-bold text-gray-900">{formatCurrency(parcela.valor)}</p>
+                          {editingParcelaId === parcela.id ? (
+                            <div className="flex space-x-1">
+                              <button
+                                onClick={() => handleSaveVencimento(parcela.id)}
+                                className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
+                                title="Salvar"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={handleCancelEditVencimento}
+                                className="p-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-all"
+                                title="Cancelar"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleEditVencimento(parcela)}
+                              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                              title="Editar data de vencimento"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     )

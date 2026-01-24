@@ -82,7 +82,11 @@ function PlanoContasPage() {
     return profile?.user_companies?.some(uc => uc.role === 'company_admin' && uc.is_active) || false
   }
   
-  const isAuthorized = () => isSuperAdmin() || isCompanyAdmin()
+  const isGestor = () => {
+    return profile?.user_companies?.some(uc => uc.role === 'gestor' && uc.is_active) || false
+  }
+  
+  const isAuthorized = () => isSuperAdmin() || isCompanyAdmin() || isGestor()
   
   const getCompanyAdminCompany = () => {
     if (!isCompanyAdmin()) return null
@@ -92,14 +96,26 @@ function PlanoContasPage() {
     return adminCompany?.company_id || null
   }
 
+  const getGestorCompany = () => {
+    if (!isGestor()) return null
+    const gestorCompany = profile?.user_companies?.find(
+      uc => uc.role === 'gestor' && uc.is_active
+    )
+    return gestorCompany?.company_id || null
+  }
+
+  const getCurrentUserCompany = () => {
+    return getCompanyAdminCompany() || getGestorCompany()
+  }
+
   // Verificar se o item pode ser editado/deletado pelo usuário
   const canEditItem = (item) => {
     // Super admin pode editar tudo
     if (isSuperAdmin()) return true
     
-    // Company admin só pode editar itens associados à sua empresa
-    if (isCompanyAdmin()) {
-      const userCompanyId = getCompanyAdminCompany()
+    // Company admin e gestor só podem editar itens associados à sua empresa
+    if (isCompanyAdmin() || isGestor()) {
+      const userCompanyId = getCurrentUserCompany()
       // Verifica se o item tem empresas associadas e se a empresa do usuário está entre elas
       return item.empresas?.some(empresa => empresa.id === userCompanyId) || false
     }
@@ -119,9 +135,9 @@ function PlanoContasPage() {
       fetchCompanies()
       fetchCategorias()
       
-      // Auto-selecionar empresa para company_admin
-      if (isCompanyAdmin()) {
-        const companyId = getCompanyAdminCompany()
+      // Auto-selecionar empresa para company_admin e gestor
+      if (isCompanyAdmin() || isGestor()) {
+        const companyId = getCurrentUserCompany()
         if (companyId) {
           setCompanyFilter(companyId)
         }
@@ -246,9 +262,9 @@ function PlanoContasPage() {
       })
     } else {
       setEditingItem(null)
-      const companyAdminId = getCompanyAdminCompany()
+      const userCompanyId = getCurrentUserCompany()
       setFormData({
-        company_ids: companyAdminId ? [companyAdminId] : (companyFilter !== 'all' ? [companyFilter] : []),
+        company_ids: userCompanyId ? [userCompanyId] : (companyFilter !== 'all' ? [companyFilter] : []),
         categoria_id: categoriaId || '',
         nome: '',
         descricao: ''
@@ -599,21 +615,23 @@ function PlanoContasPage() {
 
           <div className="flex flex-col sm:flex-row gap-2">
             {isSuperAdmin() && (
-              <button
-                onClick={() => openCategoriaModal()}
-                className="flex items-center justify-center space-x-2 px-4 py-2 bg-[#373435] text-white rounded-2xl hover:bg-[#373435]/90 transition-all font-medium"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Nova Categoria</span>
-              </button>
+              <>
+                <button
+                  onClick={() => openCategoriaModal()}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-[#373435] text-white rounded-2xl hover:bg-[#373435]/90 transition-all font-medium"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Nova Categoria</span>
+                </button>
+                <button
+                  onClick={() => openModal()}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-2xl hover:bg-[#EBA500]/90 transition-all font-medium"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Novo Item</span>
+                </button>
+              </>
             )}
-            <button
-              onClick={() => openModal()}
-              className="flex items-center justify-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-2xl hover:bg-[#EBA500]/90 transition-all font-medium"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Novo Item</span>
-            </button>
           </div>
         </div>
       </div>
@@ -732,31 +750,37 @@ function PlanoContasPage() {
                       collapsedCategories[categoria.id] ? 'rotate-0' : 'rotate-180'
                     }`} />
                   </button>
-                  {isSuperAdmin() && (
-                    <div className="flex items-center space-x-2 ml-3">
-                      <button
-                        onClick={() => openCategoriaModal(categoria)}
-                        className="p-1.5 text-gray-600 hover:bg-gray-200/50 rounded-lg transition-colors"
-                        title="Editar categoria"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCategoria(categoria)}
-                        className="p-1.5 text-red-600 hover:bg-red-100/50 rounded-lg transition-colors"
-                        title="Excluir categoria"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => openModal(null, categoria.id)}
-                        className="flex items-center space-x-2 px-3 py-1.5 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 transition-all text-sm font-medium"
-                      >
-                        <Plus className="h-4 w-4\" />
+                  
+                  {/* Botões de ação */}
+                  <div className="flex items-center space-x-2 ml-3">
+                    {isSuperAdmin() && (
+                      <>
+                        <button
+                          onClick={() => openCategoriaModal(categoria)}
+                          className="p-1.5 text-gray-600 hover:bg-gray-200/50 rounded-lg transition-colors"
+                          title="Editar categoria"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategoria(categoria)}
+                          className="p-1.5 text-red-600 hover:bg-red-100/50 rounded-lg transition-colors"
+                          title="Excluir categoria"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
+                    
+                    {/* Botão Adicionar Item para todos os perfis autorizados */}
+                    <button
+                      onClick={() => openModal(null, categoria.id)}
+                      className="flex items-center space-x-2 px-3 py-1.5 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 transition-all text-sm font-medium"
+                    >
+                      <Plus className="h-4 w-4" />
                       <span>Adicionar Item</span>
                     </button>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
@@ -870,11 +894,11 @@ function PlanoContasPage() {
                     Empresas <span className="text-xs text-gray-500">(Deixe vazio para criar item global)</span>
                   </label>
                   
-                  {/* Para Company Admin - Apenas mostrar sua empresa */}
-                  {isCompanyAdmin() ? (
+                  {/* Para Company Admin e Gestor - Apenas mostrar sua empresa */}
+                  {(isCompanyAdmin() || isGestor()) ? (
                     <div className="px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 font-medium flex items-center">
                       <Building2 className="h-4 w-4 mr-2" />
-                      {companies.find(c => c.id === getCompanyAdminCompany())?.name || 'Empresa'}
+                      {companies.find(c => c.id === getCurrentUserCompany())?.name || 'Empresa'}
                     </div>
                   ) : (
                     /* Para Super Admin - Seleção múltipla */

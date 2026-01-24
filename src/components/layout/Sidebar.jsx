@@ -38,6 +38,17 @@ import {
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
+// Variável global para capturar o evento o mais cedo possível
+let globalDeferredPrompt = null
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('🎉 EVENTO GLOBAL CAPTURADO!')
+    e.preventDefault()
+    globalDeferredPrompt = e
+  })
+}
+
 // Injetar animação CSS para o dropdown
 if (typeof document !== 'undefined' && !document.getElementById('sidebar-dropdown-animation')) {
   const style = document.createElement('style')
@@ -342,16 +353,17 @@ const getJourneyChildren = (accessibleJourneys) => {
 const getManagerSpecificItems = (accessibleJourneys = []) => {
   const items = []
 
-  // Se tem jornada financeira - Acesso ao menu Financeiro
+  // Se tem jornada financeira - Acesso ao DFC
   if (accessibleJourneys.includes('financeira')) {
     items.push({
       name: 'Financeiro',
       icon: DollarSign,
-      href: '/financeiro',
+      href: '/dfc',
       children: [
-        { name: 'Fluxo de Caixa', href: '/financeiro/fluxo-caixa' },
-        { name: 'DRE', href: '/financeiro/dre' },
-        { name: 'DFC', href: '/financeiro/dfc' }
+        { name: 'Dashboard DFC', href: '/dfc' },
+        { name: 'Entradas', href: '/dfc/entradas' },
+        { name: 'Saídas', href: '/dfc/saidas' },
+        { name: 'Plano de Contas', href: '/dfc/plano-contas' }
       ]
     })
   }
@@ -368,36 +380,6 @@ const getManagerSpecificItems = (accessibleJourneys = []) => {
         { name: 'Oportunidades', href: '/crm/opportunities' },
         { name: 'Campanhas', href: '/crm/campaigns' },
         { name: 'Relatórios', href: '/crm/reports' }
-      ]
-    })
-  }
-
-  // Se tem jornada de pessoas & cultura - Acesso a RH
-  if (accessibleJourneys.includes('pessoas-cultura')) {
-    items.push({
-      name: 'Pessoas & RH',
-      icon: Users,
-      href: '/rh',
-      children: [
-        { name: 'Colaboradores', href: '/rh/employees' },
-        { name: 'Recrutamento', href: '/rh/recruitment' },
-        { name: 'Avaliações', href: '/rh/evaluations' },
-        { name: 'Treinamentos', href: '/rh/training' }
-      ]
-    })
-  }
-
-  // Se tem jornada operacional - Acesso a operações
-  if (accessibleJourneys.includes('operacional')) {
-    items.push({
-      name: 'Operações',
-      icon: Settings,
-      href: '/operations',
-      children: [
-        { name: 'Processos', href: '/operations/processes' },
-        { name: 'Qualidade', href: '/operations/quality' },
-        { name: 'Produção', href: '/operations/production' },
-        { name: 'Logística', href: '/operations/logistics' }
       ]
     })
   }
@@ -446,8 +428,9 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0 })
   const [isClosing, setIsClosing] = React.useState(false)
   const [avatarUrl, setAvatarUrl] = React.useState('') // 🔥 NOVO: URL assinada do avatar
-  const [appVersion, setAppVersion] = React.useState('2.2.1') // Versão padrão
-  const [deferredPrompt, setDeferredPrompt] = React.useState(null)
+  const [appVersion, setAppVersion] = React.useState('3.0.11') // Versão padrão
+  // Inicializa com o valor global se existir
+  const [deferredPrompt, setDeferredPrompt] = React.useState(globalDeferredPrompt)
   const [isInstallable, setIsInstallable] = React.useState(false)
   const [isStandalone, setIsStandalone] = React.useState(false)
 
@@ -459,32 +442,31 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                             document.referrer.includes('android-app://')
     
     setIsStandalone(checkStandalone)
-    console.log('📱 PWA já instalado?', checkStandalone)
-    console.log('🌐 User Agent:', navigator.userAgent)
-    console.log('🔒 Protocol:', window.location.protocol)
-    console.log('🏠 Hostname:', window.location.hostname)
-
-    // SEMPRE mostrar o botão, mesmo se já estiver instalado
-    setIsInstallable(true)
+    
+    // Se tiver prompt global ou não estiver instalado, mostra botão
+    if (globalDeferredPrompt || !checkStandalone) {
+      if (globalDeferredPrompt) setDeferredPrompt(globalDeferredPrompt)
+      setIsInstallable(true)
+    }
 
     const handleBeforeInstallPrompt = (e) => {
-      console.log('🎉 EVENTO BEFOREINSTALLPROMPT CAPTURADO!')
-      console.log('📋 Detalhes do evento:', e)
+      console.log('🎉 EVENTO BEFOREINSTALLPROMPT LOCAL CAPTURADO!')
       e.preventDefault()
+      globalDeferredPrompt = e
       setDeferredPrompt(e)
       setIsInstallable(true)
     }
 
     const handleAppInstalled = () => {
       console.log('✅ PWA instalado!')
+      globalDeferredPrompt = null
+      setDeferredPrompt(null)
       setIsStandalone(true)
+      setIsInstallable(false)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     window.addEventListener('appinstalled', handleAppInstalled)
-    
-    // Log para debug
-    console.log('👂 Event listeners adicionados para PWA')
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -494,57 +476,27 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
 
   // Função para instalar PWA
   const handleInstallPWA = async () => {
-    console.log('🔘 Botão instalar clicado')
-    console.log('🎯 deferredPrompt disponível?', !!deferredPrompt)
-    console.log('📱 isStandalone?', isStandalone)
-    
-    // Se já está instalado, informar ao usuário
-    if (isStandalone) {
-      alert('✅ O app já está instalado!\n\nVocê já pode usar o BG2 como aplicativo.')
-      return
-    }
-    
-    if (!deferredPrompt) {
-      console.error('❌ deferredPrompt é null - evento beforeinstallprompt não foi capturado')
-      console.log('🔍 Possíveis causas:')
-      console.log('1. Site não está em HTTPS (atual:', window.location.protocol, ')')
-      console.log('2. PWA já foi instalado anteriormente')
-      console.log('3. Navegador não suporta PWA')
-      console.log('4. Manifest ou Service Worker com problema')
-      
-      // Tentar forçar reload do SW
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          console.log('📋 Service Workers registrados:', registrations.length)
-          registrations.forEach(reg => console.log('  - Scope:', reg.scope))
-        })
-      }
-      
-      alert('ℹ️ Para instalar o app:\n\n' +
-            '1. Clique nos três pontos (⋮) no canto superior direito\n' +
-            '2. Procure por "Instalar BG2" ou "Instalar app"\n' +
-            '3. Confirme a instalação\n\n' +
-            'Ou verifique o console para mais detalhes.')
+    // Tenta usar o prompt local ou o global
+    const promptToUse = deferredPrompt || globalDeferredPrompt
+
+    if (!promptToUse) {
+      console.log('❌ Instalação automática indisponível')
+      alert('Seu navegador não permitiu a instalação automática. Tente pelo menu do navegador (três pontos > Instalar App).')
       return
     }
 
     try {
-      console.log('📲 Disparando prompt de instalação...')
-      await deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      console.log('👤 Escolha do usuário:', outcome)
+      await promptToUse.prompt()
+      const { outcome } = await promptToUse.userChoice
       
       if (outcome === 'accepted') {
-        console.log('✅ Usuário aceitou instalação')
         setIsStandalone(true)
-      } else {
-        console.log('❌ Usuário recusou instalação')
+        setIsInstallable(false)
+        setDeferredPrompt(null)
+        globalDeferredPrompt = null
       }
-      
-      setDeferredPrompt(null)
     } catch (error) {
       console.error('❌ Erro ao instalar PWA:', error)
-      alert('Erro ao tentar instalar: ' + error.message)
     }
   }
 
@@ -1062,6 +1014,24 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
 
         {/* Footer da Sidebar */}
         <div className="flex-shrink-0 p-3 sm:p-4 border-t border-neutral-600 space-y-2">
+          {/* Botão de Instalar App PWA */}
+          {isInstallable && (
+            <button
+              onClick={handleInstallPWA}
+              className={cn(
+                "group w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
+                "bg-gradient-to-r from-[#EBA500] to-[#d99500] hover:from-[#d99500] hover:to-[#c88500]",
+                "text-white font-semibold shadow-lg hover:shadow-xl",
+                "hover:scale-[1.02] active:scale-[0.98]",
+                isCollapsed ? "justify-center px-2" : ""
+              )}
+              title="Instalar App"
+            >
+              <Download className="h-5 w-5 flex-shrink-0" />
+              {!isCollapsed && <span className="text-sm">Instalar App</span>}
+            </button>
+          )}
+          
           {/* Perfil do Usuário */}
           <div className={cn(
             "flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-neutral-700/50 border border-neutral-600/50",

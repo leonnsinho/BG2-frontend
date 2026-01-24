@@ -57,9 +57,73 @@ export default function DFCDashboardPage() {
   const [categoriasMap, setCategoriasMap] = useState({})
   const [showHistoricoModal, setShowHistoricoModal] = useState(false)
   const [historicoRelatorios, setHistoricoRelatorios] = useState([])
+  
+  // Estados para pagamentos futuros
+  const [futurePayments, setFuturePayments] = useState({
+    entradas: {
+      next30Days: 0,
+      next60Days: 0,
+      next90Days: 0,
+      total: 0,
+      count30: 0,
+      count60: 0,
+      count90: 0,
+      countTotal: 0,
+      items30: [],
+      items60: [],
+      items90: [],
+      itemsTotal: []
+    },
+    saidas: {
+      next30Days: 0,
+      next60Days: 0,
+      next90Days: 0,
+      total: 0,
+      count30: 0,
+      count60: 0,
+      count90: 0,
+      countTotal: 0,
+      items30: [],
+      items60: [],
+      items90: [],
+      itemsTotal: []
+    }
+  })
+  const [showFuturePaymentsModal, setShowFuturePaymentsModal] = useState(false)
+  const [futurePaymentsPeriod, setFuturePaymentsPeriod] = useState('30') // Padrão: 30 dias
+  const [futurePaymentsDetails, setFuturePaymentsDetails] = useState({ type: 'entradas', period: '30', items: [] })
 
   // Verificar se é super_admin
   const isSuperAdmin = () => profile?.role === 'super_admin'
+  
+  const isCompanyAdmin = () => {
+    return profile?.user_companies?.some(uc => uc.role === 'company_admin' && uc.is_active) || false
+  }
+  
+  const isGestor = () => {
+    return profile?.user_companies?.some(uc => uc.role === 'gestor' && uc.is_active) || false
+  }
+  
+  // Obter empresa do company admin
+  const getCompanyAdminCompany = () => {
+    if (!isCompanyAdmin()) return null
+    const adminCompany = profile?.user_companies?.find(uc => uc.role === 'company_admin' && uc.is_active)
+    if (!adminCompany) return null
+    return { id: adminCompany.company_id, name: adminCompany.companies?.name }
+  }
+
+  // Obter empresa do gestor
+  const getGestorCompany = () => {
+    if (!isGestor()) return null
+    const gestorCompany = profile?.user_companies?.find(uc => uc.role === 'gestor' && uc.is_active)
+    if (!gestorCompany) return null
+    return { id: gestorCompany.company_id, name: gestorCompany.companies?.name }
+  }
+
+  // Obter empresa atual (company_admin ou gestor)
+  const getCurrentUserCompany = () => {
+    return getCompanyAdminCompany() || getGestorCompany()
+  }
 
   // Carregar empresas (apenas para super admin)
   useEffect(() => {
@@ -121,6 +185,194 @@ export default function DFCDashboardPage() {
     setCompanyAvatars(avatarUrls)
   }
 
+  // Carregar pagamentos futuros (a receber e a pagar)
+  const loadFuturePayments = async () => {
+    try {
+      const currentCompany = getCurrentUserCompany()
+      const companyId = isSuperAdmin() 
+        ? (selectedCompanyId === 'all' ? null : selectedCompanyId)
+        : currentCompany?.id
+
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const todayISO = today.toISOString()
+
+      const next30 = new Date(today)
+      next30.setDate(next30.getDate() + 30)
+      const next30ISO = next30.toISOString()
+
+      const next60 = new Date(today)
+      next60.setDate(next60.getDate() + 60)
+      const next60ISO = next60.toISOString()
+
+      const next90 = new Date(today)
+      next90.setDate(next90.getDate() + 90)
+      const next90ISO = next90.toISOString()
+
+      console.log('📅 Carregando pagamentos futuros:', { companyId, today: todayISO, next30: next30ISO, next60: next60ISO, next90: next90ISO })
+
+      // ===== ENTRADAS FUTURAS =====
+      
+      // Próximos 30 dias
+      let entradas30Query = supabase
+        .from('dfc_entradas')
+        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false') // Parcelas OU lançamentos simples
+        .gt('vencimento', todayISO)
+        .lte('vencimento', next30ISO)
+        .order('vencimento', { ascending: true })
+
+      if (companyId) entradas30Query = entradas30Query.eq('company_id', companyId)
+      
+      const { data: entradas30, error: err1 } = await entradas30Query
+      if (err1) console.error('❌ Erro entradas 30 dias:', err1)
+      else console.log('✅ Entradas 30 dias encontradas:', entradas30?.length, entradas30)
+
+      // Próximos 60 dias
+      let entradas60Query = supabase
+        .from('dfc_entradas')
+        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
+        .gt('vencimento', todayISO)
+        .lte('vencimento', next60ISO)
+        .order('vencimento', { ascending: true })
+
+      if (companyId) entradas60Query = entradas60Query.eq('company_id', companyId)
+      
+      const { data: entradas60, error: err1b } = await entradas60Query
+      if (err1b) console.error('❌ Erro entradas 60 dias:', err1b)
+      else console.log('✅ Entradas 60 dias encontradas:', entradas60?.length, entradas60)
+
+      // Próximos 90 dias
+      let entradas90Query = supabase
+        .from('dfc_entradas')
+        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
+        .gt('vencimento', todayISO)
+        .lte('vencimento', next90ISO)
+        .order('vencimento', { ascending: true })
+
+      if (companyId) entradas90Query = entradas90Query.eq('company_id', companyId)
+      
+      const { data: entradas90, error: err2 } = await entradas90Query
+      if (err2) console.error('❌ Erro entradas 90 dias:', err2)
+      else console.log('✅ Entradas 90 dias encontradas:', entradas90?.length, entradas90)
+
+      // Total futuro
+      let entradasTotalQuery = supabase
+        .from('dfc_entradas')
+        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
+        .gt('vencimento', todayISO)
+        .order('vencimento', { ascending: true })
+
+      if (companyId) entradasTotalQuery = entradasTotalQuery.eq('company_id', companyId)
+      
+      const { data: entradasTotal, error: err3 } = await entradasTotalQuery
+      if (err3) console.error('❌ Erro entradas total:', err3)
+      else console.log('✅ Entradas total futuras encontradas:', entradasTotal?.length, entradasTotal)
+
+      // ===== SAÍDAS FUTURAS =====
+      
+      // Próximos 60 dias
+      let saidas60Query = supabase
+        .from('dfc_saidas')
+        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
+        .gt('vencimento', todayISO)
+        .lte('vencimento', next60ISO)
+        .order('vencimento', { ascending: true })
+
+      if (companyId) saidas60Query = saidas60Query.eq('company_id', companyId)
+      
+      const { data: saidas60, error: err4b } = await saidas60Query
+      if (err4b) console.error('❌ Erro saídas 60 dias:', err4b)
+      else console.log('✅ Saídas 60 dias encontradas:', saidas60?.length, saidas60)
+
+      // Próximos 30 dias
+      let saidas30Query = supabase
+        .from('dfc_saidas')
+        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
+        .gt('vencimento', todayISO)
+        .lte('vencimento', next30ISO)
+        .order('vencimento', { ascending: true })
+
+      if (companyId) saidas30Query = saidas30Query.eq('company_id', companyId)
+      
+      const { data: saidas30, error: err4 } = await saidas30Query
+      if (err4) console.error('❌ Erro saídas 30 dias:', err4)
+      else console.log('✅ Saídas 30 dias encontradas:', saidas30?.length, saidas30)
+
+      // Próximos 90 dias
+      let saidas90Query = supabase
+        .from('dfc_saidas')
+        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
+        .gt('vencimento', todayISO)
+        .lte('vencimento', next90ISO)
+        .order('vencimento', { ascending: true })
+
+      if (companyId) saidas90Query = saidas90Query.eq('company_id', companyId)
+      
+      const { data: saidas90, error: err5 } = await saidas90Query
+      if (err5) console.error('❌ Erro saídas 90 dias:', err5)
+      else console.log('✅ Saídas 90 dias encontradas:', saidas90?.length, saidas90)
+
+      // Total futuro
+      let saidasTotalQuery = supabase
+        .from('dfc_saidas')
+        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
+        .gt('vencimento', todayISO)
+        .order('vencimento', { ascending: true })
+
+      if (companyId) saidasTotalQuery = saidasTotalQuery.eq('company_id', companyId)
+      
+      const { data: saidasTotal, error: err6 } = await saidasTotalQuery
+      if (err6) console.error('❌ Erro saídas total:', err6)
+      else console.log('✅ Saídas total futuras encontradas:', saidasTotal?.length, saidasTotal)
+
+      // Calcular totais
+      const future = {
+        entradas: {
+          next30Days: entradas30?.reduce((sum, e) => sum + (e.valor || 0), 0) || 0,
+          next60Days: entradas60?.reduce((sum, e) => sum + (e.valor || 0), 0) || 0,
+          next90Days: entradas90?.reduce((sum, e) => sum + (e.valor || 0), 0) || 0,
+          total: entradasTotal?.reduce((sum, e) => sum + (e.valor || 0), 0) || 0,
+          count30: entradas30?.length || 0,
+          count60: entradas60?.length || 0,
+          count90: entradas90?.length || 0,
+          countTotal: entradasTotal?.length || 0,
+          items30: entradas30 || [],
+          items60: entradas60 || [],
+          items90: entradas90 || [],
+          itemsTotal: entradasTotal || []
+        },
+        saidas: {
+          next30Days: saidas30?.reduce((sum, s) => sum + (s.valor || 0), 0) || 0,
+          next60Days: saidas60?.reduce((sum, s) => sum + (s.valor || 0), 0) || 0,
+          next90Days: saidas90?.reduce((sum, s) => sum + (s.valor || 0), 0) || 0,
+          total: saidasTotal?.reduce((sum, s) => sum + (s.valor || 0), 0) || 0,
+          count30: saidas30?.length || 0,
+          count60: saidas60?.length || 0,
+          count90: saidas90?.length || 0,
+          countTotal: saidasTotal?.length || 0,
+          items30: saidas30 || [],
+          items60: saidas60 || [],
+          items90: saidas90 || [],
+          itemsTotal: saidasTotal || []
+        }
+      }
+
+      console.log('💰 Pagamentos futuros calculados:', future)
+      setFuturePayments(future)
+
+    } catch (error) {
+      console.error('❌ Erro ao carregar pagamentos futuros:', error)
+    }
+  }
+
   // Carregar histórico de relatórios do Supabase
   useEffect(() => {
     if (profile) {
@@ -158,14 +410,12 @@ export default function DFCDashboardPage() {
   }
 
   // Obter empresa do usuário
-  const getCurrentUserCompany = () => {
-    if (!profile?.user_companies) return null
-    return profile.user_companies.find(uc => uc.is_active)?.companies
-  }
+  // (Removida - agora usando getCurrentUserCompany() acima que diferencia roles)
 
   useEffect(() => {
     if (profile) {
       loadDashboardData()
+      loadFuturePayments()
     }
   }, [profile, periodoTipo, dataInicio, dataFim, selectedCompanyId])
 
@@ -1209,6 +1459,156 @@ export default function DFCDashboardPage() {
           </Link>
         </div>
 
+        {/* Pagamentos Futuros - A Receber e A Pagar */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* A Receber (Entradas Futuras) */}
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 shadow-lg border-2 border-green-300">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-green-500 rounded-xl shadow-md">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-green-900">A Receber</h3>
+                  <p className="text-xs text-green-700">Parcelas não recebidas</p>
+                </div>
+              </div>
+              
+              {/* Dropdown de Período */}
+              <select
+                value={futurePaymentsPeriod}
+                onChange={(e) => setFuturePaymentsPeriod(e.target.value)}
+                className="px-3 py-2 bg-white border-2 border-green-300 rounded-lg text-sm font-semibold text-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer hover:bg-green-50 transition-all"
+              >
+                <option value="30">Próximos 30 dias</option>
+                <option value="60">Próximos 60 dias</option>
+                <option value="90">Próximos 90 dias</option>
+                <option value="total">Total</option>
+              </select>
+            </div>
+
+            {/* Display único baseado no período selecionado */}
+            <button
+              onClick={() => {
+                const periodMap = {
+                  '30': { items: futurePayments.entradas.items30 },
+                  '60': { items: futurePayments.entradas.items60 },
+                  '90': { items: futurePayments.entradas.items90 },
+                  'total': { items: futurePayments.entradas.itemsTotal }
+                }
+                setFuturePaymentsDetails({ type: 'entradas', period: futurePaymentsPeriod, items: periodMap[futurePaymentsPeriod].items || [] })
+                setShowFuturePaymentsModal(true)
+              }}
+              className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 rounded-xl p-6 transition-all hover:scale-102 shadow-lg"
+            >
+              <div className="flex items-center justify-between">
+                <div className="text-left">
+                  <p className="text-xs font-semibold text-white/90 mb-2">
+                    {futurePaymentsPeriod === '30' && 'Próximos 30 dias'}
+                    {futurePaymentsPeriod === '60' && 'Próximos 60 dias'}
+                    {futurePaymentsPeriod === '90' && 'Próximos 90 dias'}
+                    {futurePaymentsPeriod === 'total' && 'Total a Receber'}
+                  </p>
+                  <p className="text-3xl font-bold text-white">
+                    {futurePaymentsPeriod === '30' && formatCurrency(futurePayments.entradas.next30Days)}
+                    {futurePaymentsPeriod === '60' && formatCurrency(futurePayments.entradas.next60Days)}
+                    {futurePaymentsPeriod === '90' && formatCurrency(futurePayments.entradas.next90Days)}
+                    {futurePaymentsPeriod === 'total' && formatCurrency(futurePayments.entradas.total)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm text-white/90 block mb-1">
+                    {futurePaymentsPeriod === '30' && futurePayments.entradas.count30}
+                    {futurePaymentsPeriod === '60' && futurePayments.entradas.count60}
+                    {futurePaymentsPeriod === '90' && futurePayments.entradas.count90}
+                    {futurePaymentsPeriod === 'total' && futurePayments.entradas.countTotal}
+                    {' '}parcela
+                    {((futurePaymentsPeriod === '30' && futurePayments.entradas.count30 !== 1) ||
+                      (futurePaymentsPeriod === '60' && futurePayments.entradas.count60 !== 1) ||
+                      (futurePaymentsPeriod === '90' && futurePayments.entradas.count90 !== 1) ||
+                      (futurePaymentsPeriod === 'total' && futurePayments.entradas.countTotal !== 1)) && 's'}
+                  </span>
+                  <ChevronRight className="h-6 w-6 text-white" />
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* A Pagar (Saídas Futuras) */}
+          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-6 shadow-lg border-2 border-red-300">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-red-500 rounded-xl shadow-md">
+                  <TrendingDown className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-red-900">A Pagar</h3>
+                  <p className="text-xs text-red-700">Parcelas não pagas</p>
+                </div>
+              </div>
+              
+              {/* Dropdown de Período */}
+              <select
+                value={futurePaymentsPeriod}
+                onChange={(e) => setFuturePaymentsPeriod(e.target.value)}
+                className="px-3 py-2 bg-white border-2 border-red-300 rounded-lg text-sm font-semibold text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer hover:bg-red-50 transition-all"
+              >
+                <option value="30">Próximos 30 dias</option>
+                <option value="60">Próximos 60 dias</option>
+                <option value="90">Próximos 90 dias</option>
+                <option value="total">Total</option>
+              </select>
+            </div>
+
+            {/* Display único baseado no período selecionado */}
+            <button
+              onClick={() => {
+                const periodMap = {
+                  '30': { items: futurePayments.saidas.items30 },
+                  '60': { items: futurePayments.saidas.items60 },
+                  '90': { items: futurePayments.saidas.items90 },
+                  'total': { items: futurePayments.saidas.itemsTotal }
+                }
+                setFuturePaymentsDetails({ type: 'saidas', period: futurePaymentsPeriod, items: periodMap[futurePaymentsPeriod].items || [] })
+                setShowFuturePaymentsModal(true)
+              }}
+              className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 rounded-xl p-6 transition-all hover:scale-102 shadow-lg"
+            >
+              <div className="flex items-center justify-between">
+                <div className="text-left">
+                  <p className="text-xs font-semibold text-white/90 mb-2">
+                    {futurePaymentsPeriod === '30' && 'Próximos 30 dias'}
+                    {futurePaymentsPeriod === '60' && 'Próximos 60 dias'}
+                    {futurePaymentsPeriod === '90' && 'Próximos 90 dias'}
+                    {futurePaymentsPeriod === 'total' && 'Total a Pagar'}
+                  </p>
+                  <p className="text-3xl font-bold text-white">
+                    {futurePaymentsPeriod === '30' && formatCurrency(futurePayments.saidas.next30Days)}
+                    {futurePaymentsPeriod === '60' && formatCurrency(futurePayments.saidas.next60Days)}
+                    {futurePaymentsPeriod === '90' && formatCurrency(futurePayments.saidas.next90Days)}
+                    {futurePaymentsPeriod === 'total' && formatCurrency(futurePayments.saidas.total)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm text-white/90 block mb-1">
+                    {futurePaymentsPeriod === '30' && futurePayments.saidas.count30}
+                    {futurePaymentsPeriod === '60' && futurePayments.saidas.count60}
+                    {futurePaymentsPeriod === '90' && futurePayments.saidas.count90}
+                    {futurePaymentsPeriod === 'total' && futurePayments.saidas.countTotal}
+                    {' '}parcela
+                    {((futurePaymentsPeriod === '30' && futurePayments.saidas.count30 !== 1) ||
+                      (futurePaymentsPeriod === '60' && futurePayments.saidas.count60 !== 1) ||
+                      (futurePaymentsPeriod === '90' && futurePayments.saidas.count90 !== 1) ||
+                      (futurePaymentsPeriod === 'total' && futurePayments.saidas.countTotal !== 1)) && 's'}
+                  </span>
+                  <ChevronRight className="h-6 w-6 text-white" />
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+
         {/* Resumo Financeiro */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden">
           {/* Header */}
@@ -1599,6 +1999,112 @@ export default function DFCDashboardPage() {
                 <p className="text-xs text-gray-600">
                   Total de relatórios: {historicoRelatorios.length}
                 </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalhes dos Pagamentos Futuros */}
+      {showFuturePaymentsModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+            {/* Header do Modal */}
+            <div className={`px-6 py-4 ${futurePaymentsDetails.type === 'entradas' ? 'bg-gradient-to-r from-green-600 to-green-700' : 'bg-gradient-to-r from-red-600 to-red-700'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {futurePaymentsDetails.type === 'entradas' ? (
+                    <TrendingUp className="h-6 w-6 text-white" />
+                  ) : (
+                    <TrendingDown className="h-6 w-6 text-white" />
+                  )}
+                  <div>
+                    <h2 className="text-xl font-bold text-white">
+                      {futurePaymentsDetails.type === 'entradas' ? 'A Receber' : 'A Pagar'} - 
+                      {futurePaymentsDetails.period === '30' ? ' Próximos 30 dias' : 
+                       futurePaymentsDetails.period === '90' ? ' Próximos 90 dias' : 
+                       ' Total Futuro'}
+                    </h2>
+                    <p className="text-sm text-white/80">
+                      {futurePaymentsDetails.items.length} parcela{futurePaymentsDetails.items.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowFuturePaymentsModal(false)}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Lista de Parcelas */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {futurePaymentsDetails.items.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">Nenhuma parcela encontrada para este período</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {futurePaymentsDetails.items.map((item, index) => (
+                    <div
+                      key={item.id || index}
+                      className={`p-4 rounded-xl border-2 ${
+                        futurePaymentsDetails.type === 'entradas' 
+                          ? 'bg-green-50 border-green-200 hover:border-green-300' 
+                          : 'bg-red-50 border-red-200 hover:border-red-300'
+                      } transition-all hover:shadow-md`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-900 truncate mb-1">
+                            {item.descricao}
+                          </h4>
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>{formatDateBR(item.data_vencimento || item.vencimento)}</span>
+                            </div>
+                            {item.parcela_numero && (
+                              <span className="px-2 py-0.5 bg-white rounded-md text-xs font-medium">
+                                Parcela {item.parcela_numero}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-xl font-bold ${
+                            futurePaymentsDetails.type === 'entradas' ? 'text-green-700' : 'text-red-700'
+                          }`}>
+                            {formatCurrency(item.valor)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer do Modal */}
+            {futurePaymentsDetails.items.length > 0 && (
+              <div className={`p-4 border-t ${
+                futurePaymentsDetails.type === 'entradas' 
+                  ? 'border-green-200 bg-green-50' 
+                  : 'border-red-200 bg-red-50'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-700">
+                    Total de {futurePaymentsDetails.items.length} parcela{futurePaymentsDetails.items.length !== 1 ? 's' : ''}
+                  </p>
+                  <p className={`text-2xl font-bold ${
+                    futurePaymentsDetails.type === 'entradas' ? 'text-green-700' : 'text-red-700'
+                  }`}>
+                    {formatCurrency(futurePaymentsDetails.items.reduce((sum, item) => sum + (item.valor || 0), 0))}
+                  </p>
+                </div>
               </div>
             )}
           </div>
