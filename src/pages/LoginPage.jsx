@@ -53,6 +53,15 @@ export function LoginPage() {
       })
       setHasSavedPasswords(passwordMap)
 
+      // Auto-selecionar se veio de um "switch account" e já tem senha salva
+      const savedUserToSelect = users.find(u => u.encrypted_password || (u.email && passwords[u.email.toLowerCase()]))
+      // (Opcional - mas ajuda no UX se quiser focar apenas users com senha)
+
+      if (users.length > 0) {
+        setSavedUsers(users)
+        setViewMode('list')
+      }
+
       if (users.length > 0) {
         setSavedUsers(users)
         setViewMode('list')
@@ -316,25 +325,11 @@ export function LoginPage() {
                     onClick={() => handleSelectUser(savedUser)}
                     className="group relative flex items-center p-4 bg-white border border-neutral-200 rounded-xl cursor-pointer hover:border-primary-500 hover:shadow-md transition-all duration-200"
                   >
-                    {/* Avatar */}
-                    <div className="flex-shrink-0 mr-4">
-                      {savedUser.avatar_url ? (
-                        <img 
-                          src={savedUser.avatar_url} 
-                          alt={savedUser.full_name} 
-                          className="w-12 h-12 rounded-full object-cover border-2 border-neutral-100"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-lg">
-                          {savedUser.full_name?.charAt(0).toUpperCase() || savedUser.email?.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
                     
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-neutral-900 truncate">
+                        <p className="text-lg font-bold text-neutral-900 truncate">
                           {savedUser.full_name}
                         </p>
                         {/* Indicador Visual de Login Rápido */}
@@ -348,11 +343,6 @@ export function LoginPage() {
                       <p className="text-sm text-neutral-500 truncate">
                         {savedUser.email}
                       </p>
-                      {(savedUser.encrypted_password || hasSavedPasswords[savedUser.id]) ? null : (
-                         <p className="text-xs text-orange-500 mt-1">
-                           Faça login com senha uma vez para ativar acesso rápido
-                         </p>
-                      )}
                     </div>
 
                     {/* Loading or Arrow */}
@@ -394,17 +384,6 @@ export function LoginPage() {
               {viewMode === 'password' && selectedUser && (
                 <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg border border-neutral-200">
                   <div className="flex items-center min-w-0">
-                    {selectedUser.avatar_url ? (
-                      <img 
-                        src={selectedUser.avatar_url} 
-                        alt={selectedUser.full_name} 
-                        className="w-10 h-10 rounded-full object-cover mr-3 border border-white shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold mr-3">
-                        {selectedUser.full_name?.charAt(0).toUpperCase()}
-                      </div>
-                    )}
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-neutral-900 truncate">
                         {selectedUser.email}

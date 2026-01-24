@@ -676,21 +676,29 @@ export function AuthProvider({ children }) {
     if (user && profile) {
       try {
         const savedUsers = JSON.parse(localStorage.getItem('saved_users') || '[]')
+        const savedPasswords = JSON.parse(localStorage.getItem('saved_passwords') || '{}')
         
         // Encontra dados existentes para preservar campos extras (como senha salva no Login)
         const existingUser = savedUsers.find(u => u.id === user.id) || {}
+        
+        // Tenta recuperar senha do backup se não tiver no objeto
+        let encryptedPassword = existingUser.encrypted_password
+        if (!encryptedPassword && user.email) {
+          encryptedPassword = savedPasswords[user.email.trim().toLowerCase()]
+        }
 
         // Remove a entrada existente para este usuário (para atualizar e mover pro topo)
         const otherUsers = savedUsers.filter(u => u.id !== user.id)
         
-        // Cria objeto do usuário mantendo dados antigos
+        // Cria objeto do usuário mantendo dados antigos e garantindo a senha
         const userData = {
           ...existingUser,
           id: user.id,
           email: user.email,
           full_name: profile.full_name || user.email,
           avatar_url: profile.avatar_url,
-          last_login: new Date().toISOString()
+          last_login: new Date().toISOString(),
+          encrypted_password: encryptedPassword || existingUser.encrypted_password // Reforça a persistência
         }
         
         // Adiciona ao topo e mantém apenas os últimos 5
