@@ -20,48 +20,13 @@ export function LoginPage() {
   const [savedUsers, setSavedUsers] = useState([])
   const [selectedUser, setSelectedUser] = useState(null)
   const [viewMode, setViewMode] = useState('form') // 'form', 'list', 'password'
-  const [hasSavedPasswords, setHasSavedPasswords] = useState({}) // Mapa de emails que tem senha salva
   const { login, loading, error, clearError } = useLogin()
   const { user } = useAuth()
 
-  // Helper para codificar/decodificar UTF-8 em Base64
-  const utf8_to_b64 = (str) => {
-    try {
-      return window.btoa(unescape(encodeURIComponent(str)));
-    } catch (e) { console.error('Encode error', e); return null; }
-  }
-
-  const b64_to_utf8 = (str) => {
-    try {
-      return decodeURIComponent(escape(window.atob(str)));
-    } catch (e) { console.error('Decode error', e); return null; }
-  }
-
-  // Carregar usuários salvos e verificar senhas
+  // Carregar usuários salvos
   useEffect(() => {
     try {
       const users = JSON.parse(localStorage.getItem('saved_users') || '[]')
-      const passwords = JSON.parse(localStorage.getItem('saved_passwords') || '{}')
-      
-      // Cria mapa de quem tem senha salva (verifica tanto no objeto quanto no mapa legado)
-      const passwordMap = {}
-      users.forEach(u => {
-        const emailKey = u.email?.trim().toLowerCase()
-        if (u.encrypted_password || (emailKey && passwords[emailKey])) {
-          passwordMap[u.id] = true
-        }
-      })
-      setHasSavedPasswords(passwordMap)
-
-      // Auto-selecionar se veio de um "switch account" e já tem senha salva
-      const savedUserToSelect = users.find(u => u.encrypted_password || (u.email && passwords[u.email.toLowerCase()]))
-      // (Opcional - mas ajuda no UX se quiser focar apenas users com senha)
-
-      if (users.length > 0) {
-        setSavedUsers(users)
-        setViewMode('list')
-      }
-
       if (users.length > 0) {
         setSavedUsers(users)
         setViewMode('list')
@@ -74,70 +39,30 @@ export function LoginPage() {
   const handleSelectUser = async (user) => {
     setSelectedUser(user)
     clearError()
-
-    try {
-      // Estratégia 1: Senha no objeto do usuário (Prioridade)
-      let encryptedPassword = user.encrypted_password
-
-      // Estratégia 2: Senha no mapa de senhas (Backup)
-      if (!encryptedPassword) {
-        const savedPasswords = JSON.parse(localStorage.getItem('saved_passwords') || '{}')
-        const emailKey = user.email?.trim().toLowerCase()
-        encryptedPassword = savedPasswords[emailKey]
-      }
-
-      if (encryptedPassword) {
-        // Auto login se tiver senha salva
-        try {
-          // Decodifica a senha com suporte a UTF-8
-          const password = b64_to_utf8(encryptedPassword)
-          if (!password) throw new Error('Falha na decodificação da senha')
-          
-          // Tenta fazer login direto
-          const result = await login(user.email, password)
-          
-          if (result.success) {
-            window.location.href = '/dashboard'
-            return
-          }
-        } catch (err) {
-          console.error("Erro no auto-login: Senha inválida ou erro de conexão", err)
-        }
-      } else {
-        console.warn("Nenhuma senha salva encontrada para este usuário")
-      }
-    } catch (e) {
-      console.error("Erro ao verificar senhas salvas", e)
-    }
-
-    // Se saiu do bloco try (não retornou), pede a senha
+    // Apenas preenche o email, deixando a senha vazia para o usuário digitar
     setFormData(prev => ({ ...prev, email: user.email, password: '' }))
     setViewMode('password')
   }
 
   const handleRemoveUser = (e, userId) => {
     e.stopPropagation()
-    const userToRemove = savedUsers.find(u => u.id === userId)
-    
-    // Remove usuário da lista visual
+    // Remove usuário da lista visual e do storage
     const newUsers = savedUsers.filter(u => u.id !== userId)
     setSavedUsers(newUsers)
     localStorage.setItem('saved_users', JSON.stringify(newUsers))
     
-    // Atualiza mapa de senhas visuais
-    const newHasSavedPasswords = { ...hasSavedPasswords }
-    delete newHasSavedPasswords[userId]
-    setHasSavedPasswords(newHasSavedPasswords)
-    
-    // Remove senha salva associada
+    // (Opcional) Limpar dados legados de senha também
+    const userToRemove = savedUsers.find(u => u.id === userId)
     if (userToRemove && userToRemove.email) {
       try {
         const savedPasswords = JSON.parse(localStorage.getItem('saved_passwords') || '{}')
         const emailKey = userToRemove.email.trim().toLowerCase()
-        delete savedPasswords[emailKey]
-        localStorage.setItem('saved_passwords', JSON.stringify(savedPasswords))
+        if (savedPasswords[emailKey]) {
+          delete savedPasswords[emailKey]
+          localStorage.setItem('saved_passwords', JSON.stringify(savedPasswords))
+        }
       } catch (e) {
-        console.error('Erro ao limpar senha', e)
+        // Ignora erro limpeza
       }
     }
     
@@ -187,49 +112,36 @@ export function LoginPage() {
     const result = await login(formData.email, formData.password)
     
     if (result.success) {
-      // Salvar credenciais para login rápido
+      // Atualizar timestamp do último login
       try {
-        const passwordEncoded = utf8_to_b64(formData.password)
-        if (passwordEncoded) {
-           const userEmail = result.user?.email || formData.email
-           
-           // 1. Salvar no mapa global de senhas (Legacy/Backup)
-           const savedPasswords = JSON.parse(localStorage.getItem('saved_passwords') || '{}')
-           const emailKey = userEmail?.trim().toLowerCase()
-           if (emailKey) {
-             savedPasswords[emailKey] = passwordEncoded
-             localStorage.setItem('saved_passwords', JSON.stringify(savedPasswords))
+        const savedUsers = JSON.parse(localStorage.getItem('saved_users') || '[]')
+        const userEmail = result.user?.email || formData.email
+        
+        let userEntry = savedUsers.find(u => u.id === result.user.id)
+        
+        // Se já existe, atualiza
+        if (userEntry) {
+          userEntry.last_login = new Date().toISOString()
+          // Remove senha antiga se existir (cleanup)
+          delete userEntry.encrypted_password
+        } else {
+          // Se não existe, cria (AuthContext vai aprimorar depois)
+           userEntry = {
+             id: result.user.id,
+             email: userEmail,
+             last_login: new Date().toISOString()
            }
-
-           // 2. Salvar diretamente no objeto do usuário em saved_users
-           // Isso garante que o AuthContext (que roda em paralelo) preserve este campo
-           const savedUsers = JSON.parse(localStorage.getItem('saved_users') || '[]')
-           let userEntry = savedUsers.find(u => u.id === result.user.id)
-           
-           if (userEntry) {
-             userEntry.encrypted_password = passwordEncoded
-             userEntry.last_login = new Date().toISOString()
-           } else {
-             // Se o AuthContext ainda não criou a entrada (pode acontecer), criamos uma temporária
-             userEntry = {
-               id: result.user.id,
-               email: userEmail,
-               encrypted_password: passwordEncoded,
-               created_at_login: true // Flag para debug
-             }
-             savedUsers.unshift(userEntry)
-           }
-           
-           // Atualiza o array no storage (AuthContext vai processar e limpar/mergear depois)
-           // Remover duplicatas por ID só pra garantir
-           const uniqueUsers = savedUsers.filter((u, index, self) => 
-            index === self.findIndex((t) => t.id === u.id)
-           )
-           
-           localStorage.setItem('saved_users', JSON.stringify(uniqueUsers))
+           savedUsers.unshift(userEntry)
         }
+        
+        // Remove duplicatas e salva
+        const uniqueUsers = savedUsers.filter((u, index, self) => 
+          index === self.findIndex((t) => t.id === u.id)
+        )
+        localStorage.setItem('saved_users', JSON.stringify(uniqueUsers))
+
       } catch (e) {
-        console.error('Erro ao salvar credenciais para auto-login', e)
+        console.error('Erro ao atualizar histórico de login', e)
       }
 
       window.location.href = '/dashboard'
@@ -332,13 +244,6 @@ export function LoginPage() {
                         <p className="text-lg font-bold text-neutral-900 truncate">
                           {savedUser.full_name}
                         </p>
-                        {/* Indicador Visual de Login Rápido */}
-                        {(savedUser.encrypted_password || hasSavedPasswords[savedUser.id]) && (
-                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 uppercase tracking-wide">
-                             <Zap className="w-3 h-3 mr-1 fill-current" />
-                             Entrada Rápida
-                           </span>
-                        )}
                       </div>
                       <p className="text-sm text-neutral-500 truncate">
                         {savedUser.email}
@@ -441,7 +346,7 @@ export function LoginPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="••••••••"
+                  placeholder="Digite sua senha"
                   autoFocus={viewMode === 'password'}
                   disabled={loading}
                   className="w-full pl-12 pr-12 py-4 border border-neutral-200 rounded-lg 

@@ -28,9 +28,11 @@ import {
   BarChart3,
   Heart,
   MoreVertical,
-  X
+  X,
+  Wrench
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
+import ToolManagementModal from '../../components/admin/ToolManagementModal'
 
 const ROLES = {
   'super_admin': { 
@@ -118,6 +120,10 @@ export default function UsersManagementPage() {
   const [showJourneyModal, setShowJourneyModal] = useState(false)
   const [selectedUserForJourney, setSelectedUserForJourney] = useState(null)
   const [modalAnimating, setModalAnimating] = useState(false)
+
+  // Estados para gerenciamento de ferramentas
+  const [showToolModal, setShowToolModal] = useState(false)
+  const [selectedUserForTools, setSelectedUserForTools] = useState(null)
 
   // Ícones das jornadas
   const journeyIcons = {
@@ -1390,84 +1396,84 @@ export default function UsersManagementPage() {
         {/* Modal de Ações do Usuário */}
         {showActionsModal && selectedUserForActions && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={closeActionsModal}
           >
             <div 
-              className={`relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col transition-all duration-300 ${
-                actionsModalAnimating ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+              className={`relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col transition-all duration-300 ${
+                actionsModalAnimating ? 'translate-y-0 sm:scale-100 opacity-100' : 'translate-y-full sm:translate-y-0 sm:scale-95 opacity-0'
               }`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header Fixo */}
-              <div className="flex-shrink-0 relative px-8 py-6 border-b border-gray-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#EBA500] to-[#d49400] flex items-center justify-center shadow-lg">
+              <div className="flex-shrink-0 relative px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#EBA500] to-[#d49400] flex items-center justify-center shadow-lg">
                     {avatarUrls[selectedUserForActions.id] ? (
                       <img 
                         src={avatarUrls[selectedUserForActions.id]} 
                         alt={selectedUserForActions.full_name || 'Avatar'}
-                        className="w-full h-full object-cover rounded-2xl"
+                        className="w-full h-full object-cover rounded-xl sm:rounded-2xl"
                       />
                     ) : (
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-lg sm:text-2xl font-bold text-white">
                         {selectedUserForActions.full_name?.charAt(0) || selectedUserForActions.email?.charAt(0) || 'U'}
                       </span>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-gray-900">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
                       {selectedUserForActions.full_name || 'Usuário'}
                     </h3>
-                    <p className="text-sm text-gray-500 flex items-center gap-2 mt-1">
-                      <Mail className="h-3.5 w-3.5" />
-                      {selectedUserForActions.email}
+                    <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1 truncate">
+                      <Mail className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
+                      <span className="truncate">{selectedUserForActions.email}</span>
                     </p>
                   </div>
                   <button
                     onClick={closeActionsModal}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-xl hover:bg-gray-100 transition-all"
+                    className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl hover:bg-gray-100 transition-all"
                   >
-                    <X className="h-5 w-5" />
+                    <X className="h-5 w-5 sm:h-5 sm:w-5" />
                   </button>
                 </div>
               </div>
 
               {/* Conteúdo com Scroll Interno */}
-              <div className="flex-1 overflow-y-auto px-8 py-6">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6">
                 {/* Info Cards */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl p-4 border border-blue-200/50">
-                    <p className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">Função</p>
-                    <p className="text-sm font-bold text-blue-900">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl sm:rounded-2xl p-2 sm:p-4 border border-blue-200/50">
+                    <p className="text-[10px] sm:text-xs font-medium text-blue-600 uppercase tracking-wide mb-0.5 sm:mb-1">Função</p>
+                    <p className="text-xs sm:text-sm font-bold text-blue-900 truncate" title={getRoleInfo(selectedUserForActions.company_role || selectedUserForActions.role).label}>
                       {getRoleInfo(selectedUserForActions.company_role || selectedUserForActions.role).label}
                     </p>
                   </div>
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl p-4 border border-purple-200/50">
-                    <p className="text-xs font-medium text-purple-600 uppercase tracking-wide mb-1">Empresa</p>
-                    <p className="text-sm font-bold text-purple-900 truncate" title={selectedUserForActions.companies?.name}>
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl sm:rounded-2xl p-2 sm:p-4 border border-purple-200/50">
+                    <p className="text-[10px] sm:text-xs font-medium text-purple-600 uppercase tracking-wide mb-0.5 sm:mb-1">Empresa</p>
+                    <p className="text-xs sm:text-sm font-bold text-purple-900 truncate" title={selectedUserForActions.companies?.name}>
                       {selectedUserForActions.companies?.name || 'Sem vínculo'}
                     </p>
                   </div>
-                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl p-4 border border-emerald-200/50">
-                    <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-1">Status</p>
-                    <span className={`inline-flex items-center gap-1 text-sm font-bold ${
+                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl sm:rounded-2xl p-2 sm:p-4 border border-emerald-200/50">
+                    <p className="text-[10px] sm:text-xs font-medium text-emerald-600 uppercase tracking-wide mb-0.5 sm:mb-1">Status</p>
+                    <span className={`inline-flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm font-bold ${
                       selectedUserForActions.status === 'active' 
                         ? 'text-emerald-700'
                         : selectedUserForActions.status === 'inactive'
                         ? 'text-red-700'
                         : 'text-yellow-700'
                     }`}>
-                      {selectedUserForActions.status === 'active' && <CheckCircle className="h-3.5 w-3.5" />}
-                      {selectedUserForActions.status === 'inactive' && <XCircle className="h-3.5 w-3.5" />}
-                      {selectedUserForActions.status === 'pending' && <AlertCircle className="h-3.5 w-3.5" />}
+                      {selectedUserForActions.status === 'active' && <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                      {selectedUserForActions.status === 'inactive' && <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                      {selectedUserForActions.status === 'pending' && <AlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
                       {selectedUserForActions.status === 'active' ? 'Ativo' : selectedUserForActions.status === 'inactive' ? 'Inativo' : 'Pendente'}
                     </span>
                   </div>
                 </div>
 
                 {/* Ações */}
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {/* Editar Nome */}
                   <button
                     onClick={() => {
@@ -1475,14 +1481,14 @@ export default function UsersManagementPage() {
                       setIsEditModalOpen(true)
                       closeActionsModal()
                     }}
-                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-blue-100/30 hover:from-blue-100 hover:to-blue-200/50 border border-blue-200/50 hover:border-blue-300 transition-all duration-200 group hover:shadow-md"
+                    className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-50 to-blue-100/30 hover:from-blue-100 hover:to-blue-200/50 border border-blue-200/50 hover:border-blue-300 transition-all duration-200 group hover:shadow-md active:scale-[0.98]"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Edit className="h-5 w-5 text-blue-600" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                      <Edit className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                     </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-semibold text-gray-900">Editar Nome</p>
-                      <p className="text-xs text-gray-600">Alterar o nome de exibição</p>
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="font-semibold text-sm sm:text-base text-gray-900">Editar Nome</p>
+                      <p className="text-xs text-gray-600 hidden sm:block">Alterar o nome de exibição</p>
                     </div>
                   </button>
 
@@ -1493,16 +1499,16 @@ export default function UsersManagementPage() {
                       setIsLinkModalOpen(true)
                       closeActionsModal()
                     }}
-                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-purple-50 to-purple-100/30 hover:from-purple-100 hover:to-purple-200/50 border border-purple-200/50 hover:border-purple-300 transition-all duration-200 group hover:shadow-md"
+                    className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-50 to-purple-100/30 hover:from-purple-100 hover:to-purple-200/50 border border-purple-200/50 hover:border-purple-300 transition-all duration-200 group hover:shadow-md active:scale-[0.98]"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Building2 className="h-5 w-5 text-purple-600" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                      <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                     </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-semibold text-gray-900">
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="font-semibold text-sm sm:text-base text-gray-900">
                         {selectedUserForActions.companies?.name ? 'Alterar Empresa/Função' : 'Vincular à Empresa'}
                       </p>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-600 hidden sm:block">
                         {selectedUserForActions.companies?.name ? 'Modificar vinculação' : 'Associar a empresa'}
                       </p>
                     </div>
@@ -1515,14 +1521,34 @@ export default function UsersManagementPage() {
                         openJourneyModal(selectedUserForActions)
                         closeActionsModal()
                       }}
-                      className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-emerald-100/30 hover:from-emerald-100 hover:to-emerald-200/50 border border-emerald-200/50 hover:border-emerald-300 transition-all duration-200 group hover:shadow-md"
+                      className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-50 to-emerald-100/30 hover:from-emerald-100 hover:to-emerald-200/50 border border-emerald-200/50 hover:border-emerald-300 transition-all duration-200 group hover:shadow-md active:scale-[0.98]"
                     >
-                      <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <GraduationCap className="h-5 w-5 text-emerald-600" />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                        <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
                       </div>
-                      <div className="flex-1 text-left">
-                        <p className="font-semibold text-gray-900">Gerenciar Jornadas</p>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="font-semibold text-sm sm:text-base text-gray-900">Gerenciar Jornadas</p>
                         <p className="text-xs text-gray-600">{getManualAssignments(selectedUserForActions.id).length} atribuída(s)</p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Gerenciar Ferramentas */}
+                  {selectedUserForActions.companies?.id && (
+                    <button
+                      onClick={() => {
+                        setSelectedUserForTools(selectedUserForActions)
+                        setShowToolModal(true)
+                        closeActionsModal()
+                      }}
+                      className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-50 to-amber-100/30 hover:from-amber-100 hover:to-amber-200/50 border border-amber-200/50 hover:border-amber-300 transition-all duration-200 group hover:shadow-md active:scale-[0.98]"
+                    >
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                        <Wrench className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="font-semibold text-sm sm:text-base text-gray-900">Gerenciar Ferramentas</p>
+                        <p className="text-xs text-gray-600">Controlar acesso a telas específicas</p>
                       </div>
                     </button>
                   )}
@@ -1737,6 +1763,15 @@ export default function UsersManagementPage() {
           </div>
         )}
       </div>
+
+      {/* Tool Management Modal */}
+      {showToolModal && selectedUserForTools && (
+        <ToolManagementModal
+          user={selectedUserForTools}
+          companyId={selectedUserForTools.companies?.id}
+          onClose={() => setShowToolModal(false)}
+        />
+      )}
     </div>
   )
 }

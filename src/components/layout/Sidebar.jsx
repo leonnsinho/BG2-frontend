@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useMaturityApprovals } from '../../hooks/useMaturityApprovals'
+import { useToolPermissions } from '../../hooks/useToolPermissions'
 import { supabase } from '../../services/supabase' // 🔥 NOVO: Import do supabase
 import NotificationBadge from '../common/NotificationBadge'
 import { 
@@ -87,9 +88,19 @@ if (typeof document !== 'undefined' && !document.getElementById('sidebar-dropdow
   document.head.appendChild(style)
 }
 
+// Mapa de rotas para slugs de ferramentas
+const ROUTE_TO_TOOL_SLUG = {
+  '/performance-evaluation': 'performance-evaluation',
+  '/planejamento-estrategico': 'planejamento-estrategico',
+  '/business-model': 'business-model',
+  '/journey-management/overview': 'journey-overview',
+  '/dfc': 'dfc-complete',
+  '/dfc/entradas': 'dfc-entradas',
+  '/dfc/saidas': 'dfc-saidas'
+}
 
 // Função para obter itens de navegação baseados no perfil do usuário
-const getNavigationItems = (profile, permissions, accessibleJourneys = [], journeysLoading = true, pendingApprovalsCount = 0) => {
+const getNavigationItems = (profile, permissions, accessibleJourneys = [], journeysLoading = true, pendingApprovalsCount = 0, toolPermissions = null) => {
   const baseItems = [
     {
       name: 'Dashboard',
@@ -420,6 +431,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const { getAccessibleJourneys } = useAuthPermissions()
   const permissions = usePermissions()
   const { pendingCount } = useMaturityApprovals() // 🔥 NOVO: Hook de aprovações pendentes
+  const { hasToolAccess, loading: toolPermissionsLoading } = useToolPermissions() // 🔥 NOVO: Hook de permissões de ferramentas
   const [expandedItems, setExpandedItems] = React.useState(['Jornadas'])
   const [accessibleJourneys, setAccessibleJourneys] = React.useState([])
   const [journeysLoading, setJourneysLoading] = React.useState(true)
@@ -607,10 +619,73 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
       ]
     }
     
+    // Se as permissões de ferramentas ainda estão carregando, mostrar skeleton
+    // (evita mostrar tudo e depois esconder)
+    if (toolPermissionsLoading) {
+      console.log('🔧 SIDEBAR: Aguardando carregamento de permissões de ferramentas...')
+      return [
+        {
+          name: 'Carregando...',
+          icon: '⏳',
+          skeleton: true,
+          isLoading: true
+        },
+        {
+          name: 'Carregando...',
+          icon: '⏳',
+          skeleton: true,
+          isLoading: true
+        },
+        {
+          name: 'Carregando...',
+          icon: '⏳',
+          skeleton: true,
+          isLoading: true
+        }
+      ]
+    }
+    
     // Usuários vinculados: interface normal
-    const items = getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading, pendingCount)
-    return items
-  }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading, pendingCount])
+    const items = getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess)
+    
+    console.log('🔧 SIDEBAR: Filtrando itens com permissões de ferramentas...')
+    
+    // Filtrar itens baseado nas permissões de ferramentas
+    const filteredItems = items.filter(item => {
+      // Se o item tem um href mapeado para tool_slug, verificar permissão
+      const toolSlug = ROUTE_TO_TOOL_SLUG[item.href]
+      if (toolSlug) {
+        const access = hasToolAccess(toolSlug)
+        console.log(`🔧 SIDEBAR: Item "${item.name}" (${item.href}) -> slug: ${toolSlug}, acesso: ${access}`)
+        if (!access) {
+          console.log(`🔧 SIDEBAR: ❌ BLOQUEANDO item "${item.name}"`)
+          return false
+        }
+      }
+      
+      // Se tem children, filtrar os filhos também
+      if (item.children) {
+        const originalChildrenCount = item.children.length
+        item.children = item.children.filter(child => {
+          const childToolSlug = ROUTE_TO_TOOL_SLUG[child.href]
+          if (childToolSlug) {
+            const childAccess = hasToolAccess(childToolSlug)
+            console.log(`🔧 SIDEBAR: Child "${child.name}" (${child.href}) -> slug: ${childToolSlug}, acesso: ${childAccess}`)
+            return childAccess
+          }
+          return true
+        })
+        if (originalChildrenCount !== item.children.length) {
+          console.log(`🔧 SIDEBAR: Filtrando children de "${item.name}": ${originalChildrenCount} -> ${item.children.length}`)
+        }
+      }
+      
+      return true
+    })
+    
+    console.log(`🔧 SIDEBAR: Total de itens: ${items.length} -> ${filteredItems.length}`)
+    return filteredItems
+  }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess])
 
   const toggleExpanded = (itemName) => {
     setExpandedItems(prev => 
@@ -814,6 +889,23 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
           
           <div className="space-y-1">
             {navigationItems.map((item) => {
+              // Se é um item skeleton (loading), renderizar animação
+              if (item.isLoading) {
+                return (
+                  <div 
+                    key={item.name + Math.random()} 
+                    className="w-full px-3 py-2.5 sm:py-2 rounded-lg sm:rounded-md animate-pulse"
+                  >
+                    <div className="flex items-center">
+                      <div className="h-5 w-5 bg-neutral-700 rounded mr-3"></div>
+                      {!isCollapsed && (
+                        <div className="h-4 bg-neutral-700 rounded flex-1"></div>
+                      )}
+                    </div>
+                  </div>
+                )
+              }
+
               const isActive = isCurrentPath(item.href) || hasActiveChild(item.children)
               const isDashboard = item.name === 'Dashboard'
               const ItemIcon = item.icon || ChevronLeft
