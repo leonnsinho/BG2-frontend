@@ -419,6 +419,31 @@ export default function DFCDashboardPage() {
     }
   }, [profile, periodoTipo, dataInicio, dataFim, selectedCompanyId])
 
+  // Recarregar dados quando a página fica visível (quando volta de outra página)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && profile) {
+        loadDashboardData()
+        loadFuturePayments()
+      }
+    }
+
+    const handleFocus = () => {
+      if (profile) {
+        loadDashboardData()
+        loadFuturePayments()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [profile, periodoTipo, dataInicio, dataFim, selectedCompanyId])
+
   // Função para calcular datas do período
   const getPeriodoDatas = () => {
     // Usar data atual no timezone local (sem hora)

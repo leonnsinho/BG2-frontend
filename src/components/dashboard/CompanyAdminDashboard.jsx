@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
 import { useNavigate } from 'react-router-dom'
+import { useToolPermissions } from '../../hooks/useToolPermissions'
+import toast from 'react-hot-toast'
 import { 
   Users, 
   Target, 
@@ -17,12 +19,16 @@ import {
   UserCircle,
   Award,
   Sun,
-  Moon
+  Moon,
+  Link as LinkIcon,
+  Copy,
+  Check
 } from 'lucide-react'
 
 // Componente de Atalhos Rápidos
 const QuickAppsCard = () => {
   const navigate = useNavigate()
+  const { hasToolAccess, loading: toolPermissionsLoading } = useToolPermissions()
 
   const apps = [
     {
@@ -30,14 +36,16 @@ const QuickAppsCard = () => {
       image: '/fluxo de caixa.png',
       gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
       shadowColor: 'rgba(16, 185, 129, 0.4)',
-      href: '/dfc'
+      href: '/dfc',
+      toolSlug: 'dfc-complete'
     },
     {
       name: 'Avaliação De Desempenho',
       image: '/avaliação de desempenho.png',
       gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)',
       shadowColor: 'rgba(168, 85, 247, 0.4)',
-      href: '/performance-evaluation'
+      href: '/performance-evaluation',
+      toolSlug: 'performance-evaluation'
     },
     {
       name: 'CRM',
@@ -48,6 +56,16 @@ const QuickAppsCard = () => {
       disabled: true
     }
   ]
+
+  // Filtrar apps baseado nas permissões
+  const filteredApps = apps.filter(app => {
+    // Se o app está desabilitado (em breve), sempre mostrar
+    if (app.disabled) return true
+    // Se tem toolSlug, verificar permissão
+    if (app.toolSlug) return hasToolAccess(app.toolSlug)
+    // Se não tem toolSlug, sempre mostrar
+    return true
+  })
 
   return (
     <div className="mb-6 sm:mb-8">
@@ -90,7 +108,7 @@ const QuickAppsCard = () => {
         </div>
         
         <div className="grid grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3">
-          {apps.map((app) => {
+          {filteredApps.map((app) => {
             const isDisabled = app.disabled
             
             return (
@@ -162,6 +180,161 @@ const QuickAppsCard = () => {
   )
 }
 
+// Componente de Link de Convite
+const InviteLinkCard = ({ companyId }) => {
+  const [inviteToken, setInviteToken] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadInviteToken()
+  }, [companyId])
+
+  const loadInviteToken = async () => {
+    if (!companyId) return
+
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('companies')
+        .select('invite_token')
+        .eq('id', companyId)
+        .single()
+
+      if (error) throw error
+      if (data?.invite_token) {
+        setInviteToken(data.invite_token)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar token de convite:', error)
+      toast.error('Erro ao carregar link de convite')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getInviteUrl = () => {
+    if (!inviteToken) return ''
+    const baseUrl = window.location.origin
+    return `${baseUrl}/register?invite=${inviteToken}`
+  }
+
+  const copyInviteLink = async () => {
+    const inviteUrl = getInviteUrl()
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      setCopied(true)
+      toast.success('Link copiado para área de transferência!')
+      setTimeout(() => setCopied(false), 3000)
+    } catch (error) {
+      console.error('Erro ao copiar:', error)
+      toast.error('Erro ao copiar link')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="mb-6 sm:mb-8">
+        <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 shadow-xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
+            <div className="h-12 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!inviteToken) return null
+
+  return (
+    <div className="mb-6 sm:mb-8">
+      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 shadow-xl">
+        {/* Fundo com gradiente */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"></div>
+        
+        {/* Padrão de grid sutil */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(99, 102, 241, 0.03) 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px'
+        }}></div>
+        
+        {/* Círculos decorativos blur */}
+        <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-indigo-400/20 rounded-full blur-3xl"></div>
+        
+        {/* Brilho superior */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
+        
+        {/* Conteúdo */}
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
+              <LinkIcon className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                Link de Convite da Empresa
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-600">
+                Compartilhe este link para cadastrar novos usuários
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={getInviteUrl()}
+                readOnly
+                className="w-full px-4 py-3 pr-12 bg-white border-2 border-gray-200 rounded-xl text-sm font-mono text-gray-700 focus:outline-none focus:border-blue-400 transition-colors"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <LinkIcon className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
+            
+            <button
+              onClick={copyInviteLink}
+              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all transform active:scale-95 ${
+                copied
+                  ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+                  : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30'
+              }`}
+            >
+              {copied ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  <span className="hidden sm:inline">Copiado!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  <span className="hidden sm:inline">Copiar Link</span>
+                  <span className="sm:hidden">Copiar</span>
+                </>
+              )}
+            </button>
+          </div>
+          
+          <div className="mt-4 p-3 bg-blue-50/50 border border-blue-200/50 rounded-xl">
+            <p className="text-xs text-blue-800 flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <span>
+                Novos usuários que se cadastrarem usando este link serão automaticamente associados à sua empresa.
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Função auxiliar para obter cores do gradiente
 const getGradientColors = (colorClass) => {
   const colorMap = {
@@ -189,6 +362,7 @@ export default function CompanyAdminDashboard() {
   const [companyName, setCompanyName] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [companyLogo, setCompanyLogo] = useState('')
+  const [companyId, setCompanyId] = useState(null)
 
   // Carregar avatar do perfil
   useEffect(() => {
@@ -234,12 +408,14 @@ export default function CompanyAdminDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true)
-      const companyId = getCompanyId()
+      const currentCompanyId = getCompanyId()
       
-      if (!companyId) {
+      if (!currentCompanyId) {
         console.error('Company ID não encontrado')
         return
       }
+
+      setCompanyId(currentCompanyId)
 
       // Buscar nome e logo da empresa
       const { data: companyData } = await supabase
@@ -453,6 +629,9 @@ export default function CompanyAdminDashboard() {
 
         {/* Card de Aplicativos / Atalhos Rápidos */}
         <QuickAppsCard />
+
+        {/* Link de Convite da Empresa */}
+        {companyId && <InviteLinkCard companyId={companyId} />}
 
         {/* Cards de Estatísticas Principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-6 mb-6 sm:mb-8">

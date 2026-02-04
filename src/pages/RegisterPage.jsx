@@ -1,14 +1,23 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Loading } from '../components/ui/Loading'
-import { Eye, EyeOff, ArrowRight, Mail, Lock, User, Building, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, Mail, Lock, User, Building, ArrowLeft, CheckCircle, LogOut } from 'lucide-react'
 import ParticlesBackground from '../components/ui/ParticlesBackground'
 
 export function RegisterPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { user, logout } = useAuth()
+  
+  console.log('🚀 RegisterPage montado')
+  console.log('🔗 URL completa:', window.location.href)
+  console.log('📋 SearchParams:', Object.fromEntries(searchParams.entries()))
+  console.log('👤 Usuário logado:', user)
+  
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -21,6 +30,69 @@ export function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [inviteToken, setInviteToken] = useState(null)
+  const [inviteCompany, setInviteCompany] = useState(null)
+  const [loadingInvite, setLoadingInvite] = useState(false)
+
+  // Detectar token de convite na URL
+  useEffect(() => {
+    console.log('🎯 useEffect de detecção de token executado')
+    const token = searchParams.get('invite')
+    console.log('🎫 Token obtido dos searchParams:', token)
+    
+    if (token) {
+      console.log('✅ Token encontrado, iniciando validação...')
+      validateInviteToken(token)
+    } else {
+      console.log('⚠️ Nenhum token encontrado na URL')
+    }
+  }, [searchParams])
+
+  // Debug: monitorar mudanças no formData
+  useEffect(() => {
+    console.log('🔄 FormData atual:', formData)
+  }, [formData])
+
+  // Debug: monitorar mudanças no inviteCompany
+  useEffect(() => {
+    if (inviteCompany) {
+      console.log('🏢 Empresa do convite:', inviteCompany)
+    }
+  }, [inviteCompany])
+
+  const validateInviteToken = async (token) => {
+    setLoadingInvite(true)
+    try {
+      console.log('🔍 Validando token de convite:', token)
+      
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name')
+        .eq('invite_token', token)
+        .single()
+
+      if (error || !data) {
+        console.error('❌ Token inválido:', error)
+        setError('Link de convite inválido ou expirado')
+        return
+      }
+
+      console.log('✅ Empresa encontrada:', data)
+      
+      setInviteToken(token)
+      setInviteCompany(data)
+      setFormData(prev => {
+        const newData = { ...prev, companyName: data.name }
+        console.log('📝 FormData atualizado:', newData)
+        return newData
+      })
+    } catch (err) {
+      console.error('❌ Erro ao validar token:', err)
+      setError('Erro ao validar link de convite')
+    } finally {
+      setLoadingInvite(false)
+    }
+  }
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -28,8 +100,15 @@ export function RegisterPage() {
   }
 
   const validateForm = () => {
-    if (!formData.email || !formData.password || !formData.fullName || !formData.companyName) {
+    // Se tem convite, companyName não é obrigatório (já preenchido)
+    if (!formData.email || !formData.password || !formData.fullName) {
       setError('Todos os campos obrigatórios devem ser preenchidos')
+      return false
+    }
+
+    // Se não tem convite, companyName é obrigatório
+    if (!inviteToken && !formData.companyName) {
+      setError('Nome da empresa é obrigatório')
       return false
     }
 
@@ -63,8 +142,9 @@ export function RegisterPage() {
         options: {
           data: {
             full_name: formData.fullName,
-            role: 'user', // Usuário padrão
-            company_name: formData.companyName
+            role: 'user', // Sempre user, seja via convite ou autoregistro
+            company_name: formData.companyName,
+            invite_token: inviteToken || null // Passar o token de convite para o trigger processar
           }
         }
       })
@@ -74,7 +154,12 @@ export function RegisterPage() {
       }
 
       if (data.user) {
-        setSuccess('✅ Conta criada! Verifique seu email para confirmar e ativar sua conta.')
+        // O trigger handle_new_user agora cuida da associação automaticamente
+        if (inviteToken && inviteCompany) {
+          setSuccess(`✅ Conta criada com sucesso! Você foi adicionado à empresa ${inviteCompany.name}.`)
+        } else {
+          setSuccess('✅ Conta criada! Verifique seu email para confirmar e ativar sua conta.')
+        }
         
         // Aguardar 3 segundos e redirecionar para login
         setTimeout(() => {
@@ -170,6 +255,50 @@ export function RegisterPage() {
             </p>
           </div>
 
+          {/* Banner de Usuário Logado */}
+          {user && (
+            <div className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <LogOut className="h-5 w-5 text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-orange-900 mb-1">
+                    Você já está logado
+                  </p>
+                  <p className="text-xs text-orange-700 mb-2">
+                    Para criar uma nova conta, você precisa fazer logout primeiro.
+                  </p>
+                  <button
+                    onClick={() => logout()}
+                    className="text-xs font-semibold text-orange-600 hover:text-orange-800 underline"
+                  >
+                    Fazer Logout Agora
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Banner de Convite */}
+          {inviteCompany && !user && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <CheckCircle className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-blue-900 mb-1">
+                    Você foi convidado para {inviteCompany.name}
+                  </p>
+                  <p className="text-xs text-blue-700">
+                    Ao criar sua conta, você será automaticamente adicionado a esta empresa.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Formulário */}
           <form onSubmit={handleSubmit} className="space-y-6">
             
@@ -231,17 +360,23 @@ export function RegisterPage() {
                 <input
                   id="companyName"
                   type="text"
-                  required
+                  required={!inviteToken}
                   value={formData.companyName}
                   onChange={(e) => handleChange('companyName', e.target.value)}
-                  placeholder="Nome da sua empresa"
-                  disabled={loading}
-                  className="w-full pl-12 pr-4 py-4 border border-neutral-200 rounded-lg 
+                  placeholder={inviteToken ? "Definido pelo convite" : "Nome da sua empresa"}
+                  disabled={loading || !!inviteToken}
+                  readOnly={!!inviteToken}
+                  className={`w-full pl-12 pr-4 py-4 border border-neutral-200 rounded-lg 
                            bg-white text-neutral-900 placeholder:text-neutral-400
                            focus:ring-2 focus:ring-primary-500 focus:border-transparent
                            disabled:bg-neutral-50 disabled:cursor-not-allowed
-                           transition-all duration-200 font-medium"
+                           transition-all duration-200 font-medium ${
+                             inviteToken ? 'bg-blue-50 border-blue-200 text-blue-900 font-semibold' : ''
+                           }`}
                 />
+                {inviteToken && (
+                  <CheckCircle className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-600" />
+                )}
               </div>
             </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import {
@@ -13,7 +14,8 @@ import {
   Tag,
   List,
   ChevronDown,
-  Building2
+  Building2,
+  ArrowLeft
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -604,14 +606,23 @@ function PlanoContasPage() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">
-              Plano de Contas
-            </h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Gerenciar categorias e itens do DFC
-            </p>
-          </div>
+            <div className="flex items-center gap-3">
+              <Link
+                to="/dfc"
+                className="p-2 hover:bg-gray-100 rounded-xl transition-all group"
+                title="Voltar ao DFC"
+              >
+                <ArrowLeft className="h-5 w-5 text-gray-600 group-hover:text-[#EBA500] transition-colors" />
+              </Link>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">
+                  Plano de Contas
+                </h1>
+                <p className="mt-1 text-sm text-gray-600">
+                  Gerenciar categorias e itens do DFC
+                </p>
+              </div>
+            </div>
 
           <div className="flex flex-col sm:flex-row gap-2">
             {isSuperAdmin() && (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import {
@@ -22,7 +23,8 @@ import {
   Paperclip,
   File,
   Eye,
-  Check
+  Check,
+  ArrowLeft
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -52,6 +54,8 @@ function DFCEntradasPage() {
   const [selectedEntradaParcelas, setSelectedEntradaParcelas] = useState(null)
   const [editingParcelaId, setEditingParcelaId] = useState(null)
   const [editingVencimento, setEditingVencimento] = useState('')
+  const [editingValor, setEditingValor] = useState('')
+  const [editingField, setEditingField] = useState(null) // 'vencimento' ou 'valor'
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState('')
@@ -348,39 +352,80 @@ function DFCEntradasPage() {
     setParcelas([])
     setEditingParcelaId(null)
     setEditingVencimento('')
+    setEditingValor('')
+    setEditingField(null)
   }
 
-  const handleEditVencimento = (parcela) => {
+  const handleEditParcela = (parcela) => {
     setEditingParcelaId(parcela.id)
     setEditingVencimento(parcela.vencimento)
+    setEditingValor(parcela.valor.toString())
   }
 
-  const handleSaveVencimento = async (parcelaId) => {
+  const handleSaveParcela = async (parcelaId) => {
     try {
+      const valorNumerico = parseFloat(editingValor)
+      if (isNaN(valorNumerico) || valorNumerico <= 0) {
+        toast.error('Digite um valor válido')
+        return
+      }
+
+      if (!editingVencimento) {
+        toast.error('Selecione uma data de vencimento')
+        return
+      }
+
+      // Atualizar o valor e vencimento da parcela
       const { error } = await supabase
         .from('dfc_entradas')
-        .update({ vencimento: editingVencimento })
+        .update({ 
+          valor: valorNumerico,
+          vencimento: editingVencimento 
+        })
         .eq('id', parcelaId)
 
       if (error) throw error
 
-      toast.success('Data de vencimento atualizada!')
-      
       // Recarregar parcelas
       const parcelasData = await fetchParcelas(selectedEntradaParcelas.id)
+      
+      // Calcular novo valor total somando todas as parcelas
+      const valorTotal = parcelasData.reduce((sum, p) => sum + parseFloat(p.valor), 0)
+      
+      // Atualizar o lançamento pai no banco de dados
+      const { error: updatePaiError } = await supabase
+        .from('dfc_entradas')
+        .update({ valor: valorTotal })
+        .eq('id', selectedEntradaParcelas.id)
+      
+      if (updatePaiError) throw updatePaiError
+      
       setParcelas(parcelasData)
+      setSelectedEntradaParcelas({
+        ...selectedEntradaParcelas,
+        valor: valorTotal
+      })
+      
+      // Recarregar lista de entradas para atualizar estatísticas
+      await fetchEntradas()
+      
+      toast.success('Parcela atualizada!')
       
       setEditingParcelaId(null)
       setEditingVencimento('')
+      setEditingValor('')
+      setEditingField(null)
     } catch (error) {
-      console.error('Erro ao atualizar vencimento:', error)
-      toast.error('Erro ao atualizar data de vencimento')
+      console.error('Erro ao atualizar parcela:', error)
+      toast.error('Erro ao atualizar parcela')
     }
   }
 
-  const handleCancelEditVencimento = () => {
+  const handleCancelEdit = () => {
     setEditingParcelaId(null)
     setEditingVencimento('')
+    setEditingValor('')
+    setEditingField(null)
   }
 
   const openModal = async (entrada = null) => {
@@ -946,13 +991,22 @@ function DFCEntradasPage() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">
-              DFC - Entradas Financeiras
-            </h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Demonstrativo de Fluxo de Caixa - Registro de Entradas
-            </p>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/dfc"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-all group"
+              title="Voltar ao DFC"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600 group-hover:text-[#EBA500] transition-colors" />
+            </Link>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">
+                DFC - Entradas Financeiras
+              </h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Demonstrativo de Fluxo de Caixa - Registro de Entradas
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -2022,18 +2076,29 @@ function DFCEntradasPage() {
                           </div>
                         </div>
                         <div className="ml-4 flex items-center space-x-2">
-                          <p className="text-lg font-bold text-gray-900">{formatCurrency(parcela.valor, parcela.moeda)}</p>
+                          {editingParcelaId === parcela.id ? (
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editingValor}
+                              onChange={(e) => setEditingValor(e.target.value)}
+                              className="w-32 px-3 py-2 border border-blue-300 rounded-lg text-right font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="0.00"
+                            />
+                          ) : (
+                            <p className="text-lg font-bold text-gray-900">{formatCurrency(parcela.valor, parcela.moeda)}</p>
+                          )}
                           {editingParcelaId === parcela.id ? (
                             <div className="flex space-x-1">
                               <button
-                                onClick={() => handleSaveVencimento(parcela.id)}
+                                onClick={() => handleSaveParcela(parcela.id)}
                                 className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
                                 title="Salvar"
                               >
                                 <Check className="h-4 w-4" />
                               </button>
                               <button
-                                onClick={handleCancelEditVencimento}
+                                onClick={handleCancelEdit}
                                 className="p-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-all"
                                 title="Cancelar"
                               >
@@ -2042,9 +2107,9 @@ function DFCEntradasPage() {
                             </div>
                           ) : (
                             <button
-                              onClick={() => handleEditVencimento(parcela)}
+                              onClick={() => handleEditParcela(parcela)}
                               className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                              title="Editar data de vencimento"
+                              title="Editar parcela"
                             >
                               <Edit2 className="h-4 w-4" />
                             </button>
