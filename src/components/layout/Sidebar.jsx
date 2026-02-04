@@ -96,7 +96,9 @@ const ROUTE_TO_TOOL_SLUG = {
   '/journey-management/overview': 'journey-overview',
   '/dfc': 'dfc-complete',
   '/dfc/entradas': 'dfc-entradas',
-  '/dfc/saidas': 'dfc-saidas'
+  '/dfc/saidas': 'dfc-saidas',
+  '/indicators': 'management-indicators',
+  '/indicators/manage': 'management-indicators'
 }
 
 // Função para obter itens de navegação baseados no perfil do usuário
@@ -156,6 +158,15 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         name: 'Avaliação de Desempenho',
         icon: Grid3x3,
         href: '/performance-evaluation'
+      },
+      {
+        name: 'Indicadores',
+        icon: TrendingUp,
+        href: '/indicators',
+        children: [
+          { name: 'Indicadores de Gestão', href: '/indicators' },
+          { name: 'Gerenciar Indicadores', href: '/indicators/manage' }
+        ]
       },
       {
         name: 'Relatórios de Uso',
@@ -285,6 +296,15 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         name: 'Avaliação de Desempenho',
         icon: Grid3x3,
         href: '/performance-evaluation'
+      },
+      {
+        name: 'Indicadores',
+        icon: TrendingUp,
+        href: '/indicators',
+        children: [
+          { name: 'Indicadores de Gestão', href: '/indicators' },
+          { name: 'Gerenciar Indicadores', href: '/indicators/manage' }
+        ]
       },
       {
         name: 'Gestão do Sistema',

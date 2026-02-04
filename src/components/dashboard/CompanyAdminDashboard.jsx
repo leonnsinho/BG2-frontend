@@ -48,6 +48,14 @@ const QuickAppsCard = () => {
       toolSlug: 'performance-evaluation'
     },
     {
+      name: 'Indicadores De Gestão',
+      image: '/indicadores de gestão.png',
+      gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+      shadowColor: 'rgba(245, 158, 11, 0.4)',
+      href: '/indicators',
+      toolSlug: 'management-indicators'
+    },
+    {
       name: 'CRM',
       image: '/crm.png',
       gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',

@@ -47,6 +47,8 @@ import DFCEntradasPage from './pages/DFCEntradasPage'
 import DFCDashboardPage from './pages/DFCDashboardPage'
 import PlanoContasPage from './pages/PlanoContasPage'
 import PerformanceEvaluationPage from './pages/PerformanceEvaluationPage'
+import IndicatorsPage from './pages/indicators/IndicatorsPage'
+import ManageIndicatorsPage from './pages/indicators/ManageIndicatorsPage'
 import CompanyMaturityProgressPage from './pages/reports/CompanyMaturityProgressPage'
 import CompanyMaturityProgressPageNew from './pages/reports/CompanyMaturityProgressPageNew'
 import BusinessModelPage from './pages/BusinessModelPage'
@@ -322,6 +324,24 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <PerformanceEvaluationPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rotas de Indicadores de Gestão (Super Admin e Company Admin) */}
+      <Route 
+        path="/indicators" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+            <IndicatorsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/indicators/manage" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+            <ManageIndicatorsPage />
           </ProtectedRoute>
         }
       />
