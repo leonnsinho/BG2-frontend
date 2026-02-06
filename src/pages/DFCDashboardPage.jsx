@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import {
@@ -27,6 +27,7 @@ const COLORS = ['#EBA500', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'
 
 export default function DFCDashboardPage() {
   const { profile } = useAuth()
+  const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [companies, setCompanies] = useState([]) // Lista de empresas
   const [companyAvatars, setCompanyAvatars] = useState({}) // Avatars das empresas
@@ -131,6 +132,17 @@ export default function DFCDashboardPage() {
       loadCompanies()
     }
   }, [profile])
+
+  // Ler período personalizado dos query params (vindo de entradas/saídas)
+  useEffect(() => {
+    const dataInicioParam = searchParams.get('dataInicio')
+    const dataFimParam = searchParams.get('dataFim')
+    
+    if (dataInicioParam && dataFimParam) {
+      setDataInicio(dataInicioParam)
+      setDataFim(dataFimParam)
+    }
+  }, [searchParams])
 
   const loadCompanies = async () => {
     try {
@@ -451,27 +463,24 @@ export default function DFCDashboardPage() {
     const hojeLimpo = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
     let inicio, fim
 
-    // Fim sempre será o último dia do mês atual para períodos rápidos
-    const ultimoDiaMesAtual = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
-
     switch (periodoTipo) {
       case 'ultimos30dias':
-        fim = new Date(ultimoDiaMesAtual)
+        fim = new Date(hojeLimpo)
         inicio = new Date(hojeLimpo)
         inicio.setDate(inicio.getDate() - 30)
         break
       case 'ultimos3meses':
-        fim = new Date(ultimoDiaMesAtual)
+        fim = new Date(hojeLimpo)
         inicio = new Date(hojeLimpo)
         inicio.setMonth(inicio.getMonth() - 3)
         break
       case 'ultimos6meses':
-        fim = new Date(ultimoDiaMesAtual)
+        fim = new Date(hojeLimpo)
         inicio = new Date(hojeLimpo)
         inicio.setMonth(inicio.getMonth() - 6)
         break
       case 'ultimo12meses':
-        fim = new Date(ultimoDiaMesAtual)
+        fim = new Date(hojeLimpo)
         inicio = new Date(hojeLimpo)
         inicio.setFullYear(inicio.getFullYear() - 1)
         break
@@ -483,13 +492,13 @@ export default function DFCDashboardPage() {
           fim = new Date(parseInt(yearF), parseInt(monthF) - 1, parseInt(dayF))
         } else {
           // Se não tem datas personalizadas, usar últimos 6 meses
-          fim = new Date(ultimoDiaMesAtual)
+          fim = new Date(hojeLimpo)
           inicio = new Date(hojeLimpo)
           inicio.setMonth(inicio.getMonth() - 6)
         }
         break
       default:
-        fim = new Date(ultimoDiaMesAtual)
+        fim = new Date(hojeLimpo)
         inicio = new Date(hojeLimpo)
         inicio.setMonth(inicio.getMonth() - 6)
     }
@@ -1414,7 +1423,7 @@ export default function DFCDashboardPage() {
         {/* Cards de Acesso Rápido */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <Link
-            to="/dfc/entradas"
+            to={`/dfc/entradas${dataInicio && dataFim ? `?dataInicio=${dataInicio}&dataFim=${dataFim}` : ''}`}
             className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border-2 border-green-200 hover:shadow-lg transition-all hover:scale-105"
           >
             <div className="flex items-center justify-between">
@@ -1438,7 +1447,7 @@ export default function DFCDashboardPage() {
           </Link>
 
           <Link
-            to="/dfc/saidas"
+            to={`/dfc/saidas${dataInicio && dataFim ? `?dataInicio=${dataInicio}&dataFim=${dataFim}` : ''}`}
             className="bg-white rounded-2xl p-6 shadow-sm border-2 border-red-200 hover:shadow-lg transition-all hover:scale-105"
           >
             <div className="flex items-center justify-between">

@@ -35,7 +35,8 @@ import {
   ThumbsUp,
   Download,
   Bell,
-  Grid3x3
+  Grid3x3,
+  Lock
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -163,6 +164,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         name: 'Indicadores',
         icon: TrendingUp,
         href: '/indicators',
+        disabled: true,
         children: [
           { name: 'Indicadores de Gestão', href: '/indicators' },
           { name: 'Gerenciar Indicadores', href: '/indicators/manage' }
@@ -301,6 +303,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         name: 'Indicadores',
         icon: TrendingUp,
         href: '/indicators',
+        disabled: true,
         children: [
           { name: 'Indicadores de Gestão', href: '/indicators' },
           { name: 'Gerenciar Indicadores', href: '/indicators/manage' }
@@ -935,22 +938,31 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                 <div key={item.name}>
                   {item.children ? (
                     <button
-                      onClick={(e) => handleItemClick(e, item)}
+                      onClick={(e) => item.disabled ? e.preventDefault() : handleItemClick(e, item)}
                       data-dropdown-trigger
                       className={cn(
                         "w-full group flex items-center px-3 py-2.5 sm:py-2 text-sm font-medium rounded-lg sm:rounded-md transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0",
-                        "hover:scale-[1.02] active:scale-[0.98]",
+                        item.disabled ? "cursor-not-allowed opacity-50" : "hover:scale-[1.02] active:scale-[0.98]",
                         isActive || isDropdownOpen
                           ? "bg-primary-500 text-background shadow-lg"
-                          : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md",
+                          : item.disabled 
+                            ? "text-neutral-400 bg-neutral-800"
+                            : "text-neutral-100 hover:text-background hover:bg-primary-500/80 hover:shadow-md",
                         isCollapsed ? "justify-center" : "text-left"
                       )}
                       title={isCollapsed ? item.name : undefined}
+                      disabled={item.disabled}
                     >
                       {isCollapsed ? (
                         <div className="relative">
                           <ItemIcon className="h-5 w-5 flex-shrink-0" />
-                          {/* 🔥 Ponto vermelho para notificações pendentes */}
+                          {/* � Ícone de cadeado para itens desabilitados */}
+                          {item.disabled && (
+                            <span className="absolute -bottom-1 -right-1 flex h-3 w-3 bg-neutral-900 rounded-full items-center justify-center">
+                              <Lock className="h-2 w-2 text-yellow-400" />
+                            </span>
+                          )}
+                          {/* �🔥 Ponto vermelho para notificações pendentes */}
                           {item.hasPendingNotification && (
                             <span className="absolute top-0 right-0 flex h-2 w-2">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -997,7 +1009,16 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                                 )}
                               />
                               <span className="flex-1 text-left">{item.name}</span>
-                              {/* 🔥 Ponto vermelho para notificações pendentes */}
+                              {/* � Ícone de cadeado para itens desabilitados */}
+                              {item.disabled && (
+                                <>
+                                  <Lock className="h-4 w-4 mr-2 text-yellow-400" />
+                                  <span className="text-[10px] bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                    Em Desenvolvimento
+                                  </span>
+                                </>
+                              )}
+                              {/* �🔥 Ponto vermelho para notificações pendentes */}
                               {item.hasPendingNotification && (
                                 <span className="flex h-2 w-2">
                                   <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-red-400 opacity-75"></span>

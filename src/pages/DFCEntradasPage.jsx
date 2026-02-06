@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import {
@@ -30,6 +30,7 @@ import toast from 'react-hot-toast'
 
 function DFCEntradasPage() {
   const { profile } = useAuth()
+  const [searchParams] = useSearchParams()
   const [entradas, setEntradas] = useState([])
   const [companies, setCompanies] = useState([])
   const [companyAvatars, setCompanyAvatars] = useState({})
@@ -62,6 +63,8 @@ function DFCEntradasPage() {
   const [companyFilter, setCompanyFilter] = useState('all')
   const [categoriaFilter, setCategoriaFilter] = useState('all')
   const [mesFilter, setMesFilter] = useState('all')
+  const [dataInicio, setDataInicio] = useState('')
+  const [dataFim, setDataFim] = useState('')
   
   // Busca de empresa no formulário
   const [companySearch, setCompanySearch] = useState('')
@@ -149,6 +152,17 @@ function DFCEntradasPage() {
   useEffect(() => {
     fetchEntradas()
   }, [companyFilter, categoriaFilter])
+
+  // Ler período personalizado dos query params (vindo do DFC Dashboard)
+  useEffect(() => {
+    const dataInicioParam = searchParams.get('dataInicio')
+    const dataFimParam = searchParams.get('dataFim')
+    
+    if (dataInicioParam && dataFimParam) {
+      setDataInicio(dataInicioParam)
+      setDataFim(dataFimParam)
+    }
+  }, [searchParams])
 
   // Gerar automaticamente as datas das parcelas quando houver mudanças
   useEffect(() => {
@@ -900,21 +914,64 @@ function DFCEntradasPage() {
     return company ? company.name : ''
   }, [companies, formData.company_id])
 
+  // Calcular período baseado no tipo selecionado
+  const calcularPeriodo = () => {
+    const formatDate = (date) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+
+    // Se o usuário preencheu período personalizado, usar ele
+    if (dataInicio && dataFim) {
+      return {
+        inicio: dataInicio,
+        fim: dataFim
+      }
+    }
+
+    // Caso contrário, usar os últimos 6 meses como padrão
+    const hoje = new Date()
+    const hojeLimpo = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
+    const ultimoDiaMesAtual = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+    
+    const fim = new Date(ultimoDiaMesAtual)
+    const inicio = new Date(hojeLimpo)
+    inicio.setMonth(inicio.getMonth() - 6)
+
+    return {
+      inicio: formatDate(inicio),
+      fim: formatDate(fim)
+    }
+  }
+
   // Filtrar entradas
   const filteredEntradas = useMemo(() => {
+    const periodo = calcularPeriodo()
+    
     return entradas.filter(entrada => {
       const itemNome = entrada.dfc_itens?.nome || ''
       const matchSearch = !searchTerm || 
         entrada.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
         itemNome.toLowerCase().includes(searchTerm.toLowerCase())
       
-      // Filtro por mês
+      // Filtro por mês (se estiver usando)
       const matchMes = mesFilter === 'all' || mesFilter === '' || 
         entrada.mes.substring(0, 7) === mesFilter
       
-      return matchSearch && matchMes
+      // Filtro por período (usando data de vencimento)
+      let matchPeriodo = true
+      if (entrada.vencimento) {
+        const dataVencimento = new Date(entrada.vencimento + 'T00:00:00')
+        const dataInicioPeriodo = new Date(periodo.inicio + 'T00:00:00')
+        const dataFimPeriodo = new Date(periodo.fim + 'T00:00:00')
+        matchPeriodo = dataVencimento >= dataInicioPeriodo && dataVencimento <= dataFimPeriodo
+      }
+      
+      return matchSearch && matchMes && matchPeriodo
     })
-  }, [entradas, searchTerm, mesFilter])
+  }, [entradas, searchTerm, mesFilter, dataInicio, dataFim])
 
   // Calcular totais
   const totais = useMemo(() => {
@@ -993,7 +1050,7 @@ function DFCEntradasPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
-              to="/dfc"
+              to={`/dfc${dataInicio && dataFim ? `?dataInicio=${dataInicio}&dataFim=${dataFim}` : ''}`}
               className="p-2 hover:bg-gray-100 rounded-xl transition-all group"
               title="Voltar ao DFC"
             >
@@ -1064,57 +1121,98 @@ function DFCEntradasPage() {
 
       {/* Filtros */}
       <div className="bg-white border border-gray-200/50 rounded-2xl p-4 sm:p-6 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <div className="space-y-6">
+          {/* Filtros principais */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+              />
+            </div>
+
+            {/* Filtro de Empresa - Apenas para Super Admin */}
+            {isSuperAdmin() && (
+              <select
+                value={companyFilter}
+                onChange={(e) => setCompanyFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+              >
+                <option value="all">Todas as empresas</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                ))}
+              </select>
+            )}
+            
+            {/* Indicação da empresa para Company Admin */}
+            {isCompanyAdmin() && companyFilter !== 'all' && (
+              <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-2xl text-sm text-blue-700 font-medium">
+                {companies.find(c => c.id === companyFilter)?.name || 'Empresa'}
+              </div>
+            )}
+
+            <select
+              value={categoriaFilter}
+              onChange={(e) => setCategoriaFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+            >
+              <option value="all">Todas as categorias</option>
+              {categorias.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.sigla || cat.nome}</option>
+              ))}
+            </select>
+
             <input
-              type="text"
-              placeholder="Buscar..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+              type="month"
+              value={mesFilter === 'all' ? '' : mesFilter}
+              onChange={(e) => setMesFilter(e.target.value || 'all')}
+              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+              placeholder="Filtrar por mês"
             />
           </div>
 
-          {/* Filtro de Empresa - Apenas para Super Admin */}
-          {isSuperAdmin() && (
-            <select
-              value={companyFilter}
-              onChange={(e) => setCompanyFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
-            >
-              <option value="all">Todas as empresas</option>
-              {companies.map(company => (
-                <option key={company.id} value={company.id}>{company.name}</option>
-              ))}
-            </select>
-          )}
-          
-          {/* Indicação da empresa para Company Admin */}
-          {isCompanyAdmin() && companyFilter !== 'all' && (
-            <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-2xl text-sm text-blue-700 font-medium">
-              {companies.find(c => c.id === companyFilter)?.name || 'Empresa'}
+          {/* Filtro de Período Personalizado */}
+          <div className="border-t border-gray-200 pt-6">
+            <div className="space-y-2">
+                <label className="text-xs sm:text-sm font-medium text-gray-700">Período Personalizado</label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-600">Data Início</label>
+                    <input
+                      type="date"
+                      value={dataInicio}
+                      onChange={(e) => setDataInicio(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-600">Data Fim</label>
+                    <input
+                      type="date"
+                      value={dataFim}
+                      onChange={(e) => setDataFim(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                {dataInicio && dataFim && (() => {
+                  const [yearI, monthI, dayI] = dataInicio.split('-')
+                  const [yearF, monthF, dayF] = dataFim.split('-')
+                  const dateI = new Date(parseInt(yearI), parseInt(monthI) - 1, parseInt(dayI))
+                  const dateF = new Date(parseInt(yearF), parseInt(monthF) - 1, parseInt(dayF))
+                  return (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✓ Período personalizado ativo: {dateI.toLocaleDateString('pt-BR')} até {dateF.toLocaleDateString('pt-BR')}
+                    </p>
+                  )
+                })()}
             </div>
-          )}
-
-          <select
-            value={categoriaFilter}
-            onChange={(e) => setCategoriaFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
-          >
-            <option value="all">Todas as categorias</option>
-            {categorias.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.sigla || cat.nome}</option>
-            ))}
-          </select>
-
-          <input
-            type="month"
-            value={mesFilter === 'all' ? '' : mesFilter}
-            onChange={(e) => setMesFilter(e.target.value || 'all')}
-            className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
-            placeholder="Filtrar por mês"
-          />
+          </div>
         </div>
       </div>
 
@@ -1164,8 +1262,8 @@ function DFCEntradasPage() {
                     <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma entrada encontrada</h3>
                     <p className="text-gray-600">
-                      {searchTerm || companyFilter !== 'all' || categoriaFilter !== 'all' || mesFilter !== 'all'
-                        ? 'Tente ajustar os filtros de busca'
+                      {searchTerm || companyFilter !== 'all' || categoriaFilter !== 'all' || mesFilter !== 'all' || (dataInicio && dataFim)
+                        ? 'Tente ajustar os filtros de busca ou período'
                         : 'Registre a primeira entrada clicando em "Nova Entrada"'}
                     </p>
                   </td>
