@@ -39,6 +39,7 @@ export default function DFCDashboardPage() {
   const [periodoTipo, setPeriodoTipo] = useState('ultimos6meses') // ultimos30dias, ultimos3meses, ultimos6meses, ultimo12meses, personalizado
   const [dataInicio, setDataInicio] = useState('')
   const [dataFim, setDataFim] = useState('')
+  const [mesesGrafico, setMesesGrafico] = useState(6) // Quantidade de meses para o gráfico de linhas
   
   const [stats, setStats] = useState({
     totalEntradas: 0,
@@ -429,7 +430,7 @@ export default function DFCDashboardPage() {
       loadDashboardData()
       loadFuturePayments()
     }
-  }, [profile, periodoTipo, dataInicio, dataFim, selectedCompanyId])
+  }, [profile, periodoTipo, dataInicio, dataFim, selectedCompanyId, mesesGrafico])
 
   // Recarregar dados quando a página fica visível (quando volta de outra página)
   useEffect(() => {
@@ -454,7 +455,7 @@ export default function DFCDashboardPage() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [profile, periodoTipo, dataInicio, dataFim, selectedCompanyId])
+  }, [profile, periodoTipo, dataInicio, dataFim, selectedCompanyId, mesesGrafico])
 
   // Função para calcular datas do período
   const getPeriodoDatas = () => {
@@ -720,16 +721,55 @@ export default function DFCDashboardPage() {
       })
 
       // Dados mensais para gráfico (últimos 6 meses)
-      const monthlyDataMap = {}
-      const last6Months = []
+      // 🔥 Se não for período personalizado, buscar dados dos últimos 6 meses completos para os gráficos
+      let entradasParaGrafico = entradas
+      let saidasParaGrafico = saidas
       
-      for (let i = 5; i >= 0; i--) {
+      if (periodoTipo !== 'personalizado') {
+        // Buscar dados dos últimos meses independente do filtro (baseado em mesesGrafico)
+        const hoje = new Date()
+        const mesesAtras = new Date(hoje)
+        mesesAtras.setMonth(mesesAtras.getMonth() - mesesGrafico)
+        
+        const inicioGrafico = `${mesesAtras.getFullYear()}-${String(mesesAtras.getMonth() + 1).padStart(2, '0')}-${String(mesesAtras.getDate()).padStart(2, '0')}`
+        const fimGrafico = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`
+        
+        let entradasGraficoQuery = supabase
+          .from('dfc_entradas')
+          .select('valor, vencimento, categoria')
+          .gte('vencimento', inicioGrafico)
+          .lte('vencimento', fimGrafico)
+          .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
+          
+        let saidasGraficoQuery = supabase
+          .from('dfc_saidas')
+          .select('valor, vencimento, categoria')
+          .gte('vencimento', inicioGrafico)
+          .lte('vencimento', fimGrafico)
+          .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
+          
+        if (companyId) {
+          entradasGraficoQuery = entradasGraficoQuery.eq('company_id', companyId)
+          saidasGraficoQuery = saidasGraficoQuery.eq('company_id', companyId)
+        }
+        
+        const { data: entradasGrafico } = await entradasGraficoQuery
+        const { data: saidasGrafico } = await saidasGraficoQuery
+        
+        entradasParaGrafico = entradasGrafico || []
+        saidasParaGrafico = saidasGrafico || []
+      }
+
+      const monthlyDataMap = {}
+      const lastMonths = []
+      
+      for (let i = mesesGrafico - 1; i >= 0; i--) {
         const date = new Date()
         date.setMonth(date.getMonth() - i)
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
         const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
         
-        last6Months.push(monthKey)
+        lastMonths.push(monthKey)
         monthlyDataMap[monthKey] = {
           mes: monthName,
           entradas: 0,
@@ -738,7 +778,7 @@ export default function DFCDashboardPage() {
         }
       }
 
-      entradas?.forEach(e => {
+      entradasParaGrafico?.forEach(e => {
         if (!e.vencimento) return
         const [year, month, day] = e.vencimento.split('-')
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
@@ -748,7 +788,7 @@ export default function DFCDashboardPage() {
         }
       })
 
-      saidas?.forEach(s => {
+      saidasParaGrafico?.forEach(s => {
         if (!s.vencimento) return
         const [year, month, day] = s.vencimento.split('-')
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
@@ -758,7 +798,7 @@ export default function DFCDashboardPage() {
         }
       })
 
-      const monthlyChartData = last6Months.map(key => {
+      const monthlyChartData = lastMonths.map(key => {
         const data = monthlyDataMap[key]
         return {
           ...data,
@@ -771,7 +811,7 @@ export default function DFCDashboardPage() {
       // Dados por categoria para gráfico de pizza
       const categoryValueMap = {}
       
-      saidas?.forEach(s => {
+      saidasParaGrafico?.forEach(s => {
         const categoriaId = s.categoria
         const categoriaNome = categoriaId ? (categoriaMap[categoriaId] || 'Categoria Desconhecida') : 'Sem Categoria'
         
@@ -1737,14 +1777,25 @@ export default function DFCDashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Gráfico de Linha - Fluxo Mensal */}
           <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg sm:rounded-xl">
-                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg sm:rounded-xl">
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900">Fluxo de Caixa Mensal</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">Últimos {mesesGrafico} {mesesGrafico === 1 ? 'mês' : 'meses'}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base sm:text-lg font-bold text-gray-900">Fluxo de Caixa Mensal</h3>
-                <p className="text-xs sm:text-sm text-gray-600">Últimos 6 meses</p>
-              </div>
+              <select
+                value={mesesGrafico}
+                onChange={(e) => setMesesGrafico(Number(e.target.value))}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              >
+                <option value={3}>3 meses</option>
+                <option value={6}>6 meses</option>
+                <option value={12}>12 meses</option>
+              </select>
             </div>
             
             <div className="h-64 sm:h-80">
