@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { usePermissions } from '../../hooks/usePermissions'
 import { useSearchParams } from 'react-router-dom'
 import { 
   Plus, Search, Edit2, Trash2, Copy, List, Grid,
   MoreVertical, Filter, ChevronLeft, ChevronRight,
-  CheckCircle2, XCircle, Target, ChevronDown, User, Zap
+  CheckCircle2, XCircle, Target, ChevronDown, User, Zap, Building2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import IndicatorModal from '../../components/indicators/IndicatorModal'
 
 export default function ManageIndicatorsPage() {
   const { profile } = useAuth()
+  const permissions = usePermissions()
   const [searchParams, setSearchParams] = useSearchParams()
   const [indicators, setIndicators] = useState([])
   const [loading, setLoading] = useState(true)
@@ -19,11 +21,13 @@ export default function ManageIndicatorsPage() {
   const [journeyFilter, setJourneyFilter] = useState('Todas')
   const [statusFilter, setStatusFilter] = useState('Todos')
   const [responsibleFilter, setResponsibleFilter] = useState('Todos')
+  const [companyFilter, setCompanyFilter] = useState('Todas')
   const [viewMode, setViewMode] = useState('list') // 'list' ou 'grid'
   const [showModal, setShowModal] = useState(false)
   const [editingIndicator, setEditingIndicator] = useState(null)
   const [users, setUsers] = useState([])
   const [avatarUrls, setAvatarUrls] = useState({})
+  const [companies, setCompanies] = useState([])
 
   const journeys = ['Todas', 'Estratégia', 'Financeira', 'Receita', 'Pessoas & Cultura', 'Operacional']
   const statuses = ['Todos', 'Ativo', 'Inativo']
@@ -32,12 +36,25 @@ export default function ManageIndicatorsPage() {
     loadIndicators()
     loadUsers()
     
+    // Carregar empresas se for super admin
+    if (permissions.isSuperAdmin()) {
+      loadCompanies()
+    }
+    
     // Abrir modal automaticamente se vier com ?action=add
     if (searchParams.get('action') === 'add') {
       setShowModal(true)
       setSearchParams({}) // Limpar o parâmetro
     }
   }, [])
+
+  // Recarregar indicadores e usuários quando o filtro de empresa mudar
+  useEffect(() => {
+    if (permissions.isSuperAdmin()) {
+      loadIndicators()
+      loadUsers()
+    }
+  }, [companyFilter])
 
   // Carregar avatars dos usuários
   useEffect(() => {
@@ -61,27 +78,57 @@ export default function ManageIndicatorsPage() {
     }
   }, [users])
 
+  const loadCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name')
+        .order('name')
+
+      if (error) throw error
+      setCompanies(data || [])
+    } catch (error) {
+      console.error('Erro ao carregar empresas:', error)
+      toast.error('Erro ao carregar empresas')
+    }
+  }
+
   const loadIndicators = async () => {
     try {
       setLoading(true)
       
-      // Buscar company_id do usuário
-      const { data: userCompanies, error: ucError } = await supabase
-        .from('user_companies')
-        .select('company_id')
-        .eq('user_id', profile.id)
-        .eq('is_active', true)
-        .limit(1)
-        .single()
-
-      if (ucError) throw ucError
-
-      // Carregar indicadores da empresa
-      const { data, error } = await supabase
+      let query = supabase
         .from('management_indicators')
-        .select('*')
-        .eq('company_id', userCompanies.company_id)
-        .order('created_at', { ascending: false })
+        .select(`
+          *,
+          companies (
+            id,
+            name
+          )
+        `)
+
+      // Se for super admin
+      if (permissions.isSuperAdmin()) {
+        // Filtrar por empresa se selecionada
+        if (companyFilter !== 'Todas') {
+          query = query.eq('company_id', companyFilter)
+        }
+        // Caso contrário, carrega de todas as empresas (sem filtro)
+      } else {
+        // Company admin ou outros - carregar apenas da empresa do usuário
+        const { data: userCompanies, error: ucError } = await supabase
+          .from('user_companies')
+          .select('company_id')
+          .eq('user_id', profile.id)
+          .eq('is_active', true)
+          .limit(1)
+          .single()
+
+        if (ucError) throw ucError
+        query = query.eq('company_id', userCompanies.company_id)
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) throw error
       setIndicators(data || [])
@@ -95,37 +142,75 @@ export default function ManageIndicatorsPage() {
 
   const loadUsers = async () => {
     try {
-      // Buscar company_id do usuário
-      const { data: userCompanies, error: ucError } = await supabase
-        .from('user_companies')
-        .select('company_id')
-        .eq('user_id', profile.id)
-        .eq('is_active', true)
-        .limit(1)
-        .single()
+      if (permissions.isSuperAdmin()) {
+        // Super admin vê usuários de acordo com o filtro de empresa
+        if (companyFilter !== 'Todas') {
+          // Carregar apenas usuários da empresa filtrada
+          const { data: companyUsers, error: cuError } = await supabase
+            .from('user_companies')
+            .select('user_id')
+            .eq('company_id', companyFilter)
+            .eq('is_active', true)
 
-      if (ucError) throw ucError
+          if (cuError) throw cuError
 
-      // Buscar apenas usuários da mesma empresa
-      const { data: companyUsers, error: cuError } = await supabase
-        .from('user_companies')
-        .select('user_id')
-        .eq('company_id', userCompanies.company_id)
-        .eq('is_active', true)
+          const userIds = companyUsers.map(cu => cu.user_id)
 
-      if (cuError) throw cuError
+          if (userIds.length > 0) {
+            const { data, error } = await supabase
+              .from('profiles')
+              .select('id, email, full_name, avatar_url')
+              .in('id', userIds)
+              .order('full_name')
 
-      const userIds = companyUsers.map(cu => cu.user_id)
+            if (error) throw error
+            setUsers(data || [])
+          } else {
+            setUsers([])
+          }
+        } else {
+          // Sem filtro de empresa: carregar todos os usuários
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('id, email, full_name, avatar_url')
+            .order('full_name')
 
-      // Carregar perfis dos usuários da empresa
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, avatar_url')
-        .in('id', userIds)
-        .order('full_name')
+          if (error) throw error
+          setUsers(data || [])
+        }
+      } else {
+        // Usuário normal: buscar company_id do usuário
+        const { data: userCompanies, error: ucError } = await supabase
+          .from('user_companies')
+          .select('company_id')
+          .eq('user_id', profile.id)
+          .eq('is_active', true)
+          .limit(1)
+          .single()
 
-      if (error) throw error
-      setUsers(data || [])
+        if (ucError) throw ucError
+
+        // Buscar apenas usuários da mesma empresa
+        const { data: companyUsers, error: cuError } = await supabase
+          .from('user_companies')
+          .select('user_id')
+          .eq('company_id', userCompanies.company_id)
+          .eq('is_active', true)
+
+        if (cuError) throw cuError
+
+        const userIds = companyUsers.map(cu => cu.user_id)
+
+        // Carregar perfis dos usuários da empresa
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, avatar_url')
+          .in('id', userIds)
+          .order('full_name')
+
+        if (error) throw error
+        setUsers(data || [])
+      }
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
     }
@@ -278,7 +363,7 @@ export default function ManageIndicatorsPage() {
 
         {/* Filtros e Busca */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${permissions.isSuperAdmin() ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
             {/* Barra de Busca */}
             <div className="sm:col-span-2 lg:col-span-1">
               <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
@@ -359,6 +444,31 @@ export default function ManageIndicatorsPage() {
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
               </div>
             </div>
+
+            {/* Filtro Empresa - Só aparece para Super Admin */}
+            {permissions.isSuperAdmin() && (
+              <div>
+                <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  <Building2 className="h-4 w-4 text-amber-500" />
+                  Empresa
+                </label>
+                <div className="relative">
+                  <select
+                    value={companyFilter}
+                    onChange={(e) => setCompanyFilter(e.target.value)}
+                    className="w-full pl-4 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 hover:border-gray-300 transition-all bg-gradient-to-r from-amber-50 to-white focus:from-white focus:to-white appearance-none cursor-pointer font-medium text-gray-700"
+                  >
+                    <option value="Todas">Todas as empresas</option>
+                    {companies.map(company => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-amber-400 pointer-events-none" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -398,6 +508,11 @@ export default function ManageIndicatorsPage() {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Indicador
                     </th>
+                    {permissions.isSuperAdmin() && (
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Empresa
+                      </th>
+                    )}
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Jornada
                     </th>
@@ -436,6 +551,16 @@ export default function ManageIndicatorsPage() {
                           <div className="text-xs text-gray-500 mt-1 max-w-xs truncate">{indicator.description}</div>
                         )}
                       </td>
+                      {permissions.isSuperAdmin() && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm font-medium text-gray-700">
+                              {indicator.companies?.name || 'N/A'}
+                            </span>
+                          </div>
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${journeyColors[indicator.journey] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
                           {indicator.journey}
@@ -549,7 +674,6 @@ export default function ManageIndicatorsPage() {
       {showModal && (
         <IndicatorModal
           indicator={editingIndicator}
-          users={users}
           onClose={() => {
             setShowModal(false)
             setEditingIndicator(null)

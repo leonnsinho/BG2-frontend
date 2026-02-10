@@ -115,11 +115,13 @@ function PlanoContasPage() {
     // Super admin pode editar tudo
     if (isSuperAdmin()) return true
     
-    // Company admin e gestor só podem editar itens associados à sua empresa
+    // Company admin e gestor só podem editar itens associados à sua empresa OU globais
     if (isCompanyAdmin() || isGestor()) {
       const userCompanyId = getCurrentUserCompany()
-      // Verifica se o item tem empresas associadas e se a empresa do usuário está entre elas
-      return item.empresas?.some(empresa => empresa.id === userCompanyId) || false
+      // Verifica se o item está associado à empresa do usuário OU se é global (sem empresas)
+      return item.empresas?.some(empresa => empresa.id === userCompanyId) || 
+             item.empresas?.length === 0 || 
+             false
     }
     
     return false
@@ -188,18 +190,40 @@ function PlanoContasPage() {
 
       if (itensError) throw itensError
 
-      // Buscar relacionamentos item-empresa
-      let empresasQuery = supabase
+      console.log('🔍 DEBUG ROLE - Role do usuário:', profile?.role)
+      console.log('🔍 DEBUG ROLE - É super admin?', isSuperAdmin())
+      console.log('🔍 DEBUG ROLE - É company admin?', isCompanyAdmin())
+
+      // Buscar associações conforme permissões do usuário
+      const { data: empresasData, error: empresasError } = await supabase
         .from('dfc_itens_empresas')
         .select('item_id, company_id, companies(id, name)')
 
-      if (companyFilter !== 'all') {
-        empresasQuery = empresasQuery.eq('company_id', companyFilter)
+      if (empresasError) {
+        console.error('❌ ERRO ao buscar associações:', empresasError)
+        throw empresasError
       }
 
-      const { data: empresasData, error: empresasError } = await empresasQuery
+      // Para company_admin, precisamos identificar quais itens são REALMENTE globais
+      // (não têm nenhuma associação em dfc_itens_empresas)
+      let idsItensComAssociacoes = []
+      if (isCompanyAdmin() && !isSuperAdmin()) {
+        // Usar RPC function que ignora RLS para obter TODOS os IDs de itens com associações
+        const { data: todosIdsComAssociacao, error: errorIds } = await supabase
+          .rpc('get_itens_com_associacoes')
+        
+        if (!errorIds && todosIdsComAssociacao) {
+          idsItensComAssociacoes = todosIdsComAssociacao.map(r => r.item_id)
+          console.log('🔑 DEBUG IDS - Total de itens com associações (qualquer empresa):', idsItensComAssociacoes.length)
+        } else if (errorIds) {
+          console.error('⚠️ AVISO: Não foi possível buscar IDs de itens com associações:', errorIds)
+          console.log('💡 Execute o SQL: sql/create_rpc_get_itens_com_associacoes.sql no Supabase')
+        }
+      }
 
-      if (empresasError) throw empresasError
+      console.log('📊 DEBUG ASSOCIAÇÕES - Total de itens:', itensData?.length)
+      console.log('📊 DEBUG ASSOCIAÇÕES - Total de associações retornadas:', empresasData?.length)
+      console.log('📊 DEBUG ASSOCIAÇÕES - Dados:', empresasData)
 
       // Agrupar empresas por item
       const empresasPorItem = {}
@@ -210,17 +234,40 @@ function PlanoContasPage() {
         empresasPorItem[rel.item_id].push(rel.companies)
       })
 
+      console.log('🔗 DEBUG AGRUPAMENTO - Empresas agrupadas por item:', empresasPorItem)
+      console.log('🔗 DEBUG AGRUPAMENTO - Total de itens com empresas:', Object.keys(empresasPorItem).length)
+
       // Combinar itens com suas empresas
-      const itensComEmpresas = itensData.map(item => ({
+      let itensComEmpresas = itensData.map(item => ({
         ...item,
         empresas: empresasPorItem[item.id] || []
       }))
 
+      console.log('🏷️ DEBUG ITENS - Exemplo de itens com empresas:', itensComEmpresas.slice(0, 3))
+      console.log('🏷️ DEBUG ITENS - Itens com empresa.length > 0:', itensComEmpresas.filter(i => i.empresas.length > 0).length)
+      console.log('🏷️ DEBUG ITENS - Itens globais (sem empresa):', itensComEmpresas.filter(i => i.empresas.length === 0).length)
+
+      // FILTRO CRÍTICO: Para company_admin, mostrar APENAS itens da sua empresa + itens globais
+      if (isCompanyAdmin() && !isSuperAdmin() && idsItensComAssociacoes.length > 0) {
+        const itensAntes = itensComEmpresas.length
+        itensComEmpresas = itensComEmpresas.filter(item => {
+          // Mostrar se:
+          // 1. Item tem associação visível (da empresa do usuário) OU
+          // 2. Item é realmente global (não tem nenhuma associação)
+          const temAssociacaoVisivel = item.empresas.length > 0
+          const eRealmenteGlobal = !idsItensComAssociacoes.includes(item.id)
+          return temAssociacaoVisivel || eRealmenteGlobal
+        })
+        const itensDepois = itensComEmpresas.length
+        const itensOcultados = itensAntes - itensDepois
+        console.log(`🔒 FILTRO COMPANY_ADMIN - Ocultados ${itensOcultados} itens de outras empresas (${itensAntes} → ${itensDepois})`)
+      }
+
       // Filtrar itens se há filtro de empresa (mas sempre incluir itens globais)
       const itensFiltrados = companyFilter !== 'all'
         ? itensComEmpresas.filter(item => 
-            item.empresas.length > 0 || // Itens da empresa filtrada
-            !empresasPorItem[item.id]   // OU itens globais (sem nenhuma empresa)
+            item.empresas.some(emp => emp.id === companyFilter) || // Itens da empresa específica
+            item.empresas.length === 0  // OU itens globais (sem nenhuma empresa associada)
           )
         : itensComEmpresas
 
@@ -265,14 +312,70 @@ function PlanoContasPage() {
     } else {
       setEditingItem(null)
       const userCompanyId = getCurrentUserCompany()
+      const companyIds = userCompanyId ? [userCompanyId] : (companyFilter !== 'all' ? [companyFilter] : [])
+      
       setFormData({
-        company_ids: userCompanyId ? [userCompanyId] : (companyFilter !== 'all' ? [companyFilter] : []),
+        company_ids: companyIds,
         categoria_id: categoriaId || '',
         nome: '',
         descricao: ''
       })
     }
     setShowModal(true)
+  }
+
+  const associarItensGlobaisEmMassa = async () => {
+    if (companyFilter === 'all') {
+      toast.error('Selecione uma empresa específica no filtro')
+      return
+    }
+
+    try {
+      // Buscar itens globais (sem associação com nenhuma empresa)
+      const { data: todasAssociacoes } = await supabase
+        .from('dfc_itens_empresas')
+        .select('item_id')
+      
+      const idsComAssociacao = new Set(todasAssociacoes?.map(a => a.item_id) || [])
+      
+      // Filtrar itens que não têm associação
+      const { data: todosItens } = await supabase
+        .from('dfc_itens')
+        .select('id, nome')
+      
+      const itensGlobais = todosItens?.filter(item => !idsComAssociacao.has(item.id)) || []
+      
+      if (itensGlobais.length === 0) {
+        toast.success('Não há itens globais para associar!')
+        return
+      }
+
+      const confirmar = window.confirm(
+        `Deseja associar ${itensGlobais.length} itens globais à empresa selecionada?\n\n` +
+        `Isso criará vínculos para todos os itens que não estão associados a nenhuma empresa.`
+      )
+
+      if (!confirmar) return
+
+      // Criar associações em massa
+      const associacoes = itensGlobais.map(item => ({
+        item_id: item.id,
+        company_id: companyFilter,
+        created_by: profile.id
+      }))
+
+      const { error } = await supabase
+        .from('dfc_itens_empresas')
+        .insert(associacoes)
+
+      if (error) throw error
+
+      toast.success(`${itensGlobais.length} itens associados com sucesso!`)
+      fetchCategorias()
+    } catch (error) {
+      console.error('Erro ao associar itens:', error)
+      toast.error('Erro ao associar itens: ' + error.message)
+    }
   }
 
   const closeModal = () => {
@@ -321,6 +424,10 @@ function PlanoContasPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
+    console.log('🚀 SUBMIT - Iniciando criação/edição de item')
+    console.log('🚀 SUBMIT - company_ids:', formData.company_ids)
+    console.log('🚀 SUBMIT - Total empresas selecionadas:', formData.company_ids.length)
+
     if (!formData.categoria_id) {
       toast.error('Selecione uma categoria')
       return
@@ -361,6 +468,9 @@ function PlanoContasPage() {
 
         if (itemsError) throw itemsError
 
+        console.log('✅ MÚLTIPLO - Itens criados:', createdItems.length)
+        console.log('✅ MÚLTIPLO - Empresas para associar:', formData.company_ids)
+
         // Criar associações se houver empresas selecionadas
         if (formData.company_ids.length > 0) {
           const allAssociations = []
@@ -374,11 +484,20 @@ function PlanoContasPage() {
             })
           })
 
+          console.log('💾 MÚLTIPLO - Associações a inserir:', allAssociations.length)
+
           const { error: associacoesError } = await supabase
             .from('dfc_itens_empresas')
             .insert(allAssociations)
 
-          if (associacoesError) throw associacoesError
+          if (associacoesError) {
+            console.error('❌ MÚLTIPLO - Erro ao inserir associações:', associacoesError)
+            throw associacoesError
+          }
+          
+          console.log('✅ MÚLTIPLO - Associações inseridas com sucesso!')
+        } else {
+          console.log('⚠️ MÚLTIPLO - Nenhuma empresa selecionada, itens serão GLOBAIS')
         }
 
         toast.success(`${createdItems.length} itens criados com sucesso!`)
@@ -418,7 +537,10 @@ function PlanoContasPage() {
 
           if (error) throw error
           itemId = newItem.id
+          console.log('✅ ÚNICO - Item criado com ID:', itemId)
         }
+
+        console.log('💾 ÚNICO - Empresas para associar:', formData.company_ids)
 
         // Inserir novas associações item-empresa (apenas se houver empresas selecionadas)
         if (formData.company_ids.length > 0) {
@@ -428,11 +550,20 @@ function PlanoContasPage() {
             created_by: profile.id
           }))
 
+          console.log('💾 ÚNICO - Associações a inserir:', associacoes)
+
           const { error: associacoesError } = await supabase
             .from('dfc_itens_empresas')
             .insert(associacoes)
 
-          if (associacoesError) throw associacoesError
+          if (associacoesError) {
+            console.error('❌ ÚNICO - Erro ao inserir associações:', associacoesError)
+            throw associacoesError
+          }
+          
+          console.log('✅ ÚNICO - Associações inseridas com sucesso!')
+        } else {
+          console.log('⚠️ ÚNICO - Nenhuma empresa selecionada, item será GLOBAL')
         }
 
         toast.success(editingItem ? 'Item atualizado com sucesso!' : 'Item criado com sucesso!')
@@ -641,6 +772,16 @@ function PlanoContasPage() {
                   <Plus className="h-4 w-4" />
                   <span>Novo Item</span>
                 </button>
+                {companyFilter !== 'all' && (
+                  <button
+                    onClick={associarItensGlobaisEmMassa}
+                    className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all font-medium text-sm"
+                    title="Associar todos os itens globais à empresa selecionada"
+                  >
+                    <Building2 className="h-4 w-4" />
+                    <span>Associar Globais</span>
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -815,7 +956,7 @@ function PlanoContasPage() {
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <h4 className="text-sm font-medium text-gray-900 truncate">{item.nome}</h4>
-                              {item.empresas && item.empresas.length > 0 && (
+                              {item.empresas && item.empresas.length > 0 ? (
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {item.empresas.map((empresa, idx) => (
                                     <span
@@ -825,6 +966,12 @@ function PlanoContasPage() {
                                       {empresa.name}
                                     </span>
                                   ))}
+                                </div>
+                              ) : (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  <span className="inline-block px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded border border-gray-300">
+                                    🌐 Global (Todas as empresas)
+                                  </span>
                                 </div>
                               )}
                               {item.descricao && (
@@ -902,7 +1049,20 @@ function PlanoContasPage() {
                 {/* Empresas */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Empresas <span className="text-xs text-gray-500">(Deixe vazio para criar item global)</span>
+                    Empresas 
+                    {isSuperAdmin() && (
+                      <span className="ml-2 text-xs font-normal">
+                        {formData.company_ids.length > 0 ? (
+                          <span className="text-blue-600 font-semibold">
+                            ✓ {formData.company_ids.length} empresa(s) selecionada(s)
+                          </span>
+                        ) : (
+                          <span className="text-amber-600 font-semibold">
+                            ⚠️ Nenhuma empresa (item será global)
+                          </span>
+                        )}
+                      </span>
+                    )}
                   </label>
                   
                   {/* Para Company Admin e Gestor - Apenas mostrar sua empresa */}
@@ -1083,6 +1243,36 @@ function PlanoContasPage() {
                   </div>
                 )}
               </div>
+
+              {/* Alerta de Status da Associação - Para Super Admin */}
+              {isSuperAdmin() && (
+                <div className={`px-4 py-3 rounded-xl border-2 ${
+                  formData.company_ids.length > 0 
+                    ? 'bg-blue-50 border-blue-300 text-blue-800' 
+                    : 'bg-amber-50 border-amber-300 text-amber-800'
+                }`}>
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      {formData.company_ids.length > 0 ? (
+                        <>
+                          <p className="font-semibold text-sm">Item será associado a {formData.company_ids.length} empresa(s)</p>
+                          <p className="text-xs mt-1">
+                            Visível apenas para: {companies.filter(c => formData.company_ids.includes(c.id)).map(c => c.name).join(', ')}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-semibold text-sm">⚠️ Item será GLOBAL (sem empresa)</p>
+                          <p className="text-xs mt-1">
+                            Visível para TODAS as empresas. Selecione empresas acima para restringir o acesso.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Footer - Agora dentro do form */}
               <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end space-x-3 flex-shrink-0">

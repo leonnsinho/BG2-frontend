@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { usePermissions } from '../../hooks/usePermissions'
 import { useNavigate } from 'react-router-dom'
 import { 
   Plus, Settings, List, Grid, MoreVertical, 
@@ -11,6 +12,7 @@ import toast from 'react-hot-toast'
 
 export default function IndicatorsPage() {
   const { profile } = useAuth()
+  const { isSuperAdmin } = usePermissions()
   const navigate = useNavigate()
   const [indicators, setIndicators] = useState([])
   const [companyIndicators, setCompanyIndicators] = useState([])
@@ -37,29 +39,47 @@ export default function IndicatorsPage() {
 
   const loadCompanies = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_companies')
-        .select(`
-          company_id,
-          companies (
-            id,
-            name
-          )
-        `)
-        .eq('user_id', profile.id)
-        .eq('is_active', true)
+      let companyList = []
 
-      if (error) throw error
+      if (isSuperAdmin()) {
+        // Super admin vê todas as empresas
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('name')
 
-      const companyList = data.map(uc => uc.companies).filter(Boolean)
+        if (error) throw error
+        companyList = data || []
+      } else {
+        // Usuário normal vê apenas empresas vinculadas
+        const { data, error } = await supabase
+          .from('user_companies')
+          .select(`
+            company_id,
+            companies (
+              id,
+              name
+            )
+          `)
+          .eq('user_id', profile.id)
+          .eq('is_active', true)
+
+        if (error) throw error
+        companyList = data.map(uc => uc.companies).filter(Boolean)
+      }
+
       setCompanies(companyList)
       
       if (companyList.length > 0 && !selectedCompany) {
         setSelectedCompany(companyList[0].id)
+      } else if (companyList.length === 0) {
+        setLoading(false)
       }
     } catch (error) {
       console.error('Erro ao carregar empresas:', error)
       toast.error('Erro ao carregar empresas')
+      setLoading(false)
     }
   }
 
@@ -106,13 +126,16 @@ export default function IndicatorsPage() {
 
   const handleCellChange = async (indicatorId, month, value) => {
     try {
+      // Limpar o valor (remover espaços em branco)
+      const cleanValue = value?.trim()
+      
       const existingData = getCompanyIndicatorData(indicatorId)
 
       if (existingData) {
         // Atualizar
         const { error } = await supabase
           .from('company_indicators')
-          .update({ [month]: value })
+          .update({ [month]: cleanValue })
           .eq('id', existingData.id)
 
         if (error) throw error
@@ -124,14 +147,14 @@ export default function IndicatorsPage() {
             company_id: selectedCompany,
             indicator_id: indicatorId,
             year: selectedYear,
-            [month]: value
+            [month]: cleanValue
           })
 
         if (error) throw error
       }
 
       toast.success('Valor atualizado')
-      loadData()
+      await loadData() // Aguardar o carregamento dos dados
     } catch (error) {
       console.error('Erro ao salvar valor:', error)
       toast.error('Erro ao salvar valor')
@@ -140,30 +163,38 @@ export default function IndicatorsPage() {
     }
   }
 
-  const getStatusColor = (indicator, companyData) => {
-    if (!companyData) return 'bg-gray-300'
-
-    // Pegar último mês com dados
-    const lastMonthWithData = months.reverse().find(month => companyData[month])
-    if (!lastMonthWithData) return 'bg-gray-300'
-
-    const value = companyData[lastMonthWithData]
+  const getStatusColor = (indicator, companyData, month) => {
+    if (!companyData) return null
+    
+    const value = companyData[month]
     const meta = indicator.meta
 
-    // Lógica simples de comparação (pode ser melhorada)
+    // Se não houver valor ou meta válidos, retornar null
+    if (!value || value === '' || !meta || meta === '') return null
+
+    // Lógica de comparação
     try {
-      const numValue = parseFloat(value.replace(/[^0-9.-]/g, ''))
-      const numMeta = parseFloat(meta.replace(/[^0-9.-]/g, ''))
+      // Extrair apenas números, pontos decimais e sinais negativos
+      const valueStr = String(value).trim()
+      const metaStr = String(meta).trim()
+      
+      // Remover símbolos comuns de moeda, porcentagem, etc
+      const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''))
+      const numMeta = parseFloat(metaStr.replace(/[^0-9.-]/g, ''))
 
-      if (isNaN(numValue) || isNaN(numMeta)) return 'bg-gray-300'
+      // Validar se conseguimos extrair números válidos
+      if (isNaN(numValue) || isNaN(numMeta) || numMeta === 0) return null
 
+      // Calcular porcentagem de atingimento da meta
       const percentage = (numValue / numMeta) * 100
 
-      if (percentage >= 100) return 'bg-green-500'
-      if (percentage >= 80) return 'bg-yellow-500'
-      return 'bg-red-500'
-    } catch {
-      return 'bg-gray-300'
+      // Retornar cores baseadas na porcentagem
+      if (percentage >= 100) return 'bg-green-100 border-green-300'
+      if (percentage >= 80) return 'bg-yellow-100 border-yellow-300'
+      return 'bg-red-100 border-red-300'
+    } catch (error) {
+      console.error('Erro ao calcular status:', error)
+      return null
     }
   }
 
@@ -218,8 +249,8 @@ export default function IndicatorsPage() {
             <div className="relative">
               <select
                 value={selectedCompany}
-                disabled
-                className="px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-700 shadow-sm cursor-not-allowed text-sm sm:text-base font-medium"
+                onChange={(e) => setSelectedCompany(e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer text-sm sm:text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Selecione uma empresa</option>
                 {companies.map(company => (
@@ -274,11 +305,11 @@ export default function IndicatorsPage() {
             {journeys.map((journey) => {
               const count = indicators.filter(ind => ind.journey === journey).length
               const journeyColors = {
-                'Estratégia': 'border-purple-600 text-purple-600 bg-purple-50/50',
-                'Financeira': 'border-blue-600 text-blue-600 bg-blue-50/50',
+                'Estratégia': 'border-blue-600 text-blue-600 bg-blue-50/50',
+                'Financeira': 'border-green-600 text-green-600 bg-green-50/50',
                 'Receita': 'border-orange-600 text-orange-600 bg-orange-50/50',
-                'Pessoas & Cultura': 'border-pink-600 text-pink-600 bg-pink-50/50',
-                'Operacional': 'border-green-600 text-green-600 bg-green-50/50'
+                'Pessoas & Cultura': 'border-purple-600 text-purple-600 bg-purple-50/50',
+                'Operacional': 'border-red-600 text-red-600 bg-red-50/50'
               }
               
               return (
@@ -346,9 +377,6 @@ export default function IndicatorsPage() {
                         {month}
                       </th>
                     ))}
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Status
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
@@ -373,39 +401,42 @@ export default function IndicatorsPage() {
                             {indicator.meta}
                           </span>
                         </td>
-                        {months.map((month) => (
-                          <td key={month} className="px-4 py-4 text-center">
-                            {editingCell?.indicatorId === indicator.id && editingCell?.month === month ? (
-                              <input
-                                type="text"
-                                defaultValue={companyData?.[month] || ''}
-                                onBlur={(e) => handleCellChange(indicator.id, month, e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleCellChange(indicator.id, month, e.target.value)
-                                  }
-                                  if (e.key === 'Escape') {
-                                    setEditingCell(null)
-                                  }
-                                }}
-                                autoFocus
-                                className="w-full px-3 py-2 text-sm border-2 border-orange-500 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-center shadow-md"
-                              />
-                            ) : (
-                              <div
-                                onClick={() => handleCellClick(indicator.id, month)}
-                                className="text-sm font-medium text-gray-900 cursor-pointer hover:bg-orange-50 hover:border-orange-200 px-3 py-2 rounded-lg min-h-[36px] flex items-center justify-center transition-all border border-transparent"
-                              >
-                                {companyData?.[month] || '-'}
-                              </div>
-                            )}
-                          </td>
-                        ))}
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex items-center justify-center">
-                            <div className={`w-4 h-4 rounded-full shadow-sm ${getStatusColor(indicator, companyData)}`} />
-                          </div>
-                        </td>
+                        {months.map((month, index) => {
+                          const bgColor = getStatusColor(indicator, companyData, month)
+                          
+                          return (
+                            <td key={month} className="px-4 py-4 text-center">
+                              {editingCell?.indicatorId === indicator.id && editingCell?.month === month ? (
+                                <input
+                                  type="text"
+                                  defaultValue={companyData?.[month] || ''}
+                                  onBlur={(e) => handleCellChange(indicator.id, month, e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleCellChange(indicator.id, month, e.target.value)
+                                    }
+                                    if (e.key === 'Escape') {
+                                      setEditingCell(null)
+                                    }
+                                  }}
+                                  autoFocus
+                                  className="w-full px-3 py-2 text-sm border-2 border-orange-500 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-center shadow-md"
+                                />
+                              ) : (
+                                <div
+                                  onClick={() => handleCellClick(indicator.id, month)}
+                                  className={`text-sm font-medium text-gray-900 cursor-pointer px-3 py-2 rounded-lg min-h-[36px] flex items-center justify-center transition-all ${
+                                    bgColor 
+                                      ? `${bgColor} hover:opacity-80` 
+                                      : 'border border-transparent hover:bg-orange-50 hover:border-orange-200'
+                                  }`}
+                                >
+                                  {companyData?.[month] || '-'}
+                                </div>
+                              )}
+                            </td>
+                          )
+                        })}
                       </tr>
                     )
                   })}

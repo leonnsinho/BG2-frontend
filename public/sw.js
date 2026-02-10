@@ -1,6 +1,6 @@
 // Service Worker para PWA
 const CACHE_NAME = 'bg2-v6' // Incrementar para forçar atualização
-const APP_VERSION = '3.0.14' // Incrementar quando houver updates - IMPORTANTE: Mudar isso dispara atualização!
+const APP_VERSION = '3.0.16' // Incrementar quando houver updates - IMPORTANTE: Mudar isso dispara atualização!
 const urlsToCache = [
   '/',
   '/index.html',
@@ -109,6 +109,11 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
   
+  // Ignora requisições que não são HTTP/HTTPS (extensões do Chrome, etc)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return
+  }
+  
   // Sempre buscar do servidor para recursos críticos
   if (NEVER_CACHE.some(path => url.pathname.endsWith(path))) {
     event.respondWith(
@@ -124,6 +129,12 @@ self.addEventListener('fetch', (event) => {
       .then((response) => {
         // Verifica se a resposta é válida
         if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response
+        }
+
+        // Ignora URLs que não são HTTP/HTTPS (como chrome-extension://)
+        const requestUrl = new URL(event.request.url)
+        if (requestUrl.protocol !== 'http:' && requestUrl.protocol !== 'https:') {
           return response
         }
 

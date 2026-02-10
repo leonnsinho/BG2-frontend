@@ -164,6 +164,59 @@ function DFCEntradasPage() {
     }
   }, [searchParams])
 
+  // Carregar itens quando a empresa for selecionada
+  useEffect(() => {
+    const loadItensEmpresa = async () => {
+      if (!formData.company_id) {
+        setItensDB([])
+        return
+      }
+
+      try {
+        // Buscar IDs dos itens associados à empresa selecionada
+        const { data: itensEmpresaIds } = await supabase
+          .from('dfc_itens_empresas')
+          .select('item_id')
+          .eq('company_id', formData.company_id)
+        
+        const idsEmpresa = new Set(itensEmpresaIds?.map(ie => ie.item_id) || [])
+        
+        // Buscar TODOS os IDs de itens que têm associações (qualquer empresa)
+        // Usando RPC function que ignora RLS
+        const { data: todosItensAssociados, error: errorRpc } = await supabase
+          .rpc('get_itens_com_associacoes')
+        
+        let idsTodosAssociados = new Set()
+        if (!errorRpc && todosItensAssociados) {
+          idsTodosAssociados = new Set(todosItensAssociados.map(r => r.item_id))
+        } else if (errorRpc) {
+          console.error('⚠️ AVISO: Não foi possível buscar IDs de itens com associações:', errorRpc)
+          console.log('💡 Execute o SQL: sql/create_rpc_get_itens_com_associacoes.sql no Supabase')
+        }
+        
+        // Buscar todos os itens
+        const { data: todosItens } = await supabase
+          .from('dfc_itens')
+          .select('*')
+          .order('nome')
+        
+        // Filtrar: apenas itens da empresa OU itens que não estão associados a nenhuma empresa (globais)
+        const itensFiltrados = todosItens?.filter(item => 
+          idsEmpresa.has(item.id) || !idsTodosAssociados.has(item.id)
+        ) || []
+        
+        console.log(`📋 DFC ENTRADAS - Itens carregados: ${itensFiltrados.length} (empresa: ${idsEmpresa.size}, globais: ${itensFiltrados.length - idsEmpresa.size})`)
+        
+        setItensDB(itensFiltrados)
+      } catch (error) {
+        console.error('Erro ao carregar itens:', error)
+        setItensDB([])
+      }
+    }
+
+    loadItensEmpresa()
+  }, [formData.company_id])
+
   // Gerar automaticamente as datas das parcelas quando houver mudanças
   useEffect(() => {
     if (isParcelado && formData.vencimento && numeroParcelas >= 2) {
@@ -193,7 +246,7 @@ function DFCEntradasPage() {
 
       if (categoriasError) throw categoriasError
 
-      // Buscar itens
+      // Buscar todos os itens
       const { data: itensData, error: itensError } = await supabase
         .from('dfc_itens')
         .select('*')
@@ -201,8 +254,38 @@ function DFCEntradasPage() {
 
       if (itensError) throw itensError
 
+      // Se for company_admin ou gestor, filtrar itens na carga inicial
+      let itensFiltrados = itensData || []
+      const userCompanyId = getCurrentUserCompany()
+      
+      if ((isCompanyAdmin() || isGestor()) && !isSuperAdmin() && userCompanyId) {
+        // Buscar IDs de itens associados à empresa do usuário
+        const { data: itensEmpresaIds } = await supabase
+          .from('dfc_itens_empresas')
+          .select('item_id')
+          .eq('company_id', userCompanyId)
+        
+        const idsEmpresa = new Set(itensEmpresaIds?.map(ie => ie.item_id) || [])
+        
+        // Buscar TODOS os IDs de itens com associações (RPC ignora RLS)
+        const { data: todosItensAssociados, error: errorRpc } = await supabase
+          .rpc('get_itens_com_associacoes')
+        
+        let idsTodosAssociados = new Set()
+        if (!errorRpc && todosItensAssociados) {
+          idsTodosAssociados = new Set(todosItensAssociados.map(r => r.item_id))
+        }
+        
+        // Filtrar: itens da empresa OU itens globais (sem associações)
+        itensFiltrados = itensData?.filter(item => 
+          idsEmpresa.has(item.id) || !idsTodosAssociados.has(item.id)
+        ) || []
+        
+        console.log(`📋 DFC ENTRADAS CARGA INICIAL - Itens filtrados: ${itensFiltrados.length} de ${itensData?.length || 0}`)
+      }
+
       setCategorias(categoriasData || [])
-      setItensDB(itensData || [])
+      setItensDB(itensFiltrados)
     } catch (error) {
       console.error('Erro ao buscar categorias e itens:', error)
       toast.error('Erro ao carregar categorias e itens')

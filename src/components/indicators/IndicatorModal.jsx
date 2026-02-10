@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { X, TrendingUp, Target, DollarSign, User, FileText, Zap } from 'lucide-react'
+import { usePermissions } from '../../hooks/usePermissions'
+import { X, TrendingUp, Target, DollarSign, User, FileText, Zap, Building2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-export default function IndicatorModal({ indicator, users, onClose, onSave }) {
+export default function IndicatorModal({ indicator, onClose, onSave }) {
   const { profile } = useAuth()
+  const permissions = usePermissions()
   const [formData, setFormData] = useState({
     name: '',
     journey: 'Operacional',
@@ -13,12 +15,117 @@ export default function IndicatorModal({ indicator, users, onClose, onSave }) {
     meta: '',
     responsible_user_id: '',
     is_active: true,
-    description: ''
+    description: '',
+    company_id: ''
   })
   const [loading, setLoading] = useState(false)
+  const [companies, setCompanies] = useState([])
+  const [loadingCompanies, setLoadingCompanies] = useState(false)
+  const [companyUsers, setCompanyUsers] = useState([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
 
   const journeys = ['Estratégia', 'Financeira', 'Receita', 'Pessoas & Cultura', 'Operacional']
   const types = ['Percentual', 'Monetário', 'Financeiro', 'Dias', 'Índice']
+
+  // Carregar empresas se for super admin
+  useEffect(() => {
+    if (permissions.isSuperAdmin()) {
+      loadCompanies()
+    } else {
+      // Se não for super admin, pegar automaticamente a empresa do usuário
+      loadUserCompany()
+    }
+  }, [])
+
+  const loadCompanies = async () => {
+    try {
+      setLoadingCompanies(true)
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name')
+        .order('name')
+
+      if (error) throw error
+      setCompanies(data || [])
+    } catch (error) {
+      console.error('Erro ao carregar empresas:', error)
+      toast.error('Erro ao carregar empresas')
+    } finally {
+      setLoadingCompanies(false)
+    }
+  }
+
+  const loadUserCompany = async () => {
+    try {
+      const { data: userCompanies, error } = await supabase
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', profile.id)
+        .eq('is_active', true)
+        .limit(1)
+        .single()
+
+      if (error) throw error
+      
+      if (userCompanies?.company_id) {
+        setFormData(prev => ({ ...prev, company_id: userCompanies.company_id }))
+      }
+    } catch (error) {
+      console.error('Erro ao carregar empresa do usuário:', error)
+    }
+  }
+
+  const loadCompanyUsers = async (companyId) => {
+    if (!companyId) {
+      setCompanyUsers([])
+      return
+    }
+
+    try {
+      setLoadingUsers(true)
+      
+      // Buscar usuários vinculados à empresa
+      const { data: userCompanies, error: ucError } = await supabase
+        .from('user_companies')
+        .select('user_id')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+
+      if (ucError) throw ucError
+
+      const userIds = userCompanies.map(uc => uc.user_id)
+
+      if (userIds.length === 0) {
+        setCompanyUsers([])
+        return
+      }
+
+      // Buscar perfis dos usuários
+      const { data: users, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .in('id', userIds)
+        .order('full_name')
+
+      if (usersError) throw usersError
+      setCompanyUsers(users || [])
+    } catch (error) {
+      console.error('Erro ao carregar usuários da empresa:', error)
+      toast.error('Erro ao carregar usuários')
+      setCompanyUsers([])
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  // Carregar usuários quando a empresa mudar
+  useEffect(() => {
+    if (formData.company_id) {
+      loadCompanyUsers(formData.company_id)
+    } else {
+      setCompanyUsers([])
+    }
+  }, [formData.company_id])
 
   useEffect(() => {
     if (indicator) {
@@ -29,7 +136,8 @@ export default function IndicatorModal({ indicator, users, onClose, onSave }) {
         meta: indicator.meta || '',
         responsible_user_id: indicator.responsible_user_id || '',
         is_active: indicator.is_active ?? true,
-        description: indicator.description || ''
+        description: indicator.description || '',
+        company_id: indicator.company_id || ''
       })
     }
   }, [indicator])
@@ -47,6 +155,11 @@ export default function IndicatorModal({ indicator, users, onClose, onSave }) {
       return
     }
 
+    if (!formData.company_id) {
+      toast.error('Empresa é obrigatória')
+      return
+    }
+
     try {
       setLoading(true)
 
@@ -60,23 +173,10 @@ export default function IndicatorModal({ indicator, users, onClose, onSave }) {
         if (error) throw error
         toast.success('Indicador atualizado com sucesso')
       } else {
-        // Criar novo - buscar company_id do usuário
-        const { data: userCompanies, error: ucError } = await supabase
-          .from('user_companies')
-          .select('company_id')
-          .eq('user_id', profile.id)
-          .eq('is_active', true)
-          .limit(1)
-          .single()
-
-        if (ucError) throw ucError
-
+        // Criar novo
         const { error } = await supabase
           .from('management_indicators')
-          .insert([{
-            ...formData,
-            company_id: userCompanies.company_id
-          }])
+          .insert([formData])
 
         if (error) throw error
         toast.success('Indicador criado com sucesso')
@@ -92,7 +192,16 @@ export default function IndicatorModal({ indicator, users, onClose, onSave }) {
   }
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value }
+      
+      // Se mudar a empresa, limpar o responsável selecionado
+      if (field === 'company_id' && prev.company_id !== value) {
+        updated.responsible_user_id = ''
+      }
+      
+      return updated
+    })
   }
 
   return (
@@ -138,6 +247,33 @@ export default function IndicatorModal({ indicator, users, onClose, onSave }) {
               required
             />
           </div>
+
+          {/* Empresa - Só aparece para Super Admin */}
+          {permissions.isSuperAdmin() && (
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                <Building2 className="h-4 w-4 text-blue-500" />
+                Empresa *
+              </label>
+              <select
+                value={formData.company_id}
+                onChange={(e) => handleChange('company_id', e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gradient-to-r from-blue-50 to-white focus:from-white focus:to-white font-medium appearance-none cursor-pointer"
+                required
+                disabled={loadingCompanies}
+              >
+                <option value="">Selecione uma empresa</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+              {loadingCompanies && (
+                <p className="mt-2 text-xs text-gray-500">Carregando empresas...</p>
+              )}
+            </div>
+          )}
 
           {/* Jornada e Tipo */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -213,14 +349,29 @@ export default function IndicatorModal({ indicator, users, onClose, onSave }) {
               value={formData.responsible_user_id}
               onChange={(e) => handleChange('responsible_user_id', e.target.value)}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-gradient-to-r from-amber-50 to-white focus:from-white focus:to-white font-medium appearance-none cursor-pointer"
+              disabled={loadingUsers || !formData.company_id}
             >
-              <option value="">Não atribuído</option>
-              {users.map(user => (
+              <option value="">
+                {loadingUsers ? 'Carregando usuários...' : 
+                 !formData.company_id ? 'Selecione uma empresa primeiro' : 
+                 'Não atribuído'}
+              </option>
+              {companyUsers.map(user => (
                 <option key={user.id} value={user.id}>
                   {user.full_name || user.email}
                 </option>
               ))}
             </select>
+            {!formData.company_id && (
+              <p className="mt-2 text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+                💡 Selecione uma empresa para ver os usuários disponíveis
+              </p>
+            )}
+            {formData.company_id && companyUsers.length === 0 && !loadingUsers && (
+              <p className="mt-2 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+                ℹ️ Nenhum usuário encontrado nesta empresa
+              </p>
+            )}
           </div>
 
           {/* Descrição */}
