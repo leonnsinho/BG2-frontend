@@ -45,7 +45,6 @@ let globalDeferredPrompt = null
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => {
-    console.log('🎉 EVENTO GLOBAL CAPTURADO!')
     e.preventDefault()
     globalDeferredPrompt = e
   })
@@ -341,19 +340,10 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
   // 🔥 Usuário comum - APENAS Dashboard e Minhas Tarefas (se tiver empresa)
   const userItems = [...baseItems]
   
-  console.log('🔍 DEBUG SIDEBAR USUÁRIO:', {
-    hasCompanyId: !!profile?.company_id,
-    companyId: profile?.company_id,
-    hasUserCompanies: !!(profile?.user_companies && profile.user_companies.length > 0),
-    userCompaniesLength: profile?.user_companies?.length,
-    profileRole: profile?.role
-  })
-  
   // Se o usuário está associado a uma empresa (via user_companies)
   const hasCompany = profile?.company_id || (profile?.user_companies && profile.user_companies.length > 0)
-  
+
   if (hasCompany) {
-    console.log('✅ Adicionando Minhas Ações ao sidebar do usuário')
     userItems.push({
       name: 'Minhas Ações',
       icon: CheckSquare,
@@ -361,8 +351,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       roles: ['user']
     })
   }
-  
-  console.log('📋 Items do sidebar do usuário:', userItems)
+
   return userItems
 }
 
@@ -483,7 +472,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     }
 
     const handleBeforeInstallPrompt = (e) => {
-      console.log('🎉 EVENTO BEFOREINSTALLPROMPT LOCAL CAPTURADO!')
       e.preventDefault()
       globalDeferredPrompt = e
       setDeferredPrompt(e)
@@ -491,7 +479,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     }
 
     const handleAppInstalled = () => {
-      console.log('✅ PWA instalado!')
       globalDeferredPrompt = null
       setDeferredPrompt(null)
       setIsStandalone(true)
@@ -513,7 +500,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     const promptToUse = deferredPrompt || globalDeferredPrompt
 
     if (!promptToUse) {
-      console.log('❌ Instalação automática indisponível')
       alert('Seu navegador não permitiu a instalação automática. Tente pelo menu do navegador (três pontos > Instalar App).')
       return
     }
@@ -521,7 +507,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     try {
       await promptToUse.prompt()
       const { outcome } = await promptToUse.userChoice
-      
+
       if (outcome === 'accepted') {
         setIsStandalone(true)
         setIsInstallable(false)
@@ -529,7 +515,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
         globalDeferredPrompt = null
       }
     } catch (error) {
-      console.error('❌ Erro ao instalar PWA:', error)
+      console.error('Erro ao instalar PWA:', error)
     }
   }
 
@@ -549,7 +535,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
             [messageChannel.port2]
           )
         } catch (error) {
-          console.log('Não foi possível obter versão do SW')
+          // Silently ignore version fetch errors
         }
       }
     }
@@ -643,7 +629,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     // Se as permissões de ferramentas ainda estão carregando, mostrar skeleton
     // (evita mostrar tudo e depois esconder)
     if (toolPermissionsLoading) {
-      console.log('🔧 SIDEBAR: Aguardando carregamento de permissões de ferramentas...')
       return [
         {
           name: 'Carregando...',
@@ -668,43 +653,32 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     
     // Usuários vinculados: interface normal
     const items = getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess)
-    
-    console.log('🔧 SIDEBAR: Filtrando itens com permissões de ferramentas...')
-    
+
     // Filtrar itens baseado nas permissões de ferramentas
     const filteredItems = items.filter(item => {
       // Se o item tem um href mapeado para tool_slug, verificar permissão
       const toolSlug = ROUTE_TO_TOOL_SLUG[item.href]
       if (toolSlug) {
         const access = hasToolAccess(toolSlug)
-        console.log(`🔧 SIDEBAR: Item "${item.name}" (${item.href}) -> slug: ${toolSlug}, acesso: ${access}`)
         if (!access) {
-          console.log(`🔧 SIDEBAR: ❌ BLOQUEANDO item "${item.name}"`)
           return false
         }
       }
-      
+
       // Se tem children, filtrar os filhos também
       if (item.children) {
-        const originalChildrenCount = item.children.length
         item.children = item.children.filter(child => {
           const childToolSlug = ROUTE_TO_TOOL_SLUG[child.href]
           if (childToolSlug) {
-            const childAccess = hasToolAccess(childToolSlug)
-            console.log(`🔧 SIDEBAR: Child "${child.name}" (${child.href}) -> slug: ${childToolSlug}, acesso: ${childAccess}`)
-            return childAccess
+            return hasToolAccess(childToolSlug)
           }
           return true
         })
-        if (originalChildrenCount !== item.children.length) {
-          console.log(`🔧 SIDEBAR: Filtrando children de "${item.name}": ${originalChildrenCount} -> ${item.children.length}`)
-        }
       }
-      
+
       return true
     })
-    
-    console.log(`🔧 SIDEBAR: Total de itens: ${items.length} -> ${filteredItems.length}`)
+
     return filteredItems
   }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess])
 

@@ -18,16 +18,13 @@ import { supabase } from './supabase'
  */
 export const calculateProcessProgress = async (processId, companyId) => {
   try {
-    console.log('📊 Calculando progresso do processo:', { processId, companyId })
-
     if (!processId || !companyId) {
-      console.warn('⚠️ ProcessId ou CompanyId não fornecido')
       return { total: 0, completed: 0, percentage: 0 }
     }
 
     // Query direta para contar tarefas (mais confiável que RPC)
     // Adicionar timeout de 10 segundos
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Timeout ao buscar tarefas')), 10000)
     )
 
@@ -40,7 +37,7 @@ export const calculateProcessProgress = async (processId, companyId) => {
     const { data: tasks, error } = await Promise.race([queryPromise, timeoutPromise])
 
     if (error) {
-      console.error('❌ Erro ao buscar tarefas:', error)
+      console.error('Erro ao buscar tarefas:', error)
       throw error
     }
 
@@ -50,15 +47,13 @@ export const calculateProcessProgress = async (processId, companyId) => {
     const completed = relevantTasks.filter(t => t.status === 'completed').length
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
 
-    console.log('✅ Progresso calculado:', { total, completed, percentage })
-    
     return {
       total,
       completed,
       percentage
     }
   } catch (error) {
-    console.error('❌ Erro ao calcular progresso:', error)
+    console.error('Erro ao calcular progresso:', error)
     // Retornar valores padrão em caso de erro
     return { total: 0, completed: 0, percentage: 0 }
   }
@@ -75,8 +70,6 @@ export const calculateProcessProgress = async (processId, companyId) => {
  */
 export const requestMaturityApproval = async (processId, companyId, journeyId, gestorId, notes = '') => {
   try {
-    console.log('🚀 Criando solicitação de amadurecimento:', { processId, companyId, journeyId, gestorId })
-
     // Validar parâmetros
     if (!processId || !companyId || !journeyId || !gestorId) {
       throw new Error('Parâmetros obrigatórios não fornecidos')
@@ -103,8 +96,6 @@ export const requestMaturityApproval = async (processId, companyId, journeyId, g
     // 2. Calcular progresso
     const progress = await calculateProcessProgress(processId, companyId)
 
-    console.log('📊 Progresso calculado:', progress)
-
     if (progress.percentage < 100) {
       throw new Error(`Processo ainda não atingiu 100% de conclusão (atual: ${progress.percentage.toFixed(1)}%)`)
     }
@@ -128,8 +119,6 @@ export const requestMaturityApproval = async (processId, companyId, journeyId, g
       gestor_notes: notes || null
     }
 
-    console.log('📝 Dados da solicitação:', requestData)
-
     const { data, error } = await supabase
       .from('process_maturity_requests')
       .insert(requestData)
@@ -141,14 +130,13 @@ export const requestMaturityApproval = async (processId, companyId, journeyId, g
       throw error
     }
 
-    console.log('✅ Solicitação criada com sucesso:', data)
     return data
   } catch (error) {
-    console.error('❌ Erro ao criar solicitação:', error)
-    
+    console.error('Erro ao criar solicitação:', error)
+
     // Formatar mensagem de erro de forma mais amigável
     let errorMessage = 'Erro ao criar solicitação de amadurecimento'
-    
+
     if (error.message) {
       errorMessage = error.message
     } else if (error.code) {
@@ -166,7 +154,7 @@ export const requestMaturityApproval = async (processId, companyId, journeyId, g
           errorMessage = `Erro no banco de dados (${error.code})`
       }
     }
-    
+
     throw new Error(errorMessage)
   }
 }
@@ -180,8 +168,6 @@ export const requestMaturityApproval = async (processId, companyId, journeyId, g
  */
 export const gestorApproveMaturity = async (requestId, gestorId, notes = '') => {
   try {
-    console.log('✅ Gestor aprovando amadurecimento:', { requestId, gestorId })
-
     const { data, error } = await supabase
       .from('process_maturity_requests')
       .update({
@@ -196,14 +182,12 @@ export const gestorApproveMaturity = async (requestId, gestorId, notes = '') => 
 
     if (error) throw error
 
-    console.log('✅ Aprovação do gestor registrada:', data)
-
     // TODO: Criar notificação para Company Admin
     // Será implementado quando integrarmos com sistema de notificações
 
     return data
   } catch (error) {
-    console.error('❌ Erro ao aprovar como gestor:', error)
+    console.error('Erro ao aprovar como gestor:', error)
     throw error
   }
 }
@@ -217,8 +201,6 @@ export const gestorApproveMaturity = async (requestId, gestorId, notes = '') => 
  */
 export const adminApproveMaturity = async (requestId, adminId, notes = '') => {
   try {
-    console.log('🎉 Admin aprovando amadurecimento:', { requestId, adminId })
-
     // 1. Buscar dados da solicitação
     const { data: request, error: fetchError } = await supabase
       .from('process_maturity_requests')
@@ -243,12 +225,10 @@ export const adminApproveMaturity = async (requestId, adminId, notes = '') => {
 
     if (error) throw error
 
-    console.log('✅ Aprovação do admin registrada:', data)
-
     // 3. ATUALIZAR AVALIAÇÃO DO PROCESSO - MARCAR COMO AMADURECIDO
     const { error: evalError } = await supabase
       .from('process_evaluations')
-      .update({ 
+      .update({
         has_process: true,
         updated_at: new Date().toISOString()
       })
@@ -256,11 +236,9 @@ export const adminApproveMaturity = async (requestId, adminId, notes = '') => {
       .eq('company_id', request.company_id)
 
     if (evalError) {
-      console.error('❌ Erro ao atualizar avaliação:', evalError)
+      console.error('Erro ao atualizar avaliação:', evalError)
       throw evalError
     }
-
-    console.log('🎉 Processo marcado como AMADURECIDO no banco de dados!')
 
     // 4. REGISTRAR NO HISTÓRICO DE MATURIDADE (para análise temporal)
     const { error: historyError } = await supabase
@@ -276,23 +254,19 @@ export const adminApproveMaturity = async (requestId, adminId, notes = '') => {
       })
 
     if (historyError) {
-      console.error('⚠️ Erro ao registrar histórico (não crítico):', historyError)
       // Não lançar erro - o histórico é secundário
-    } else {
-      console.log('📊 Histórico de maturidade registrado com sucesso')
     }
 
     // 5. SNAPSHOT AUTOMÁTICO será criado pelo trigger do banco
     // O trigger auto_snapshot_on_process_approval detecta a aprovação
     // e cria snapshot automaticamente da jornada
-    console.log('📸 Snapshot automático será criado pelo trigger do banco de dados')
 
     // TODO: Criar notificação para o gestor
     // Será implementado quando integrarmos com sistema de notificações
 
     return data
   } catch (error) {
-    console.error('❌ Erro ao aprovar como admin:', error)
+    console.error('Erro ao aprovar como admin:', error)
     throw error
   }
 }
@@ -306,8 +280,6 @@ export const adminApproveMaturity = async (requestId, adminId, notes = '') => {
  */
 export const rejectMaturityRequest = async (requestId, userId, reason) => {
   try {
-    console.log('❌ Rejeitando solicitação:', { requestId, userId, reason })
-
     const { data, error } = await supabase
       .from('process_maturity_requests')
       .update({
@@ -322,14 +294,12 @@ export const rejectMaturityRequest = async (requestId, userId, reason) => {
 
     if (error) throw error
 
-    console.log('✅ Solicitação rejeitada:', data)
-
     // TODO: Criar notificação para o solicitante
     // Será implementado quando integrarmos com sistema de notificações
 
     return data
   } catch (error) {
-    console.error('❌ Erro ao rejeitar solicitação:', error)
+    console.error('Erro ao rejeitar solicitação:', error)
     throw error
   }
 }
@@ -341,8 +311,6 @@ export const rejectMaturityRequest = async (requestId, userId, reason) => {
  */
 export const getPendingMaturityRequests = async (companyId = null) => {
   try {
-    console.log('📋 Buscando solicitações pendentes...')
-
     let query = supabase
       .from('maturity_requests_full')
       .select('*')
@@ -358,10 +326,9 @@ export const getPendingMaturityRequests = async (companyId = null) => {
 
     if (error) throw error
 
-    console.log(`✅ ${data?.length || 0} solicitações pendentes encontradas`)
     return data || []
   } catch (error) {
-    console.error('❌ Erro ao buscar solicitações:', error)
+    console.error('Erro ao buscar solicitações:', error)
     throw error
   }
 }
@@ -374,8 +341,6 @@ export const getPendingMaturityRequests = async (companyId = null) => {
  */
 export const getGestorMaturityRequests = async (gestorId, companyId) => {
   try {
-    console.log('📋 Buscando solicitações do gestor...')
-
     const { data, error } = await supabase
       .from('maturity_requests_full')
       .select('*')
@@ -385,10 +350,9 @@ export const getGestorMaturityRequests = async (gestorId, companyId) => {
 
     if (error) throw error
 
-    console.log(`✅ ${data?.length || 0} solicitações encontradas`)
     return data || []
   } catch (error) {
-    console.error('❌ Erro ao buscar solicitações:', error)
+    console.error('Erro ao buscar solicitações:', error)
     throw error
   }
 }
@@ -443,7 +407,7 @@ export const canProcessBeMature = async (processId, companyId) => {
       progress
     }
   } catch (error) {
-    console.error('❌ Erro ao verificar amadurecimento:', error)
+    console.error('Erro ao verificar amadurecimento:', error)
     return {
       canMature: false,
       reason: 'Erro ao verificar status',
@@ -464,22 +428,14 @@ export const canProcessBeMature = async (processId, companyId) => {
  * @returns {Object} Avaliação criada
  */
 export const recordMaturityEvaluation = async (
-  processId, 
-  companyId, 
-  evaluatedBy, 
-  isMature, 
+  processId,
+  companyId,
+  evaluatedBy,
+  isMature,
   maturityScore = null,
   notes = ''
 ) => {
   try {
-    console.log('📝 Registrando avaliação manual de maturidade:', {
-      processId,
-      companyId,
-      evaluatedBy,
-      isMature,
-      maturityScore
-    })
-
     const evaluationData = {
       process_id: processId,
       company_id: companyId,
@@ -497,14 +453,13 @@ export const recordMaturityEvaluation = async (
       .single()
 
     if (error) {
-      console.error('❌ Erro ao registrar avaliação:', error)
+      console.error('Erro ao registrar avaliação:', error)
       throw error
     }
 
-    console.log('✅ Avaliação registrada com sucesso:', data)
     return data
   } catch (error) {
-    console.error('❌ Erro ao registrar avaliação manual:', error)
+    console.error('Erro ao registrar avaliação manual:', error)
     throw error
   }
 }
@@ -535,7 +490,7 @@ export const getProcessEvaluationHistory = async (processId, companyId) => {
 
     return data || []
   } catch (error) {
-    console.error('❌ Erro ao buscar histórico de avaliações:', error)
+    console.error('Erro ao buscar histórico de avaliações:', error)
     throw error
   }
 }
@@ -589,7 +544,7 @@ export const getMaturityStats = async (companyId, startDate, endDate = new Date(
     // Calcular percentuais
     Object.keys(byJourney).forEach(slug => {
       const journey = byJourney[slug]
-      journey.maturityPercentage = journey.total > 0 
+      journey.maturityPercentage = journey.total > 0
         ? Math.round((journey.mature / journey.total) * 100)
         : 0
     })
@@ -603,7 +558,7 @@ export const getMaturityStats = async (companyId, startDate, endDate = new Date(
       }
     }
   } catch (error) {
-    console.error('❌ Erro ao buscar estatísticas:', error)
+    console.error('Erro ao buscar estatísticas:', error)
     throw error
   }
 }
@@ -627,7 +582,7 @@ export const getProcessMaturityHistory = async (processId, companyId) => {
 
     return data || []
   } catch (error) {
-    console.error('❌ Erro ao buscar histórico:', error)
+    console.error('Erro ao buscar histórico:', error)
     throw error
   }
 }

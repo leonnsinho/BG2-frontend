@@ -1,8 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { supabase } from '../services/supabase'
 import { updateUserActivity } from './updateUserActivity'
-
-console.log('%%%%%%%%%%% AUTHCONTEXT CARREGADO - VERSAO 21/11/2025 - 19:00 - FIX RETRY %%%%%%%%%%%')
 
 const AuthContext = createContext({})
 
@@ -10,7 +8,6 @@ const AuthContext = createContext({})
 const globalProfileCache = new Map()
 const CACHE_TIMEOUT = 60000 // 60 segundos (mais longo para evitar reloads)
 const CRITICAL_CACHE_TIMEOUT = 120000 // 2 minutos para perfis críticos
-const MAX_RETRY_ATTEMPTS = 0 // SEM retry - falha rápido e usa cache
 
 // Flag para coordenar primeiro carregamento (evita race condition)
 let isFirstLoadInProgress = false
@@ -57,35 +54,15 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null)
   const pendingFetches = useRef({}) // Controle de chamadas simultâneas
 
-  // Sistema de retry para operações críticas
-  const retryOperation = async (operation, maxAttempts = MAX_RETRY_ATTEMPTS, delay = 500) => {
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        return await operation()
-      } catch (error) {
-        console.warn(`⚠️ Tentativa ${attempt}/${maxAttempts} falhou:`, error.message)
-        
-        if (attempt === maxAttempts) {
-          throw error
-        }
-        
-        // Delay reduzido: 500ms apenas
-        await new Promise(resolve => setTimeout(resolve, delay))
-      }
-    }
-  }
-
-  // Buscar perfil do usuário com carregamento otimizado e retry
+  // Buscar perfil do usuário com carregamento otimizado
   const fetchProfile = async (userId, useCache = true) => {
     if (!userId) return null
     
     // Evitar múltiplas chamadas simultâneas para o mesmo usuário
     if (pendingFetches.current[userId]) {
-      console.log('⏳ [PERF] Fetch já em andamento, reutilizando promise existente...')
       try {
         return await pendingFetches.current[userId]
       } catch (error) {
-        console.warn('⚠️ [PERF] Promise existente falhou, tentando novamente:', error.message)
         // Se a promise existente falhou, limpar e tentar novamente
         delete pendingFetches.current[userId]
         // Não fazer return aqui, continuar para nova tentativa
@@ -99,50 +76,33 @@ export function AuthProvider({ children }) {
     if (useCache && cachedData) {
       const timeout = isCriticalProfile(cachedData.data) ? CRITICAL_CACHE_TIMEOUT : CACHE_TIMEOUT
       if (Date.now() - cachedData.timestamp < timeout) {
-        console.log('💾 Usando perfil do cache (válido por mais', Math.round((timeout - (Date.now() - cachedData.timestamp)) / 1000), 'segundos)')
         return cachedData.data
-      } else {
-        console.log('⏰ Cache expirado, recarregando perfil...')
       }
     }
     
     // Criar promise e armazenar para evitar chamadas duplicadas
     const fetchPromise = (async () => {
-      const startTime = Date.now()
-      const caller = new Error().stack.split('\n')[3]?.trim() || 'unknown'
       try {
-        console.log('⏳ [PERF] Iniciando carregamento de perfil...', userId)
-        console.log('🔍 [PERF] Chamado por:', caller.substring(0, 100))
-        
-        // Buscar perfil básico com timeout mais generoso
-        const queryStartTime = Date.now()
+        // Buscar perfil básico com timeout
         const profilePromise = supabase
           .from('profiles')
           .select('*')
           .eq('id', userId)
           .single()
         
-        console.log('📤 [PERF] Query enviada, aguardando resposta...')
-        
         // Timeout reduzido: 3 segundos (RLS otimizado!)
         const profileResult = await Promise.race([
           profilePromise,
-          new Promise((_, reject) => 
+          new Promise((_, reject) =>
             setTimeout(() => {
-              const elapsed = Date.now() - queryStartTime
-              console.error(`❌ [PERF] TIMEOUT após ${elapsed}ms - Query profiles demorou demais!`)
               reject(new Error('Profile timeout'))
             }, 3000)
           )
         ])
-        
-        const queryTime = Date.now() - queryStartTime
-        console.log(`✅ [PERF] Perfil básico carregado em ${queryTime}ms`)
 
         // Verificar erro
         if (profileResult?.error) {
           if (profileResult.error.code === 'PGRST116') {
-            console.warn('⚠️ Perfil não encontrado, criando perfil básico')
             const basicProfile = {
               id: userId,
               email: user?.email || 'usuário@sistema.com',
@@ -157,8 +117,6 @@ export function AuthProvider({ children }) {
         }
 
         const profileData = profileResult.data
-        
-        console.log(`📊 [PERF] Total até perfil básico: ${Date.now() - startTime}ms`)
 
         // Retornar perfil básico IMEDIATAMENTE para não travar a UI
         const basicProfile = {
@@ -171,25 +129,17 @@ export function AuthProvider({ children }) {
           data: basicProfile,
           timestamp: Date.now()
         })
-        
-        console.log('🚀 [PERF] Retornando perfil básico, carregando empresas em background...')
 
         // Carregar empresas em background (não bloqueia)
         setTimeout(async () => {
           try {
-            const companiesStartTime = Date.now()
-            console.log('🏢 [PERF] Iniciando carregamento de empresas...')
-            
             const { data: userCompaniesData, error: ucError } = await supabase
               .from('user_companies')
               .select('id, role, is_active, permissions, company_id')
               .eq('user_id', userId)
               .eq('is_active', true)
-            
-            console.log(`📤 [PERF] user_companies carregado em ${Date.now() - companiesStartTime}ms`)
-            
+
             if (ucError) {
-              console.warn('⚠️ Erro ao buscar user_companies:', ucError.message)
               return
             }
 
@@ -197,19 +147,12 @@ export function AuthProvider({ children }) {
             
             if (userCompaniesData?.length > 0) {
               const companyIds = userCompaniesData.map(uc => uc.company_id)
-              
-              const companiesQueryStart = Date.now()
-              const { data: companiesData, error: compError } = await supabase
+
+              const { data: companiesData } = await supabase
                 .from('companies')
                 .select('id, name')
                 .in('id', companyIds)
-              
-              console.log(`📤 [PERF] companies carregado em ${Date.now() - companiesQueryStart}ms`)
-              
-              if (compError) {
-                console.warn('⚠️ Erro ao buscar companies:', compError.message)
-              }
-              
+
               if (companiesData) {
                 enrichedUserCompanies = userCompaniesData.map(uc => ({
                   ...uc,
@@ -225,9 +168,6 @@ export function AuthProvider({ children }) {
               user_companies: enrichedUserCompanies
             }
 
-            const totalTime = Date.now() - companiesStartTime
-            console.log(`🏢 [PERF] Empresas carregadas em ${totalTime}ms - Total geral: ${Date.now() - startTime}ms`)
-            
             globalProfileCache.set(cacheKey, {
               data: fullProfile,
               timestamp: Date.now()
@@ -236,7 +176,7 @@ export function AuthProvider({ children }) {
             setProfile(fullProfile)
 
           } catch (error) {
-            console.warn('⚠️ Erro ao carregar empresas em background:', error.message)
+            // Silently ignore background loading errors
           }
         }, 100) // Carrega empresas após 100ms
 
@@ -244,33 +184,23 @@ export function AuthProvider({ children }) {
 
       } catch (error) {
         const errorMsg = error.message || 'Erro desconhecido'
-        console.warn('⚠️ [PERF] Erro ao buscar perfil:', errorMsg)
-        
+
         // Verificar se é erro de rede/conexão
-        const isNetworkError = errorMsg.includes('Failed to fetch') || 
+        const isNetworkError = errorMsg.includes('Failed to fetch') ||
                               errorMsg.includes('NetworkError') ||
                               errorMsg.includes('timeout') ||
                               error.message === 'Profile timeout'
-        
-        if (isNetworkError) {
-          console.error('🌐 [PERF] ERRO DE REDE DETECTADO - Problema de conexão com Supabase')
-        }
-        
+
         // SEMPRE tentar usar o perfil do cache primeiro
         const existingCache = globalProfileCache.get(cacheKey)
         if (existingCache && existingCache.data) {
-          console.log('✅ Usando perfil do cache devido a erro:', existingCache.data?.email)
-          
           // Se foi erro de rede/timeout, tentar recarregar em background com retry
           if (isNetworkError) {
-            console.log('🔄 Erro de rede detectado, tentando recarregar com retry...')
-            
             let retryCount = 0
             const maxRetries = 3
-            
+
             const retryFetch = async () => {
               retryCount++
-              console.log(`🔄 Tentativa ${retryCount}/${maxRetries} de recarregar perfil...`)
 
               try {
                 const { data: retryData, error: retryError } = await supabase
@@ -282,8 +212,6 @@ export function AuthProvider({ children }) {
                 if (retryError) throw retryError
 
                 if (retryData) {
-                  console.log('✅ Perfil recarregado com sucesso em background!')
-
                   // IMPORTANTE: Preservar user_companies do cache existente
                   // O retry só busca dados da tabela 'profiles', não busca empresas
                   const cachedProfile = globalProfileCache.get(cacheKey)?.data
@@ -300,7 +228,6 @@ export function AuthProvider({ children }) {
 
                   // Carregar empresas em background também (caso não tenha no cache)
                   if (!cachedProfile?.user_companies?.length) {
-                    console.log('🏢 [RETRY] Carregando empresas em background...')
                     try {
                       const { data: userCompaniesData } = await supabase
                         .from('user_companies')
@@ -327,7 +254,6 @@ export function AuthProvider({ children }) {
                             user_companies: enrichedUserCompanies
                           }
 
-                          console.log('🏢 [RETRY] Empresas carregadas:', enrichedUserCompanies.length)
                           globalProfileCache.set(cacheKey, {
                             data: fullProfile,
                             timestamp: Date.now()
@@ -335,39 +261,33 @@ export function AuthProvider({ children }) {
                           setProfile(fullProfile)
                         }
                       }
-                    } catch (compError) {
-                      console.warn('⚠️ [RETRY] Erro ao carregar empresas:', compError.message)
+                    } catch {
+                      // Silently ignore company loading errors
                     }
                   }
                 }
               } catch (retryError) {
-                console.warn(`⚠️ Tentativa ${retryCount} falhou:`, retryError.message)
-
                 // Tentar novamente se não excedeu o limite
                 if (retryCount < maxRetries) {
                   const delay = retryCount * 2000 // 2s, 4s, 6s
-                  console.log(`⏳ Aguardando ${delay/1000}s antes da próxima tentativa...`)
                   setTimeout(retryFetch, delay)
-                } else {
-                  console.error('❌ Todas as tentativas de retry falharam. Usando cache.')
                 }
               }
             }
-            
+
             // Começar retry após 2 segundos
             setTimeout(retryFetch, 2000)
           }
-          
+
           // Retornar cache sem tentar recarregar (evita loops)
           return existingCache.data
         }
         
         // Se não tem cache, tentar buscar pelo email (último recurso)
         const userEmail = user?.email
-        
+
         if (userEmail) {
           try {
-            console.log('🔍 Tentando buscar perfil pelo email como fallback:', userEmail)
             const { data: profileByEmail } = await supabase
               .from('profiles')
               .select(`
@@ -388,9 +308,8 @@ export function AuthProvider({ children }) {
               `)
               .eq('email', userEmail)
               .maybeSingle() // Usa maybeSingle para não dar erro se não encontrar
-            
+
             if (profileByEmail) {
-              console.log('✅ Perfil encontrado pelo email')
               // Salvar no cache
               globalProfileCache.set(cacheKey, {
                 data: profileByEmail,
@@ -399,12 +318,11 @@ export function AuthProvider({ children }) {
               return profileByEmail
             }
           } catch (emailError) {
-            console.warn('⚠️ Erro ao buscar por email:', emailError.message)
+            // Silently ignore email fallback errors
           }
         }
-        
+
         // Último recurso: retornar null e deixar a UI decidir
-        console.warn('❌ Não foi possível carregar perfil, retornando null')
         return null
       } finally {
         // Remover da lista de fetches pendentes
@@ -434,7 +352,6 @@ export function AuthProvider({ children }) {
 
   // Login com email e senha
   const signIn = async (email, password) => {
-    console.log('@@@@@@@@@ SIGNIN CHAMADO - VERSAO NOVA @@@@@@@@@')
     try {
       setLoading(true)
       setError(null)
@@ -449,15 +366,11 @@ export function AuthProvider({ children }) {
         throw new Error(translatedError)
       }
 
-      console.log('@@@@@@@@@ LOGIN BEM SUCEDIDO, user.id:', data.user?.id)
-
       // Buscar perfil após login bem-sucedido
       if (data.user) {
-        console.log('>>> ANTES DE CHAMAR updateUserActivity, userId:', data.user.id)
         // Atualizar dados de atividade (login tracking) - usando função externa
         updateUserActivity(supabase, data.user.id)
-        console.log('>>> DEPOIS DE CHAMAR updateUserActivity')
-        
+
         const userProfile = await fetchProfile(data.user.id)
         setProfile(userProfile)
       }
@@ -505,40 +418,35 @@ export function AuthProvider({ children }) {
     try {
       setIsLoggingOut(true)
       setLoading(true)
-      
+
       // Tentar logout no Supabase, mas não falhar se der erro
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        console.warn('⚠️ Erro no logout do Supabase (ignorando):', error.message)
-        // Não throw do erro - continua com limpeza local
-      }
-      
+      await supabase.auth.signOut()
+      // Continua com limpeza local independente do resultado
+
       // Limpar estado local independente do resultado do servidor
       setUser(null)
       setProfile(null)
       setError(null)
-      
+
       // Limpar cache global de perfis
       globalProfileCache.clear()
-      
+
       // Limpar pending fetches
       pendingFetches.current = {}
-      
+
       // Limpar localStorage se necessário
       try {
         localStorage.removeItem('supabase.auth.token')
         localStorage.removeItem('partimap_tasks') // Limpar tarefas do planejamento
       } catch (localError) {
-        console.warn('⚠️ Erro ao limpar localStorage:', localError)
+        // Silently ignore localStorage errors
       }
-      
-      console.log('✅ Logout realizado com sucesso')
-      
+
       // Aguardar 2 segundos para mostrar a tela de logout
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
+
     } catch (error) {
-      console.error('❌ Erro crítico no logout:', error)
+      console.error('Erro crítico no logout:', error)
       // Mesmo com erro crítico, limpar estado local
       setUser(null)
       setProfile(null)
@@ -728,31 +636,25 @@ export function AuthProvider({ children }) {
         const cachedProfile = globalProfileCache.get(cacheKey)
         
         if (cachedProfile?.data) {
-          console.log('⚡ [PERF] Perfil carregado do cache instantaneamente')
           setProfile(cachedProfile.data)
           setLoading(false)
-          
+
           // Atualizar em background APENAS se cache estiver velho (>2min)
           const cacheAge = Date.now() - cachedProfile.timestamp
           if (cacheAge > 120000) {
-            console.log('🔄 [PERF] Cache antigo (>2min), atualizando em background...')
-            fetchProfile(currentUser.id, false).catch(err => 
-              console.warn('⚠️ Erro ao atualizar cache:', err.message)
-            )
-          } else {
-            console.log(`✅ [PERF] Cache recente (${Math.round(cacheAge/1000)}s), sem necessidade de atualizar`)
+            fetchProfile(currentUser.id, false).catch(() => {
+              // Silently ignore cache update errors
+            })
           }
         } else {
           // Verificar se já tem um carregamento em andamento
           if (isFirstLoadInProgress) {
-            console.log('⏭️ [PERF] Primeiro carregamento já em andamento, aguardando...')
             setLoading(false)
             return
           }
-          
-          console.log('📥 [PERF] Cache vazio, buscando perfil pela primeira vez...')
+
           isFirstLoadInProgress = true
-          
+
           // Buscar perfil de forma não-bloqueante
           fetchProfile(currentUser.id)
             .then((profile) => {
@@ -760,8 +662,7 @@ export function AuthProvider({ children }) {
                 setProfile(profile)
               }
             })
-            .catch((error) => {
-              console.warn('⚠️ Erro ao carregar perfil:', error.message)
+            .catch(() => {
               if (mounted) {
                 setProfile(null)
               }
@@ -774,7 +675,6 @@ export function AuthProvider({ children }) {
             })
         }
       } else {
-        console.log('❌ Nenhum usuário autenticado')
         if (mounted) {
           setLoading(false)
         }
@@ -785,42 +685,37 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return
-        
-        console.log('🔐 [PERF] Auth event:', event)
-        
+
         // Ignorar primeira chamada de inicialização (sempre dá timeout)
         if (isInitializingAuth && event === 'INITIAL_SESSION') {
-          console.log('⏭️ [PERF] Ignorando callback de inicialização...')
           isInitializingAuth = false
           return
         }
-        
+
         const currentUser = session?.user ?? null
-        
+
         // Ignorar eventos de renovação de token que não mudam o usuário
         if (event === 'TOKEN_REFRESHED' && currentUser?.id === user?.id) {
-          console.log('🔄 Token renovado, mantendo perfil atual')
           return
         }
-        
+
         // Evitar recarregamentos desnecessários para SIGNED_IN repetidos
         if (currentUser?.id === user?.id && event === 'SIGNED_IN') {
-          console.log('✅ Usuário já está logado, ignorando SIGNED_IN duplicado')
           return
         }
-        
+
         // Marcar inicialização como concluída
         isInitializingAuth = false
-        
+
         // Atualizar usuário apenas se mudou
         if (currentUser?.id !== user?.id) {
           setUser(currentUser)
         }
-        
+
         // Só recarregar o perfil se o usuário mudou realmente OU se não temos perfil
         if (currentUser && (currentUser.id !== user?.id || !profile)) {
           isFirstLoadInProgress = true
-          
+
           // Evitar chamar fetchProfile se já está sendo chamado
           if (!pendingFetches.current[currentUser.id]) {
             const userProfile = await fetchProfile(currentUser.id)
@@ -829,7 +724,6 @@ export function AuthProvider({ children }) {
             }
             isFirstLoadInProgress = false
           } else {
-            console.log('⏳ Fetch de perfil já em andamento, aguardando...')
             // Aguardar o fetch pendente
             try {
               const userProfile = await pendingFetches.current[currentUser.id]
@@ -837,14 +731,13 @@ export function AuthProvider({ children }) {
                 setProfile(userProfile)
               }
             } catch (error) {
-              console.warn('⚠️ Erro ao aguardar fetch pendente:', error.message)
+              // Silently ignore pending fetch errors
             }
             isFirstLoadInProgress = false
           }
-          
+
           // Registrar login quando usuário faz sign in
           if (event === 'SIGNED_IN' && currentUser) {
-            console.log('✅ SIGNED_IN event - registrando login para userId:', currentUser.id)
             updateUserActivity(supabase, currentUser.id)
           }
         } else if (!currentUser) {
@@ -888,7 +781,7 @@ export function AuthProvider({ children }) {
       }
       return null
     } catch (error) {
-      console.error('❌ Erro ao recarregar perfil:', error)
+      console.error('Erro ao recarregar perfil:', error)
       return null
     }
   }

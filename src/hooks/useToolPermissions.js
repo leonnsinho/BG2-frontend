@@ -16,20 +16,8 @@ export function useToolPermissions() {
     const selectedCompany = getActiveCompany?.()
     const companyId = selectedCompany?.id
 
-    console.log('🔧 [DEBUG] useEffect EXECUTOU!', {
-      hasUser: !!user,
-      userId,
-      hasCompany: !!selectedCompany,
-      companyId,
-      profileCompanies: profile?.user_companies
-    })
-
     // Se não tem user ou company, limpa permissões e retorna
     if (!userId || !companyId) {
-      console.log('🔧 useEffect - user ou company não disponível:', {
-        userId,
-        companyId
-      })
       setPermissions({})
       setLoading(false)
       return
@@ -39,11 +27,6 @@ export function useToolPermissions() {
     const loadPermissions = async () => {
       try {
         setLoading(true)
-
-        console.log('🔧 Carregando permissões de ferramentas...', {
-          userId,
-          companyId
-        })
 
         // Buscar todas as ferramentas
         const { data: tools, error: toolsError } = await supabase
@@ -62,9 +45,6 @@ export function useToolPermissions() {
 
         if (permError) throw permError
 
-        console.log('🔧 Ferramentas encontradas:', tools)
-        console.log('🔧 Permissões do usuário:', userPermissions)
-
         // Criar mapa de permissões
         const permMap = {}
         userPermissions?.forEach(perm => {
@@ -74,7 +54,6 @@ export function useToolPermissions() {
           }
         })
 
-        console.log('🔧 Mapa de permissões final:', permMap)
         setPermissions(permMap)
       } catch (error) {
         console.error('Erro ao carregar permissões de ferramentas:', error)
@@ -95,14 +74,11 @@ export function useToolPermissions() {
   const hasToolAccess = (toolSlug) => {
     // Se não tem permissão explícita, permite por padrão
     if (!permissions[toolSlug]) {
-      console.log(`🔧 Ferramenta "${toolSlug}": SEM permissão explícita, PERMITINDO por padrão`)
       return true
     }
-    
+
     // Se tem permissão explícita, verifica o tipo
-    const hasAccess = permissions[toolSlug] === 'allow'
-    console.log(`🔧 Ferramenta "${toolSlug}": permissão = ${permissions[toolSlug]}, acesso = ${hasAccess}`)
-    return hasAccess
+    return permissions[toolSlug] === 'allow'
   }
 
   /**
