@@ -997,58 +997,25 @@ function DFCEntradasPage() {
     return company ? company.name : ''
   }, [companies, formData.company_id])
 
-  // Calcular período baseado no tipo selecionado
-  const calcularPeriodo = () => {
-    const formatDate = (date) => {
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
-    }
-
-    // Se o usuário preencheu período personalizado, usar ele
-    if (dataInicio && dataFim) {
-      return {
-        inicio: dataInicio,
-        fim: dataFim
-      }
-    }
-
-    // Caso contrário, usar os últimos 6 meses como padrão
-    const hoje = new Date()
-    const hojeLimpo = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
-    const ultimoDiaMesAtual = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
-    
-    const fim = new Date(ultimoDiaMesAtual)
-    const inicio = new Date(hojeLimpo)
-    inicio.setMonth(inicio.getMonth() - 6)
-
-    return {
-      inicio: formatDate(inicio),
-      fim: formatDate(fim)
-    }
-  }
-
   // Filtrar entradas
   const filteredEntradas = useMemo(() => {
-    const periodo = calcularPeriodo()
-    
     return entradas.filter(entrada => {
       const itemNome = entrada.dfc_itens?.nome || ''
       const matchSearch = !searchTerm || 
         entrada.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
         itemNome.toLowerCase().includes(searchTerm.toLowerCase())
       
-      // Filtro por mês (se estiver usando)
+      // Filtro por mês de referência (se estiver usando)
       const matchMes = mesFilter === 'all' || mesFilter === '' || 
         entrada.mes.substring(0, 7) === mesFilter
       
-      // Filtro por período (usando data de vencimento)
+      // Filtro por período personalizado (usando data de vencimento)
+      // Só aplica se o usuário explicitamente preencheu as datas
       let matchPeriodo = true
-      if (entrada.vencimento) {
+      if (dataInicio && dataFim && entrada.vencimento) {
         const dataVencimento = new Date(entrada.vencimento + 'T00:00:00')
-        const dataInicioPeriodo = new Date(periodo.inicio + 'T00:00:00')
-        const dataFimPeriodo = new Date(periodo.fim + 'T00:00:00')
+        const dataInicioPeriodo = new Date(dataInicio + 'T00:00:00')
+        const dataFimPeriodo = new Date(dataFim + 'T00:00:00')
         matchPeriodo = dataVencimento >= dataInicioPeriodo && dataVencimento <= dataFimPeriodo
       }
       
@@ -1250,13 +1217,54 @@ function DFCEntradasPage() {
               ))}
             </select>
 
-            <input
-              type="month"
-              value={mesFilter === 'all' ? '' : mesFilter}
-              onChange={(e) => setMesFilter(e.target.value || 'all')}
-              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
-              placeholder="Filtrar por mês"
-            />
+            <div className="border-2 border-gray-200 rounded-2xl p-2 bg-gray-50/50">
+              <div className="flex gap-2">
+                <select
+                  value={mesFilter === 'all' ? '' : (mesFilter ? mesFilter.split('-')[1] : '')}
+                  onChange={(e) => {
+                    if (!e.target.value) {
+                      setMesFilter('all')
+                    } else {
+                      const ano = mesFilter && mesFilter !== 'all' ? mesFilter.split('-')[0] : new Date().getFullYear()
+                      setMesFilter(`${ano}-${e.target.value}`)
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white transition-all"
+                >
+                  <option value="">Mês</option>
+                  <option value="01">Janeiro</option>
+                  <option value="02">Fevereiro</option>
+                  <option value="03">Março</option>
+                  <option value="04">Abril</option>
+                  <option value="05">Maio</option>
+                  <option value="06">Junho</option>
+                  <option value="07">Julho</option>
+                  <option value="08">Agosto</option>
+                  <option value="09">Setembro</option>
+                  <option value="10">Outubro</option>
+                  <option value="11">Novembro</option>
+                  <option value="12">Dezembro</option>
+                </select>
+                
+                <select
+                  value={mesFilter === 'all' ? '' : (mesFilter ? mesFilter.split('-')[0] : '')}
+                  onChange={(e) => {
+                    if (!e.target.value) {
+                      setMesFilter('all')
+                    } else {
+                      const mes = mesFilter && mesFilter !== 'all' ? mesFilter.split('-')[1] : '01'
+                      setMesFilter(`${e.target.value}-${mes}`)
+                    }
+                  }}
+                  className="w-24 px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white transition-all"
+                >
+                  <option value="">Ano</option>
+                  {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
           {/* Filtro de Período Personalizado */}
@@ -1690,13 +1698,48 @@ function DFCEntradasPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Mês de Referência *
                     </label>
-                    <input
-                      type="month"
-                      value={formData.mes}
-                      onChange={(e) => setFormData({ ...formData, mes: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
-                      required
-                    />
+                    <div className="border-2 border-gray-200 rounded-xl p-2 bg-gray-50/50">
+                      <div className="flex gap-2">
+                        <select
+                          value={formData.mes ? formData.mes.split('-')[1] : ''}
+                          onChange={(e) => {
+                            const ano = formData.mes ? formData.mes.split('-')[0] : new Date().getFullYear()
+                            setFormData({ ...formData, mes: `${ano}-${e.target.value}` })
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white"
+                          required
+                        >
+                          <option value="">Mês</option>
+                          <option value="01">Janeiro</option>
+                          <option value="02">Fevereiro</option>
+                          <option value="03">Março</option>
+                          <option value="04">Abril</option>
+                          <option value="05">Maio</option>
+                          <option value="06">Junho</option>
+                          <option value="07">Julho</option>
+                          <option value="08">Agosto</option>
+                          <option value="09">Setembro</option>
+                          <option value="10">Outubro</option>
+                          <option value="11">Novembro</option>
+                          <option value="12">Dezembro</option>
+                        </select>
+                        
+                        <select
+                          value={formData.mes ? formData.mes.split('-')[0] : ''}
+                          onChange={(e) => {
+                            const mes = formData.mes ? formData.mes.split('-')[1] : '01'
+                            setFormData({ ...formData, mes: `${e.target.value}-${mes}` })
+                          }}
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white"
+                          required
+                        >
+                          <option value="">Ano</option>
+                          {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
                   <div>

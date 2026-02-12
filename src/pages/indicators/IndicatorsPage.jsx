@@ -228,7 +228,7 @@ export default function IndicatorsPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => navigate('/indicators/manage?action=add')}
-                className="flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all font-medium shadow-md hover:shadow-lg"
+                className="flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-all font-medium shadow-md hover:shadow-lg"
               >
                 <Plus className="h-5 w-5" />
                 <span className="hidden sm:inline">Adicionar Indicador</span>
@@ -271,7 +271,7 @@ export default function IndicatorsPage() {
               </button>
               
               <div className="flex items-center gap-2 px-3">
-                <Calendar className="h-5 w-5 text-orange-500" />
+                <Calendar className="h-5 w-5 text-yellow-500" />
                 <input
                   type="number"
                   value={selectedYear}
@@ -283,7 +283,7 @@ export default function IndicatorsPage() {
                   }}
                   min="1900"
                   max="2100"
-                  className="w-20 py-1 text-center font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded text-sm sm:text-base"
+                  className="w-20 py-1 text-center font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 rounded text-sm sm:text-base"
                   placeholder="Ano"
                 />
               </div>
@@ -307,7 +307,7 @@ export default function IndicatorsPage() {
               const journeyColors = {
                 'Estratégia': 'border-blue-600 text-blue-600 bg-blue-50/50',
                 'Financeira': 'border-green-600 text-green-600 bg-green-50/50',
-                'Receita': 'border-orange-600 text-orange-600 bg-orange-50/50',
+                'Receita': 'border-yellow-600 text-yellow-600 bg-yellow-50/50',
                 'Pessoas & Cultura': 'border-purple-600 text-purple-600 bg-purple-50/50',
                 'Operacional': 'border-red-600 text-red-600 bg-red-50/50'
               }
@@ -338,7 +338,7 @@ export default function IndicatorsPage() {
           {/* Tabela */}
           {loading ? (
             <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mb-4"></div>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mb-4"></div>
               <p className="text-gray-500">Carregando indicadores...</p>
             </div>
           ) : !selectedCompany ? (
@@ -353,7 +353,7 @@ export default function IndicatorsPage() {
               <p className="text-gray-500 mb-4 text-lg font-medium">Nenhum indicador ativo nesta jornada</p>
               <button
                 onClick={() => navigate('/indicators/manage')}
-                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all font-medium shadow-md hover:shadow-lg"
+                className="px-6 py-3 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-all font-medium shadow-md hover:shadow-lg"
               >
                 Criar primeiro indicador
               </button>
@@ -420,7 +420,7 @@ export default function IndicatorsPage() {
                                     }
                                   }}
                                   autoFocus
-                                  className="w-full px-3 py-2 text-sm border-2 border-orange-500 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-center shadow-md"
+                                  className="w-full px-3 py-2 text-sm border-2 border-yellow-500 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-center shadow-md"
                                 />
                               ) : (
                                 <div
@@ -428,7 +428,7 @@ export default function IndicatorsPage() {
                                   className={`text-sm font-medium text-gray-900 cursor-pointer px-3 py-2 rounded-lg min-h-[36px] flex items-center justify-center transition-all ${
                                     bgColor 
                                       ? `${bgColor} hover:opacity-80` 
-                                      : 'border border-transparent hover:bg-orange-50 hover:border-orange-200'
+                                      : 'border border-transparent hover:bg-yellow-50 hover:border-yellow-200'
                                   }`}
                                 >
                                   {companyData?.[month] || '-'}

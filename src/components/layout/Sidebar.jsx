@@ -162,11 +162,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       {
         name: 'Indicadores',
         icon: TrendingUp,
-        href: '/indicators',
-        children: [
-          { name: 'Indicadores de Gestão', href: '/indicators' },
-          { name: 'Gerenciar Indicadores', href: '/indicators/manage' }
-        ]
+        href: '/indicators'
       },
       {
         name: 'Relatórios de Uso',
@@ -300,11 +296,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       {
         name: 'Indicadores',
         icon: TrendingUp,
-        href: '/indicators',
-        children: [
-          { name: 'Indicadores de Gestão', href: '/indicators' },
-          { name: 'Gerenciar Indicadores', href: '/indicators/manage' }
-        ]
+        href: '/indicators'
       },
       {
         name: 'Gestão do Sistema',

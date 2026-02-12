@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions } from '../../hooks/usePermissions'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { 
   Plus, Search, Edit2, Trash2, Copy, List, Grid,
   MoreVertical, Filter, ChevronLeft, ChevronRight,
-  CheckCircle2, XCircle, Target, ChevronDown, User, Zap, Building2
+  CheckCircle2, XCircle, Target, ChevronDown, User, Zap, Building2, ArrowLeft
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import IndicatorModal from '../../components/indicators/IndicatorModal'
@@ -14,6 +14,7 @@ import IndicatorModal from '../../components/indicators/IndicatorModal'
 export default function ManageIndicatorsPage() {
   const { profile } = useAuth()
   const permissions = usePermissions()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [indicators, setIndicators] = useState([])
   const [loading, setLoading] = useState(true)
@@ -339,6 +340,13 @@ export default function ManageIndicatorsPage() {
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
+              <button
+                onClick={() => navigate('/indicators')}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 transition-colors group"
+              >
+                <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-sm font-medium">Voltar para Indicadores</span>
+              </button>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                 Gerenciar Indicadores
               </h1>
@@ -352,7 +360,7 @@ export default function ManageIndicatorsPage() {
                 setEditingIndicator(null)
                 setShowModal(true)
               }}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all font-medium shadow-md hover:shadow-lg whitespace-nowrap"
+              className="flex items-center gap-2 px-5 py-2.5 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-all font-medium shadow-md hover:shadow-lg whitespace-nowrap"
             >
               <Plus className="h-5 w-5" />
               <span className="hidden sm:inline">Adicionar Indicador</span>
@@ -367,17 +375,17 @@ export default function ManageIndicatorsPage() {
             {/* Barra de Busca */}
             <div className="sm:col-span-2 lg:col-span-1">
               <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                <Search className="h-4 w-4 text-orange-500" />
+                <Search className="h-4 w-4 text-yellow-500" />
                 Buscar
               </label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-orange-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-yellow-400" />
                 <input
                   type="text"
                   placeholder="Nome ou tipo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 hover:border-gray-300 transition-all bg-gray-50 focus:bg-white"
+                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 hover:border-gray-300 transition-all bg-gray-50 focus:bg-white"
                 />
               </div>
             </div>
@@ -449,14 +457,14 @@ export default function ManageIndicatorsPage() {
             {permissions.isSuperAdmin() && (
               <div>
                 <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  <Building2 className="h-4 w-4 text-amber-500" />
+                  <Building2 className="h-4 w-4 text-yellow-500" />
                   Empresa
                 </label>
                 <div className="relative">
                   <select
                     value={companyFilter}
                     onChange={(e) => setCompanyFilter(e.target.value)}
-                    className="w-full pl-4 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 hover:border-gray-300 transition-all bg-gradient-to-r from-amber-50 to-white focus:from-white focus:to-white appearance-none cursor-pointer font-medium text-gray-700"
+                    className="w-full pl-4 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 hover:border-gray-300 transition-all bg-yellow-50 focus:bg-white appearance-none cursor-pointer font-medium text-gray-700"
                   >
                     <option value="Todas">Todas as empresas</option>
                     {companies.map(company => (
@@ -465,7 +473,7 @@ export default function ManageIndicatorsPage() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-amber-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-yellow-400 pointer-events-none" />
                 </div>
               </div>
             )}
@@ -475,7 +483,7 @@ export default function ManageIndicatorsPage() {
         {/* Controles da Tabela */}
         <div className="flex items-center justify-end mb-4">
           <p className="text-sm text-gray-600 font-medium">
-            Mostrando <span className="text-orange-600 font-bold">{filteredIndicators.length}</span> indicador{filteredIndicators.length !== 1 ? 'es' : ''}
+            Mostrando <span className="text-yellow-600 font-bold">{filteredIndicators.length}</span> indicador{filteredIndicators.length !== 1 ? 'es' : ''}
           </p>
         </div>
 
@@ -483,7 +491,7 @@ export default function ManageIndicatorsPage() {
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           {loading ? (
             <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mb-4"></div>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mb-4"></div>
               <p className="text-gray-500">Carregando indicadores...</p>
             </div>
           ) : filteredIndicators.length === 0 ? (
@@ -495,7 +503,7 @@ export default function ManageIndicatorsPage() {
                   setEditingIndicator(null)
                   setShowModal(true)
                 }}
-                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all font-medium shadow-md hover:shadow-lg"
+                className="px-6 py-3 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-all font-medium shadow-md hover:shadow-lg"
               >
                 Criar primeiro indicador
               </button>
@@ -538,7 +546,7 @@ export default function ManageIndicatorsPage() {
                     const journeyColors = {
                       'Estratégia': 'bg-purple-100 text-purple-800 border-purple-200',
                       'Financeira': 'bg-blue-100 text-blue-800 border-blue-200',
-                      'Receita': 'bg-orange-100 text-orange-800 border-orange-200',
+                      'Receita': 'bg-yellow-100 text-yellow-800 border-yellow-200',
                       'Pessoas & Cultura': 'bg-pink-100 text-pink-800 border-pink-200',
                       'Operacional': 'bg-green-100 text-green-800 border-green-200'
                     }
@@ -573,7 +581,7 @@ export default function ManageIndicatorsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white text-xs font-semibold shadow-sm overflow-hidden">
+                          <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm overflow-hidden">
                             {avatarUrls[indicator.responsible_user_id] ? (
                               <img 
                                 src={avatarUrls[indicator.responsible_user_id]} 
@@ -628,7 +636,7 @@ export default function ManageIndicatorsPage() {
                           </button>
                           <button
                             onClick={() => handleDuplicate(indicator)}
-                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-all hover:shadow-sm"
+                            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-all hover:shadow-sm"
                             title="Duplicar"
                           >
                             <Copy className="h-4 w-4" />
