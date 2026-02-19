@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
+import SuperAdminBanner from '../../components/SuperAdminBanner'
 import { 
   Users, 
   Search, 
@@ -90,12 +91,17 @@ const STATUS_COLORS = {
 
 export default function UsersManagementPage() {
   const { user, profile } = useAuth()
+  const [searchParams] = useSearchParams()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [companyFilter, setCompanyFilter] = useState('all')
+  
+  // Inicializar companyFilter com valor da URL se existir
+  const initialCompanyFilter = searchParams.get('company') || searchParams.get('companyId') || 'all'
+  const [companyFilter, setCompanyFilter] = useState(initialCompanyFilter)
+  
   const [selectedUser, setSelectedUser] = useState(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
@@ -156,8 +162,14 @@ export default function UsersManagementPage() {
     if (profile) {
       loadUsers()
       loadCompanies()
+      
+      // Sincronizar companyFilter com a URL quando mudar
+      const companyFromUrl = searchParams.get('company') || searchParams.get('companyId')
+      if (companyFromUrl && companyFromUrl !== companyFilter) {
+        setCompanyFilter(companyFromUrl)
+      }
     }
-  }, [profile])
+  }, [profile, searchParams])
 
   // Carregar avatars dos usuários
   useEffect(() => {
@@ -955,6 +967,7 @@ export default function UsersManagementPage() {
 
   return (
     <div className="min-h-screen bg-white p-4 sm:p-6 lg:p-8">
+      <SuperAdminBanner />
       <div className="max-w-7xl mx-auto">
         <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>

@@ -29,6 +29,7 @@ import JourneyDetail from './pages/JourneyManagement/JourneyDetail'
 import ProcessEvaluationForm from './pages/JourneyManagement/ProcessEvaluationForm'
 import UsersManagementPage from './pages/admin/UsersManagementPage'
 import CompaniesManagementPage from './pages/admin/CompaniesManagementPage'
+import CompanyDashboardPage from './pages/admin/CompanyDashboardPage'
 import CategoriesManagementPage from './pages/admin/CategoriesManagementPage'
 import TaskPacksManagementPage from './pages/admin/TaskPacksManagementPage'
 import ProcessRequestsPage from './pages/ProcessRequestsPage'
@@ -314,6 +315,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin']}>
             <CompaniesManagementPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/admin/company-dashboard" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <CompanyDashboardPage />
           </ProtectedRoute>
         }
       />

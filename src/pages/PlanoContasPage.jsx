@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import SuperAdminBanner from '../components/SuperAdminBanner'
 import {
   Plus,
   Edit2,
@@ -44,6 +45,7 @@ const modalStyles = `
 
 function PlanoContasPage() {
   const { profile } = useAuth()
+  const [searchParams] = useSearchParams()
   const [categorias, setCategorias] = useState([])
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
@@ -57,7 +59,11 @@ function PlanoContasPage() {
   const [deletingCategoria, setDeletingCategoria] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoriaFilter, setCategoriaFilter] = useState('all')
-  const [companyFilter, setCompanyFilter] = useState('all')
+  
+  // Inicializar companyFilter com valor da URL se existir
+  const initialCompanyFilter = searchParams.get('company') || searchParams.get('companyId') || 'all'
+  const [companyFilter, setCompanyFilter] = useState(initialCompanyFilter)
+  
   const [collapsedCategories, setCollapsedCategories] = useState({})
   const [companySearchTerm, setCompanySearchTerm] = useState('') // Busca no modal
   const [multipleMode, setMultipleMode] = useState(false) // Modo de criação múltipla
@@ -139,15 +145,21 @@ function PlanoContasPage() {
       fetchCompanies()
       fetchCategorias()
       
-      // Auto-selecionar empresa para company_admin e gestor
-      if (isCompanyAdmin() || isGestor()) {
+      // Sincronizar companyFilter com a URL quando mudar
+      const companyFromUrl = searchParams.get('company') || searchParams.get('companyId')
+      
+      if (companyFromUrl && companyFromUrl !== 'all' && companyFromUrl !== companyFilter) {
+        // Se há company na URL e é diferente do atual, usar ele
+        setCompanyFilter(companyFromUrl)
+      } else if (!companyFromUrl && (isCompanyAdmin() || isGestor())) {
+        // Se não há company na URL, auto-selecionar empresa para company_admin e gestor
         const companyId = getCurrentUserCompany()
-        if (companyId) {
+        if (companyId && companyFilter === 'all') {
           setCompanyFilter(companyId)
         }
       }
     }
-  }, [profile])
+  }, [profile, searchParams])
 
   useEffect(() => {
     if (isAuthorized() && companies.length > 0) {
@@ -734,6 +746,7 @@ function PlanoContasPage() {
     <>
       <style>{modalStyles}</style>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <SuperAdminBanner />
         {/* Header */}
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

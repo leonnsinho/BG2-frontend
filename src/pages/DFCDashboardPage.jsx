@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import SuperAdminBanner from '../components/SuperAdminBanner'
 import {
   TrendingDown,
   TrendingUp,
@@ -31,7 +32,11 @@ export default function DFCDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [companies, setCompanies] = useState([]) // Lista de empresas
   const [companyAvatars, setCompanyAvatars] = useState({}) // Avatars das empresas
-  const [selectedCompanyId, setSelectedCompanyId] = useState('all') // Empresa selecionada (super admin)
+  
+  // Inicializar selectedCompanyId com o valor da URL se existir
+  const initialCompanyId = searchParams.get('company') || searchParams.get('companyId') || 'all'
+  const [selectedCompanyId, setSelectedCompanyId] = useState(initialCompanyId) // Empresa selecionada (super admin)
+  const [initialized, setInitialized] = useState(false) // Flag de inicialização
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false) // Controle do dropdown customizado
   const [companySearch, setCompanySearch] = useState('') // Busca de empresa
   
@@ -132,7 +137,19 @@ export default function DFCDashboardPage() {
     if (profile && isSuperAdmin()) {
       loadCompanies()
     }
-  }, [profile])
+    // Marcar como inicializado quando profile carregar
+    if (profile) {
+      setInitialized(true)
+    }
+  }, [profile, searchParams])
+
+  // Sincronizar selectedCompanyId com a URL quando mudar
+  useEffect(() => {
+    const companyFromUrl = searchParams.get('company') || searchParams.get('companyId')
+    if (companyFromUrl && companyFromUrl !== selectedCompanyId) {
+      setSelectedCompanyId(companyFromUrl)
+    }
+  }, [searchParams])
 
   // Ler período personalizado dos query params (vindo de entradas/saídas)
   useEffect(() => {
@@ -426,11 +443,12 @@ export default function DFCDashboardPage() {
   // (Removida - agora usando getCurrentUserCompany() acima que diferencia roles)
 
   useEffect(() => {
-    if (profile) {
+    // Só carregar dados depois de inicializar (ler URL)
+    if (profile && initialized) {
       loadDashboardData()
       loadFuturePayments()
     }
-  }, [profile, periodoTipo, dataInicio, dataFim, selectedCompanyId, mesesGrafico])
+  }, [profile, periodoTipo, dataInicio, dataFim, selectedCompanyId, mesesGrafico, initialized])
 
   // Recarregar dados quando a página fica visível (quando volta de outra página)
   useEffect(() => {
@@ -1203,6 +1221,7 @@ export default function DFCDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <SuperAdminBanner />
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import SuperAdminBanner from '../components/SuperAdminBanner'
 import {
   Plus,
   Edit2,
@@ -58,13 +59,15 @@ function DFCEntradasPage() {
   const [editingValor, setEditingValor] = useState('')
   const [editingField, setEditingField] = useState(null) // 'vencimento' ou 'valor'
   
-  // Filtros
+  // Filtros - Inicializar companyFilter com valor da URL se existir
+  const initialCompanyFilter = searchParams.get('company') || searchParams.get('companyId') || 'all'
   const [searchTerm, setSearchTerm] = useState('')
-  const [companyFilter, setCompanyFilter] = useState('all')
+  const [companyFilter, setCompanyFilter] = useState(initialCompanyFilter)
   const [categoriaFilter, setCategoriaFilter] = useState('all')
   const [mesFilter, setMesFilter] = useState('all')
   const [dataInicio, setDataInicio] = useState('')
   const [dataFim, setDataFim] = useState('')
+  const [initialized, setInitialized] = useState(false)
   
   // Busca de empresa no formulário
   const [companySearch, setCompanySearch] = useState('')
@@ -140,18 +143,30 @@ function DFCEntradasPage() {
     fetchCompanies()
     fetchCategoriasEItens()
     
-    // Se for company admin ou gestor, auto-selecionar sua empresa
-    const userCompanyId = getCurrentUserCompany()
-    if (userCompanyId) {
-      setCompanyFilter(userCompanyId)
+    // Sincronizar companyFilter com a URL quando mudar
+    const companyFromUrl = searchParams.get('company') || searchParams.get('companyId')
+    if (companyFromUrl && companyFromUrl !== companyFilter) {
+      setCompanyFilter(companyFromUrl)
+    } else if (!companyFromUrl) {
+      // Se não há company na URL, verificar se é company admin ou gestor e auto-selecionar sua empresa
+      const userCompanyId = getCurrentUserCompany()
+      if (userCompanyId && companyFilter === 'all') {
+        setCompanyFilter(userCompanyId)
+      }
     }
     
-    fetchEntradas()
-  }, [profile])
+    // Marcar como inicializado quando profile carregar
+    if (profile) {
+      setInitialized(true)
+    }
+  }, [profile, searchParams])
 
   useEffect(() => {
-    fetchEntradas()
-  }, [companyFilter, categoriaFilter])
+    // Só buscar se já inicializou e o profile estiver carregado
+    if (initialized && profile) {
+      fetchEntradas()
+    }
+  }, [companyFilter, categoriaFilter, initialized, profile])
 
   // Ler período personalizado dos query params (vindo do DFC Dashboard)
   useEffect(() => {
@@ -1095,6 +1110,7 @@ function DFCEntradasPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <SuperAdminBanner />
       {/* Header */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

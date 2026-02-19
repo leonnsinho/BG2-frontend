@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
+import SuperAdminBanner from '../../components/SuperAdminBanner'
 import { 
   Target, 
   Building2, 
@@ -18,12 +19,12 @@ import {
 const JourneyManagementOverview = () => {
   const { profile } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [companies, setCompanies] = useState([])
   const [selectedCompany, setSelectedCompany] = useState(null)
   const [journeys, setJourneys] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [companySearchTerm, setCompanySearchTerm] = useState('')
   const [logoUrls, setLogoUrls] = useState({})
 
   // Dados das 5 jornadas da metodologia Bossa Focus com cores BG2
@@ -104,7 +105,7 @@ const JourneyManagementOverview = () => {
     if (profile?.id) {
       fetchCompanies()
     }
-  }, [profile?.id])
+  }, [profile?.id, searchParams])
 
   async function fetchCompanies() {
     try {
@@ -171,8 +172,22 @@ const JourneyManagementOverview = () => {
       console.log('📦 logoUrls finais:', urls)
       setLogoUrls(urls)
       
-      // Pré-selecionar a primeira empresa automaticamente
-      if (companiesData.length > 0 && !selectedCompany) {
+      // Verificar se há parâmetro company na URL
+      const companyIdFromUrl = searchParams.get('company') || searchParams.get('companyId')
+      
+      if (companyIdFromUrl) {
+        // Se há company na URL, pré-selecionar essa empresa
+        const companyFromUrl = companiesData.find(c => c.id === companyIdFromUrl)
+        if (companyFromUrl) {
+          setSelectedCompany(companyFromUrl)
+          console.log('✅ Empresa da URL pré-selecionada:', companyFromUrl.name)
+        } else if (companiesData.length > 0) {
+          // Se não encontrou a empresa da URL, selecionar a primeira
+          setSelectedCompany(companiesData[0])
+          console.log('✅ Primeira empresa pré-selecionada (empresa da URL não encontrada):', companiesData[0].name)
+        }
+      } else if (companiesData.length > 0 && !selectedCompany) {
+        // Se não há company na URL, pré-selecionar a primeira empresa automaticamente
         setSelectedCompany(companiesData[0])
         console.log('✅ Primeira empresa pré-selecionada:', companiesData[0].name)
       }
@@ -198,11 +213,6 @@ const JourneyManagementOverview = () => {
     journey.description.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const filteredCompanies = companies.filter(company =>
-    company.name.toLowerCase().includes(companySearchTerm.toLowerCase()) ||
-    (company.cnpj && company.cnpj.toLowerCase().includes(companySearchTerm.toLowerCase()))
-  )
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -216,6 +226,7 @@ const JourneyManagementOverview = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <SuperAdminBanner />
       {/* Header */}
       <div className="bg-white border-b border-gray-200/50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -235,147 +246,37 @@ const JourneyManagementOverview = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         
-        {/* Seleção de Empresa - Horizontal no topo */}
+        {/* Seleção de Empresa - Dropdown simples */}
         <div className="mb-6 sm:mb-8">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50">
-            <div className="p-4 sm:p-6 lg:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-                <h2 className="text-base sm:text-lg font-semibold text-[#373435] flex items-center">
-                  <Building2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-[#EBA500]" />
-                  Selecionar Empresa
-                </h2>
-                
-                {/* Indicador do tipo de acesso */}
-                {profile?.role === 'super_admin' ? (
-                  <div className="inline-flex items-center px-2 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl text-xs font-medium bg-[#EBA500]/10 text-[#EBA500] border border-[#EBA500]/20">
-                    <span className="hidden sm:inline">Super Admin - Todas as empresas</span>
-                    <span className="sm:hidden">Super Admin</span>
-                  </div>
-                ) : (
-                  <div className="inline-flex items-center px-2 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl text-xs font-medium bg-[#373435]/10 text-[#373435] border border-[#373435]/20">
-                    <span className="hidden sm:inline">Admin - Suas empresas</span>
-                    <span className="sm:hidden">Admin</span>
-                  </div>
-                )}
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+            <label htmlFor="company-select" className="text-sm sm:text-base font-semibold text-[#373435] mb-3 flex items-center">
+              <Building2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-[#EBA500]" />
+              Selecionar Empresa
+            </label>
+            
+            {companies.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Building2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p>Nenhuma empresa encontrada</p>
               </div>
-              
-              {companies.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Building2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p>Nenhuma empresa encontrada</p>
-                </div>
-              ) : (
-                <>
-                  {/* Barra de busca para empresas */}
-                  {companies.length > 3 && (
-                    <div className="mb-4 sm:mb-6">
-                      <div className="relative max-w-full sm:max-w-md">
-                        <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                          <Search className="h-4 w-4 text-gray-400" />
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Buscar empresa..."
-                          value={companySearchTerm}
-                          onChange={(e) => setCompanySearchTerm(e.target.value)}
-                          className="block w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 border border-gray-200 rounded-xl sm:rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px]"
-                        />
-                      </div>
-                      
-                      {/* Contador de resultados */}
-                      {companySearchTerm && (
-                        <div className="mt-3 text-xs text-gray-500 pl-2">
-                          {filteredCompanies.length === 1 
-                            ? `1 empresa encontrada` 
-                            : `${filteredCompanies.length} empresas encontradas`
-                          }
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {filteredCompanies.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Search className="h-8 w-8 mx-auto mb-3 text-gray-300" />
-                      <p>Nenhuma empresa encontrada para "{companySearchTerm}"</p>
-                      <button
-                        onClick={() => setCompanySearchTerm('')}
-                        className="mt-3 text-sm text-[#EBA500] hover:text-[#EBA500]/80 font-medium"
-                      >
-                        Limpar filtro
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                      {filteredCompanies.map((company) => (
-                        <button
-                          key={company.id}
-                          onClick={() => setSelectedCompany(company)}
-                          className={`text-left p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 hover:shadow-md min-h-[100px] sm:min-h-0 touch-manipulation ${
-                            selectedCompany?.id === company.id
-                              ? 'border-[#EBA500] bg-[#EBA500]/5 ring-2 ring-[#EBA500]/20'
-                              : 'border-gray-200 hover:border-[#EBA500]/30 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-2 sm:mb-3">
-                            {/* Logo da Empresa */}
-                            <div className="flex-shrink-0 h-10 w-10 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 flex items-center justify-center overflow-hidden">
-                              {logoUrls[company.id] ? (
-                                <img 
-                                  src={logoUrls[company.id]} 
-                                  alt={company.name}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.target.style.display = 'none'
-                                    e.target.nextSibling.style.display = 'flex'
-                                  }}
-                                />
-                              ) : null}
-                              <Building2 
-                                className="h-5 w-5 sm:h-6 sm:w-6 text-[#EBA500]" 
-                                style={{ display: logoUrls[company.id] ? 'none' : 'block' }}
-                              />
-                            </div>
-                            
-                            <div className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-xl sm:rounded-2xl text-xs font-medium ${
-                              company.is_active && company.subscription_status === 'active'
-                                ? 'bg-green-100 text-green-700 border border-green-200'
-                                : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
-                            }`}>
-                              {company.is_active && company.subscription_status === 'active' ? 'Ativa' : 'Inativa'}
-                            </div>
-                          </div>
-                          
-                          {/* Dados da Empresa */}
-                          <div>
-                            <p className="text-sm sm:text-base font-medium text-[#373435] mb-1 truncate">{company.name}</p>
-                            <p className="text-xs sm:text-sm text-gray-500 truncate">{company.cnpj || 'CNPJ não informado'}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {selectedCompany && (
-                    <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-100">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-                        <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600">
-                          <Building2 className="h-4 w-4 text-[#EBA500] flex-shrink-0" />
-                          <span className="text-[#373435] font-medium truncate">Selecionada: {selectedCompany.name}</span>
-                        </div>
-                        
-                        <button
-                          onClick={() => setSelectedCompany(null)}
-                          className="text-xs sm:text-sm text-red-500 hover:text-red-600 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-red-50 min-h-[40px] touch-manipulation self-start sm:self-auto"
-                        >
-                          Limpar
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+            ) : (
+              <select
+                id="company-select"
+                value={selectedCompany?.id || ''}
+                onChange={(e) => {
+                  const company = companies.find(c => c.id === e.target.value)
+                  setSelectedCompany(company || null)
+                }}
+                className="block w-full px-4 py-3 text-base border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 bg-white text-[#373435]"
+              >
+                <option value="">Selecione uma empresa...</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name} {company.cnpj ? `- ${company.cnpj}` : ''}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
 

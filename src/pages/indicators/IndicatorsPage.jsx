@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions } from '../../hooks/usePermissions'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { 
   Plus, Settings, List, Grid, MoreVertical, 
   TrendingUp, TrendingDown, Minus, ChevronDown, DollarSign,
   Calendar, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import SuperAdminBanner from '../../components/SuperAdminBanner'
 
 export default function IndicatorsPage() {
   const { profile } = useAuth()
   const { isSuperAdmin } = usePermissions()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [indicators, setIndicators] = useState([])
   const [companyIndicators, setCompanyIndicators] = useState([])
   const [loading, setLoading] = useState(true)
@@ -29,7 +31,7 @@ export default function IndicatorsPage() {
 
   useEffect(() => {
     loadCompanies()
-  }, [])
+  }, [searchParams])
 
   useEffect(() => {
     if (selectedCompany) {
@@ -71,7 +73,14 @@ export default function IndicatorsPage() {
 
       setCompanies(companyList)
       
-      if (companyList.length > 0 && !selectedCompany) {
+      // Verificar se há um parâmetro company ou companyId na URL
+      const companyFromUrl = searchParams.get('company') || searchParams.get('companyId')
+      
+      if (companyFromUrl && companyList.some(c => c.id === companyFromUrl)) {
+        // Se há um company/companyId na URL e existe na lista, usar ele
+        setSelectedCompany(companyFromUrl)
+      } else if (companyList.length > 0 && !selectedCompany) {
+        // Caso contrário, selecionar a primeira empresa
         setSelectedCompany(companyList[0].id)
       } else if (companyList.length === 0) {
         setLoading(false)
@@ -212,6 +221,7 @@ export default function IndicatorsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <SuperAdminBanner />
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">

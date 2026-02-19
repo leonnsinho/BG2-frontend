@@ -32,7 +32,8 @@ export default function SuperAdminBanner() {
     if (context?.returnUrl) {
       // Limpar contexto
       sessionStorage.removeItem('superAdminContext')
-      navigate(context.returnUrl)
+      // Retornar com o companyId para manter a empresa selecionada
+      navigate(`${context.returnUrl}?company=${context.companyId}`)
     }
   }
   

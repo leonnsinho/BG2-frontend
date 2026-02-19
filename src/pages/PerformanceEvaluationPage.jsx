@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSearchParams } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import SuperAdminBanner from '../components/SuperAdminBanner'
 import { 
   Grid3x3, 
   Users, 
@@ -41,6 +43,7 @@ const CLASSIFICATIONS = {
 
 export default function PerformanceEvaluationPage() {
   const { user, profile } = useAuth()
+  const [searchParams] = useSearchParams()
   const [users, setUsers] = useState([])
   const [evaluations, setEvaluations] = useState([])
   const [selectedUser, setSelectedUser] = useState(null)
@@ -75,7 +78,7 @@ export default function PerformanceEvaluationPage() {
     if (profile) {
       loadData()
     }
-  }, [profile])
+  }, [profile, searchParams])
 
   // Form state
   const [evaluationForm, setEvaluationForm] = useState({
@@ -187,6 +190,12 @@ export default function PerformanceEvaluationPage() {
       setUsers(combinedUsers || [])
       setEvaluations(Object.values(latestEvaluations) || [])
       setCompanies(companiesData)
+      
+      // Verificar se há um parâmetro company ou companyId na URL
+      const companyFromUrl = searchParams.get('company') || searchParams.get('companyId')
+      if (companyFromUrl) {
+        setFilterCompany(companyFromUrl)
+      }
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
     } finally {
@@ -434,6 +443,7 @@ export default function PerformanceEvaluationPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <SuperAdminBanner />
       {/* Header Simplificado */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
