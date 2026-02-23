@@ -24,6 +24,7 @@ import {
   UserPlus,
   Shield,
   Database,
+  Key,
   Plus,
   AlertCircle,
   LogOut,
@@ -189,6 +190,13 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
           { name: 'Saídas', href: '/dfc/saidas' },
           { name: 'Plano de Contas', href: '/dfc/plano-contas' }
         ]
+      },
+      {
+        name: 'API',
+        icon: Key,
+        href: '/admin/api-keys',
+        disabled: true,
+        badge: 'Em breve'
       }
     ]
   }
@@ -1003,6 +1011,29 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                         </>
                       )}
                     </button>
+                  ) : item.disabled ? (
+                    <div
+                      className={cn(
+                        "flex items-center px-3 py-2.5 sm:py-2 text-sm font-medium rounded-lg sm:rounded-md cursor-not-allowed opacity-50",
+                        isCollapsed ? "justify-center" : "text-left",
+                        "text-neutral-400"
+                      )}
+                      title={isCollapsed ? item.name : undefined}
+                    >
+                      {isCollapsed ? (
+                        <ItemIcon className="h-5 w-5 flex-shrink-0" />
+                      ) : (
+                        <>
+                          <Lock className="mr-3 h-5 w-5 flex-shrink-0 text-neutral-500" />
+                          <span className="flex-1 text-left">{item.name}</span>
+                          {item.badge && typeof item.badge === 'string' && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-neutral-700 text-neutral-300">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
                   ) : (
                     <Link
                       to={item.href}

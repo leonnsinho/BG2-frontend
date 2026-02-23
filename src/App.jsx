@@ -28,6 +28,7 @@ import JourneyManagementOverview from './pages/JourneyManagement/index'
 import JourneyDetail from './pages/JourneyManagement/JourneyDetail'
 import ProcessEvaluationForm from './pages/JourneyManagement/ProcessEvaluationForm'
 import UsersManagementPage from './pages/admin/UsersManagementPage'
+import ApiKeysPage from './pages/admin/ApiKeysPage'
 import CompaniesManagementPage from './pages/admin/CompaniesManagementPage'
 import CompanyDashboardPage from './pages/admin/CompanyDashboardPage'
 import CategoriesManagementPage from './pages/admin/CategoriesManagementPage'
@@ -315,6 +316,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin']}>
             <CompaniesManagementPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/admin/api-keys" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <ApiKeysPage />
           </ProtectedRoute>
         }
       />
