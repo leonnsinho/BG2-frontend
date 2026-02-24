@@ -465,17 +465,21 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
         return
       }
 
-      // Arquivos de imagem e PDF podem ser visualizados diretamente
+      // Classificar o tipo de arquivo para decidir como visualizar
       const fileName = attachment.name || attachment.file_name || ''
       const fileExtension = fileName.split('.').pop().toLowerCase()
       const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']
-      const viewableExtensions = [...imageExtensions, 'pdf']
+      const officeExtensions = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']
 
-      if (viewableExtensions.includes(fileExtension)) {
-        // Abrir URL assinada em nova aba
+      if (fileExtension === 'pdf' || imageExtensions.includes(fileExtension)) {
+        // PDF e imagens: abrir URL assinada diretamente em nova aba
         window.open(data.signedUrl, '_blank')
+      } else if (officeExtensions.includes(fileExtension)) {
+        // Word / Excel / PowerPoint: abrir via Microsoft Office Online Viewer
+        const viewerUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`
+        window.open(viewerUrl, '_blank')
       } else {
-        // Para outros tipos, fazer download
+        // Para outros tipos desconhecidos, fazer download
         handleDownloadAttachment(attachment)
       }
     } catch (err) {

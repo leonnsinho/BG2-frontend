@@ -133,7 +133,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     return [
       ...filteredBaseItems,
       {
-        name: 'Gestão por Empresa',
+        name: 'Empresas',
         icon: Building2,
         href: '/admin/company-dashboard'
       },

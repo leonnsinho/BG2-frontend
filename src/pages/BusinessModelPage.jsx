@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, X, Save, GripVertical } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { Plus, X, Save, GripVertical, Building2 } from 'lucide-react'
 import { cn } from '../utils/cn'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../services/supabase'
+import SuperAdminBanner from '../components/SuperAdminBanner'
 import { businessModelService } from '../services/businessModelService'
 import toast from 'react-hot-toast'
 import {
@@ -261,13 +264,35 @@ function SectionSkeleton() {
 
 export default function BusinessModelPage() {
   const { user, profile } = useAuth()
+  const [searchParams] = useSearchParams()
+  const isSuperAdmin = () => profile?.role === 'super_admin'
   const [cards, setCards] = useState({})
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [editingCardId, setEditingCardId] = useState(null)
+  const [companies, setCompanies] = useState([])
+  const [selectedCompanyId, setSelectedCompanyId] = useState(
+    () => searchParams.get('companyId') || searchParams.get('company') || null
+  )
 
-  // Buscar company_id do perfil ou da primeira empresa do usuário
-  const companyId = profile?.company_id || profile?.user_companies?.[0]?.company_id
+  // Super admin: usa empresa selecionada no seletor / URL param
+  // Outros usuários: usa empresa do próprio perfil
+  const companyId = isSuperAdmin()
+    ? selectedCompanyId
+    : (profile?.company_id || profile?.user_companies?.[0]?.company_id)
+
+  // Carrega lista de empresas para o seletor (só super admin)
+  useEffect(() => {
+    if (!isSuperAdmin()) return
+    const loadCompanies = async () => {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name')
+        .order('name')
+      if (!error && data) setCompanies(data)
+    }
+    loadCompanies()
+  }, [profile])
 
   // Carrega os cartões do banco de dados
   useEffect(() => {
@@ -446,6 +471,37 @@ export default function BusinessModelPage() {
   }
 
   if (!companyId) {
+    // Super admin sem empresa selecionada: mostra seletor
+    if (isSuperAdmin()) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8">
+          <SuperAdminBanner />
+          <div className="max-w-[1600px] mx-auto">
+            <div className="mb-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
+              <div className="flex items-center gap-3">
+                <Building2 className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1 font-medium">Visualizando modelo de negócio de:</label>
+                  <select
+                    value={selectedCompanyId || ''}
+                    onChange={(e) => setSelectedCompanyId(e.target.value || null)}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
+                  >
+                    <option value="">Selecione uma empresa...</option>
+                    {companies.map(company => (
+                      <option key={company.id} value={company.id}>{company.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="text-center py-16 text-gray-500">
+              Selecione uma empresa para visualizar o modelo de negócio
+            </div>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
         <div className="text-center">
@@ -492,7 +548,32 @@ export default function BusinessModelPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8">
+      {/* Banner super admin */}
+      <SuperAdminBanner />
+
       <div className="max-w-[1600px] mx-auto">
+        {/* Seletor de empresa — apenas super admin */}
+        {isSuperAdmin() && (
+          <div className="mb-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
+            <div className="flex items-center gap-3">
+              <Building2 className="h-5 w-5 text-gray-500 flex-shrink-0" />
+              <div className="flex-1">
+                <label className="block text-xs text-gray-500 mb-1 font-medium">Visualizando modelo de negócio de:</label>
+                <select
+                  value={selectedCompanyId || ''}
+                  onChange={(e) => setSelectedCompanyId(e.target.value || null)}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
+                >
+                  <option value="">Selecione uma empresa...</option>
+                  {companies.map(company => (
+                    <option key={company.id} value={company.id}>{company.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Cabeçalho */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">

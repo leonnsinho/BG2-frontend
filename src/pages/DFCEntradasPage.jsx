@@ -1116,7 +1116,16 @@ function DFCEntradasPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
-              to={`/dfc${dataInicio && dataFim ? `?dataInicio=${dataInicio}&dataFim=${dataFim}` : ''}`}
+              to={(() => {
+                const p = new URLSearchParams()
+                if (dataInicio && dataFim) { p.set('dataInicio', dataInicio); p.set('dataFim', dataFim) }
+                if (searchParams.get('from') === 'admin') {
+                  const cid = searchParams.get('companyId') || searchParams.get('company')
+                  if (cid) { p.set('companyId', cid); p.set('from', 'admin') }
+                }
+                const qs = p.toString()
+                return qs ? `/dfc?${qs}` : '/dfc'
+              })()}
               className="p-2 hover:bg-gray-100 rounded-xl transition-all group"
               title="Voltar ao DFC"
             >

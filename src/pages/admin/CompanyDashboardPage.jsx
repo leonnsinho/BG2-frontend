@@ -70,12 +70,23 @@ const CompanyDashboardPage = () => {
   const [createLogoPreview, setCreateLogoPreview] = useState(null)
   const [createFormData, setCreateFormData] = useState({
     name: '',
+    nome_fantasia: '',
     cnpj: '',
     email: '',
     phone: '',
     website: '',
     industry: '',
     size: 'pequena',
+    inscricao_estadual: '',
+    inscricao_municipal: '',
+    num_colaboradores: '',
+    regime_tributario: '',
+    contribuinte_icms: '',
+    is_partner_client: '',
+    representante: { nome: '', email: '', telefone: '', endereco: '', cpf: '' },
+    contato_cobranca: { nome: '', cargo: '', email: '', telefone: '' },
+    melhor_dia_pagamento: '',
+    forma_pagamento: '',
     address: {
       street: '',
       number: '',
@@ -119,6 +130,12 @@ const CompanyDashboardPage = () => {
     if (field.startsWith('address.')) {
       const addressField = field.replace('address.', '')
       setCreateFormData(prev => ({ ...prev, address: { ...prev.address, [addressField]: value } }))
+    } else if (field.startsWith('representante.')) {
+      const subField = field.replace('representante.', '')
+      setCreateFormData(prev => ({ ...prev, representante: { ...prev.representante, [subField]: value } }))
+    } else if (field.startsWith('contato_cobranca.')) {
+      const subField = field.replace('contato_cobranca.', '')
+      setCreateFormData(prev => ({ ...prev, contato_cobranca: { ...prev.contato_cobranca, [subField]: value } }))
     } else {
       setCreateFormData(prev => ({ ...prev, [field]: value }))
     }
@@ -143,7 +160,12 @@ const CompanyDashboardPage = () => {
 
   const clearCreateForm = () => {
     setCreateFormData({
-      name: '', cnpj: '', email: '', phone: '', website: '', industry: '', size: 'pequena',
+      name: '', nome_fantasia: '', cnpj: '', email: '', phone: '', website: '', industry: '', size: 'pequena',
+      inscricao_estadual: '', inscricao_municipal: '', num_colaboradores: '', regime_tributario: '',
+      contribuinte_icms: '', is_partner_client: '',
+      representante: { nome: '', email: '', telefone: '', endereco: '', cpf: '' },
+      contato_cobranca: { nome: '', cargo: '', email: '', telefone: '' },
+      melhor_dia_pagamento: '', forma_pagamento: '',
       address: { street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zip: '', country: 'Brasil' }
     })
     setCreateLogoFile(null)
@@ -153,12 +175,31 @@ const CompanyDashboardPage = () => {
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault()
-    if (!createFormData.name.trim()) { toast.error('Nome da empresa é obrigatório'); return }
-    if (!createFormData.email.trim()) { toast.error('Email da empresa é obrigatório'); return }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createFormData.email)) { toast.error('Email inválido'); return }
-    if (!createIsInternational && createFormData.cnpj && !/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(createFormData.cnpj)) {
+    if (!createFormData.name.trim()) { toast.error('Razão Social é obrigatória'); return }
+    if (!createFormData.cnpj.trim()) { toast.error('CNPJ é obrigatório'); return }
+    if (!createIsInternational && !/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(createFormData.cnpj)) {
       toast.error('CNPJ deve estar no formato XX.XXX.XXX/XXXX-XX'); return
     }
+    if (!createFormData.address.street.trim()) { toast.error('Endereço é obrigatório'); return }
+    if (!createFormData.address.city.trim()) { toast.error('Cidade é obrigatória'); return }
+    if (!createFormData.address.state.trim()) { toast.error('Estado é obrigatório'); return }
+    if (!createFormData.address.zip.trim()) { toast.error('CEP é obrigatório'); return }
+    if (!createFormData.phone.trim()) { toast.error('Telefone da empresa é obrigatório'); return }
+    if (!createFormData.regime_tributario) { toast.error('Regime tributário é obrigatório'); return }
+    if (!createFormData.contribuinte_icms) { toast.error('Contribuinte do ICMS é obrigatório'); return }
+    if (!createFormData.melhor_dia_pagamento) { toast.error('Melhor dia para pagamento é obrigatório'); return }
+    if (!createFormData.forma_pagamento) { toast.error('Forma de pagamento é obrigatória'); return }
+    if (!createFormData.representante.nome.trim()) { toast.error('Nome do representante legal é obrigatório'); return }
+    if (!createFormData.representante.email.trim()) { toast.error('E-mail do representante legal é obrigatório'); return }
+    if (!createFormData.representante.telefone.trim()) { toast.error('Telefone do representante legal é obrigatório'); return }
+    if (!createFormData.representante.endereco.trim()) { toast.error('Endereço do representante legal é obrigatório'); return }
+    if (!createFormData.representante.cpf.trim()) { toast.error('CPF do representante legal é obrigatório'); return }
+    if (!createFormData.contato_cobranca.nome.trim()) { toast.error('Nome do contato de cobrança é obrigatório'); return }
+    if (!createFormData.contato_cobranca.cargo.trim()) { toast.error('Cargo do contato de cobrança é obrigatório'); return }
+    if (!createFormData.contato_cobranca.email.trim()) { toast.error('E-mail do contato de cobrança é obrigatório'); return }
+    if (!createFormData.contato_cobranca.telefone.trim()) { toast.error('Telefone do contato de cobrança é obrigatório'); return }
+    if (!createFormData.email.trim()) { toast.error('Email da empresa é obrigatório'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createFormData.email)) { toast.error('Email inválido'); return }
 
     setCreateLoading(true)
     try {
@@ -173,12 +214,23 @@ const CompanyDashboardPage = () => {
 
       const companyData = {
         name: createFormData.name.trim(),
+        nome_fantasia: createFormData.nome_fantasia.trim() || null,
         cnpj: createFormData.cnpj.trim() || null,
         email: createFormData.email.trim(),
         phone: createFormData.phone.trim() || null,
         website: createFormData.website.trim() || null,
         industry: createFormData.industry.trim() || null,
         size: createFormData.size,
+        inscricao_estadual: createFormData.inscricao_estadual.trim() || null,
+        inscricao_municipal: createFormData.inscricao_municipal.trim() || null,
+        num_colaboradores: createFormData.num_colaboradores ? parseInt(createFormData.num_colaboradores) || null : null,
+        regime_tributario: createFormData.regime_tributario || null,
+        contribuinte_icms: createFormData.contribuinte_icms || null,
+        is_partner_client: createFormData.is_partner_client === 'sim',
+        representante_legal: createFormData.representante,
+        contato_cobranca: createFormData.contato_cobranca,
+        melhor_dia_pagamento: createFormData.melhor_dia_pagamento.trim() || null,
+        forma_pagamento: createFormData.forma_pagamento || null,
         address: Object.values(createFormData.address).some(v => v.trim()) ? createFormData.address : null,
         logo_url: logoUrl,
         created_by: user?.id,
@@ -354,10 +406,8 @@ const CompanyDashboardPage = () => {
         path === '/indicators' || 
         path === '/performance-evaluation' ||
         path === '/dfc' ||
-        path === '/dfc/entradas' ||
-        path === '/dfc/saidas' ||
-        path === '/dfc/plano-contas' ||
         path === '/journey-management/overview' ||
+        path === '/business-model' ||
         path === '/admin/users') {
       sessionStorage.setItem('superAdminContext', JSON.stringify({
         companyId: company.id,
@@ -422,27 +472,6 @@ const CompanyDashboardPage = () => {
           icon: BarChart3,
           path: '/dfc',
           color: 'indigo'
-        },
-        {
-          name: 'DFC - Entradas',
-          description: 'Gerencie entradas financeiras',
-          icon: TrendingUp,
-          path: '/dfc/entradas',
-          color: 'green'
-        },
-        {
-          name: 'DFC - Saídas',
-          description: 'Gerencie saídas financeiras',
-          icon: TrendingDown,
-          path: '/dfc/saidas',
-          color: 'red'
-        },
-        {
-          name: 'DFC - Plano de Contas',
-          description: 'Configure o plano de contas',
-          icon: ListChecks,
-          path: '/dfc/plano-contas',
-          color: 'slate'
         }
       ]
     },
@@ -451,11 +480,18 @@ const CompanyDashboardPage = () => {
       color: 'orange',
       items: [
         {
-          name: 'Gerenciamento de Jornadas',
+          name: 'Diagnóstico de Gestão',
           description: 'Gerencie jornadas e processos da empresa',
           icon: Target,
           path: '/journey-management/overview',
           color: 'orange'
+        },
+        {
+          name: 'Modelo de Negócio',
+          description: 'Canvas do modelo de negócio da empresa',
+          icon: Briefcase,
+          path: '/business-model',
+          color: 'purple'
         }
       ]
     },
@@ -815,12 +851,16 @@ const CompanyDashboardPage = () => {
                     <Building2 className="h-4 w-4 text-[#EBA500]" /> Informações Básicas
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Nome da Empresa *</label>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Razão Social *</label>
                       <input type="text" value={createFormData.name} onChange={e => handleCreateInputChange('name', e.target.value)} placeholder="Ex: Empresa ABC Ltda" required className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">{createIsInternational ? 'Documento Fiscal (Tax ID)' : 'CNPJ'}</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Nome Fantasia</label>
+                      <input type="text" value={createFormData.nome_fantasia} onChange={e => handleCreateInputChange('nome_fantasia', e.target.value)} placeholder="Ex: ABC Soluções" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{createIsInternational ? 'Documento Fiscal (Tax ID)' : 'CNPJ *'}</label>
                       <input type="text" value={createFormData.cnpj} onChange={e => handleCreateInputChange('cnpj', e.target.value)} placeholder={createIsInternational ? 'Ex: 12-3456789' : '00.000.000/0000-00'} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
                     </div>
                     <div>
@@ -832,9 +872,13 @@ const CompanyDashboardPage = () => {
                         <option value="grande">Grande Empresa</option>
                       </select>
                     </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Setor de Atuação</label>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label>
                       <input type="text" value={createFormData.industry} onChange={e => handleCreateInputChange('industry', e.target.value)} placeholder="Ex: Tecnologia, Varejo, Serviços..." className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Nº de Colaboradores</label>
+                      <input type="number" min="0" value={createFormData.num_colaboradores} onChange={e => handleCreateInputChange('num_colaboradores', e.target.value)} placeholder="Ex: 25" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
                     </div>
                   </div>
                 </div>
@@ -850,7 +894,7 @@ const CompanyDashboardPage = () => {
                       <input type="email" value={createFormData.email} onChange={e => handleCreateInputChange('email', e.target.value)} placeholder="contato@empresa.com" required className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Telefone</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Telefone da Empresa (com DDD) *</label>
                       <input type="tel" value={createFormData.phone} onChange={e => handleCreateInputChange('phone', e.target.value)} placeholder={createIsInternational ? '+1 234 567-8900' : '(11) 99999-9999'} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
                     </div>
                     <div className="sm:col-span-2">
@@ -863,7 +907,7 @@ const CompanyDashboardPage = () => {
                 {/* Endereço */}
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-[#EBA500]" /> Endereço (Opcional)
+                    <MapPin className="h-4 w-4 text-[#EBA500]" /> Endereço *
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div>
@@ -897,6 +941,120 @@ const CompanyDashboardPage = () => {
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">{createIsInternational ? 'Código Postal / ZIP' : 'CEP'}</label>
                       <input type="text" value={createFormData.address.zip} onChange={e => handleCreateInputChange('address.zip', e.target.value)} placeholder={createIsInternational ? '90210' : '00000-000'} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dados Fiscais */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-[#EBA500]" /> Dados Fiscais
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Estadual *</label>
+                      <input type="text" value={createFormData.inscricao_estadual} onChange={e => handleCreateInputChange('inscricao_estadual', e.target.value)} placeholder="Ex: 123.456.789.000 ou ISENTO" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Municipal *</label>
+                      <input type="text" value={createFormData.inscricao_municipal} onChange={e => handleCreateInputChange('inscricao_municipal', e.target.value)} placeholder="Ex: 12345678" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Regime Tributário *</label>
+                      <select value={createFormData.regime_tributario} onChange={e => handleCreateInputChange('regime_tributario', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white">
+                        <option value="">Selecione...</option>
+                        <option value="simples_nacional">Simples Nacional</option>
+                        <option value="lucro_real">Lucro Real</option>
+                        <option value="lucro_presumido">Lucro Presumido</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Contribuinte do ICMS *</label>
+                      <select value={createFormData.contribuinte_icms} onChange={e => handleCreateInputChange('contribuinte_icms', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white">
+                        <option value="">Selecione...</option>
+                        <option value="contribuinte">Contribuinte</option>
+                        <option value="contribuinte_isento">Contribuinte Isento</option>
+                        <option value="nao_contribuinte">Não Contribuinte</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">É cliente Partner?</label>
+                      <select value={createFormData.is_partner_client} onChange={e => handleCreateInputChange('is_partner_client', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white">
+                        <option value="">Selecione...</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Representante Legal */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-[#EBA500]" /> Representante Legal
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Nome Completo *</label>
+                      <input type="text" value={createFormData.representante.nome} onChange={e => handleCreateInputChange('representante.nome', e.target.value)} placeholder="Ex: João da Silva" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">CPF *</label>
+                      <input type="text" value={createFormData.representante.cpf} onChange={e => handleCreateInputChange('representante.cpf', e.target.value)} placeholder="000.000.000-00" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Telefone (com DDD) *</label>
+                      <input type="tel" value={createFormData.representante.telefone} onChange={e => handleCreateInputChange('representante.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
+                      <input type="email" value={createFormData.representante.email} onChange={e => handleCreateInputChange('representante.email', e.target.value)} placeholder="representante@empresa.com" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Endereço Completo *</label>
+                      <input type="text" value={createFormData.representante.endereco} onChange={e => handleCreateInputChange('representante.endereco', e.target.value)} placeholder="Rua, nº, bairro, cidade – estado" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contato para NF / Cobrança */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-[#EBA500]" /> Contato para NF / Cobrança
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Nome Completo *</label>
+                      <input type="text" value={createFormData.contato_cobranca.nome} onChange={e => handleCreateInputChange('contato_cobranca.nome', e.target.value)} placeholder="Ex: Maria Souza" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Cargo *</label>
+                      <input type="text" value={createFormData.contato_cobranca.cargo} onChange={e => handleCreateInputChange('contato_cobranca.cargo', e.target.value)} placeholder="Ex: Financeiro" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
+                      <input type="email" value={createFormData.contato_cobranca.email} onChange={e => handleCreateInputChange('contato_cobranca.email', e.target.value)} placeholder="financeiro@empresa.com" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Telefone (com DDD) *</label>
+                      <input type="tel" value={createFormData.contato_cobranca.telefone} onChange={e => handleCreateInputChange('contato_cobranca.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Condições de Pagamento */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-[#EBA500]" /> Condições de Pagamento
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Melhor Dia para Pagamento *</label>
+                      <input type="text" value={createFormData.melhor_dia_pagamento} onChange={e => handleCreateInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: dia 10" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
+                      <input type="text" value={createFormData.forma_pagamento} onChange={e => handleCreateInputChange('forma_pagamento', e.target.value)} placeholder="Ex: Boleto, Cartão de Crédito" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
                     </div>
                   </div>
                 </div>
@@ -1115,6 +1273,161 @@ const CompanyDashboardPage = () => {
                     </div>
                   </div>
                 )}
+                {/* Dados Fiscais */}
+                {(selectedCompany.nome_fantasia || selectedCompany.inscricao_estadual || selectedCompany.inscricao_municipal || selectedCompany.num_colaboradores || selectedCompany.regime_tributario || selectedCompany.contribuinte_icms || selectedCompany.is_partner_client != null) && (
+                  <div>
+                    <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <Hash className="h-5 w-5 text-[#EBA500]" /> Dados Fiscais
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {selectedCompany.nome_fantasia && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-indigo-100 rounded-lg"><Building2 className="h-4 w-4 text-indigo-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome Fantasia</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.nome_fantasia}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.num_colaboradores && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-blue-100 rounded-lg"><Users className="h-4 w-4 text-blue-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nº Colaboradores</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.num_colaboradores}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.inscricao_estadual && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-yellow-100 rounded-lg"><Hash className="h-4 w-4 text-yellow-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Inscrição Estadual</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.inscricao_estadual}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.inscricao_municipal && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-yellow-100 rounded-lg"><Hash className="h-4 w-4 text-yellow-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Inscrição Municipal</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.inscricao_municipal}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.regime_tributario && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-green-100 rounded-lg"><Briefcase className="h-4 w-4 text-green-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Regime Tributário</label>
+                            <p className="text-gray-900 font-semibold mt-1">{{ simples_nacional: 'Simples Nacional', lucro_real: 'Lucro Real', lucro_presumido: 'Lucro Presumido' }[selectedCompany.regime_tributario] || selectedCompany.regime_tributario}</p>
+                          </div>
+                        </div>
+                      )}
+                      {selectedCompany.contribuinte_icms && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-orange-100 rounded-lg"><Hash className="h-4 w-4 text-orange-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contribuinte ICMS</label>
+                            <p className="text-gray-900 font-semibold mt-1">{{ contribuinte: 'Contribuinte', contribuinte_isento: 'Contribuinte Isento', nao_contribuinte: 'Não Contribuinte' }[selectedCompany.contribuinte_icms] || selectedCompany.contribuinte_icms}</p>
+                          </div>
+                        </div>
+                      )}
+                      {selectedCompany.is_partner_client != null && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-purple-100 rounded-lg"><Check className="h-4 w-4 text-purple-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cliente Partner</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.is_partner_client ? 'Sim' : 'Não'}</p></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Representante Legal */}
+                {selectedCompany.representante_legal?.nome && (
+                  <div>
+                    <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <Users className="h-5 w-5 text-[#EBA500]" /> Representante Legal
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {selectedCompany.representante_legal.nome && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl md:col-span-2">
+                          <div className="p-2 bg-blue-100 rounded-lg"><Users className="h-4 w-4 text-blue-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.representante_legal.nome}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.representante_legal.cpf && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-gray-100 rounded-lg"><Hash className="h-4 w-4 text-gray-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">CPF</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.representante_legal.cpf}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.representante_legal.telefone && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-green-100 rounded-lg"><Phone className="h-4 w-4 text-green-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Telefone</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.representante_legal.telefone}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.representante_legal.email && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-blue-100 rounded-lg"><Mail className="h-4 w-4 text-blue-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">E-mail</label><p className="text-gray-900 font-semibold mt-1 break-all">{selectedCompany.representante_legal.email}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.representante_legal.endereco && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl md:col-span-2">
+                          <div className="p-2 bg-orange-100 rounded-lg"><MapPin className="h-4 w-4 text-orange-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Endereço</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.representante_legal.endereco}</p></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Contato NF / Cobrança */}
+                {selectedCompany.contato_cobranca?.nome && (
+                  <div>
+                    <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <CreditCard className="h-5 w-5 text-[#EBA500]" /> Contato para NF / Cobrança
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {selectedCompany.contato_cobranca.nome && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-blue-100 rounded-lg"><Users className="h-4 w-4 text-blue-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.contato_cobranca.nome}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.contato_cobranca.cargo && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-purple-100 rounded-lg"><Briefcase className="h-4 w-4 text-purple-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cargo</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.contato_cobranca.cargo}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.contato_cobranca.email && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-blue-100 rounded-lg"><Mail className="h-4 w-4 text-blue-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">E-mail</label><p className="text-gray-900 font-semibold mt-1 break-all">{selectedCompany.contato_cobranca.email}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.contato_cobranca.telefone && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-green-100 rounded-lg"><Phone className="h-4 w-4 text-green-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Telefone</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.contato_cobranca.telefone}</p></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Condições de Pagamento */}
+                {(selectedCompany.melhor_dia_pagamento || selectedCompany.forma_pagamento) && (
+                  <div>
+                    <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <Wallet className="h-5 w-5 text-[#EBA500]" /> Condições de Pagamento
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {selectedCompany.melhor_dia_pagamento && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-green-100 rounded-lg"><Calendar className="h-4 w-4 text-green-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Melhor Dia</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.melhor_dia_pagamento}</p></div>
+                        </div>
+                      )}
+                      {selectedCompany.forma_pagamento && (
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className="p-2 bg-indigo-100 rounded-lg"><CreditCard className="h-4 w-4 text-indigo-600" /></div>
+                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Forma de Pagamento</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.forma_pagamento}</p></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Footer */}
@@ -1196,12 +1509,24 @@ const CompanyDashboardPage = () => {
 function CompanyEditModal({ company, onClose, onSave, loading }) {
   const [formData, setFormData] = useState({
     name: company.name || '',
+    nome_fantasia: company.nome_fantasia || '',
     industry: company.industry || '',
     size: company.size || 'pequena',
     email: company.email || '',
     phone: company.phone || '',
     website: company.website || '',
-    cnpj: company.cnpj || ''
+    cnpj: company.cnpj || '',
+    inscricao_estadual: company.inscricao_estadual || '',
+    inscricao_municipal: company.inscricao_municipal || '',
+    num_colaboradores: company.num_colaboradores || '',
+    regime_tributario: company.regime_tributario || '',
+    contribuinte_icms: company.contribuinte_icms || '',
+    is_partner_client: company.is_partner_client === true ? 'sim' : company.is_partner_client === false ? 'nao' : '',
+    representante: company.representante_legal || { nome: '', email: '', telefone: '', endereco: '', cpf: '' },
+    contato_cobranca_data: company.contato_cobranca || { nome: '', cargo: '', email: '', telefone: '' },
+    melhor_dia_pagamento: company.melhor_dia_pagamento || '',
+    forma_pagamento: company.forma_pagamento || '',
+    address: company.address || { street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zip: '', country: 'Brasil' }
   })
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState(null)
@@ -1261,6 +1586,21 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
     toast.success('Logo será removido ao salvar')
   }
 
+  const handleInputChange = (field, value) => {
+    if (field.startsWith('address.')) {
+      const sub = field.replace('address.', '')
+      setFormData(prev => ({ ...prev, address: { ...prev.address, [sub]: value } }))
+    } else if (field.startsWith('representante.')) {
+      const sub = field.replace('representante.', '')
+      setFormData(prev => ({ ...prev, representante: { ...prev.representante, [sub]: value } }))
+    } else if (field.startsWith('contato_cobranca_data.')) {
+      const sub = field.replace('contato_cobranca_data.', '')
+      setFormData(prev => ({ ...prev, contato_cobranca_data: { ...prev.contato_cobranca_data, [sub]: value } }))
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }))
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     
@@ -1304,7 +1644,15 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
       }
 
       // 3. Atualizar empresa com novo logo_url
-      await onSave(company.id, { ...formData, logo_url: logoUrl })
+      const { representante, contato_cobranca_data, is_partner_client, num_colaboradores, ...rest } = formData
+      await onSave(company.id, {
+        ...rest,
+        logo_url: logoUrl,
+        is_partner_client: is_partner_client === 'sim' ? true : is_partner_client === 'nao' ? false : null,
+        num_colaboradores: num_colaboradores !== '' ? parseInt(num_colaboradores) || null : null,
+        representante_legal: representante,
+        contato_cobranca: contato_cobranca_data,
+      })
       
     } catch (error) {
       console.error('Erro ao processar logo:', error)
@@ -1438,7 +1786,7 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
               <div className="col-span-2">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                   <Building2 className="w-4 h-4 text-blue-600" />
-                  Nome da Empresa *
+                  Razão Social *
                 </label>
                 <input
                   required
@@ -1481,7 +1829,7 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                   <Briefcase className="w-4 h-4 text-orange-600" />
-                  Setor/Indústria
+                  Segmento
                 </label>
                 <input
                   value={formData.industry}
@@ -1517,12 +1865,12 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                   <Phone className="w-4 h-4 text-green-600" />
-                  Telefone
+                  Telefone da Empresa (com DDD) *
                 </label>
                 <input
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  placeholder="+55 (00) 00000-0000"
+                  placeholder="(11) 99999-9999"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white hover:border-gray-300"
                 />
               </div>
@@ -1539,6 +1887,169 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
                   placeholder="https://www.empresa.com"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white hover:border-gray-300"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Endereço */}
+          <div>
+            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-[#EBA500]" /> Endereço *
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="col-span-3 md:col-span-1">
+                <label className="block text-xs font-medium text-gray-600 mb-1">País</label>
+                <input value={formData.address.country} onChange={e => handleInputChange('address.country', e.target.value)} placeholder="Brasil" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div className="col-span-3 md:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Logradouro *</label>
+                <input value={formData.address.street} onChange={e => handleInputChange('address.street', e.target.value)} placeholder="Rua, Avenida..." className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Número *</label>
+                <input value={formData.address.number} onChange={e => handleInputChange('address.number', e.target.value)} placeholder="123" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Complemento</label>
+                <input value={formData.address.complement} onChange={e => handleInputChange('address.complement', e.target.value)} placeholder="Sala, Apto..." className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Bairro</label>
+                <input value={formData.address.neighborhood} onChange={e => handleInputChange('address.neighborhood', e.target.value)} placeholder="Centro" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cidade *</label>
+                <input value={formData.address.city} onChange={e => handleInputChange('address.city', e.target.value)} placeholder="São Paulo" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Estado *</label>
+                <input value={formData.address.state} onChange={e => handleInputChange('address.state', e.target.value)} placeholder="SP" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">CEP *</label>
+                <input value={formData.address.zip} onChange={e => handleInputChange('address.zip', e.target.value)} placeholder="00000-000" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Dados Fiscais */}
+          <div>
+            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Hash className="h-5 w-5 text-[#EBA500]" /> Dados Fiscais
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nome Fantasia</label>
+                <input value={formData.nome_fantasia} onChange={e => handleInputChange('nome_fantasia', e.target.value)} placeholder="Ex: ABC Soluções" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nº de Colaboradores</label>
+                <input type="number" min="0" value={formData.num_colaboradores} onChange={e => handleInputChange('num_colaboradores', e.target.value)} placeholder="Ex: 25" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Estadual</label>
+                <input value={formData.inscricao_estadual} onChange={e => handleInputChange('inscricao_estadual', e.target.value)} placeholder="Ex: 123.456.789.000 ou ISENTO" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Municipal</label>
+                <input value={formData.inscricao_municipal} onChange={e => handleInputChange('inscricao_municipal', e.target.value)} placeholder="Ex: 12345678" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Regime Tributário *</label>
+                <select value={formData.regime_tributario} onChange={e => handleInputChange('regime_tributario', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white">
+                  <option value="">Selecione...</option>
+                  <option value="simples_nacional">Simples Nacional</option>
+                  <option value="lucro_real">Lucro Real</option>
+                  <option value="lucro_presumido">Lucro Presumido</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Contribuinte do ICMS *</label>
+                <select value={formData.contribuinte_icms} onChange={e => handleInputChange('contribuinte_icms', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white">
+                  <option value="">Selecione...</option>
+                  <option value="contribuinte">Contribuinte</option>
+                  <option value="contribuinte_isento">Contribuinte Isento</option>
+                  <option value="nao_contribuinte">Não Contribuinte</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">É cliente Partner?</label>
+                <select value={formData.is_partner_client} onChange={e => handleInputChange('is_partner_client', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white">
+                  <option value="">Selecione...</option>
+                  <option value="sim">Sim</option>
+                  <option value="nao">Não</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Representante Legal */}
+          <div>
+            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Users className="h-5 w-5 text-[#EBA500]" /> Representante Legal
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nome Completo *</label>
+                <input value={formData.representante.nome} onChange={e => handleInputChange('representante.nome', e.target.value)} placeholder="Ex: João da Silva" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">CPF *</label>
+                <input value={formData.representante.cpf} onChange={e => handleInputChange('representante.cpf', e.target.value)} placeholder="000.000.000-00" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Telefone (com DDD) *</label>
+                <input value={formData.representante.telefone} onChange={e => handleInputChange('representante.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
+                <input type="email" value={formData.representante.email} onChange={e => handleInputChange('representante.email', e.target.value)} placeholder="representante@empresa.com" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Endereço Completo *</label>
+                <input value={formData.representante.endereco} onChange={e => handleInputChange('representante.endereco', e.target.value)} placeholder="Rua, nº, bairro, cidade – estado" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Contato para NF / Cobrança */}
+          <div>
+            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-[#EBA500]" /> Contato para NF / Cobrança
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nome Completo *</label>
+                <input value={formData.contato_cobranca_data.nome} onChange={e => handleInputChange('contato_cobranca_data.nome', e.target.value)} placeholder="Ex: Maria Souza" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cargo *</label>
+                <input value={formData.contato_cobranca_data.cargo} onChange={e => handleInputChange('contato_cobranca_data.cargo', e.target.value)} placeholder="Ex: Financeiro" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
+                <input type="email" value={formData.contato_cobranca_data.email} onChange={e => handleInputChange('contato_cobranca_data.email', e.target.value)} placeholder="financeiro@empresa.com" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Telefone (com DDD) *</label>
+                <input type="tel" value={formData.contato_cobranca_data.telefone} onChange={e => handleInputChange('contato_cobranca_data.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Condições de Pagamento */}
+          <div>
+            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-[#EBA500]" /> Condições de Pagamento
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Melhor Dia para Pagamento *</label>
+                <input value={formData.melhor_dia_pagamento} onChange={e => handleInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: dia 10" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
+                <input value={formData.forma_pagamento} onChange={e => handleInputChange('forma_pagamento', e.target.value)} placeholder="Ex: Boleto, Cartão de Crédito" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
               </div>
             </div>
           </div>

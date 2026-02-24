@@ -752,7 +752,13 @@ function PlanoContasPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <Link
-                to="/dfc"
+                to={(() => {
+                  if (searchParams.get('from') === 'admin') {
+                    const cid = searchParams.get('companyId') || searchParams.get('company')
+                    if (cid) return `/dfc?companyId=${cid}&from=admin`
+                  }
+                  return '/dfc'
+                })()}
                 className="p-2 hover:bg-gray-100 rounded-xl transition-all group"
                 title="Voltar ao DFC"
               >

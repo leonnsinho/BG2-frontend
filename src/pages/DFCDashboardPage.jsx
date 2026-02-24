@@ -1481,8 +1481,33 @@ export default function DFCDashboardPage() {
 
         {/* Cards de Acesso Rápido */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {(() => {
+            const isAdminCtx = searchParams.get('from') === 'admin' && selectedCompanyId && selectedCompanyId !== 'all'
+            const buildSubUrl = (base, extra = {}) => {
+              const params = {
+                ...extra,
+                ...(isAdminCtx ? { companyId: selectedCompanyId, from: 'admin' } : (selectedCompanyId && selectedCompanyId !== 'all' ? { companyId: selectedCompanyId } : {}))
+              }
+              const qs = new URLSearchParams(params).toString()
+              return qs ? `${base}?${qs}` : base
+            }
+            const handleSubNav = (destPath) => {
+              if (isAdminCtx) {
+                const existing = sessionStorage.getItem('superAdminContext')
+                if (existing) {
+                  const ctx = JSON.parse(existing)
+                  sessionStorage.setItem('superAdminContext', JSON.stringify({
+                    ...ctx,
+                    returnUrl: `/dfc?companyId=${selectedCompanyId}&from=admin`
+                  }))
+                }
+              }
+            }
+            return (
+              <>
           <Link
-            to={`/dfc/entradas${dataInicio && dataFim ? `?dataInicio=${dataInicio}&dataFim=${dataFim}` : ''}`}
+            to={buildSubUrl('/dfc/entradas', dataInicio && dataFim ? { dataInicio, dataFim } : {})}
+            onClick={() => handleSubNav('/dfc/entradas')}
             className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border-2 border-green-200 hover:shadow-lg transition-all hover:scale-105"
           >
             <div className="flex items-center justify-between">
@@ -1506,7 +1531,8 @@ export default function DFCDashboardPage() {
           </Link>
 
           <Link
-            to={`/dfc/saidas${dataInicio && dataFim ? `?dataInicio=${dataInicio}&dataFim=${dataFim}` : ''}`}
+            to={buildSubUrl('/dfc/saidas', dataInicio && dataFim ? { dataInicio, dataFim } : {})}
+            onClick={() => handleSubNav('/dfc/saidas')}
             className="bg-white rounded-2xl p-6 shadow-sm border-2 border-red-200 hover:shadow-lg transition-all hover:scale-105"
           >
             <div className="flex items-center justify-between">
@@ -1530,7 +1556,8 @@ export default function DFCDashboardPage() {
           </Link>
 
           <Link
-            to="/dfc/plano-contas"
+            to={buildSubUrl('/dfc/plano-contas')}
+            onClick={() => handleSubNav('/dfc/plano-contas')}
             className="bg-white rounded-2xl p-6 shadow-sm border-2 border-blue-200 hover:shadow-lg transition-all hover:scale-105"
           >
             <div className="flex items-center justify-between">
@@ -1550,6 +1577,9 @@ export default function DFCDashboardPage() {
               <ChevronRight className="h-4 w-4" />
             </div>
           </Link>
+        </>
+        )})()
+        }
         </div>
 
         {/* Pagamentos Futuros - A Receber e A Pagar */}
