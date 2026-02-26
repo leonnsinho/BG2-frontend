@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -9,24 +9,30 @@ export function useToolPermissions() {
   const { user, getActiveCompany, profile } = useAuth()
   const [permissions, setPermissions] = useState({})
   const [loading, setLoading] = useState(true)
+  const hasLoadedOnce = useRef(false)
+
+  // Stable dep: company id string instead of full array reference
+  const companyId = getActiveCompany?.()?.id ?? null
 
   // useEffect que monitora mudanças no userId e companyId
   useEffect(() => {
     const userId = user?.id
-    const selectedCompany = getActiveCompany?.()
-    const companyId = selectedCompany?.id
 
     // Se não tem user ou company, limpa permissões e retorna
     if (!userId || !companyId) {
       setPermissions({})
       setLoading(false)
+      hasLoadedOnce.current = false
       return
     }
 
     // Função assíncrona para carregar permissões
     const loadPermissions = async () => {
       try {
-        setLoading(true)
+        // Só mostrar loading na primeira carga — evita skeleton em re-fetches
+        if (!hasLoadedOnce.current) {
+          setLoading(true)
+        }
 
         // Buscar todas as ferramentas
         const { data: tools, error: toolsError } = await supabase
@@ -60,11 +66,12 @@ export function useToolPermissions() {
         setPermissions({})
       } finally {
         setLoading(false)
+        hasLoadedOnce.current = true
       }
     }
 
     loadPermissions()
-  }, [user?.id, profile?.user_companies, getActiveCompany])
+  }, [user?.id, companyId])
 
   /**
    * Verifica se o usuário tem acesso a uma ferramenta específica

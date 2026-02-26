@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useToolPermissions } from '../../hooks/useToolPermissions'
 import toast from 'react-hot-toast'
 import { 
@@ -568,7 +568,7 @@ export default function CompanyAdminDashboard() {
                   )}
                   <div className="flex-1 min-w-0">
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] tracking-tight truncate">
-                      {getGreeting()}, {profile?.full_name?.split(' ')[0] || 'Administrador'}!
+                      Olá, {profile?.full_name?.split(' ')[0] || 'Administrador'}!
                     </h1>
                     {companyName && (
                       <div className="flex items-center gap-2 mt-1 text-gray-600">
@@ -606,7 +606,7 @@ export default function CompanyAdminDashboard() {
                     return (
                       <div className="relative">
                         <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full blur-2xl opacity-30 animate-pulse"></div>
-                        <div className="relative w-24 h-24 lg:w-32 lg:h-32 flex items-center justify-center">
+                        <div className="relative w-14 h-14 lg:w-20 lg:h-20 flex items-center justify-center">
                           <img 
                             src="/sun.gif" 
                             alt="Sol"
@@ -619,7 +619,7 @@ export default function CompanyAdminDashboard() {
                     return (
                       <div className="relative">
                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full blur-2xl opacity-30 animate-pulse"></div>
-                        <div className="relative w-24 h-24 lg:w-32 lg:h-32 flex items-center justify-center">
+                        <div className="relative w-14 h-14 lg:w-20 lg:h-20 flex items-center justify-center">
                           <img 
                             src="/moon.gif" 
                             alt="Lua"
@@ -634,12 +634,6 @@ export default function CompanyAdminDashboard() {
             </div>
           </div>
         </div>
-
-        {/* Card de Aplicativos / Atalhos Rápidos */}
-        <QuickAppsCard />
-
-        {/* Link de Convite da Empresa */}
-        {companyId && <InviteLinkCard companyId={companyId} />}
 
         {/* Cards de Estatísticas Principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-6 mb-6 sm:mb-8">
@@ -758,9 +752,23 @@ export default function CompanyAdminDashboard() {
 
             <div className="space-y-3">
               {recentActivities.length === 0 ? (
-                <div className="text-center py-6 sm:py-8 text-gray-500">
-                  <FileText className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm sm:text-base">Nenhuma atividade recente</p>
+                <div className="text-center py-6 sm:py-8 px-4">
+                  <div className="p-3 bg-[#EBA500]/10 rounded-full w-fit mx-auto mb-3">
+                    <Target className="h-8 w-8 sm:h-10 sm:w-10 text-[#EBA500]" />
+                  </div>
+                  <p className="text-sm sm:text-base font-semibold text-gray-700 mb-1">
+                    Você ainda não iniciou seu planejamento estratégico.
+                  </p>
+                  <p className="text-xs sm:text-sm text-gray-500 mb-4">
+                    Defina objetivos, metas e acompanhe o progresso da sua empresa.
+                  </p>
+                  <Link
+                    to="/planejamento-estrategico"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#EBA500] text-white text-sm font-medium rounded-xl hover:bg-[#d99500] active:scale-95 transition-all shadow-sm"
+                  >
+                    <Target className="h-4 w-4" />
+                    Planejamento Estratégico
+                  </Link>
                 </div>
               ) : (
                 recentActivities.map((activity) => {
@@ -832,6 +840,12 @@ export default function CompanyAdminDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Biblioteca de Ferramentas */}
+        <QuickAppsCard />
+
+        {/* Link de Convite da Empresa */}
+        {companyId && <InviteLinkCard companyId={companyId} />}
 
       </div>
     </div>

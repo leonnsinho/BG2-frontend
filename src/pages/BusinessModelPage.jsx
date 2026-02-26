@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, X, Save, GripVertical, Building2 } from 'lucide-react'
+import { Plus, X, Save, GripVertical, Building2, BookOpen, Target, Eye, Heart } from 'lucide-react'
 import { cn } from '../utils/cn'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../services/supabase'
@@ -274,12 +274,15 @@ export default function BusinessModelPage() {
   const [selectedCompanyId, setSelectedCompanyId] = useState(
     () => searchParams.get('companyId') || searchParams.get('company') || null
   )
+  const [purposes, setPurposes] = useState({ missao: '', visao: '', valores: '' })
+  const [savingPurposes, setSavingPurposes] = useState({})
 
   // Super admin: usa empresa selecionada no seletor / URL param
   // Outros usuários: usa empresa do próprio perfil
   const companyId = isSuperAdmin()
     ? selectedCompanyId
     : (profile?.company_id || profile?.user_companies?.[0]?.company_id)
+
 
   // Carrega lista de empresas para o seletor (só super admin)
   useEffect(() => {
@@ -459,6 +462,27 @@ export default function BusinessModelPage() {
     }
   }
 
+  // Carrega propósitos institucionais
+  useEffect(() => {
+    if (!companyId) return
+    businessModelService.getPurposes(companyId)
+      .then(data => setPurposes(data))
+      .catch(err => console.error('❌ Erro ao carregar propósitos:', err))
+  }, [companyId])
+
+  const handlePurposeBlur = async (field, value) => {
+    if (!companyId) return
+    setSavingPurposes(prev => ({ ...prev, [field]: true }))
+    try {
+      await businessModelService.savePurpose(companyId, field, value)
+      toast.success('Salvo!')
+    } catch {
+      toast.error('Erro ao salvar')
+    } finally {
+      setSavingPurposes(prev => ({ ...prev, [field]: false }))
+    }
+  }
+
   // Verifica se o usuário tem permissão
   if (!profile) {
     return (
@@ -582,6 +606,74 @@ export default function BusinessModelPage() {
           <p className="text-gray-600 text-sm sm:text-base">
             Construa e visualize seu modelo de negócio de forma colaborativa
           </p>
+        </div>
+
+        {/* Propósitos Institucionais */}
+        <div className="mb-6 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          {/* Header do bloco */}
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+            <div className="p-2 bg-[#FEF3E2] rounded-lg">
+              <BookOpen className="h-4 w-4 text-[#EBA500]" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Propósitos Institucionais</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Defina a essência da organização</p>
+            </div>
+          </div>
+
+          {/* Campos */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5">
+            {/* Missão */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="h-4 w-4 text-[#EBA500]" />
+                <label className="text-sm font-semibold text-gray-700">Missão</label>
+                {savingPurposes.missao && <span className="text-xs text-gray-400 ml-auto">Salvando...</span>}
+              </div>
+              <textarea
+                value={purposes.missao}
+                onChange={(e) => setPurposes(prev => ({ ...prev, missao: e.target.value }))}
+                onBlur={(e) => handlePurposeBlur('missao', e.target.value)}
+                placeholder="Por que existimos? Qual é o propósito da nossa organização?"
+                rows={4}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-gray-50 placeholder-gray-400"
+              />
+            </div>
+
+            {/* Visão */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Eye className="h-4 w-4 text-[#EBA500]" />
+                <label className="text-sm font-semibold text-gray-700">Visão</label>
+                {savingPurposes.visao && <span className="text-xs text-gray-400 ml-auto">Salvando...</span>}
+              </div>
+              <textarea
+                value={purposes.visao}
+                onChange={(e) => setPurposes(prev => ({ ...prev, visao: e.target.value }))}
+                onBlur={(e) => handlePurposeBlur('visao', e.target.value)}
+                placeholder="Onde queremos chegar? Qual é o nosso futuro desejado?"
+                rows={4}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-gray-50 placeholder-gray-400"
+              />
+            </div>
+
+            {/* Valores */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Heart className="h-4 w-4 text-[#EBA500]" />
+                <label className="text-sm font-semibold text-gray-700">Valores</label>
+                {savingPurposes.valores && <span className="text-xs text-gray-400 ml-auto">Salvando...</span>}
+              </div>
+              <textarea
+                value={purposes.valores}
+                onChange={(e) => setPurposes(prev => ({ ...prev, valores: e.target.value }))}
+                onBlur={(e) => handlePurposeBlur('valores', e.target.value)}
+                placeholder="Quais princípios guiam nossas decisões e comportamentos?"
+                rows={4}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-gray-50 placeholder-gray-400"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Grid do Modelo de Negócio */}

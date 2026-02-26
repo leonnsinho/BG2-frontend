@@ -163,6 +163,53 @@ class BusinessModelService {
       throw error
     }
   }
+
+  /**
+   * Busca os propósitos institucionais de uma empresa (missão, visão, valores)
+   * @param {string} companyId - ID da empresa
+   * @returns {Promise<{missao: string, visao: string, valores: string}>}
+   */
+  async getPurposes(companyId) {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('missao, visao, valores')
+        .eq('id', companyId)
+        .single()
+
+      if (error) throw error
+
+      return {
+        missao:  data?.missao  || '',
+        visao:   data?.visao   || '',
+        valores: data?.valores || '',
+      }
+    } catch (error) {
+      console.error('Erro ao buscar propósitos institucionais:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Salva um campo de propósito institucional
+   * @param {string} companyId - ID da empresa
+   * @param {'missao'|'visao'|'valores'} field - Nome do campo
+   * @param {string} value - Novo valor
+   * @returns {Promise<void>}
+   */
+  async savePurpose(companyId, field, value) {
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ [field]: value })
+        .eq('id', companyId)
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Erro ao salvar propósito institucional:', error)
+      throw error
+    }
+  }
 }
 
 export const businessModelService = new BusinessModelService()

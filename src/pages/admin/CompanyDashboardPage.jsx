@@ -600,184 +600,159 @@ const CompanyDashboardPage = () => {
       <div className="max-w-7xl mx-auto">
         {/* Módulos - Mostrado acima quando empresa selecionada */}
         {selectedCompany && (
-          <div className="mb-8 bg-white rounded-3xl shadow-lg p-6 border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-[#EBA500]" />
-                Módulos de {selectedCompany.name}
-              </h2>
-              
-              <div className="flex items-center gap-4">
-                {/* Estatísticas */}
-                <div className="flex gap-3 pr-3 border-r border-gray-200">
-                  <div className="text-center">
-                    <div className="text-lg font-semibold text-[#373435]">
-                      {companyStats.usersCount}
-                    </div>
-                    <div className="text-xs text-gray-500 flex items-center justify-center">
-                      <Users className="h-3 w-3 mr-1" />
-                      Usuários
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-semibold text-[#373435]">
-                      {companyStats.evaluationsCount}
-                    </div>
-                    <div className="text-xs text-gray-500 flex items-center justify-center">
-                      <BarChart3 className="h-3 w-3 mr-1" />
-                      Aval.
-                    </div>
+          <div className="mb-6 bg-white rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
+            {/* Header: identidade da empresa + ações */}
+            <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+              <div className="flex items-center gap-3">
+                {/* Mini logo */}
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex-shrink-0 overflow-hidden bg-gradient-to-br from-[#EBA500] to-yellow-600 flex items-center justify-center shadow-sm">
+                  {logoUrls[selectedCompany.id] ? (
+                    <img src={logoUrls[selectedCompany.id]} alt={selectedCompany.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  )}
+                </div>
+                {/* Nome + stats */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-gray-900 text-sm sm:text-base truncate leading-tight">{selectedCompany.name}</p>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                      <Users className="h-3 w-3" />{companyStats.usersCount} usuários
+                    </span>
+                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                      <BarChart3 className="h-3 w-3" />{companyStats.evaluationsCount} aval.
+                    </span>
                   </div>
                 </div>
-
-                {/* Botões de Ação */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleViewDetails}
-                    className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                    title="Ver Detalhes"
-                  >
-                    <Eye className="h-5 w-5" />
+                {/* Botões de ação */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button onClick={handleViewDetails} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 active:scale-95 transition-all" title="Ver Detalhes">
+                    <Eye className="h-4 w-4" />
                   </button>
-                  <button
-                    onClick={handleEdit}
-                    className="p-2 rounded-lg bg-yellow-50 text-yellow-600 hover:bg-yellow-100 transition-colors"
-                    title="Editar Empresa"
-                  >
-                    <Edit className="h-5 w-5" />
+                  <button onClick={handleEdit} className="p-2 rounded-lg bg-yellow-50 text-yellow-600 hover:bg-yellow-100 active:scale-95 transition-all" title="Editar Empresa">
+                    <Edit className="h-4 w-4" />
                   </button>
-                  <button
-                    onClick={handleDelete}
-                    className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                    title="Excluir Empresa"
-                  >
-                    <Trash2 className="h-5 w-5" />
+                  <button onClick={handleDelete} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 transition-all" title="Excluir Empresa">
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
             </div>
-            
-            <div className="grid grid-cols-5 gap-4">
-              {allModules.map((module, idx) => {
-                const Icon = module.icon
-                const colors = getColorClasses(module.color)
-                
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => navigateToModule(module.path, selectedCompany.id)}
-                    className="group bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 border border-gray-200 hover:border-[#EBA500] hover:shadow-lg transition-all duration-200 flex flex-col items-center gap-3"
-                  >
-                    <div className={`p-3 rounded-lg ${colors.lightBg} group-hover:scale-110 transition-transform duration-200`}>
-                      <Icon className={`h-6 w-6 ${colors.text}`} />
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 text-center leading-tight">
-                      {module.name}
-                    </span>
-                  </button>
-                )
-              })}
+
+            {/* Grid de módulos */}
+            <div className="p-3 sm:p-5">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
+                {allModules.map((module, idx) => {
+                  const Icon = module.icon
+                  const colors = getColorClasses(module.color)
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => navigateToModule(module.path, selectedCompany.id)}
+                      className="group flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border border-gray-200 bg-white hover:border-[#EBA500] hover:shadow-md active:scale-95 transition-all duration-150"
+                    >
+                      <div className={`p-2 sm:p-2.5 rounded-lg ${colors.lightBg} group-hover:scale-110 transition-transform duration-150`}>
+                        <Icon className={`h-5 w-5 ${colors.text}`} />
+                      </div>
+                      <span className="text-[10px] sm:text-xs font-medium text-gray-600 text-center leading-tight line-clamp-2">
+                        {module.name}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
         )}
 
         {/* Seletor de Empresa */}
-        <div className="mb-8 bg-white rounded-3xl shadow-lg p-6 border border-gray-200">
-          <label className="block text-sm font-semibold text-gray-700 mb-4">
-            Selecione a Empresa
-          </label>
-          
-          {/* Barra de Busca */}
-          <div className="mb-4 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar empresa por nome..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#EBA500] focus:border-transparent transition-all"
-            />
+        <div className="mb-6 bg-white rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
+          {/* Header da seção */}
+          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100">
+            <p className="text-sm font-semibold text-gray-700">Selecione a Empresa</p>
           </div>
 
-          {/* Lista de Empresas */}
-          <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
-            {companies
-              .filter(company => 
-                company.name.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-              .map((company) => (
-              <button
-                key={company.id}
-                onClick={() => handleCompanySelect(company)}
-                className={`
-                  w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left
-                  ${selectedCompany?.id === company.id
-                    ? 'border-[#EBA500] bg-gradient-to-r from-[#EBA500]/10 to-yellow-50 shadow-md'
-                    : 'border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white'
-                  }
-                `}
-              >
-                {/* Logo */}
-                <div className={`
-                  h-16 w-16 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden
-                  ${selectedCompany?.id === company.id
-                    ? 'bg-gradient-to-br from-[#EBA500] to-yellow-600'
-                    : 'bg-gradient-to-br from-gray-100 to-gray-200'
-                  }
-                `}>
-                  {logoUrls[company.id] ? (
-                    <img 
-                      src={logoUrls[company.id]} 
-                      alt={company.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Building2 className={`h-8 w-8 ${selectedCompany?.id === company.id ? 'text-white' : 'text-gray-500'}`} />
-                  )}
-                </div>
+          <div className="p-3 sm:p-4">
+            {/* Barra de Busca */}
+            <div className="mb-3 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar empresa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#EBA500] focus:border-transparent transition-all"
+              />
+            </div>
 
-                {/* Informações */}
-                <div className="flex-1 min-w-0">
-                  <p className={`font-semibold text-lg ${selectedCompany?.id === company.id ? 'text-gray-900' : 'text-gray-700'}`}>
-                    {company.name}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {company.size ? `${company.size.charAt(0).toUpperCase() + company.size.slice(1)} Empresa` : 'Empresa'}
-                    {company.cnpj && ` • CNPJ: ${company.cnpj}`}
-                  </p>
-                </div>
+            {/* Lista de Empresas */}
+            <div className="space-y-1.5 max-h-80 overflow-y-auto">
+              {companies
+                .filter(company =>
+                  company.name.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .map((company) => {
+                  const isSelected = selectedCompany?.id === company.id
+                  return (
+                    <button
+                      key={company.id}
+                      onClick={() => handleCompanySelect(company)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 sm:py-3 rounded-xl border-2 transition-all duration-150 text-left active:scale-[0.98] ${
+                        isSelected
+                          ? 'border-[#EBA500] bg-[#EBA500]/8 shadow-sm'
+                          : 'border-transparent hover:border-gray-200 hover:bg-gray-50 bg-white'
+                      }`}
+                    >
+                      {/* Logo */}
+                      <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center ${
+                        isSelected ? 'bg-gradient-to-br from-[#EBA500] to-yellow-600' : 'bg-gray-100'
+                      }`}>
+                        {logoUrls[company.id] ? (
+                          <img src={logoUrls[company.id]} alt={company.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Building2 className={`h-5 w-5 sm:h-6 sm:w-6 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
+                        )}
+                      </div>
 
-                {/* Checkmark */}
-                {selectedCompany?.id === company.id && (
-                  <div className="flex-shrink-0">
-                    <div className="bg-[#EBA500] rounded-full p-2">
-                      <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  </div>
-                )}
-              </button>
-            ))}
-            
-            {/* Mensagem quando não há resultados */}
-            {companies.filter(company => 
-              company.name.toLowerCase().includes(searchTerm.toLowerCase())
-            ).length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <Building2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p className="font-medium">Nenhuma empresa encontrada</p>
-                <p className="text-sm mt-1">Tente buscar com outro termo</p>
-              </div>
-            )}
+                      {/* Informações */}
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-semibold text-sm sm:text-base truncate ${isSelected ? 'text-gray-900' : 'text-gray-700'}`}>
+                          {company.name}
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {company.size ? `${company.size.charAt(0).toUpperCase() + company.size.slice(1)} empresa` : 'Empresa'}
+                          {company.cnpj && ` · ${company.cnpj}`}
+                        </p>
+                      </div>
+
+                      {/* Checkmark */}
+                      {isSelected && (
+                        <div className="flex-shrink-0 h-6 w-6 bg-[#EBA500] rounded-full flex items-center justify-center">
+                          <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+
+              {/* Sem resultados */}
+              {companies.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+                <div className="text-center py-8 text-gray-400">
+                  <Building2 className="h-10 w-10 mx-auto mb-2 text-gray-200" />
+                  <p className="text-sm font-medium">Nenhuma empresa encontrada</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Botão + Formulário de Criação de Empresa */}
-        <div className="mb-8">
+        <div className="mb-6">
           <button
             onClick={() => { setShowCreateForm(v => !v); if (showCreateForm) clearCreateForm() }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-gray-300 text-gray-600 hover:border-[#EBA500] hover:text-[#EBA500] transition-all duration-200 text-sm font-medium"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 sm:py-2.5 rounded-xl border-2 border-dashed border-gray-300 text-gray-600 hover:border-[#EBA500] hover:text-[#EBA500] active:scale-[0.98] transition-all duration-200 text-sm font-medium"
           >
             {showCreateForm ? <ChevronUp className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             {showCreateForm ? 'Ocultar formulário' : 'Criar Nova Empresa'}
@@ -786,7 +761,7 @@ const CompanyDashboardPage = () => {
           {showCreateForm && (
             <div className="mt-4 bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
               {/* Header do form */}
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-[#EBA500]/10">
                     <Building2 className="h-5 w-5 text-[#EBA500]" />
@@ -818,7 +793,7 @@ const CompanyDashboardPage = () => {
                 </label>
               </div>
 
-              <form onSubmit={handleCreateSubmit} className="p-6 space-y-6">
+              <form onSubmit={handleCreateSubmit} className="p-4 sm:p-6 space-y-6">
 
                 {/* Upload de Logo */}
                 <div>

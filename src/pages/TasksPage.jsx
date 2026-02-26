@@ -259,59 +259,78 @@ export default function TasksPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Minhas Tarefas</h1>
-          <p className="text-sm sm:text-base text-gray-600">Gerencie suas tarefas e acompanhe o progresso</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Minhas Ações</h1>
+          <p className="text-sm sm:text-base text-gray-600">Gerencie suas ações e acompanhe o progresso</p>
         </div>
 
         {/* Estatísticas */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          {/* 1. Atrasadas - destaque máximo */}
+          <div className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border-2 transition-all ${
+            stats.overdue > 0
+              ? 'bg-red-50 border-red-400 shadow-red-100'
+              : 'bg-white border-gray-100'
+          }`}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs sm:text-sm font-semibold mb-1 truncate ${stats.overdue > 0 ? 'text-red-700' : 'text-gray-500'}`}>Atrasadas</p>
+                <p className={`text-xl sm:text-2xl font-bold ${stats.overdue > 0 ? 'text-red-700' : 'text-gray-400'}`}>{stats.overdue}</p>
+              </div>
+              <div className={`p-1.5 rounded-lg flex-shrink-0 ${stats.overdue > 0 ? 'bg-red-200' : 'bg-gray-100'}`}>
+                <AlertCircle className={`h-5 w-5 sm:h-6 sm:w-6 ${stats.overdue > 0 ? 'text-red-600' : 'text-gray-400'}`} />
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Pendentes */}
           <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 mb-1 truncate">Total</p>
+                <p className="text-xs sm:text-sm text-gray-500 mb-1 truncate">Pendentes</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-700">{stats.pending}</p>
+              </div>
+              <div className="p-1.5 rounded-lg bg-gray-100 flex-shrink-0">
+                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Em Andamento */}
+          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-blue-100">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm text-gray-500 mb-1 truncate">Em Andamento</p>
+                <p className="text-xl sm:text-2xl font-bold text-blue-600">{stats.inProgress}</p>
+              </div>
+              <div className="p-1.5 rounded-lg bg-blue-100 flex-shrink-0">
+                <Target className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Concluídas */}
+          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-green-100">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm text-gray-500 mb-1 truncate">Concluídas</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.completed}</p>
+              </div>
+              <div className="p-1.5 rounded-lg bg-green-100 flex-shrink-0">
+                <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Total */}
+          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm text-gray-500 mb-1 truncate">Total</p>
                 <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</p>
               </div>
-              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 flex-shrink-0" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Pendentes</p>
-                <p className="text-2xl font-bold text-gray-600">{stats.pending}</p>
+              <div className="p-1.5 rounded-lg bg-gray-100 flex-shrink-0">
+                <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
               </div>
-              <AlertCircle className="h-8 w-8 text-gray-400" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Em Andamento</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
-              </div>
-              <Clock className="h-8 w-8 text-blue-400" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Concluídas</p>
-                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
-              </div>
-              <CheckCircle2 className="h-8 w-8 text-green-400" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Atrasadas</p>
-                <p className="text-2xl font-bold text-red-600">{stats.overdue}</p>
-              </div>
-              <Calendar className="h-8 w-8 text-red-400" />
             </div>
           </div>
         </div>
@@ -416,8 +435,10 @@ export default function TasksPage() {
               return (
                 <div
                   key={task.id}
-                  className={`bg-white rounded-xl sm:rounded-2xl shadow-sm border transition-all hover:shadow-md ${
-                    overdue && task.status !== 'completed' ? 'border-red-200' : 'border-gray-100'
+                  className={`rounded-xl sm:rounded-2xl shadow-sm border-2 transition-all hover:shadow-md ${
+                    overdue && task.status !== 'completed'
+                      ? 'bg-red-50 border-red-300'
+                      : 'bg-white border-gray-100'
                   }`}
                 >
                   <div className="p-4 sm:p-5 lg:p-6">
@@ -483,65 +504,60 @@ export default function TasksPage() {
 
                       {/* Ações */}
                       <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto lg:ml-4">
-                        {/* Botão de Comentários */}
-                        <button
-                          onClick={() => openCommentsSidebar(task)}
-                          className="flex-1 sm:flex-none px-3 sm:px-4 py-2 min-h-[44px] bg-[#EBA500] hover:bg-[#d99500] text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md touch-manipulation"
-                          title="Ver comentários"
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                          <span className="text-sm">Comentários</span>
-                        </button>
-                        
-                        {/* 🔥 CORRIGIDO: Verificar status individual do usuário */}
+                        {/* Botão primário: Concluir / Começar */}
                         {(() => {
-                          // Para tarefas com múltiplos responsáveis, verificar status individual
-                          let myStatus = task.status // Default: usar status geral
-                          
+                          let myStatus = task.status
                           if (task.assignees && task.assignees.length > 0) {
                             const myAssignee = task.assignees.find(a => a.userId === profile?.id)
                             if (myAssignee) {
-                              // Se já concluiu, mostrar como completed
                               myStatus = myAssignee.hasCompleted ? 'completed' : 'in_progress'
                             }
                           }
-                          
-                          // Renderizar botões baseado no status individual
                           if (myStatus === 'pending') {
                             return (
                               <button
                                 onClick={() => handleStatusChange(task.id, 'in_progress')}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
+                                className="flex-1 sm:flex-none px-4 py-2 min-h-[44px] bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md touch-manipulation"
                               >
                                 <Clock className="h-4 w-4" />
-                                Começar Tarefa
+                                <span className="text-sm">Começar</span>
                               </button>
                             )
                           } else if (myStatus === 'in_progress') {
                             return (
                               <button
                                 onClick={() => handleStatusChange(task.id, 'completed')}
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
+                                className="flex-1 sm:flex-none px-4 py-2 min-h-[44px] bg-green-600 hover:bg-green-700 active:scale-95 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md touch-manipulation"
                               >
                                 <CheckCircle2 className="h-4 w-4" />
-                                Concluir Tarefa
+                                <span className="text-sm">Concluir</span>
                               </button>
                             )
-                          } else if (myStatus === 'completed') {
+                          } else {
                             return (
-                              <div className="px-4 py-2 bg-green-50 text-green-700 rounded-lg font-medium flex items-center gap-2">
+                              <div className="flex-1 sm:flex-none px-4 py-2 min-h-[44px] bg-green-50 text-green-700 border border-green-200 rounded-lg font-semibold flex items-center justify-center gap-2">
                                 <CheckCircle2 className="h-4 w-4" />
-                                Tarefa Concluída
+                                <span className="text-sm">Concluída</span>
                               </div>
                             )
                           }
-                          return null
                         })()}
-                        
+
+                        {/* Botão secundário: Comentários (outline) */}
+                        <button
+                          onClick={() => openCommentsSidebar(task)}
+                          className="flex-1 sm:flex-none px-3 sm:px-4 py-2 min-h-[44px] border border-[#EBA500] text-[#EBA500] hover:bg-[#EBA500]/10 active:scale-95 rounded-lg font-medium transition-all flex items-center justify-center gap-2 touch-manipulation"
+                          title="Ver comentários"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          <span className="text-sm">Comentários</span>
+                        </button>
+
+                        {/* Lixeira: ícone ghost */}
                         <button
                           onClick={() => handleDeleteTask(task.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Deletar tarefa"
+                          className="p-2.5 min-h-[44px] min-w-[44px] text-gray-400 hover:text-red-600 hover:bg-red-50 active:scale-95 rounded-lg transition-all flex items-center justify-center touch-manipulation"
+                          title="Excluir ação"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -562,8 +578,10 @@ export default function TasksPage() {
               return (
                 <div
                   key={task.id}
-                  className={`bg-white rounded-2xl shadow-sm border transition-all hover:shadow-lg hover:scale-105 ${
-                    overdue && task.status !== 'completed' ? 'border-red-200' : 'border-gray-100'
+                  className={`rounded-2xl shadow-sm border-2 transition-all hover:shadow-lg hover:scale-[1.02] ${
+                    overdue && task.status !== 'completed'
+                      ? 'bg-red-50 border-red-300'
+                      : 'bg-white border-gray-100'
                   }`}
                 >
                   <div className="p-5">
@@ -640,48 +658,48 @@ export default function TasksPage() {
 
                     {/* Ações */}
                     <div className="flex flex-col gap-2 pt-4 border-t border-gray-100">
-                      {/* Botão de Comentários */}
+                      {/* Primário: Concluir / Começar */}
+                      {task.status === 'pending' && (
+                        <button
+                          onClick={() => handleStatusChange(task.id, 'in_progress')}
+                          className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+                        >
+                          <Clock className="h-4 w-4" />
+                          Começar
+                        </button>
+                      )}
+                      {task.status === 'in_progress' && (
+                        <button
+                          onClick={() => handleStatusChange(task.id, 'completed')}
+                          className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 active:scale-95 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          Concluir
+                        </button>
+                      )}
+                      {task.status === 'completed' && (
+                        <div className="w-full px-4 py-2.5 bg-green-50 text-green-700 border border-green-200 rounded-lg font-semibold flex items-center justify-center gap-2">
+                          <CheckCircle2 className="h-4 w-4" />
+                          Concluída
+                        </div>
+                      )}
+
+                      {/* Secundário: Comentários (outline) */}
                       <button
                         onClick={() => openCommentsSidebar(task)}
-                        className="w-full px-4 py-2.5 bg-[#EBA500] hover:bg-[#d99500] text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+                        className="w-full px-4 py-2.5 border border-[#EBA500] text-[#EBA500] hover:bg-[#EBA500]/10 active:scale-95 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
                       >
                         <MessageSquare className="h-4 w-4" />
                         Comentários
                       </button>
-                      
-                      {task.status === 'pending' && (
-                        <button
-                          onClick={() => handleStatusChange(task.id, 'in_progress')}
-                          className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
-                        >
-                          <Clock className="h-4 w-4" />
-                          Começar Tarefa
-                        </button>
-                      )}
-                      
-                      {task.status === 'in_progress' && (
-                        <button
-                          onClick={() => handleStatusChange(task.id, 'completed')}
-                          className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
-                        >
-                          <CheckCircle2 className="h-4 w-4" />
-                          Concluir Tarefa
-                        </button>
-                      )}
-                      
-                      {task.status === 'completed' && (
-                        <div className="w-full px-4 py-2.5 bg-green-50 text-green-700 rounded-lg font-semibold flex items-center justify-center gap-2 border-2 border-green-200">
-                          <CheckCircle2 className="h-5 w-5" />
-                          Tarefa Concluída
-                        </div>
-                      )}
-                      
+
+                      {/* Lixeira: ghost pequeno */}
                       <button
                         onClick={() => handleDeleteTask(task.id)}
-                        className="w-full px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+                        className="w-full py-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 active:scale-95 rounded-lg transition-all flex items-center justify-center gap-1.5 text-xs font-medium"
                       >
-                        <Trash2 className="h-4 w-4" />
-                        Deletar Tarefa
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Excluir
                       </button>
                     </div>
                   </div>

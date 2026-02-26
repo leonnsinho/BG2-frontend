@@ -167,6 +167,10 @@ const PlanejamentoEstrategico = () => {
   const [loading, setLoading] = useState(true)
   const [editandoMeta, setEditandoMeta] = useState(null) // ID do processo cuja meta está sendo editada
   const [metas, setMetas] = useState({}) // Armazena metas por processo: { processoId: "texto da meta" }
+  const [editandoPrazo, setEditandoPrazo] = useState(null)
+  const [prazos, setPrazos] = useState({}) // { processoId: "YYYY-MM-DD" }
+  const [editandoResponsavel, setEditandoResponsavel] = useState(null)
+  const [responsaveis, setResponsaveis] = useState({}) // { processoId: "nome" }
   
   // Estados do sistema de amadurecimento
   const [processProgressMap, setProcessProgressMap] = useState({}) // Map de processo.id -> { total, completed, percentage }
@@ -1591,10 +1595,74 @@ const PlanejamentoEstrategico = () => {
     }
   }
 
+  const carregarPrazosResponsaveis = async () => {
+    if (!companyId) return
+    try {
+      const { data, error } = await supabase
+        .from('process_evaluations')
+        .select('process_id, process_deadline, process_responsible')
+        .eq('company_id', companyId)
+      if (error) throw error
+      const prazosObj = {}
+      const responsaveisObj = {}
+      data?.forEach(item => {
+        if (item.process_deadline) prazosObj[item.process_id] = item.process_deadline
+        if (item.process_responsible) responsaveisObj[item.process_id] = item.process_responsible
+      })
+      setPrazos(prazosObj)
+      setResponsaveis(responsaveisObj)
+    } catch (error) {
+      console.error('❌ Erro ao carregar prazos/responsáveis:', error)
+    }
+  }
+
+  const salvarPrazo = async (processoId, prazo) => {
+    if (!companyId || !processoId || typeof processoId === 'number') return
+    try {
+      const { error } = await supabase
+        .from('process_evaluations')
+        .update({ process_deadline: prazo || null })
+        .eq('process_id', processoId)
+        .eq('company_id', companyId)
+      if (error) throw error
+      setPrazos(prev => ({ ...prev, [processoId]: prazo }))
+      setEditandoPrazo(null)
+      toast.success('Prazo salvo!', { icon: '📅' })
+    } catch (error) {
+      console.error('❌ Erro ao salvar prazo:', error)
+      toast.error('Erro ao salvar prazo')
+    }
+  }
+
+  const salvarResponsavel = async (processoId, responsavel) => {
+    if (!companyId || !processoId || typeof processoId === 'number') return
+    try {
+      const { error } = await supabase
+        .from('process_evaluations')
+        .update({ process_responsible: responsavel || null })
+        .eq('process_id', processoId)
+        .eq('company_id', companyId)
+      if (error) throw error
+      setResponsaveis(prev => ({ ...prev, [processoId]: responsavel }))
+      setEditandoResponsavel(null)
+      toast.success('Responsável salvo!', { icon: '👤' })
+    } catch (error) {
+      console.error('❌ Erro ao salvar responsável:', error)
+      toast.error('Erro ao salvar responsável')
+    }
+  }
+
   // Carregar metas quando selecionar jornada
   useEffect(() => {
     if (jornadaSelecionada && companyId) {
       carregarMetas()
+    }
+  }, [jornadaSelecionada, companyId])
+
+  // Carregar prazos/responsáveis quando selecionar jornada
+  useEffect(() => {
+    if (jornadaSelecionada && companyId) {
+      carregarPrazosResponsaveis()
     }
   }, [jornadaSelecionada, companyId])
 
@@ -1959,6 +2027,98 @@ const PlanejamentoEstrategico = () => {
                               <p className="text-xs text-[#373435]/40 italic">
                                 Clique para definir uma meta...
                               </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Campo de Prazo */}
+                      <div className="mb-2">
+                        {editandoPrazo === processo.id ? (
+                          <div className="space-y-2">
+                            <input
+                              type="date"
+                              value={prazos[processo.id] || ''}
+                              onChange={(e) => setPrazos(prev => ({ ...prev, [processo.id]: e.target.value }))}
+                              className="w-full p-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white transition-all duration-300 touch-manipulation"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => salvarPrazo(processo.id, prazos[processo.id] || '')}
+                                className="flex-1 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white px-2 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 flex items-center justify-center gap-1"
+                              >
+                                <Save className="h-3 w-3" />
+                                Salvar
+                              </button>
+                              <button
+                                onClick={() => { setEditandoPrazo(null); carregarPrazosResponsaveis() }}
+                                className="flex-1 bg-gray-400 hover:bg-gray-500 text-white px-2 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 flex items-center justify-center gap-1"
+                              >
+                                <X className="h-3 w-3" />
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => setEditandoPrazo(processo.id)}
+                            className="cursor-pointer p-2 bg-[#EBA500]/5 hover:bg-[#EBA500]/10 border border-dashed border-[#EBA500]/30 hover:border-[#EBA500]/50 rounded-xl transition-all duration-300 min-h-[32px] flex items-center gap-1.5"
+                          >
+                            <Calendar className="h-3 w-3 text-[#EBA500] flex-shrink-0" />
+                            {prazos[processo.id] ? (
+                              <p className="text-xs text-[#373435] font-medium">{formatarData(prazos[processo.id])}</p>
+                            ) : (
+                              <p className="text-xs text-[#373435]/40 italic">Prazo (opcional)...</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Campo de Responsável */}
+                      <div className="mb-2 sm:mb-3">
+                        {editandoResponsavel === processo.id ? (
+                          <div className="space-y-2">
+                            <select
+                              value={responsaveis[processo.id] || ''}
+                              onChange={(e) => setResponsaveis(prev => ({ ...prev, [processo.id]: e.target.value }))}
+                              className="w-full p-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white transition-all duration-300 touch-manipulation"
+                              autoFocus
+                            >
+                              <option value="">— Sem responsável —</option>
+                              {usuarios.map(u => (
+                                <option key={u.id} value={u.id}>{u.name}</option>
+                              ))}
+                            </select>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => salvarResponsavel(processo.id, responsaveis[processo.id] || '')}
+                                className="flex-1 bg-[#EBA500] hover:bg-[#EBA500]/90 text-white px-2 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 flex items-center justify-center gap-1"
+                              >
+                                <Save className="h-3 w-3" />
+                                Salvar
+                              </button>
+                              <button
+                                onClick={() => { setEditandoResponsavel(null); carregarPrazosResponsaveis() }}
+                                className="flex-1 bg-gray-400 hover:bg-gray-500 text-white px-2 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 flex items-center justify-center gap-1"
+                              >
+                                <X className="h-3 w-3" />
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => setEditandoResponsavel(processo.id)}
+                            className="cursor-pointer p-2 bg-[#EBA500]/5 hover:bg-[#EBA500]/10 border border-dashed border-[#EBA500]/30 hover:border-[#EBA500]/50 rounded-xl transition-all duration-300 min-h-[32px] flex items-center gap-1.5"
+                          >
+                            <User className="h-3 w-3 text-[#EBA500] flex-shrink-0" />
+                            {responsaveis[processo.id] ? (
+                              <p className="text-xs text-[#373435] font-medium">
+                                {usuarios.find(u => u.id === responsaveis[processo.id])?.name || responsaveis[processo.id]}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-[#373435]/40 italic">Responsável (opcional)...</p>
                             )}
                           </div>
                         )}

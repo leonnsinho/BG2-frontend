@@ -261,82 +261,55 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
   if (permissions.isCompanyAdmin()) {
     return [
       ...baseItems,
+      // 2) Aprovações
       {
         name: 'Aprovações',
         icon: Bell,
         href: '/approvals',
-        hasPendingNotification: pendingApprovalsCount > 0, // 🔥 Indicador de ponto vermelho
+        hasPendingNotification: pendingApprovalsCount > 0,
         children: [
-          { 
-            name: 'Maturidade', 
-            href: '/maturity-approvals'
-          }
+          { name: 'Maturidade', href: '/maturity-approvals' }
         ]
       },
+      // 3) Minhas Ações
       ...afterDashboardItems,
+      // 4) Estratégia
       {
-        name: 'Modelo de Negócio',
-        icon: Building2,
-        href: '/business-model',
-      },
-      {
-        name: 'Diagnóstico do Negócio',
-        icon: CheckSquare,
-        href: '/journey-management/overview'
-      },
-      {
-        name: 'Planejamento Estratégico',
-        icon: Kanban,
-        href: '/planejamento-estrategico'
-      },
-      {
-        name: 'Políticas de Gestão',
-        icon: FileText,
-        href: '/operational-policies',
+        name: 'Estratégia',
+        icon: Target,
+        href: '/journey-management/overview',
         children: [
-          { name: 'Estratégia', href: '/operational-policies?journey=estrategica' },
-          { name: 'Financeiro', href: '/operational-policies?journey=financeira' },
-          { name: 'Pessoas e Cultura', href: '/operational-policies?journey=pessoas-cultura' },
-          { name: 'Receita', href: '/operational-policies?journey=receita' },
-          { name: 'Operação', href: '/operational-policies?journey=operacional' }
+          { name: 'Diagnóstico do Negócio', href: '/journey-management/overview' },
+          { name: 'Modelo de Negócio', href: '/business-model' }
         ]
       },
+      // 5) Execução
       {
-        name: 'Avaliação de Desempenho',
-        icon: Grid3x3,
-        href: '/performance-evaluation'
+        name: 'Execução',
+        icon: Kanban,
+        href: '/planejamento-estrategico',
+        children: [
+          { name: 'Planejamento Estratégico', href: '/planejamento-estrategico' },
+          { name: 'Políticas de Gestão', href: '/operational-policies' }
+        ]
       },
+      // 6) Performance
       {
-        name: 'Indicadores',
+        name: 'Performance',
         icon: TrendingUp,
-        href: '/indicators'
+        href: '/indicators',
+        children: [
+          { name: 'Indicadores de Gestão', href: '/indicators' },
+          { name: 'Relatórios', href: '/reports' }
+        ]
       },
+      // 7) Administração
       {
-        name: 'Gestão do Sistema',
+        name: 'Administração',
         icon: Shield,
         href: '/admin',
         children: [
           { name: 'Usuários', href: '/admin/users' }
-        ]
-      },
-      {
-        name: 'Relatórios',
-        icon: BarChart3,
-        href: '/reports',
-        children: [
-          { name: 'Atividade de Usuários', href: '/reports/user-activity' },
-          { name: 'Uso por Empresa', href: '/reports/company-usage' }
-        ]
-      },
-      {
-        name: 'Demonstrativo de Fluxo de Caixa',
-        icon: TrendingDown,
-        href: '/dfc',
-        children: [
-          { name: 'Dashboard', href: '/dfc' },
-          { name: 'Entradas', href: '/dfc/entradas' },
-          { name: 'Saídas', href: '/dfc/saidas' },
-          { name: 'Plano de Contas', href: '/dfc/plano-contas' }
         ]
       }
     ]

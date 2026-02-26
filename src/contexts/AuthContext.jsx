@@ -53,6 +53,9 @@ export function AuthProvider({ children }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [error, setError] = useState(null)
   const pendingFetches = useRef({}) // Controle de chamadas simultâneas
+  // Refs para acessar valores atuais dentro de closures estáticas (onAuthStateChange)
+  const currentUserRef = useRef(null)
+  const currentProfileRef = useRef(null)
 
   // Buscar perfil do usuário com carregamento otimizado
   const fetchProfile = async (userId, useCache = true) => {
@@ -371,8 +374,10 @@ export function AuthProvider({ children }) {
         // Atualizar dados de atividade (login tracking) - usando função externa
         updateUserActivity(supabase, data.user.id)
 
+        currentUserRef.current = data.user
         const userProfile = await fetchProfile(data.user.id)
         setProfile(userProfile)
+        currentProfileRef.current = userProfile
       }
 
       return { user: data.user, error: null }
@@ -629,6 +634,7 @@ export function AuthProvider({ children }) {
       
       const currentUser = session?.user ?? null
       setUser(currentUser)
+      currentUserRef.current = currentUser
       
       if (currentUser) {
         // Verificar cache primeiro para loading instantâneo
@@ -637,6 +643,7 @@ export function AuthProvider({ children }) {
         
         if (cachedProfile?.data) {
           setProfile(cachedProfile.data)
+          currentProfileRef.current = cachedProfile.data
           setLoading(false)
 
           // Atualizar em background APENAS se cache estiver velho (>2min)
@@ -660,6 +667,7 @@ export function AuthProvider({ children }) {
             .then((profile) => {
               if (mounted) {
                 setProfile(profile)
+                currentProfileRef.current = profile
               }
             })
             .catch(() => {
@@ -695,25 +703,29 @@ export function AuthProvider({ children }) {
         const currentUser = session?.user ?? null
 
         // Ignorar eventos de renovação de token que não mudam o usuário
-        if (event === 'TOKEN_REFRESHED' && currentUser?.id === user?.id) {
+        if (event === 'TOKEN_REFRESHED' && currentUser?.id === currentUserRef.current?.id) {
           return
         }
 
         // Evitar recarregamentos desnecessários para SIGNED_IN repetidos
-        if (currentUser?.id === user?.id && event === 'SIGNED_IN') {
+        if (currentUser?.id === currentUserRef.current?.id && event === 'SIGNED_IN') {
           return
         }
 
         // Marcar inicialização como concluída
         isInitializingAuth = false
 
+        // Capturar ID anterior ANTES de atualizar a ref
+        const prevUserId = currentUserRef.current?.id
+
         // Atualizar usuário apenas se mudou
-        if (currentUser?.id !== user?.id) {
+        if (currentUser?.id !== prevUserId) {
           setUser(currentUser)
+          currentUserRef.current = currentUser
         }
 
         // Só recarregar o perfil se o usuário mudou realmente OU se não temos perfil
-        if (currentUser && (currentUser.id !== user?.id || !profile)) {
+        if (currentUser && (currentUser.id !== prevUserId || !currentProfileRef.current)) {
           isFirstLoadInProgress = true
 
           // Evitar chamar fetchProfile se já está sendo chamado
@@ -721,6 +733,7 @@ export function AuthProvider({ children }) {
             const userProfile = await fetchProfile(currentUser.id)
             if (mounted && userProfile) {
               setProfile(userProfile)
+              currentProfileRef.current = userProfile
             }
             isFirstLoadInProgress = false
           } else {
@@ -729,6 +742,7 @@ export function AuthProvider({ children }) {
               const userProfile = await pendingFetches.current[currentUser.id]
               if (mounted && userProfile) {
                 setProfile(userProfile)
+                currentProfileRef.current = userProfile
               }
             } catch (error) {
               // Silently ignore pending fetch errors
@@ -743,6 +757,8 @@ export function AuthProvider({ children }) {
         } else if (!currentUser) {
           if (mounted) {
             setProfile(null)
+            currentProfileRef.current = null
+            currentUserRef.current = null
             globalProfileCache.clear() // Limpar cache no logout
             pendingFetches.current = {} // Limpar fetches pendentes
           }

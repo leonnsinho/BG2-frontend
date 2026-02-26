@@ -31,7 +31,8 @@ import {
   Search,
   ExternalLink,
   ChevronUp,
-  GripVertical
+  GripVertical,
+  Clock
 } from 'lucide-react'
 import { formatDate } from '../utils/dateUtils'
 
@@ -45,7 +46,7 @@ export default function OperationalPoliciesPage() {
   const [expandedBlocks, setExpandedBlocks] = useState({})
   const [expandedSubblocks, setExpandedSubblocks] = useState({})
   const [expandedSubSubblocks, setExpandedSubSubblocks] = useState({}) // 🔥 NOVO: Para 3º nível
-  const [viewMode, setViewMode] = useState('list') // 🔥 NOVO: 'list' ou 'grid'
+  const [viewMode, setViewMode] = useState('grid') // 'list' ou 'grid'
   const [searchQuery, setSearchQuery] = useState('') // 🔥 NOVO: Busca de blocos
   const [subblockSearchQuery, setSubblockSearchQuery] = useState('') // 🔥 NOVO: Busca de sub-blocos
   const [journeyDescription, setJourneyDescription] = useState('') // Descrição editável da jornada
@@ -265,7 +266,7 @@ export default function OperationalPoliciesPage() {
       // Carregar blocos (SEM subblocks - estrutura flat agora)
       const { data: blocksData, error: blocksError } = await supabase
         .from('policy_blocks')
-        .select('*')
+        .select('*, policy_attachments(id), policy_subblocks(id)')
         .eq('company_id', userCompanyId)
         .eq('journey_id', selectedJourney.id)
         .eq('is_active', true)
@@ -2673,31 +2674,6 @@ export default function OperationalPoliciesPage() {
               </div>
               
               <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                {/* Toggle View Mode */}
-                <div className="flex items-center gap-1 sm:gap-2 p-1 bg-gray-100 rounded-lg sm:rounded-xl flex-1 sm:flex-initial">
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 min-h-[40px] touch-manipulation flex-1 sm:flex-initial ${
-                      viewMode === 'list'
-                        ? 'bg-white text-[#373435] shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <List className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden xs:inline">Lista</span>
-                  </button>
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 min-h-[40px] touch-manipulation flex-1 sm:flex-initial ${
-                      viewMode === 'grid'
-                        ? 'bg-white text-[#373435] shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden xs:inline">Grid</span>
-                  </button>
-                </div>
                 
                 <button
                   onClick={() => openBlockModal()}
@@ -2790,7 +2766,7 @@ export default function OperationalPoliciesPage() {
                 );
               }
 
-              if (viewMode === 'list') {
+              if (false) {
                 return (
                   // VISUALIZAÇÃO EM LISTA
                   <div className="space-y-3 sm:space-y-4">
@@ -2919,58 +2895,85 @@ export default function OperationalPoliciesPage() {
               } else {
                 return (
                   // VISUALIZAÇÃO EM GRID
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                     {filteredBlocks.map((block) => {
-                  const subblockCount = block.policy_subblocks?.length || 0;
-                  const totalContent = block.policy_subblocks?.reduce((sum, sb) => 
-                    sum + (sb.policy_contents?.length || 0), 0
-                  ) || 0;
+                  const totalDocs = block.policy_attachments?.length || 0
+                  const color = block.color || '#EBA500'
+
+                  const formatBlockDate = (iso) => {
+                    if (!iso) return null
+                    const d = new Date(iso)
+                    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                      + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                  }
 
                   return (
                     <div
                       key={block.id}
-                      className="group bg-gradient-to-br from-gray-50/50 to-white rounded-3xl overflow-hidden transition-all duration-300 hover:translate-y-[-6px]"
-                      style={{ 
-                        boxShadow: `0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 30px -10px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.03)`,
+                      onClick={() => openBlockInTab(block)}
+                      className="group relative bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1"
+                      style={{
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)',
                       }}
                       onMouseEnter={(e) => {
-                        const color = block.color || '#EBA500'
-                        e.currentTarget.style.boxShadow = `0 4px 20px -4px rgba(0, 0, 0, 0.1), 0 20px 50px -10px ${color}30, 0 0 0 1px rgba(0, 0, 0, 0.05)`
+                        e.currentTarget.style.boxShadow = `0 8px 30px rgba(0,0,0,0.1), 0 0 0 2px ${color}40`
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.boxShadow = `0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 30px -10px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.03)`
+                        e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)'
                       }}
                     >
-                      {/* Barra colorida no topo */}
-                      <div 
-                        className="h-1.5 w-full" 
-                        style={{ 
-                          background: `linear-gradient(90deg, ${block.color} 0%, ${block.color}CC 100%)`
-                        }}
+                      {/* Faixa lateral colorida */}
+                      <div
+                        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl"
+                        style={{ background: color }}
                       />
-                      
-                      {/* Área clicável para abrir visualização */}
-                      <div 
-                        className="p-6 cursor-pointer"
-                        onClick={() => openBlockInTab(block)}
-                      >
-                        {/* Header do Card */}
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            {block.icon && (
-                              <div 
-                                className="mb-3 p-3 rounded-2xl inline-block"
-                                style={{
-                                  background: `linear-gradient(135deg, ${block.color}15 0%, ${block.color}08 100%)`,
-                                  border: `1px solid ${block.color}20`
-                                }}
-                              >
-                                <div style={{ color: block.color }}>
-                                  {renderIcon(block.icon, 'h-10 w-10')}
-                                </div>
+
+                      {/* Botões de ação — aparecem no hover, canto superior direito */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openBlockModal(block) }}
+                          className="p-1.5 rounded-lg bg-white/90 backdrop-blur-sm shadow-sm text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                          title="Editar"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteBlock(block.id) }}
+                          className="p-1.5 rounded-lg bg-white/90 backdrop-blur-sm shadow-sm text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all"
+                          title="Excluir"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Corpo do card */}
+                      <div className="pl-5 pr-4 pt-5 pb-4 flex flex-col h-full">
+                        {/* Linha superior: ícone + título */}
+                        <div className="flex items-start gap-3 mb-3">
+                          {block.icon ? (
+                            <div
+                              className="flex-shrink-0 p-2 rounded-xl"
+                              style={{
+                                background: `${color}15`,
+                                border: `1px solid ${color}25`
+                              }}
+                            >
+                              <div style={{ color }}>
+                                {renderIcon(block.icon, 'h-6 w-6')}
                               </div>
-                            )}
-                            <h3 className="text-lg font-bold text-[#373435] mb-2 line-clamp-2 break-words">
+                            </div>
+                          ) : (
+                            <div
+                              className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+                              style={{ background: `${color}15`, border: `1px solid ${color}25` }}
+                            >
+                              <span className="text-sm font-bold" style={{ color }}>
+                                {block.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0 pt-0.5">
+                            <h3 className="text-sm font-bold text-[#373435] leading-snug line-clamp-2 pr-14">
                               {block.name}
                             </h3>
                           </div>
@@ -2978,50 +2981,36 @@ export default function OperationalPoliciesPage() {
 
                         {/* Descrição */}
                         {block.description && (
-                          <p className="text-sm text-gray-600 mb-4 line-clamp-3 break-words">
+                          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">
                             {block.description}
                           </p>
                         )}
-                      </div>
 
-                      {/* Ações (fora da área clicável) */}
-                      <div className="px-6 pb-6">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openBlockInTab(block);
-                            }}
-                            className="flex-1 px-3 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg hover:shadow-green-500/30 text-white text-sm rounded-xl font-semibold transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                            title="Abrir em Aba"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                            Abrir
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openBlockModal(block);
-                            }}
-                            className="p-2.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all"
-                            title="Editar bloco"
-                          >
-                            <Edit2 className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteBlock(block.id);
-                            }}
-                            className="p-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all"
-                            title="Excluir bloco"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </button>
+                        {/* Separador */}
+                        <div className="flex-1" />
+                        <div className="h-px bg-gray-100 mb-3" />
+
+                        {/* Rodapé: stats + data */}
+                        <div className="flex items-center justify-between gap-2">
+                          {/* Stats */}
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                              <FileText className="h-3.5 w-3.5" style={{ color }} />
+                              <span className="font-medium" style={{ color }}>{totalDocs}</span>
+                              <span>{totalDocs === 1 ? 'doc' : 'docs'}</span>
+                            </div>
+                          </div>
+                          {/* Data ultima atualização */}
+                          {block.updated_at && (
+                            <div className="flex items-center gap-1 text-xs text-gray-400">
+                              <Clock className="h-3 w-3" />
+                              <span>{formatBlockDate(block.updated_at)}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
-                  );
+                  )
                 })}
               </div>
                 );

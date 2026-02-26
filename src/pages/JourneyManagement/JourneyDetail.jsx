@@ -917,7 +917,7 @@ const JourneyDetail = () => {
                 
                 <div className="flex-1">
                   <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">{journey.name}</h1>
-                  <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">{journey.description}</p>
+                  <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">Este diagnóstico ajuda a identificar gaps estratégicos e oportunidades de crescimento.</p>
                 </div>
               </div>
             </div>
@@ -1031,7 +1031,6 @@ const JourneyDetail = () => {
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold text-[#373435]">Progresso de Amadurecimento</h4>
-                  <p className="text-xs text-gray-500">Processos amadurecidos nesta jornada</p>
                 </div>
               </div>
               <div className="text-left sm:text-right">
