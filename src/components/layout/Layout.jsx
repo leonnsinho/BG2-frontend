@@ -3,6 +3,7 @@ import { Menu } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { Button } from '../ui/Button'
 import { cn } from '../../utils/cn'
+import SmartAdvisorChat from '../SmartAdvisorChat'
 
 const Layout = ({ children, className }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -62,6 +63,9 @@ const Layout = ({ children, className }) => {
           {children}
         </main>
       </div>
+
+      {/* Smart Advisor - Chat Flutuante Inteligente (desativado temporariamente) */}
+      {/* <SmartAdvisorChat /> */}
     </div>
   )
 }

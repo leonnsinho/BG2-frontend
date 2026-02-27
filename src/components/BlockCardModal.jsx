@@ -1196,14 +1196,14 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
       <div 
         className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-scale-in"
+        style={{ border: `3px solid ${block.color}` }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div 
           className="p-6 border-b border-gray-200"
           style={{ 
-            background: `linear-gradient(135deg, ${block.color}10 0%, white 100%)`,
-            borderTop: `4px solid ${block.color}`
+            background: `linear-gradient(135deg, ${block.color}10 0%, white 100%)`
           }}
         >
           <div className="flex items-start justify-between mb-4">

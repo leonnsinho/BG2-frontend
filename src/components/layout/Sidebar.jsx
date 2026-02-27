@@ -290,7 +290,16 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/planejamento-estrategico',
         children: [
           { name: 'Planejamento Estratégico', href: '/planejamento-estrategico' },
-          { name: 'Políticas de Gestão', href: '/operational-policies' }
+          {
+            name: 'Políticas de Gestão',
+            href: '/operational-policies',
+            children: [
+              { name: 'Estratégica', href: '/operational-policies?journey=estrategica' },
+              { name: 'Financeira', href: '/operational-policies?journey=financeira' },
+              { name: 'Pessoas & Cultura', href: '/operational-policies?journey=pessoas-cultura' },
+              { name: 'Receita', href: '/operational-policies?journey=receita' }
+            ]
+          }
         ]
       },
       // 6) Performance
@@ -300,7 +309,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/indicators',
         children: [
           { name: 'Indicadores de Gestão', href: '/indicators' },
-          { name: 'Relatórios', href: '/reports' }
+          { name: 'Relatórios', href: '/reports', comingSoon: true }
         ]
       },
       // 7) Administração
@@ -421,6 +430,12 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const { pendingCount } = useMaturityApprovals() // 🔥 NOVO: Hook de aprovações pendentes
   const { hasToolAccess, loading: toolPermissionsLoading } = useToolPermissions() // 🔥 NOVO: Hook de permissões de ferramentas
   const [expandedItems, setExpandedItems] = React.useState(['Jornadas'])
+  const [expandedSubItems, setExpandedSubItems] = React.useState(() => {
+    // Auto-expandir se a rota atual for de um sub-sub-item
+    const path = window.location.pathname + window.location.search
+    if (path.startsWith('/operational-policies')) return ['Políticas de Gestão']
+    return []
+  })
   const [accessibleJourneys, setAccessibleJourneys] = React.useState([])
   const [journeysLoading, setJourneysLoading] = React.useState(true)
   const [journeysLoaded, setJourneysLoaded] = React.useState(false)
@@ -668,6 +683,13 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     )
   }
 
+  // Auto-expandir sub-itens com base na rota atual
+  React.useEffect(() => {
+    if (location.pathname.startsWith('/operational-policies')) {
+      setExpandedSubItems(prev => prev.includes('Políticas de Gestão') ? prev : [...prev, 'Políticas de Gestão'])
+    }
+  }, [location.pathname])
+
   const isCurrentPath = (href) => {
     // Se o href contém query parameters, comparar pathname + search
     if (href.includes('?')) {
@@ -681,12 +703,15 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const hasActiveChild = (children) => {
     return children?.some(child => {
       // Se o child.href contém query parameters, comparar pathname + search
-      if (child.href.includes('?')) {
+      if (child.href?.includes('?')) {
         const [path, query] = child.href.split('?')
         return location.pathname === path && location.search === `?${query}`
       }
       // Caso contrário, comparar apenas pathname
-      return location.pathname === child.href
+      if (location.pathname === child.href) return true
+      // Verificar sub-sub-itens
+      if (child.children) return hasActiveChild(child.children)
+      return false
     })
   }
 
@@ -1078,12 +1103,75 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                       className={cn(
                         "overflow-hidden transition-all duration-300 ease-in-out",
                         expandedItems.includes(item.name) 
-                          ? "max-h-96 opacity-100" 
+                          ? "max-h-[28rem] opacity-100" 
                           : "max-h-0 opacity-0"
                       )}
                     >
                       <div className="mt-1 ml-6 space-y-1">
                         {item.children.map((subItem) => (
+                          subItem.children ? (
+                            // Sub-item com filhos: expansível
+                            <div key={subItem.name}>
+                              <button
+                                onClick={() => setExpandedSubItems(prev =>
+                                  prev.includes(subItem.name)
+                                    ? prev.filter(n => n !== subItem.name)
+                                    : [...prev, subItem.name]
+                                )}
+                                className={cn(
+                                  "group w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                                  "hover:scale-[1.02] active:scale-[0.98]",
+                                  hasActiveChild(subItem.children)
+                                    ? "text-background bg-primary-500 shadow-lg"
+                                    : "text-neutral-200 hover:text-background hover:bg-primary-500/80 hover:shadow-md"
+                                )}
+                              >
+                                <span className={cn(
+                                  "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
+                                  hasActiveChild(subItem.children) ? "bg-background" : "bg-neutral-400"
+                                )} />
+                                <span className="flex-1 text-left">{subItem.name}</span>
+                                <ChevronRight className={cn(
+                                  "h-3 w-3 transition-transform duration-200",
+                                  expandedSubItems.includes(subItem.name) ? "rotate-90" : ""
+                                )} />
+                              </button>
+                              <div className={cn(
+                                "overflow-hidden transition-all duration-300 ease-in-out",
+                                expandedSubItems.includes(subItem.name) ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
+                              )}>
+                                <div className="mt-1 ml-5 space-y-1">
+                                  {subItem.children.map((grandChild) => (
+                                    <Link
+                                      key={grandChild.name}
+                                      to={grandChild.href}
+                                      className={cn(
+                                        "group flex items-center px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200",
+                                        "hover:scale-[1.02] active:scale-[0.98]",
+                                        isCurrentPath(grandChild.href)
+                                          ? "text-background bg-primary-500/90 shadow-md"
+                                          : "text-neutral-300 hover:text-background hover:bg-primary-500/60"
+                                      )}
+                                      onClick={onClose}
+                                    >
+                                      <span className="w-1.5 h-1.5 rounded-full mr-3 flex-shrink-0 bg-neutral-500" />
+                                      <span className="flex-1 text-left">{grandChild.name}</span>
+                                    </Link>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ) : subItem.comingSoon ? (
+                          <div
+                            key={subItem.name}
+                            className="group flex items-center px-3 py-2 text-sm font-medium rounded-md cursor-not-allowed opacity-50 text-left"
+                            title="Em breve"
+                          >
+                            <span className="w-2 h-2 rounded-full mr-3 flex-shrink-0 bg-neutral-500"></span>
+                            <span className="flex-1 text-left text-neutral-400">{subItem.name}</span>
+                            <span className="text-[10px] font-semibold bg-neutral-600 text-neutral-300 px-1.5 py-0.5 rounded-full">Em breve</span>
+                          </div>
+                          ) : (
                           <Link
                             key={subItem.name}
                             to={subItem.href}
@@ -1108,6 +1196,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                               <NotificationBadge count={subItem.badge} size="sm" pulse={true} />
                             )}
                           </Link>
+                          )
                         ))}
                       </div>
                     </div>
@@ -1273,6 +1362,42 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                     {/* Lista de Subitens */}
                     <div className="py-2">
                       {item.children.map((subItem) => (
+                        subItem.children ? (
+                          <div key={subItem.name}>
+                            {/* Sub-item label (não clicável, é um agrupador) */}}
+                            <div className="flex items-center px-4 py-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                              <span className="w-2 h-2 rounded-full mr-3 bg-neutral-500 flex-shrink-0" />
+                              {subItem.name}
+                            </div>
+                            {subItem.children.map((grandChild) => (
+                              <Link
+                                key={grandChild.name}
+                                to={grandChild.href}
+                                onClick={() => { closeDropdown(); onClose() }}
+                                className={cn(
+                                  "flex items-center pl-9 pr-4 py-2 text-sm font-medium transition-all duration-200",
+                                  "hover:bg-primary-500/80 hover:text-background",
+                                  isCurrentPath(grandChild.href)
+                                    ? "bg-primary-500/90 text-background"
+                                    : "text-neutral-200"
+                                )}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full mr-3 flex-shrink-0 bg-neutral-500" />
+                                <span className="flex-1">{grandChild.name}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        ) : subItem.comingSoon ? (
+                          <div
+                            key={subItem.name}
+                            className="flex items-center px-4 py-2.5 text-sm font-medium cursor-not-allowed opacity-50"
+                            title="Em breve"
+                          >
+                            <span className="w-2 h-2 rounded-full mr-3 flex-shrink-0 bg-neutral-500" />
+                            <span className="flex-1 text-neutral-400">{subItem.name}</span>
+                            <span className="text-[10px] font-semibold bg-neutral-600 text-neutral-300 px-1.5 py-0.5 rounded-full">Em breve</span>
+                          </div>
+                        ) : (
                         <Link
                           key={subItem.name}
                           to={subItem.href}
@@ -1300,6 +1425,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                             <NotificationBadge count={subItem.badge} size="sm" pulse={true} />
                           )}
                         </Link>
+                        )
                       ))}
                     </div>
                   </div>

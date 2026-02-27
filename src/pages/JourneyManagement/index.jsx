@@ -282,95 +282,109 @@ const JourneyManagementOverview = () => {
 
         {/* Painel das Jornadas */}
         <div>
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50">
-              <div className="p-4 sm:p-6 lg:p-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                  {filteredJourneys.map((journey) => {
-                    const Icon = journey.icon
-                    
-                    return (
-                      <button
-                        key={journey.id}
-                        onClick={() => handleJourneyClick(journey)}
-                        disabled={!selectedCompany}
-                        className={`group relative overflow-hidden text-left p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl border-2 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${journey.bgLight} border-gray-200/50 hover:border-[#EBA500]/30 transform hover:-translate-y-1 min-h-[180px] sm:min-h-0 touch-manipulation ${
-                          !selectedCompany ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                      >
-                        {/* Hover overlay */}
-                        <div 
-                          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl sm:rounded-3xl"
-                          style={{ 
-                            background: `linear-gradient(135deg, ${journey.color}e6 0%, ${journey.color}cc 100%)` 
-                          }}
-                        />
-                        
-                        {/* Content */}
-                        <div className="relative z-10">
-                          <div className="flex items-start justify-between mb-4 sm:mb-6">
-                            <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl ${journey.bgColor} group-hover:bg-white group-hover:bg-opacity-20 transition-all duration-300 group-hover:scale-110 shadow-sm`}>
-                              <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                            </div>
-                            <ChevronRight className={`h-5 w-5 transition-all duration-300 group-hover:translate-x-1 ${journey.textColor} group-hover:text-white`} />
-                          </div>
-                          
-                          <h3 className={`text-base sm:text-lg font-semibold mb-2 sm:mb-3 transition-colors duration-300 ${journey.textColor} group-hover:text-white`}>
-                            {journey.name}
-                          </h3>
-                          
-                          <p className="text-xs sm:text-sm text-gray-600 group-hover:text-white group-hover:text-opacity-90 mb-4 sm:mb-6 transition-colors duration-300 line-clamp-2">
-                            {journey.description}
-                          </p>
-                          
-                          <div className="flex items-center justify-between">
-                            <span className={`text-xs sm:text-sm font-medium transition-colors duration-300 ${journey.textColor} group-hover:text-white group-hover:text-opacity-80`}>
-                              {journey.processCount} processos
-                            </span>
-                            
-                            <div className="flex -space-x-1">
-                              {journey.categories.slice(0, 3).map((category, index) => (
-                                <div
-                                  key={index}
-                                  className={`w-3 h-3 rounded-full transition-all duration-300 border-2 border-white ${journey.bgColor} group-hover:bg-white group-hover:bg-opacity-60`}
-                                  style={{
-                                    transitionDelay: `${index * 50}ms`
-                                  }}
-                                />
-                              ))}
-                              {journey.categories.length > 3 && (
-                                <div className="w-3 h-3 bg-gray-300 group-hover:bg-white group-hover:bg-opacity-40 rounded-full transition-all duration-300 border-2 border-white" />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Subtle decoration */}
-                        <div 
-                          className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full opacity-5 group-hover:opacity-10 transition-opacity duration-300"
-                          style={{ backgroundColor: journey.color }}
-                        />
-                      </button>
-                    )
-                  })}
-                </div>
-                
-                {/* Aviso se nenhuma empresa selecionada */}
-                {!selectedCompany && (
-                  <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-amber-50/50 border border-amber-200/50 rounded-xl sm:rounded-2xl">
-                    <div className="flex items-start sm:items-center gap-3">
-                      <div className="flex-shrink-0">
-                        <Building2 className="h-5 w-5 text-[#EBA500]" />
+          <div className="space-y-3">
+            {filteredJourneys.map((journey, index) => {
+              const Icon = journey.icon
+              const isDisabled = !selectedCompany
+
+              return (
+                <button
+                  key={journey.id}
+                  onClick={() => handleJourneyClick(journey)}
+                  disabled={isDisabled}
+                  className={`group w-full text-left relative overflow-hidden bg-white rounded-2xl border border-gray-200 transition-all duration-300
+                    ${isDisabled
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:shadow-xl hover:-translate-y-0.5 hover:border-transparent cursor-pointer'
+                    }`}
+                  style={!isDisabled ? {
+                    '--hover-color': journey.color
+                  } : {}}
+                >
+                  {/* Left color bar */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl transition-all duration-300 group-hover:w-1.5"
+                    style={{ backgroundColor: journey.color }}
+                  />
+
+                  {/* Hover background wash */}
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300 rounded-2xl"
+                    style={{ backgroundColor: journey.color }}
+                  />
+
+                  <div className="relative flex items-center gap-4 sm:gap-5 px-5 sm:px-6 py-4 sm:py-5 pl-6 sm:pl-7">
+                    {/* Step number */}
+                    <div
+                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm transition-transform duration-300 group-hover:scale-110"
+                      style={{ backgroundColor: journey.color }}
+                    >
+                      {index + 1}
+                    </div>
+
+                    {/* Icon */}
+                    <div
+                      className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:shadow-md"
+                      style={{
+                        backgroundColor: `${journey.color}18`,
+                        border: `1.5px solid ${journey.color}30`
+                      }}
+                    >
+                      <Icon className="h-5 w-5" style={{ color: journey.color }} />
+                    </div>
+
+                    {/* Text */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="text-base font-bold text-gray-900 group-hover:text-gray-900 transition-colors duration-200">
+                          {journey.name}
+                        </h3>
+                        <span
+                          className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${journey.color}15`, color: journey.color }}
+                        >
+                          {journey.processCount} processos
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-sm text-[#373435] font-medium">
-                          Selecione uma empresa para acessar as jornadas de processos.
-                        </p>
+                      <p className="text-sm text-gray-500 leading-snug line-clamp-1 group-hover:text-gray-600 transition-colors duration-200">
+                        {journey.description}
+                      </p>
+                      {/* Categories */}
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {journey.categories.map((cat, i) => (
+                          <span
+                            key={i}
+                            className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 group-hover:bg-opacity-80 transition-colors duration-200"
+                          >
+                            {cat}
+                          </span>
+                        ))}
                       </div>
                     </div>
+
+                    {/* Arrow */}
+                    <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-300 group-hover:translate-x-1"
+                      style={{ color: journey.color }}
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </div>
                   </div>
-                )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Aviso se nenhuma empresa selecionada */}
+          {!selectedCompany && (
+            <div className="mt-4 p-4 sm:p-5 bg-amber-50 border border-amber-200/70 rounded-2xl">
+              <div className="flex items-center gap-3">
+                <Building2 className="h-5 w-5 text-[#EBA500] flex-shrink-0" />
+                <p className="text-sm text-[#373435] font-medium">
+                  Selecione uma empresa para acessar as jornadas de processos.
+                </p>
               </div>
             </div>
+          )}
         </div>
       </div>
     </div>

@@ -1238,8 +1238,9 @@ export default function OperationalPoliciesPage() {
       return
     }
 
-    // Primeiro abrir o bloco
-    await openBlockInTab(block)
+    // Abrir bloco como popup (sistema de abas removido)
+    setSelectedBlockForCard(block)
+    setShowBlockCardModal(true)
 
     // Filtrar apenas sub-blocos de nível 1 (não sub-sub-blocos)
     const level1Subblocks = block.policy_subblocks.filter(sb => 
@@ -2170,8 +2171,8 @@ export default function OperationalPoliciesPage() {
               </div>
             )}
 
-            {/* 🔥 SISTEMA DE ABAS - Tab Bar */}
-            <div className="mb-6">
+            {/* 🔥 SISTEMA DE ABAS - Tab Bar (removido - blocos abrem como popups) */}
+            {false && (<div className="mb-6">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
                 <div className="flex items-start gap-1 p-2 relative">
                   <div className="flex items-start gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 flex-1">
@@ -2425,9 +2426,10 @@ export default function OperationalPoliciesPage() {
                 </div>
               </div>
             </div>
+            )}
 
-            {/* 🔥 SISTEMA DE ABAS - Tab Content */}
-            {activeTabId && openTabs.find(t => t.id === activeTabId) && (() => {
+            {/* 🔥 SISTEMA DE ABAS - Tab Content (removido - blocos abrem como popups) */}
+            {false && activeTabId && openTabs.find(t => t.id === activeTabId) && (() => {
               const activeTab = openTabs.find(t => t.id === activeTabId)
               
               // 🔥 NOVO: Renderização de Aba de Bloco (Modal Inline)
@@ -2803,7 +2805,7 @@ export default function OperationalPoliciesPage() {
                     {/* Header do Bloco - Clicável */}
                     <div 
                       className="p-4 sm:p-5 lg:p-6 cursor-pointer transition-all relative"
-                      onClick={() => openBlockInTab(block)}
+                      onClick={() => { setSelectedBlockForCard(block); setShowBlockCardModal(true); }}
                     >
                       {/* Conteúdo Principal */}
                       <div className="flex items-start gap-3 sm:gap-4 mb-3 lg:mb-0">
@@ -2910,7 +2912,7 @@ export default function OperationalPoliciesPage() {
                   return (
                     <div
                       key={block.id}
-                      onClick={() => openBlockInTab(block)}
+                      onClick={() => { setSelectedBlockForCard(block); setShowBlockCardModal(true); }}
                       className="group relative bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1"
                       style={{
                         boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)',
