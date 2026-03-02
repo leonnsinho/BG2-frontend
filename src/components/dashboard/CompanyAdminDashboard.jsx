@@ -410,7 +410,9 @@ export default function CompanyAdminDashboard() {
   }, [profile])
 
   const getCompanyId = () => {
-    return profile?.company_id || profile?.user_companies?.[0]?.company_id
+    if (profile?.company_id) return profile.company_id
+    const activeCompany = profile?.user_companies?.find(uc => uc.is_active)
+    return activeCompany?.company_id || profile?.user_companies?.[0]?.company_id
   }
 
   const loadDashboardData = async () => {
@@ -429,7 +431,7 @@ export default function CompanyAdminDashboard() {
       const { data: companyData } = await supabase
         .from('companies')
         .select('name, logo_url')
-        .eq('id', companyId)
+        .eq('id', currentCompanyId)
         .single()
       
       if (companyData) {
@@ -451,20 +453,22 @@ export default function CompanyAdminDashboard() {
         }
       }
 
-      // Buscar total de usuários da empresa
+      // Buscar total de usuários ativos da empresa (apenas associações ativas + perfil existente, excluindo o próprio admin)
       const { data: userCompanies, error: ucError } = await supabase
         .from('user_companies')
-        .select('user_id, is_active')
-        .eq('company_id', companyId)
+        .select('user_id, is_active, profiles!inner(id, is_active)')
+        .eq('company_id', currentCompanyId)
+        .eq('is_active', true)
+        .neq('user_id', profile.id)
 
       const totalUsers = userCompanies?.length || 0
-      const activeUsers = userCompanies?.filter(uc => uc.is_active).length || 0
+      const activeUsers = userCompanies?.filter(uc => uc.profiles?.is_active !== false).length || 0
 
       // Buscar tarefas da empresa
       const { data: tasks } = await supabase
         .from('tasks')
         .select('id, status, due_date')
-        .eq('company_id', companyId)
+        .eq('company_id', currentCompanyId)
 
       const now = new Date()
       const overdueTasks = tasks?.filter(t => 
@@ -487,8 +491,8 @@ export default function CompanyAdminDashboard() {
       const { data: recentTasks } = await supabase
         .from('tasks')
         .select('id, title, status, created_at, updated_at')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false })
+        .eq('company_id', currentCompanyId)
+        .order('updated_at', { ascending: false })
         .limit(5)
 
       setRecentActivities(recentTasks || [])
