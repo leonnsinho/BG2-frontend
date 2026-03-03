@@ -53,6 +53,10 @@ import IndicatorsPage from './pages/indicators/IndicatorsPage'
 import ManageIndicatorsPage from './pages/indicators/ManageIndicatorsPage'
 import CompanyMaturityProgressPage from './pages/reports/CompanyMaturityProgressPage'
 import CompanyMaturityProgressPageNew from './pages/reports/CompanyMaturityProgressPageNew'
+import RelatorioExecucaoEstrategicaPage from './pages/reports/RelatorioExecucaoEstrategicaPage'
+import RelatorioProdutividadeUsuarioPage from './pages/reports/RelatorioProdutividadeUsuarioPage'
+import RelatorioEvolucaoKPIsPage from './pages/reports/RelatorioEvolucaoKPIsPage'
+import RelatorioPrevisibilidadeCaixaPage from './pages/reports/RelatorioPrevisibilidadeCaixaPage'
 import BusinessModelPage from './pages/BusinessModelPage'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
@@ -388,6 +392,46 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
             <MaturityApprovalsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Relatório de Execução Estratégica */}
+      <Route 
+        path="/reports/execucao-estrategica" 
+        element={
+          <ProtectedRoute requiredRole={['company_admin']}>
+            <RelatorioExecucaoEstrategicaPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Relatório de Produtividade por Usuário */}
+      <Route 
+        path="/reports/produtividade-usuario" 
+        element={
+          <ProtectedRoute requiredRole={['company_admin']}>
+            <RelatorioProdutividadeUsuarioPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Relatório de Evolução dos KPIs */}
+      <Route 
+        path="/reports/evolucao-kpis" 
+        element={
+          <ProtectedRoute requiredRole={['company_admin']}>
+            <RelatorioEvolucaoKPIsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Relatório de Previsibilidade de Caixa */}
+      <Route 
+        path="/reports/previsibilidade-caixa" 
+        element={
+          <ProtectedRoute requiredRole={['company_admin', 'gestor', 'gestor_financeiro', 'super_admin']}>
+            <RelatorioPrevisibilidadeCaixaPage />
           </ProtectedRoute>
         }
       />

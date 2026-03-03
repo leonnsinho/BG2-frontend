@@ -1,0 +1,624 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../../services/supabase'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  Legend, ReferenceLine, ResponsiveContainer, Area, AreaChart
+} from 'recharts'
+import {
+  BarChart3, TrendingUp, TrendingDown, Target, Filter,
+  RefreshCw, Loader, FileText, ChevronLeft, ChevronRight,
+  Award, AlertCircle, CheckCircle2, Minus, ArrowUpRight, ArrowDownRight
+} from 'lucide-react'
+
+// ── constants ─────────────────────────────────────────────────────────────────
+
+const MONTHS     = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+const MONTH_LABELS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+
+const JOURNEY_COLORS = {
+  'Estratégia':       '#EBA500',
+  'Financeira':       '#10b981',
+  'Receita':          '#3b82f6',
+  'Pessoas & Cultura':'#8b5cf6',
+  'Operacional':      '#f59e0b',
+}
+
+const JOURNEY_BG = {
+  'Estratégia':       'bg-amber-50 text-amber-700 border-amber-200',
+  'Financeira':       'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'Receita':          'bg-blue-50 text-blue-700 border-blue-200',
+  'Pessoas & Cultura':'bg-purple-50 text-purple-700 border-purple-200',
+  'Operacional':      'bg-orange-50 text-orange-700 border-orange-200',
+}
+
+const JOURNEYS = ['Todas', 'Estratégia', 'Financeira', 'Receita', 'Pessoas & Cultura', 'Operacional']
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+function parseNum(v) {
+  if (v === null || v === undefined || v === '') return null
+  const n = parseFloat(String(v).replace(/[^0-9.,\-]/g, '').replace(',', '.'))
+  return isNaN(n) ? null : n
+}
+
+// Linear regression → returns array of {trend} for each month index
+function computeTrend(points) {
+  const pts = points.map((v, i) => ({ x: i, y: v })).filter(p => p.y !== null)
+  if (pts.length < 2) return null
+  const n = pts.length
+  const sx  = pts.reduce((s, p) => s + p.x, 0)
+  const sy  = pts.reduce((s, p) => s + p.y, 0)
+  const sxy = pts.reduce((s, p) => s + p.x * p.y, 0)
+  const sx2 = pts.reduce((s, p) => s + p.x * p.x, 0)
+  const denom = n * sx2 - sx * sx
+  if (denom === 0) return null
+  const m = (n * sxy - sx * sy) / denom
+  const b = (sy - m * sx) / n
+  return points.map((_, i) => parseFloat((m * i + b).toFixed(2)))
+}
+
+function pctAttain(value, meta) {
+  const v = parseNum(value), m = parseNum(meta)
+  if (v === null || m === null || m === 0) return null
+  return Math.round((v / m) * 100)
+}
+
+function attainColor(pct) {
+  if (pct === null) return { dot: 'bg-gray-200', text: 'text-gray-400', bar: 'bg-gray-200' }
+  if (pct >= 100) return { dot: 'bg-emerald-500', text: 'text-emerald-600', bar: 'bg-emerald-500' }
+  if (pct >= 80)  return { dot: 'bg-amber-400',   text: 'text-amber-600',   bar: 'bg-amber-400' }
+  return           { dot: 'bg-red-400',    text: 'text-red-500',    bar: 'bg-red-400' }
+}
+
+function fmtValue(v, type) {
+  const n = parseNum(v)
+  if (n === null) return '–'
+  if (type === 'Monetário' || type === 'Financeiro')
+    return `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+  if (type === 'Percentual') return `${n}%`
+  if (type === 'Dias') return `${n} dias`
+  return String(n)
+}
+
+// Custom tooltip
+function ChartTooltip({ active, payload, label, meta, type }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-sm">
+      <p className="font-semibold text-gray-700 mb-2">{label}</p>
+      {payload.map(entry => (
+        <div key={entry.dataKey} className="flex items-center gap-2 mb-0.5">
+          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: entry.color }} />
+          <span className="text-gray-500 capitalize">{entry.name}:</span>
+          <span className="font-bold text-gray-900">
+            {entry.value !== null && entry.value !== undefined
+              ? fmtValue(entry.value, type)
+              : '–'}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── small components ──────────────────────────────────────────────────────────
+
+function SummaryCard({ icon: Icon, iconCls, value, label, sub, border }) {
+  return (
+    <div className={`bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border-2 ${border} flex flex-col gap-1`}>
+      <div className={`p-2 rounded-xl w-fit ${iconCls} mb-1`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <p className="text-2xl sm:text-3xl font-bold text-gray-900 leading-none">{value}</p>
+      <p className="text-xs sm:text-sm font-semibold text-gray-700">{label}</p>
+      {sub && <p className="text-xs text-gray-400">{sub}</p>}
+    </div>
+  )
+}
+
+// ── main component ────────────────────────────────────────────────────────────
+
+export default function RelatorioEvolucaoKPIsPage() {
+  const { profile } = useAuth()
+
+  const currentYear = new Date().getFullYear()
+  const [selectedYear, setSelectedYear] = useState(currentYear)
+  const [journeyFilter, setJourneyFilter] = useState('Todas')
+  const [selectedIndicatorId, setSelectedIndicatorId] = useState(null)
+
+  const [indicators, setIndicators] = useState([])
+  const [companyData, setCompanyData] = useState([])   // company_indicators rows
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+
+  // ── resolve company id ───────────────────────────────────────────────────────
+
+  const companyId = useMemo(() => {
+    if (profile?.company_id) return profile.company_id
+    const active = profile?.user_companies?.find(uc => uc.is_active)
+    return active?.company_id || profile?.user_companies?.[0]?.company_id || null
+  }, [profile])
+
+  // ── data loading ─────────────────────────────────────────────────────────────
+
+  const loadData = useCallback(async (showRefresh = false) => {
+    if (!companyId) return
+    if (showRefresh) setRefreshing(true)
+    else setLoading(true)
+
+    try {
+      const [{ data: inds, error: e1 }, { data: cd, error: e2 }] = await Promise.all([
+        supabase
+          .from('management_indicators')
+          .select('id, name, journey, type, meta, is_active')
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .order('journey')
+          .order('name'),
+        supabase
+          .from('company_indicators')
+          .select('*')
+          .eq('company_id', companyId)
+          .eq('year', selectedYear)
+      ])
+
+      if (e1) throw e1
+      if (e2) throw e2
+
+      setIndicators(inds || [])
+      setCompanyData(cd || [])
+
+      // Auto-select first indicator if none selected or selection gone
+      if (inds?.length) {
+        setSelectedIndicatorId(prev => {
+          if (prev && inds.find(i => i.id === prev)) return prev
+          return inds[0].id
+        })
+      }
+    } catch (err) {
+      console.error('Erro ao carregar KPIs:', err)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [companyId, selectedYear])
+
+  useEffect(() => { loadData() }, [loadData])
+
+  // ── derived data ─────────────────────────────────────────────────────────────
+
+  // Map indicator_id → company_indicators row
+  const cdMap = useMemo(() => {
+    const m = {}
+    companyData.forEach(r => { m[r.indicator_id] = r })
+    return m
+  }, [companyData])
+
+  const filteredIndicators = useMemo(() =>
+    journeyFilter === 'Todas'
+      ? indicators
+      : indicators.filter(i => i.journey === journeyFilter),
+    [indicators, journeyFilter]
+  )
+
+  // Summary stats
+  const stats = useMemo(() => {
+    let above = 0, below = 0, onTrack = 0, dataCount = 0
+    indicators.forEach(ind => {
+      const row = cdMap[ind.id]
+      if (!row) return
+      // Use latest month that has data
+      const values = MONTHS.map(m => parseNum(row[m])).filter(v => v !== null)
+      if (!values.length) return
+      dataCount++
+      const latest = values[values.length - 1]
+      const pct = pctAttain(latest, ind.meta)
+      if (pct === null) return
+      if (pct >= 100) above++
+      else if (pct >= 80) onTrack++
+      else below++
+    })
+    const avgAttain = dataCount === 0 ? null : Math.round(
+      indicators
+        .map(ind => {
+          const row = cdMap[ind.id]
+          if (!row) return null
+          const vals = MONTHS.map(m => parseNum(row[m])).filter(v => v !== null)
+          if (!vals.length) return null
+          return pctAttain(vals[vals.length - 1], ind.meta)
+        })
+        .filter(v => v !== null)
+        .reduce((s, v, _, a) => s + v / a.length, 0)
+    )
+    return { above, onTrack, below, avgAttain, total: indicators.length }
+  }, [indicators, cdMap])
+
+  // Selected indicator data for chart
+  const selectedIndicator = useMemo(() =>
+    indicators.find(i => i.id === selectedIndicatorId) || null,
+    [indicators, selectedIndicatorId]
+  )
+
+  const chartData = useMemo(() => {
+    if (!selectedIndicator) return []
+    const row = cdMap[selectedIndicator.id]
+    const metaNum = parseNum(selectedIndicator.meta)
+    const rawValues = MONTHS.map(m => (row ? parseNum(row[m]) : null))
+    const trendArr = computeTrend(rawValues)
+
+    return MONTHS.map((m, i) => ({
+      month: MONTH_LABELS[i],
+      valor: rawValues[i],
+      meta: metaNum,
+      tendencia: trendArr ? trendArr[i] : null,
+    }))
+  }, [selectedIndicator, cdMap])
+
+  // Trend direction for selected indicator
+  const trendDir = useMemo(() => {
+    if (!selectedIndicator) return null
+    const row = cdMap[selectedIndicator.id]
+    if (!row) return null
+    const vals = MONTHS.map(m => parseNum(row[m])).filter(v => v !== null)
+    if (vals.length < 2) return null
+    const diff = vals[vals.length - 1] - vals[0]
+    return diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat'
+  }, [selectedIndicator, cdMap])
+
+  // ── render ────────────────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="h-8 w-8 animate-spin text-[#EBA500] mx-auto mb-3" />
+          <p className="text-sm text-gray-500">Carregando relatório…</p>
+        </div>
+      </div>
+    )
+  }
+
+  const indicatorColor = selectedIndicator
+    ? (JOURNEY_COLORS[selectedIndicator.journey] || '#EBA500')
+    : '#EBA500'
+
+  // Last value & attainment for selected indicator
+  const selRow = selectedIndicator ? cdMap[selectedIndicator.id] : null
+  const selValues = selRow ? MONTHS.map(m => parseNum(selRow[m])) : []
+  const selLastVal = selValues.filter(v => v !== null).slice(-1)[0] ?? null
+  const selAttain = pctAttain(selLastVal, selectedIndicator?.meta)
+  const selColor = attainColor(selAttain)
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-6xl mx-auto">
+
+        {/* ── Header ── */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6 sm:mb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="p-2 bg-amber-50 rounded-xl border border-amber-100">
+                <BarChart3 className="h-5 w-5 text-[#EBA500]" />
+              </div>
+              <span className="text-xs font-semibold text-[#EBA500] tracking-widest uppercase">Relatório</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+              Evolução dos KPIs
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Histórico de performance anual com análise de tendência mês a mês
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start">
+            {/* Year selector */}
+            <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl shadow-sm">
+              <button
+                onClick={() => setSelectedYear(y => y - 1)}
+                className="p-2 hover:bg-gray-50 rounded-l-xl transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4 text-gray-500" />
+              </button>
+              <span className="px-3 text-sm font-semibold text-gray-700 select-none min-w-[52px] text-center">
+                {selectedYear}
+              </span>
+              <button
+                onClick={() => setSelectedYear(y => Math.min(y + 1, currentYear))}
+                disabled={selectedYear >= currentYear}
+                className="p-2 hover:bg-gray-50 rounded-r-xl transition-colors disabled:opacity-40"
+              >
+                <ChevronRight className="h-4 w-4 text-gray-500" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => loadData(true)}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Atualizando…' : 'Atualizar'}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Summary cards ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-6">
+          <SummaryCard icon={Target}       iconCls="bg-amber-50 text-[#EBA500]"     value={stats.total}      label="KPIs Ativos"        border="border-amber-200" />
+          <SummaryCard icon={CheckCircle2} iconCls="bg-emerald-50 text-emerald-600" value={stats.above}      label="Acima da Meta"      border="border-emerald-200" sub={stats.total ? `${Math.round(stats.above/stats.total*100)}% do total` : undefined} />
+          <SummaryCard icon={AlertCircle}  iconCls="bg-red-50 text-red-500"         value={stats.below}      label="Abaixo da Meta"     border="border-red-200"  sub={stats.total ? `${Math.round(stats.below/stats.total*100)}% do total` : undefined} />
+          <SummaryCard icon={TrendingUp}   iconCls="bg-blue-50 text-blue-600"       value={stats.avgAttain !== null ? `${stats.avgAttain}%` : '–'} label="Atingimento Médio" border="border-blue-200" />
+        </div>
+
+        {/* ── Journey filter tabs ── */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          {JOURNEYS.map(j => (
+            <button
+              key={j}
+              onClick={() => setJourneyFilter(j)}
+              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all border ${
+                journeyFilter === j
+                  ? 'bg-[#EBA500] text-white border-[#EBA500] shadow-sm'
+                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {j}
+            </button>
+          ))}
+        </div>
+
+        {indicators.length === 0 ? (
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
+            <div className="p-4 bg-gray-100 rounded-full w-fit mx-auto mb-4">
+              <FileText className="h-10 w-10 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum KPI encontrado</h3>
+            <p className="text-sm text-gray-500">
+              Adicione indicadores em Indicadores de Gestão para visualizar a evolução.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* ── KPI selector + detail chart ── */}
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-5 sm:mb-6">
+
+              {/* KPI selector */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Filter className="h-4 w-4 text-gray-400" />
+                  <span className="text-xs sm:text-sm font-semibold text-gray-600">KPI:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {filteredIndicators.map(ind => (
+                    <button
+                      key={ind.id}
+                      onClick={() => setSelectedIndicatorId(ind.id)}
+                      title={ind.journey}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border truncate max-w-[200px] ${
+                        selectedIndicatorId === ind.id
+                          ? 'text-white shadow-sm border-transparent'
+                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                      }`}
+                      style={selectedIndicatorId === ind.id
+                        ? { backgroundColor: JOURNEY_COLORS[ind.journey] || '#EBA500', borderColor: JOURNEY_COLORS[ind.journey] || '#EBA500' }
+                        : {}
+                      }
+                    >
+                      {ind.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Selected KPI header */}
+              {selectedIndicator && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 pb-4 border-b border-gray-100">
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${JOURNEY_BG[selectedIndicator.journey] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                        {selectedIndicator.journey}
+                      </span>
+                      {trendDir === 'up' && <span className="flex items-center gap-0.5 text-xs font-semibold text-emerald-600"><ArrowUpRight className="h-3.5 w-3.5" />Tendência positiva</span>}
+                      {trendDir === 'down' && <span className="flex items-center gap-0.5 text-xs font-semibold text-red-500"><ArrowDownRight className="h-3.5 w-3.5" />Tendência negativa</span>}
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">{selectedIndicator.name}</h2>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {selLastVal !== null && (
+                      <div className="text-right">
+                        <p className="text-xs text-gray-400">Último valor</p>
+                        <p className="text-xl font-bold text-gray-900">{fmtValue(selLastVal, selectedIndicator.type)}</p>
+                      </div>
+                    )}
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">Meta</p>
+                      <p className="text-xl font-bold text-gray-700">{fmtValue(selectedIndicator.meta, selectedIndicator.type)}</p>
+                    </div>
+                    {selAttain !== null && (
+                      <div className={`flex flex-col items-center justify-center w-16 h-16 rounded-2xl font-bold text-sm flex-shrink-0 ${
+                        selAttain >= 100 ? 'bg-emerald-50 text-emerald-600' :
+                        selAttain >= 80  ? 'bg-amber-50 text-amber-600' :
+                                           'bg-red-50 text-red-500'
+                      }`}>
+                        <span className="text-xl font-extrabold leading-none">{selAttain}%</span>
+                        <span className="text-[10px] font-semibold mt-0.5 opacity-70">ating.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Chart */}
+              {selectedIndicator ? (
+                chartData.every(d => d.valor === null) ? (
+                  <div className="py-12 text-center">
+                    <Minus className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-400">Nenhum dado registrado para este KPI em {selectedYear}</p>
+                  </div>
+                ) : (
+                  <div className="h-64 sm:h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData} margin={{ top: 8, right: 20, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                        <XAxis
+                          dataKey="month"
+                          tick={{ fontSize: 11, fill: '#9ca3af' }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 11, fill: '#9ca3af' }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={40}
+                        />
+                        <Tooltip content={<ChartTooltip type={selectedIndicator?.type} />} />
+                        <Legend
+                          iconType="circle"
+                          iconSize={8}
+                          wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }}
+                        />
+
+                        {/* Meta reference line */}
+                        {parseNum(selectedIndicator?.meta) !== null && (
+                          <ReferenceLine
+                            y={parseNum(selectedIndicator.meta)}
+                            stroke="#d1d5db"
+                            strokeDasharray="6 3"
+                            strokeWidth={1.5}
+                            label={{ value: 'Meta', position: 'right', fontSize: 10, fill: '#9ca3af' }}
+                          />
+                        )}
+
+                        {/* Trend line */}
+                        <Line
+                          type="monotone"
+                          dataKey="tendencia"
+                          name="Tendência"
+                          stroke="#f97316"
+                          strokeWidth={2.5}
+                          strokeDasharray="6 3"
+                          dot={false}
+                          activeDot={{ r: 5, fill: '#f97316', stroke: '#fff', strokeWidth: 2 }}
+                          connectNulls
+                        />
+
+                        {/* Actual values */}
+                        <Line
+                          type="monotone"
+                          dataKey="valor"
+                          name="Valor Real"
+                          stroke={indicatorColor}
+                          strokeWidth={2.5}
+                          dot={{ r: 4, fill: indicatorColor, strokeWidth: 2, stroke: '#fff' }}
+                          activeDot={{ r: 6, fill: indicatorColor, stroke: '#fff', strokeWidth: 2 }}
+                          connectNulls={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )
+              ) : (
+                <div className="py-12 text-center text-sm text-gray-400">Selecione um KPI acima</div>
+              )}
+            </div>
+
+            {/* ── Annual performance table ── */}
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
+                <h3 className="text-sm font-bold text-gray-800">
+                  Histórico Anual {selectedYear} — todos os KPIs
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Clique em um KPI para ver o gráfico detalhado
+                </p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs sm:text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="sticky left-0 z-10 bg-gray-50 px-4 py-3 text-left font-semibold text-gray-500 uppercase tracking-wider min-w-[180px]">KPI</th>
+                      <th className="px-2 py-3 text-center font-semibold text-gray-500 uppercase tracking-wider w-16">Meta</th>
+                      {MONTH_LABELS.map(ml => (
+                        <th key={ml} className="px-2 py-3 text-center font-semibold text-gray-500 uppercase tracking-wider w-12">{ml}</th>
+                      ))}
+                      <th className="px-3 py-3 text-center font-semibold text-gray-500 uppercase tracking-wider w-20">Ating.</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {filteredIndicators.map(ind => {
+                      const row = cdMap[ind.id]
+                      const vals = MONTHS.map(m => (row ? parseNum(row[m]) : null))
+                      const latestVal = vals.filter(v => v !== null).slice(-1)[0] ?? null
+                      const attain = pctAttain(latestVal, ind.meta)
+                      const ac = attainColor(attain)
+                      const isSelected = selectedIndicatorId === ind.id
+                      const jColor = JOURNEY_COLORS[ind.journey] || '#EBA500'
+
+                      return (
+                        <tr
+                          key={ind.id}
+                          onClick={() => setSelectedIndicatorId(ind.id)}
+                          className={`cursor-pointer transition-colors ${isSelected ? 'bg-amber-50/40' : 'hover:bg-gray-50/60'}`}
+                        >
+                          {/* KPI name */}
+                          <td className={`sticky left-0 z-10 px-4 py-3 ${isSelected ? 'bg-amber-50/40' : 'bg-white'}`}>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                style={{ background: jColor }}
+                              />
+                              <span className="font-semibold text-gray-900 truncate max-w-[140px]" title={ind.name}>{ind.name}</span>
+                            </div>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border mt-0.5 inline-block ${JOURNEY_BG[ind.journey] || 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                              {ind.journey}
+                            </span>
+                          </td>
+
+                          {/* Meta */}
+                          <td className="px-2 py-3 text-center text-gray-500 font-medium">
+                            {fmtValue(ind.meta, ind.type)}
+                          </td>
+
+                          {/* Monthly values */}
+                          {vals.map((v, i) => {
+                            const a = pctAttain(v, ind.meta)
+                            const cellColor = a === null
+                              ? ''
+                              : a >= 100 ? 'bg-emerald-50 text-emerald-700 font-semibold'
+                              : a >= 80  ? 'bg-amber-50 text-amber-700 font-semibold'
+                              :            'bg-red-50 text-red-600 font-semibold'
+                            return (
+                              <td key={i} className={`px-1 py-3 text-center rounded ${cellColor}`}>
+                                {v !== null ? fmtValue(v, ind.type) : <span className="text-gray-300">–</span>}
+                              </td>
+                            )
+                          })}
+
+                          {/* Attainment */}
+                          <td className="px-3 py-3 text-center">
+                            {attain !== null ? (
+                              <span className={`inline-flex items-center justify-center px-2 py-1 rounded-lg font-bold text-xs ${
+                                attain >= 100 ? 'bg-emerald-100 text-emerald-700' :
+                                attain >= 80  ? 'bg-amber-100 text-amber-700' :
+                                                'bg-red-100 text-red-600'
+                              }`}>
+                                {attain}%
+                              </span>
+                            ) : <span className="text-gray-300">–</span>}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import SuperAdminBanner from '../components/SuperAdminBanner'
@@ -63,6 +64,9 @@ export default function DFCDashboardPage() {
   const [saidasData, setSaidasData] = useState([])
   const [categoriasMap, setCategoriasMap] = useState({})
   const [showHistoricoModal, setShowHistoricoModal] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportYear, setExportYear] = useState(new Date().getFullYear())
+  const [exportFormat, setExportFormat] = useState('excel')
   const [historicoRelatorios, setHistoricoRelatorios] = useState([])
   
   // Estados para pagamentos futuros
@@ -1181,6 +1185,528 @@ export default function DFCDashboardPage() {
     novaJanela.document.close()
   }
 
+  // Helper: busca e calcula todos os dados do DFC para o ano selecionado
+  const buscarDadosDFC = async (year) => {
+    const currentCompany = getCurrentUserCompany()
+    const companyId = isSuperAdmin()
+      ? (selectedCompanyId === 'all' ? null : selectedCompanyId)
+      : currentCompany?.id
+    const companyName = isSuperAdmin()
+      ? (selectedCompanyId === 'all' ? 'Todas as Empresas' : companies.find(c => c.id === selectedCompanyId)?.name || 'Empresa')
+      : (currentCompany?.name || 'Empresa')
+    const yearStart = `${year}-01-01`
+    const yearEnd = `${year}-12-31`
+
+    let entradasQuery = supabase
+      .from('dfc_entradas').select('categoria, item_id, valor, mes, vencimento')
+      .gte('vencimento', yearStart).lte('vencimento', yearEnd)
+      .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
+    if (companyId) entradasQuery = entradasQuery.eq('company_id', companyId)
+
+    let saidasQuery = supabase
+      .from('dfc_saidas').select('categoria, item_id, valor, mes, vencimento')
+      .gte('vencimento', yearStart).lte('vencimento', yearEnd)
+      .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
+    if (companyId) saidasQuery = saidasQuery.eq('company_id', companyId)
+
+    let saldoAntEntradasQ = supabase
+      .from('dfc_entradas').select('valor').lt('vencimento', yearStart)
+      .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
+    if (companyId) saldoAntEntradasQ = saldoAntEntradasQ.eq('company_id', companyId)
+
+    let saldoAntSaidasQ = supabase
+      .from('dfc_saidas').select('valor').lt('vencimento', yearStart)
+      .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
+    if (companyId) saldoAntSaidasQ = saldoAntSaidasQ.eq('company_id', companyId)
+
+    const [
+      { data: entradas },
+      { data: saidas },
+      { data: allCategorias },
+      { data: allItens },
+      { data: antEntradas },
+      { data: antSaidas }
+    ] = await Promise.all([
+      entradasQuery, saidasQuery,
+      supabase.from('dfc_categorias').select('id, nome, tipo').order('nome'),
+      supabase.from('dfc_itens').select('id, nome').order('nome'),
+      saldoAntEntradasQ, saldoAntSaidasQ
+    ])
+
+    const saldoInicial =
+      (antEntradas?.reduce((s, r) => s + (r.valor || 0), 0) || 0) -
+      (antSaidas?.reduce((s, r) => s + (r.valor || 0), 0) || 0)
+
+    const itemMap = {}
+    allItens?.forEach(i => { itemMap[i.id] = i })
+
+    const getMes = (row) => {
+      const mesStr = row.mes || (row.vencimento ? row.vencimento.substring(0, 7) : null)
+      if (!mesStr) return null
+      return parseInt(mesStr.substring(5, 7))
+    }
+    const groupData = (rows) => {
+      const groups = {}
+      rows?.forEach(row => {
+        const catId = row.categoria
+        const itemId = row.item_id
+        const mes = getMes(row)
+        if (!catId || !itemId || !mes) return
+        if (!groups[catId]) groups[catId] = {}
+        if (!groups[catId][itemId]) groups[catId][itemId] = Array(12).fill(0)
+        groups[catId][itemId][mes - 1] += row.valor || 0
+      })
+      return groups
+    }
+
+    const entradasGroups = groupData(entradas)
+    const saidasGroups = groupData(saidas)
+
+    const preEntradaTotals = Array(12).fill(0)
+    const preSaidaTotals = Array(12).fill(0)
+    Object.values(entradasGroups).forEach(items =>
+      Object.values(items).forEach(monthArr => monthArr.forEach((v, i) => { preEntradaTotals[i] += v }))
+    )
+    Object.values(saidasGroups).forEach(items =>
+      Object.values(items).forEach(monthArr => monthArr.forEach((v, i) => { preSaidaTotals[i] += v }))
+    )
+    const saldoInicialMonths = Array(12).fill(0)
+    let runningBalance = saldoInicial
+    for (let m = 0; m < 12; m++) {
+      saldoInicialMonths[m] = runningBalance
+      runningBalance += preEntradaTotals[m] - preSaidaTotals[m]
+    }
+
+    return {
+      companyId,
+      companyName,
+      saldoInicial,
+      saldoInicialMonths,
+      entradasGroups,
+      saidasGroups,
+      entradaCats: (allCategorias || []).filter(c => c.tipo === 'entrada'),
+      saidaCats: (allCategorias || []).filter(c => c.tipo === 'saida'),
+      itemMap
+    }
+  }
+
+  // Função para exportar Excel seguindo o modelo DFC
+  const exportarExcel = async (year) => {
+    const ExcelJS = (await import('exceljs')).default
+    const workbook = new ExcelJS.Workbook()
+    const ws = workbook.addWorksheet('Fluxo de Caixa (DFC)')
+
+    toast.loading('Gerando planilha Excel...', { id: 'export-excel' })
+    try {
+      const { companyId, companyName, saldoInicial, saldoInicialMonths, entradasGroups, saidasGroups, entradaCats, saidaCats, itemMap } = await buscarDadosDFC(year)
+
+      // Meses para cabeçalho
+      const MONTHS = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
+      const numFmt = '#,##0.00'
+
+      // --- Definições de estilo ---
+      const fill = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } })
+      const font = (bold, size, argb = 'FF000000') => ({ name: 'Calibri', size, bold, color: { argb } })
+      const border = () => ({
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
+      })
+
+      const styleTitle    = { font: font(true, 18, 'FFFFFFFF'), fill: fill('FF000000'), alignment: { vertical: 'middle', horizontal: 'left' }, border: border() }
+      const styleHeader   = { font: font(true, 11), fill: fill('FFFFFFFF'), alignment: { horizontal: 'center', vertical: 'bottom' }, border: border() }
+      const styleYellowL  = { font: font(true, 11), fill: fill('FFFFFF00'), alignment: { horizontal: 'left', vertical: 'bottom' }, border: border() }
+      const styleYellow   = { font: font(true, 11), fill: fill('FFFFFF00'), alignment: { horizontal: 'right', vertical: 'bottom' }, border: border(), numFmt }
+      const styleGrayL    = { font: font(true, 11), fill: fill('FFBFBFBF'), alignment: { horizontal: 'left', vertical: 'bottom' }, border: border() }
+      const styleGray     = { font: font(true, 11), fill: fill('FFBFBFBF'), alignment: { horizontal: 'right', vertical: 'bottom' }, border: border(), numFmt }
+      const styleGrayCode = { font: font(true, 11), fill: fill('FFBFBFBF'), alignment: { horizontal: 'center', vertical: 'bottom' }, border: border() }
+      const styleItemL    = { font: font(false, 11), fill: fill('FFFFFFFF'), alignment: { horizontal: 'left', vertical: 'bottom' }, border: border() }
+      const styleItem     = { font: font(false, 11), fill: fill('FFFFFFFF'), alignment: { horizontal: 'right', vertical: 'bottom' }, border: border(), numFmt }
+
+      // Larguras das colunas
+      ws.getColumn(1).width = 42
+      for (let i = 2; i <= 13; i++) ws.getColumn(i).width = 14
+      ws.getColumn(14).width = 16
+
+      let rowNum = 0
+
+      // Aplica estilo em uma célula
+      const applyStyle = (cell, style, value) => {
+        cell.value = value
+        cell.font = style.font
+        cell.fill = style.fill
+        cell.alignment = style.alignment
+        cell.border = style.border
+        if (style.numFmt && typeof value === 'number') cell.numFmt = style.numFmt
+      }
+
+      // Soma mensal + total
+      const makeVals = (arr) => {
+        const a = arr || Array(12).fill(0)
+        return [...a, a.reduce((s, v) => s + v, 0)]
+      }
+
+      // --- LINHA 1: Título ---
+      rowNum++
+      ws.mergeCells(rowNum, 1, rowNum, 14)
+      applyStyle(ws.getCell(rowNum, 1), styleTitle, `DEMONSTRATIVO DE FLUXO DE CAIXA (DFC) ${year} - ${companyName.toUpperCase()}`)
+      ws.getRow(rowNum).height = 50
+
+      // --- LINHA 2: Cabeçalho meses ---
+      rowNum++
+      ws.getRow(rowNum).height = 20
+      ;['', ...MONTHS, 'TOTAL'].forEach((v, i) => applyStyle(ws.getCell(rowNum, i + 1), styleHeader, v || null))
+
+      // --- LINHA 3: SALDO INICIAL (saldo de abertura de cada mês) ---
+      rowNum++
+      ws.getRow(rowNum).height = 20
+      applyStyle(ws.getCell(rowNum, 1), styleYellowL, 'SALDO INICIAL')
+      const saldoInicialVals = makeVals(saldoInicialMonths)
+      for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleYellow, saldoInicialVals[c - 2] !== 0 ? saldoInicialVals[c - 2] : null)
+
+      // --- LINHA 4: CONCILIAÇÃO BANCÁRIA ---
+      rowNum++
+      ws.getRow(rowNum).height = 20
+      applyStyle(ws.getCell(rowNum, 1), styleYellowL, 'CONCILIAÇÃO BANCÁRIA')
+      for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleYellow, null)
+
+      // --- LINHA 5: SALDO DE CONCILIAÇÃO ---
+      rowNum++
+      ws.getRow(rowNum).height = 20
+      applyStyle(ws.getCell(rowNum, 1), styleYellowL, 'SALDO DE CONCILIAÇÃO')
+      for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleYellow, null)
+
+      // Função auxiliar: linha de categoria (gris com prefixo)
+      const addCatRow = (prefix, name, monthTotals) => {
+        rowNum++
+        ws.getRow(rowNum).height = 20
+        applyStyle(ws.getCell(rowNum, 1), styleGrayL, `${prefix} ${name.toUpperCase()}`)
+        const vals = makeVals(monthTotals)
+        for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleGray, vals[c - 2])
+      }
+
+      // Função auxiliar: linha de código da categoria
+      const addCatCodeRow = (code) => {
+        rowNum++
+        ws.getRow(rowNum).height = 19
+        applyStyle(ws.getCell(rowNum, 1), styleGrayCode, code)
+        for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleGrayCode, null)
+      }
+
+      // Função auxiliar: linha de item (branca)
+      const addItemRow = (name, monthVals) => {
+        rowNum++
+        ws.getRow(rowNum).height = 19
+        applyStyle(ws.getCell(rowNum, 1), styleItemL, name)
+        const vals = makeVals(monthVals)
+        for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleItem, vals[c - 2])
+      }
+
+      // Função auxiliar: linha spacer
+      const addSpacer = () => {
+        rowNum++
+        ws.getRow(rowNum).height = 8
+        for (let c = 1; c <= 14; c++) {
+          const cell = ws.getCell(rowNum, c)
+          cell.fill = fill('FFFFFFFF')
+        }
+      }
+
+      // Função auxiliar: linha de total calculado (amarelo)
+      const addTotalRow = (label, monthTotals) => {
+        rowNum++
+        ws.getRow(rowNum).height = 20
+        applyStyle(ws.getCell(rowNum, 1), styleYellowL, label)
+        const vals = makeVals(monthTotals)
+        for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleYellow, vals[c - 2])
+      }
+
+      // Função auxiliar: linha de resultado calculado (cinza bold)
+      const addResultRow = (label, monthTotals) => {
+        rowNum++
+        ws.getRow(rowNum).height = 20
+        applyStyle(ws.getCell(rowNum, 1), styleGrayL, label)
+        const vals = makeVals(monthTotals)
+        for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleGray, vals[c - 2])
+      }
+
+      // ========= SEÇÃO ENTRADAS =========
+      const entradaTotals = Array(12).fill(0)
+
+      for (const cat of entradaCats) {
+        const catGroups = entradasGroups[cat.id] || {}
+        const catMonthTotals = Array(12).fill(0)
+
+        Object.values(catGroups).forEach(monthArr => {
+          monthArr.forEach((v, i) => { catMonthTotals[i] += v })
+        })
+        catMonthTotals.forEach((v, i) => { entradaTotals[i] += v })
+
+        // Pular categorias sem dados nem itens atribuídos (mostrar só as que têm transações)
+        const hasData = catMonthTotals.some(v => v > 0)
+        if (!hasData && Object.keys(catGroups).length === 0) continue
+
+        addCatRow('(+)', cat.nome, catMonthTotals)
+        addCatCodeRow(cat.nome.toUpperCase().replace(/\s/g, '.').substring(0, 12))
+
+        for (const [itemId, monthVals] of Object.entries(catGroups)) {
+          const item = itemMap[itemId]
+          addItemRow(item ? item.nome : 'Item', monthVals)
+        }
+
+        addSpacer()
+      }
+
+      addTotalRow('(+) RECEITA OPERACIONAL BRUTA', entradaTotals)
+      addSpacer()
+
+      // ========= SEÇÃO SAÍDAS =========
+      const saidaTotals = Array(12).fill(0)
+
+      for (const cat of saidaCats) {
+        const catGroups = saidasGroups[cat.id] || {}
+        const catMonthTotals = Array(12).fill(0)
+
+        Object.values(catGroups).forEach(monthArr => {
+          monthArr.forEach((v, i) => { catMonthTotals[i] += v })
+        })
+        catMonthTotals.forEach((v, i) => { saidaTotals[i] += v })
+
+        const hasData = catMonthTotals.some(v => v > 0)
+        if (!hasData && Object.keys(catGroups).length === 0) continue
+
+        addCatRow('(-)', cat.nome, catMonthTotals)
+        addCatCodeRow(cat.nome.toUpperCase().replace(/\s/g, '.').substring(0, 12))
+
+        for (const [itemId, monthVals] of Object.entries(catGroups)) {
+          const item = itemMap[itemId]
+          addItemRow(item ? item.nome : 'Item', monthVals)
+        }
+
+        addSpacer()
+      }
+
+      // ========= RESULTADOS FINAIS =========
+      const lucroMonths = entradaTotals.map((v, i) => v - saidaTotals[i])
+      addResultRow('(=) LUCRO LÍQUIDO', lucroMonths)
+
+      rowNum++
+      ws.getRow(rowNum).height = 20
+      applyStyle(ws.getCell(rowNum, 1), styleGrayL, '% de lucro')
+      for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleGray, null)
+
+      // Saldo final cumulativo por mês
+      const saldoFinalMonths = []
+      let acc = saldoInicial
+      for (const v of lucroMonths) {
+        acc += v
+        saldoFinalMonths.push(acc)
+      }
+      addResultRow('Saldo final', saldoFinalMonths)
+
+      // ========= Gerar e baixar o arquivo =========
+      const buffer = await workbook.xlsx.writeBuffer()
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `DFC-${companyName.replace(/[^a-zA-Z0-9]/g, '_')}-${year}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast.success('Planilha exportada com sucesso!', { id: 'export-excel' })
+
+      // Salvar no histórico
+      try {
+        const { inicio: inicioHist, fim: fimHist } = getPeriodoDatas()
+        await supabase.from('dfc_relatorios_historico').insert({
+          company_id: companyId,
+          created_by: profile?.id,
+          periodo_tipo: periodoTipo,
+          periodo_inicio: inicioHist,
+          periodo_fim: fimHist,
+          total_entradas: stats.totalEntradas,
+          total_saidas: stats.totalSaidas,
+          saldo_total: stats.saldoTotal,
+          quantidade_entradas: entradasData.length,
+          quantidade_saidas: saidasData.length,
+          empresa_nome: companyName,
+          usuario_nome: profile?.full_name || 'Usuário'
+        })
+      } catch (histError) {
+        console.error('Erro ao salvar histórico:', histError)
+      }
+
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error)
+      toast.error('Erro ao gerar planilha. Tente novamente.', { id: 'export-excel' })
+    }
+  }
+
+  // Função para exportar CSV seguindo o modelo DFC
+  const exportarCSV = async (year) => {
+    toast.loading('Gerando CSV...', { id: 'export-csv' })
+    try {
+      const { companyName, saldoInicial, saldoInicialMonths, entradasGroups, saidasGroups, entradaCats, saidaCats, itemMap } = await buscarDadosDFC(year)
+      const MONTHS = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
+      const fmtN = (v) => typeof v === 'number' ? v.toFixed(2).replace('.', ',') : ''
+      const makeVals = (arr) => { const a = arr || Array(12).fill(0); return [...a, a.reduce((s, v) => s + v, 0)] }
+      const esc = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`
+
+      const rows = []
+      rows.push([`DEMONSTRATIVO DE FLUXO DE CAIXA (DFC) ${year} - ${companyName.toUpperCase()}`])
+      rows.push(['', ...MONTHS, 'TOTAL'])
+      rows.push(['SALDO INICIAL', ...makeVals(saldoInicialMonths).map(fmtN)])
+      rows.push(['CONCILIAÇÃO BANCÁRIA'])
+      rows.push(['SALDO DE CONCILIAÇÃO'])
+
+      const entradaTotals = Array(12).fill(0)
+      for (const cat of entradaCats) {
+        const catGroups = entradasGroups[cat.id] || {}
+        const catMonthTotals = Array(12).fill(0)
+        Object.values(catGroups).forEach(monthArr => monthArr.forEach((v, i) => { catMonthTotals[i] += v }))
+        catMonthTotals.forEach((v, i) => { entradaTotals[i] += v })
+        if (!catMonthTotals.some(v => v > 0) && Object.keys(catGroups).length === 0) continue
+        rows.push([`(+) ${cat.nome.toUpperCase()}`, ...makeVals(catMonthTotals).map(fmtN)])
+        for (const [itemId, monthVals] of Object.entries(catGroups)) {
+          const item = itemMap[itemId]
+          rows.push([`  ${item ? item.nome : 'Item'}`, ...makeVals(monthVals).map(fmtN)])
+        }
+        rows.push([])
+      }
+      rows.push([`(+) RECEITA OPERACIONAL BRUTA`, ...makeVals(entradaTotals).map(fmtN)])
+      rows.push([])
+
+      const saidaTotals = Array(12).fill(0)
+      for (const cat of saidaCats) {
+        const catGroups = saidasGroups[cat.id] || {}
+        const catMonthTotals = Array(12).fill(0)
+        Object.values(catGroups).forEach(monthArr => monthArr.forEach((v, i) => { catMonthTotals[i] += v }))
+        catMonthTotals.forEach((v, i) => { saidaTotals[i] += v })
+        if (!catMonthTotals.some(v => v > 0) && Object.keys(catGroups).length === 0) continue
+        rows.push([`(-) ${cat.nome.toUpperCase()}`, ...makeVals(catMonthTotals).map(fmtN)])
+        for (const [itemId, monthVals] of Object.entries(catGroups)) {
+          const item = itemMap[itemId]
+          rows.push([`  ${item ? item.nome : 'Item'}`, ...makeVals(monthVals).map(fmtN)])
+        }
+        rows.push([])
+      }
+
+      const lucroMonths = entradaTotals.map((v, i) => v - saidaTotals[i])
+      rows.push(['(=) LUCRO LÍQUIDO', ...makeVals(lucroMonths).map(fmtN)])
+      rows.push(['% de lucro'])
+      const saldoFinalMonths = []
+      let acc = saldoInicial
+      for (const v of lucroMonths) { acc += v; saldoFinalMonths.push(acc) }
+      rows.push(['Saldo final', ...makeVals(saldoFinalMonths).map(fmtN)])
+
+      const csv = rows.map(r => r.map(esc).join(';')).join('\n')
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `DFC-${companyName.replace(/[^a-zA-Z0-9]/g, '_')}-${year}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      toast.success('CSV exportado com sucesso!', { id: 'export-csv' })
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error)
+      toast.error('Erro ao gerar CSV. Tente novamente.', { id: 'export-csv' })
+    }
+  }
+
+  // Função para exportar PDF A4 paisagem seguindo o modelo DFC
+  const exportarPDF = async (year) => {
+    toast.loading('Preparando PDF...', { id: 'export-pdf' })
+    try {
+      const { companyName, saldoInicial, saldoInicialMonths, entradasGroups, saidasGroups, entradaCats, saidaCats, itemMap } = await buscarDadosDFC(year)
+      const MONTHS = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
+      const fmtN = (v) => typeof v === 'number' ? v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''
+      const makeTotal = (arr) => (arr || Array(12).fill(0)).reduce((s, v) => s + v, 0)
+      const td = 'border:1px solid #999;padding:2px 4px;font-size:7.5pt;white-space:nowrap;'
+
+      const yellowRow = (label, vals) => {
+        const a = vals || Array(12).fill(0)
+        return `<tr><td style="${td}background:#FFFF00;font-weight:bold;min-width:160px">${label}</td>${a.map(v => `<td style="${td}background:#FFFF00;font-weight:bold;text-align:right">${fmtN(v)}</td>`).join('')}<td style="${td}background:#FFFF00;font-weight:bold;text-align:right">${fmtN(makeTotal(a))}</td></tr>`
+      }
+      const grayRow = (label, vals) => {
+        const a = vals || Array(12).fill(0)
+        return `<tr><td style="${td}background:#BFBFBF;font-weight:bold">${label}</td>${a.map(v => `<td style="${td}background:#BFBFBF;font-weight:bold;text-align:right">${fmtN(v)}</td>`).join('')}<td style="${td}background:#BFBFBF;font-weight:bold;text-align:right">${fmtN(makeTotal(a))}</td></tr>`
+      }
+      const whiteRow = (label, vals) => {
+        const a = vals || Array(12).fill(0)
+        return `<tr><td style="${td}padding-left:14px">${label}</td>${a.map(v => `<td style="${td}text-align:right">${fmtN(v)}</td>`).join('')}<td style="${td}text-align:right">${fmtN(makeTotal(a))}</td></tr>`
+      }
+
+      let bodyRows = ''
+      bodyRows += `<tr><td colspan="15" style="background:#000;color:#fff;font-weight:bold;font-size:11pt;padding:6px 8px;border:1px solid #000">DEMONSTRATIVO DE FLUXO DE CAIXA (DFC) ${year} — ${companyName.toUpperCase()}</td></tr>`
+      bodyRows += `<tr><th style="${td}background:#000;color:#fff">Descrição</th>${MONTHS.map(m => `<th style="${td}background:#000;color:#fff;text-align:center">${m}</th>`).join('')}<th style="${td}background:#000;color:#fff;text-align:center">TOTAL</th></tr>`
+      bodyRows += yellowRow('SALDO INICIAL', saldoInicialMonths)
+      bodyRows += yellowRow('CONCILIAÇÃO BANCÁRIA', null)
+      bodyRows += yellowRow('SALDO DE CONCILIAÇÃO', null)
+
+      const entradaTotals = Array(12).fill(0)
+      for (const cat of entradaCats) {
+        const catGroups = entradasGroups[cat.id] || {}
+        const catMonthTotals = Array(12).fill(0)
+        Object.values(catGroups).forEach(monthArr => monthArr.forEach((v, i) => { catMonthTotals[i] += v }))
+        catMonthTotals.forEach((v, i) => { entradaTotals[i] += v })
+        if (!catMonthTotals.some(v => v > 0) && Object.keys(catGroups).length === 0) continue
+        bodyRows += grayRow(`(+) ${cat.nome.toUpperCase()}`, catMonthTotals)
+        for (const [itemId, monthVals] of Object.entries(catGroups)) {
+          const item = itemMap[itemId]
+          bodyRows += whiteRow(item ? item.nome : 'Item', monthVals)
+        }
+      }
+      bodyRows += yellowRow('(+) RECEITA OPERACIONAL BRUTA', entradaTotals)
+
+      const saidaTotals = Array(12).fill(0)
+      for (const cat of saidaCats) {
+        const catGroups = saidasGroups[cat.id] || {}
+        const catMonthTotals = Array(12).fill(0)
+        Object.values(catGroups).forEach(monthArr => monthArr.forEach((v, i) => { catMonthTotals[i] += v }))
+        catMonthTotals.forEach((v, i) => { saidaTotals[i] += v })
+        if (!catMonthTotals.some(v => v > 0) && Object.keys(catGroups).length === 0) continue
+        bodyRows += grayRow(`(-) ${cat.nome.toUpperCase()}`, catMonthTotals)
+        for (const [itemId, monthVals] of Object.entries(catGroups)) {
+          const item = itemMap[itemId]
+          bodyRows += whiteRow(item ? item.nome : 'Item', monthVals)
+        }
+      }
+
+      const lucroMonths = entradaTotals.map((v, i) => v - saidaTotals[i])
+      bodyRows += grayRow('(=) LUCRO LÍQUIDO', lucroMonths)
+      bodyRows += grayRow('% de lucro', null)
+      const saldoFinalMonths = []
+      let acc = saldoInicial
+      for (const v of lucroMonths) { acc += v; saldoFinalMonths.push(acc) }
+      bodyRows += grayRow('Saldo final', saldoFinalMonths)
+
+      const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>DFC ${year} - ${companyName}</title>
+<style>
+  @page { size: A4 landscape; margin: 8mm; }
+  body { font-family: Calibri, Arial, sans-serif; margin: 0; }
+  table { border-collapse: collapse; width: 100%; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body><table>${bodyRows}</table></body></html>`
+
+      const win = window.open('', '_blank')
+      win.document.write(html)
+      win.document.close()
+      win.focus()
+      setTimeout(() => { win.print() }, 600)
+      toast.success('PDF pronto para impressão!', { id: 'export-pdf' })
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error)
+      toast.error('Erro ao gerar PDF. Tente novamente.', { id: 'export-pdf' })
+    }
+  }
+
   // Função auxiliar para formatar data BR
   const formatDateBR = (dateString) => {
     if (!dateString) return '-'
@@ -1255,7 +1781,7 @@ export default function DFCDashboardPage() {
                 <span className="font-medium text-sm">Histórico</span>
               </button>
               <button
-                onClick={exportarRelatorio}
+                onClick={() => setShowExportModal(true)}
                 className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors shadow-md hover:shadow-lg flex-1 sm:flex-none"
               >
                 <Download className="h-4 w-4" />
@@ -2241,6 +2767,79 @@ export default function DFCDashboardPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de exportação */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm">
+            <div className="p-6">
+              <h2 className="text-lg font-bold text-gray-800 mb-1">Exportar DFC</h2>
+              <p className="text-sm text-gray-500 mb-5">Escolha o ano e o formato de exportação.</p>
+
+              <label className="block text-sm font-medium text-gray-700 mb-2">Ano</label>
+              <div className="flex items-center gap-3 mb-5">
+                <button
+                  onClick={() => setExportYear(y => y - 1)}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-lg transition-colors"
+                >
+                  ‹
+                </button>
+                <span className="flex-1 text-center text-2xl font-bold text-gray-900">{exportYear}</span>
+                <button
+                  onClick={() => setExportYear(y => y + 1)}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-lg transition-colors"
+                >
+                  ›
+                </button>
+              </div>
+
+              <label className="block text-sm font-medium text-gray-700 mb-2">Formato</label>
+              <div className="grid grid-cols-3 gap-2 mb-6">
+                {[
+                  { id: 'excel', label: 'Excel', icon: '📊', desc: '.xlsx' },
+                  { id: 'csv',   label: 'CSV',   icon: '📄', desc: '.csv' },
+                  { id: 'pdf',   label: 'PDF A4', icon: '🖨️', desc: 'paisagem' },
+                ].map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setExportFormat(f.id)}
+                    className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors text-sm ${
+                      exportFormat === f.id
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-gray-200 hover:border-gray-400 text-gray-600'
+                    }`}
+                  >
+                    <span className="text-xl">{f.icon}</span>
+                    <span className="font-semibold">{f.label}</span>
+                    <span className="text-xs text-gray-400">{f.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    setShowExportModal(false)
+                    const y = String(exportYear)
+                    if (exportFormat === 'excel') exportarExcel(y)
+                    else if (exportFormat === 'csv') exportarCSV(y)
+                    else if (exportFormat === 'pdf') exportarPDF(y)
+                  }}
+                  className="flex-1 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors"
+                >
+                  Exportar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

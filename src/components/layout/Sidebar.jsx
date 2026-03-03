@@ -309,7 +309,22 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/indicators',
         children: [
           { name: 'Indicadores de Gestão', href: '/indicators' },
-          { name: 'Relatórios', href: '/reports', comingSoon: true }
+          {
+            name: 'Relatórios de planejamento estratégico',
+            href: '/reports/execucao-estrategica',
+            children: [
+              { name: 'Execução Estratégica', href: '/reports/execucao-estrategica' },
+              { name: 'Produtividade por Usuário', href: '/reports/produtividade-usuario' },
+              { name: 'Evolução dos KPIs', href: '/reports/evolucao-kpis' }
+            ]
+          },
+          {
+            name: 'Relatórios Financeiros Estratégicos',
+            href: '/reports/previsibilidade-caixa',
+            children: [
+              { name: 'Previsibilidade de Caixa', href: '/reports/previsibilidade-caixa' }
+            ]
+          }
         ]
       },
       // 7) Administração
