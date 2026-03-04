@@ -8,7 +8,7 @@ import {
 import {
   TrendingUp, TrendingDown, DollarSign, Calendar,
   AlertCircle, RefreshCw, Loader, Building2,
-  ArrowUpCircle, ArrowDownCircle, Wallet, ChevronDown
+  ArrowUpCircle, ArrowDownCircle, Wallet, ChevronDown, Download
 } from 'lucide-react'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -50,6 +50,7 @@ export default function RelatorioPrevisibilidadeCaixaPage() {
   const [entradas, setEntradas]     = useState([])
   const [saidas, setSaidas]         = useState([])
   const [activeTab, setActiveTab]   = useState('receber') // 'receber' | 'pagar'
+  const [exporting, setExporting]   = useState(false)
 
   const isSuperAdmin = profile?.role === 'super_admin'
 
@@ -225,6 +226,241 @@ export default function RelatorioPrevisibilidadeCaixaPage() {
     )
   }
 
+  // ── export PDF ──────────────────────────────────────────────────────────────
+  const exportarPDF = async () => {
+    setExporting(true)
+    try {
+      let logoUrl = null
+      let fetchedCompanyName = companyName
+      if (companyId) {
+        const { data: comp } = await supabase
+          .from('companies')
+          .select('name, logo_url')
+          .eq('id', companyId)
+          .single()
+        if (comp) {
+          fetchedCompanyName = comp.name || companyName
+          logoUrl = comp.logo_url || null
+        }
+      }
+
+      const geradoEm = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+
+      let logoBase64 = null
+      if (logoUrl) {
+        try {
+          const { data: signedData } = await supabase.storage
+            .from('company-avatars')
+            .createSignedUrl(logoUrl, 3600)
+          if (signedData?.signedUrl) {
+            const resp = await fetch(signedData.signedUrl)
+            const blob = await resp.blob()
+            logoBase64 = await new Promise((res) => {
+              const reader = new FileReader()
+              reader.onloadend = () => res(reader.result)
+              reader.readAsDataURL(blob)
+            })
+          }
+        } catch { logoBase64 = null }
+      }
+
+      const logoHtml = logoBase64
+        ? `<img src="${logoBase64}" alt="logo" style="max-height:54px;max-width:160px;object-fit:contain;margin-bottom:10px" />`
+        : ''
+
+      const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0)
+
+      const statBox = (value, label, color) =>
+        `<div style="flex:1;min-width:120px;background:#2a2828;border:1px solid ${color}33;border-radius:10px;padding:14px 10px;text-align:center">
+          <div style="font-size:13px;font-weight:900;color:${color};line-height:1.2">${value}</div>
+          <div style="font-size:10px;color:#aaa;margin-top:6px;text-transform:uppercase;letter-spacing:.5px">${label}</div>
+        </div>`
+
+      // Period rows
+      const periodRows = periodos.map(p => {
+        const s = p.receber - p.pagar
+        const sc = s >= 0 ? '#4ade80' : '#f87171'
+        return `<tr>
+          <td style="padding:8px 10px;font-size:11px;font-weight:600;color:#e8e8e8">${p.label}</td>
+          <td style="padding:8px 10px;text-align:right;font-size:11px;font-weight:700;color:#4ade80">${fmt(p.receber)}</td>
+          <td style="padding:8px 10px;text-align:right;font-size:11px;font-weight:700;color:#f87171">${fmt(p.pagar)}</td>
+          <td style="padding:8px 10px;text-align:right;font-size:12px;font-weight:900;color:${sc}">${fmt(s)}</td>
+        </tr>`
+      }).join('')
+
+      // SVG bar chart from chartData
+      let chartSvgHtml = ''
+      if (chartData.length > 0) {
+        const W = 700, H = 180
+        const pad = { l: 68, r: 18, t: 14, b: 30 }
+        const pw = W - pad.l - pad.r
+        const ph = H - pad.t - pad.b
+        const n = chartData.length
+        const maxVal = Math.max(...chartData.flatMap(d => [d.receber, d.pagar]), 1)
+        const yMax = maxVal * 1.1
+        const barW = Math.max(6, (pw / n) * 0.35)
+        const gap  = pw / n
+        const yOf  = (v) => pad.t + ph - (v / yMax) * ph
+        const fmtY = (v) => v >= 1000000 ? `R$${(v/1000000).toFixed(1)}M` : `R$${(v/1000).toFixed(0)}k`
+        const gridSteps = 4
+        const grids = Array.from({ length: gridSteps + 1 }, (_, i) => {
+          const v = (yMax / gridSteps) * i
+          const y = yOf(v).toFixed(1)
+          return `<line x1="${pad.l}" y1="${y}" x2="${W - pad.r}" y2="${y}" stroke="#3a3838" stroke-width="1"/>
+            <text x="${pad.l - 4}" y="${y}" text-anchor="end" dominant-baseline="middle" font-size="8" fill="#666">${fmtY(v)}</text>`
+        }).join('')
+        const bars = chartData.map((d, i) => {
+          const cx = pad.l + gap * i + gap / 2
+          const rH = (d.receber / yMax) * ph
+          const pH = (d.pagar / yMax) * ph
+          return `<rect x="${(cx - barW - 2).toFixed(1)}" y="${(pad.t + ph - rH).toFixed(1)}" width="${barW.toFixed(1)}" height="${rH.toFixed(1)}" fill="#10b981" rx="2"/>
+            <rect x="${(cx + 2).toFixed(1)}" y="${(pad.t + ph - pH).toFixed(1)}" width="${barW.toFixed(1)}" height="${pH.toFixed(1)}" fill="#f87171" rx="2"/>
+            <text x="${cx.toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="8" fill="#666">${d.mes}</text>`
+        }).join('')
+        chartSvgHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;background:#1e1c1c;border-radius:6px">
+          <rect width="${W}" height="${H}" fill="#1e1c1c" rx="6"/>
+          ${grids}
+          ${bars}
+          <rect x="${pad.l + 8}" y="${pad.t}" width="8" height="8" fill="#10b981" rx="2"/>
+          <text x="${pad.l + 20}" y="${pad.t + 7}" font-size="8" fill="#ccc">A Receber</text>
+          <rect x="${pad.l + 80}" y="${pad.t}" width="8" height="8" fill="#f87171" rx="2"/>
+          <text x="${pad.l + 92}" y="${pad.t + 7}" font-size="8" fill="#ccc">A Pagar</text>
+        </svg>`
+      }
+
+      // Entries table (first 25 of each)
+      const makeRows = (rows, isReceber) => rows.slice(0, 25).map((r, i) => {
+        const diff = Math.round((new Date(r.vencimento + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000)
+        const bg = i % 2 === 0 ? '#252323' : '#2a2828'
+        const urg = diff <= 7 ? '#f87171' : diff <= 30 ? '#fbbf24' : '#888'
+        const [y, m, d] = r.vencimento.split('-')
+        return `<tr style="background:${bg}">
+          <td style="padding:5px 8px;font-size:10px;color:#ccc">${d}/${m}/${y}</td>
+          <td style="padding:5px 8px;font-size:10px;color:${urg};font-weight:600">${diff === 0 ? 'hoje' : `+${diff}d`}</td>
+          <td style="padding:5px 8px;text-align:right;font-size:10px;font-weight:700;color:${isReceber ? '#4ade80' : '#f87171'}">${fmt(r.valor)}</td>
+        </tr>`
+      }).join('')
+
+      const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Previsibilidade de Caixa – ${fetchedCompanyName}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=EB+Garamond:ital@1&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+    @page { size: A4 landscape; margin: 0; }
+    html { background:#373535 !important; }
+    body { font-family:'Inter',sans-serif; background-color:#373535 !important; color:#e8e8e8; min-height:100vh; }
+    .page { min-height:100vh; padding:18px; display:flex; flex-direction:column; background-color:#373535 !important; }
+    .frame { flex:1; border:1.5px solid #EBA500; border-radius:4px; display:flex; flex-direction:column; padding:14px 20px; }
+    .top-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #EBA50033; }
+    .top-bar span { font-size:10px; color:#EBA500; font-weight:300; letter-spacing:.5px; }
+    .cover { text-align:center; padding:14px 0 12px; border-bottom:1px solid #EBA50033; margin-bottom:14px; }
+    .report-title { font-size:18px; font-weight:900; color:#f0ece6; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; }
+    .company-name { font-size:12px; font-weight:700; color:#EBA500; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+    .bg2-tag { display:inline-block; border:1px solid #EBA500; color:#EBA500; font-size:9px; font-weight:700; letter-spacing:1.5px; padding:3px 10px; border-radius:2px; }
+    .badge { display:inline-block; background:#EBA50022; color:#EBA500; font-size:9px; font-weight:600; padding:3px 10px; border-radius:20px; margin-top:6px; }
+    .section-title { font-size:9px; font-weight:700; color:#EBA500; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+    .section-title::after { content:''; flex:1; height:1px; background:#EBA50033; }
+    .stats-row { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px; }
+    .card { background:#2a2828; border:1px solid #ffffff0f; border-radius:8px; padding:12px 14px; }
+    table { width:100%; border-collapse:collapse; }
+    .footer { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px solid #EBA50033; }
+    .footer-left { font-size:9px; color:#9a9a9a; }
+    .footer-right { font-size:10px; color:#9a9a9a; }
+    .footer-right em { font-family:'EB Garamond',Georgia,serif; font-style:italic; font-size:12px; color:#ccc; }
+    @media print { html,body { background-color:#373535 !important; } * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; } }
+  </style>
+</head>
+<body style="background-color:#373535;color:#e8e8e8">
+<div class="page" style="background-color:#373535">
+  <div class="frame">
+    <div class="top-bar"><span>bg2plan</span><span>Um jeito atraente de fazer gestão.</span></div>
+    <div class="cover">
+      ${logoHtml}
+      <div class="report-title">Previsibilidade de Caixa</div>
+      <div class="company-name">${fetchedCompanyName}</div>
+      <div class="bg2-tag">BG2</div>
+      <div><span class="badge">Próximos ${horizon} dias</span></div>
+      <div style="font-size:9px;color:#666;margin-top:6px">Gerado em ${geradoEm}</div>
+    </div>
+
+    <div class="section-title">Resumo do Período</div>
+    <div class="stats-row">
+      ${statBox(fmt(totalReceber), 'A Receber', '#4ade80')}
+      ${statBox(fmt(totalPagar), 'A Pagar', '#f87171')}
+      ${statBox(fmt(saldoLiquido), 'Saldo Projetado', saldoLiquido >= 0 ? '#60a5fa' : '#f87171')}
+      ${statBox(String(entradas.length), 'Entradas', '#4ade80')}
+      ${statBox(String(saidas.length), 'Saídas', '#f87171')}
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="section-title">Projeção por Período</div>
+        <div class="card">
+          <table>
+            <thead><tr style="background:#1a1a1a">
+              <th style="padding:6px 10px;font-size:9px;color:#888;font-weight:700;text-transform:uppercase;text-align:left">Período</th>
+              <th style="padding:6px 8px;font-size:9px;color:#4ade80;font-weight:700;text-transform:uppercase;text-align:right">A Receber</th>
+              <th style="padding:6px 8px;font-size:9px;color:#f87171;font-weight:700;text-transform:uppercase;text-align:right">A Pagar</th>
+              <th style="padding:6px 8px;font-size:9px;color:#EBA500;font-weight:700;text-transform:uppercase;text-align:right">Saldo</th>
+            </tr></thead>
+            <tbody>${periodRows}</tbody>
+          </table>
+        </div>
+
+        <div class="section-title" style="margin-top:12px">Laçamentos a Receber</div>
+        <div class="card">
+          <table>
+            <thead><tr style="background:#1a1a1a">
+              <th style="padding:5px 8px;font-size:9px;color:#888;font-weight:700;text-transform:uppercase;text-align:left">Vencimento</th>
+              <th style="padding:5px 8px;font-size:9px;color:#888;font-weight:700;text-transform:uppercase;text-align:left">Dias</th>
+              <th style="padding:5px 8px;font-size:9px;color:#4ade80;font-weight:700;text-transform:uppercase;text-align:right">Valor</th>
+            </tr></thead>
+            <tbody>${makeRows(entradas, true)}</tbody>
+          </table>
+          ${entradas.length > 25 ? `<p style="font-size:9px;color:#555;text-align:center;padding:5px">+ ${entradas.length - 25} não exibidos</p>` : ''}
+        </div>
+      </div>
+
+      <div>
+        ${chartSvgHtml ? `<div class="section-title">Fluxo Mensal Projetado</div><div class="card" style="margin-bottom:14px">${chartSvgHtml}</div>` : ''}
+        <div class="section-title">Laçamentos a Pagar</div>
+        <div class="card">
+          <table>
+            <thead><tr style="background:#1a1a1a">
+              <th style="padding:5px 8px;font-size:9px;color:#888;font-weight:700;text-transform:uppercase;text-align:left">Vencimento</th>
+              <th style="padding:5px 8px;font-size:9px;color:#888;font-weight:700;text-transform:uppercase;text-align:left">Dias</th>
+              <th style="padding:5px 8px;font-size:9px;color:#f87171;font-weight:700;text-transform:uppercase;text-align:right">Valor</th>
+            </tr></thead>
+            <tbody>${makeRows(saidas, false)}</tbody>
+          </table>
+          ${saidas.length > 25 ? `<p style="font-size:9px;color:#555;text-align:center;padding:5px">+ ${saidas.length - 25} não exibidos</p>` : ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="footer-left">www.bg2plan.com.br</span>
+      <span class="footer-right">Powered by <em>bossa</em></span>
+    </div>
+  </div>
+</div>
+<script>window.onload = () => { setTimeout(() => window.print(), 500) }<\/script>
+</body></html>`
+
+      const win = window.open('', '_blank')
+      win.document.write(html)
+      win.document.close()
+    } catch (err) {
+      console.error('Erro ao exportar PDF:', err)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // ── table rows ──
   const tableRows = (activeTab === 'receber' ? entradas : saidas)
     .slice(0, 50)
@@ -246,14 +482,24 @@ export default function RelatorioPrevisibilidadeCaixaPage() {
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">Contas a pagar vs receber · Projeção 30/60/90 dias</p>
           </div>
-          <button
-            onClick={loadData}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-xl text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-50 self-start sm:self-auto"
-          >
-            {loading ? <Loader className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Atualizar
-          </button>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-xl text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-50"
+            >
+              {loading ? <Loader className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Atualizar
+            </button>
+            <button
+              onClick={exportarPDF}
+              disabled={exporting || loading}
+              className="flex items-center gap-2 px-4 py-2 bg-[#373535] text-[#EBA500] border border-[#EBA500]/60 rounded-xl text-sm font-medium hover:bg-[#2a2828] transition-all shadow-sm disabled:opacity-60"
+            >
+              {exporting ? <Loader className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Exportar PDF
+            </button>
+          </div>
         </div>
       </div>
 

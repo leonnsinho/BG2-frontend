@@ -11,6 +11,26 @@ import {
 import toast from 'react-hot-toast'
 import SuperAdminBanner from '../../components/SuperAdminBanner'
 
+// Extrai o número puro de qualquer valor salvo (remove R$, %, etc.)
+function rawNumber(v) {
+  if (v === null || v === undefined || v === '') return ''
+  const n = parseFloat(String(v).replace(/[^0-9.,\-]/g, '').replace(',', '.'))
+  return isNaN(n) ? '' : String(n)
+}
+
+// Formata um valor para exibição com base no tipo do indicador
+function formatValue(v, type) {
+  const raw = rawNumber(v)
+  if (raw === '') return null
+  const n = parseFloat(raw)
+  if (isNaN(n)) return String(v)
+  if (type === 'Percentual') return `${n}%`
+  if (type === 'Monetário' || type === 'Financeiro')
+    return `R$\u00a0${n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+  if (type === 'Dias') return `${n} dias`
+  return String(n)
+}
+
 export default function IndicatorsPage() {
   const { profile } = useAuth()
   const { isSuperAdmin } = usePermissions()
@@ -135,8 +155,8 @@ export default function IndicatorsPage() {
 
   const handleCellChange = async (indicatorId, month, value) => {
     try {
-      // Limpar o valor (remover espaços em branco)
-      const cleanValue = value?.trim()
+      // Salvar apenas o número puro (sem símbolos)
+      const cleanValue = rawNumber(value?.trim())
       
       const existingData = getCompanyIndicatorData(indicatorId)
 
@@ -197,10 +217,18 @@ export default function IndicatorsPage() {
       // Calcular porcentagem de atingimento da meta
       const percentage = (numValue / numMeta) * 100
 
-      // Retornar cores baseadas na porcentagem
-      if (percentage >= 100) return 'bg-green-100 border-green-300'
-      if (percentage >= 80) return 'bg-yellow-100 border-yellow-300'
-      return 'bg-red-100 border-red-300'
+      // Retornar cores baseadas na porcentagem e polaridade
+      const isNegative = indicator.polarity === 'negative'
+      if (!isNegative) {
+        if (percentage >= 100) return 'bg-green-100 border-green-300'
+        if (percentage >= 80)  return 'bg-yellow-100 border-yellow-300'
+        return 'bg-red-100 border-red-300'
+      } else {
+        // Negativo: meta é teto — abaixo da meta é bom
+        if (percentage <= 100) return 'bg-green-100 border-green-300'
+        if (percentage <= 120) return 'bg-yellow-100 border-yellow-300'
+        return 'bg-red-100 border-red-300'
+      }
     } catch (error) {
       console.error('Erro ao calcular status:', error)
       return null
@@ -408,7 +436,7 @@ export default function IndicatorsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-semibold text-gray-900 px-3 py-1 bg-blue-50 rounded-lg border border-blue-100">
-                            {indicator.meta}
+                            {formatValue(indicator.meta, indicator.type) || indicator.meta}
                           </span>
                         </td>
                         {months.map((month, index) => {
@@ -419,7 +447,8 @@ export default function IndicatorsPage() {
                               {editingCell?.indicatorId === indicator.id && editingCell?.month === month ? (
                                 <input
                                   type="text"
-                                  defaultValue={companyData?.[month] || ''}
+                                  inputMode="decimal"
+                                  defaultValue={rawNumber(companyData?.[month] || '')}
                                   onBlur={(e) => handleCellChange(indicator.id, month, e.target.value)}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
@@ -441,7 +470,7 @@ export default function IndicatorsPage() {
                                       : 'border border-transparent hover:bg-yellow-50 hover:border-yellow-200'
                                   }`}
                                 >
-                                  {companyData?.[month] || '-'}
+                                  {formatValue(companyData?.[month], indicator.type) || '-'}
                                 </div>
                               )}
                             </td>

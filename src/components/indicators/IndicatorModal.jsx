@@ -5,6 +5,18 @@ import { usePermissions } from '../../hooks/usePermissions'
 import { X, TrendingUp, Target, DollarSign, User, FileText, Zap, Building2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+// Extrai o número puro de uma meta salva (remove R$, %, etc.)
+function rawMetaNumber(val) {
+  if (val === null || val === undefined || val === '') return ''
+  const n = parseFloat(String(val).replace(/[^0-9.,\-]/g, '').replace(',', '.'))
+  return isNaN(n) ? '' : String(n)
+}
+
+// Formata apenas dígitos + separadores durante a digitação
+function sanitizeNumericInput(val) {
+  return val.replace(/[^0-9.,\-]/g, '')
+}
+
 export default function IndicatorModal({ indicator, onClose, onSave }) {
   const { profile } = useAuth()
   const permissions = usePermissions()
@@ -16,7 +28,8 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
     responsible_user_id: '',
     is_active: true,
     description: '',
-    company_id: ''
+    company_id: '',
+    polarity: 'positive'
   })
   const [loading, setLoading] = useState(false)
   const [companies, setCompanies] = useState([])
@@ -133,11 +146,12 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
         name: indicator.name || '',
         journey: indicator.journey || 'Operacional',
         type: indicator.type || 'Percentual',
-        meta: indicator.meta || '',
+        meta: rawMetaNumber(indicator.meta),
         responsible_user_id: indicator.responsible_user_id || '',
         is_active: indicator.is_active ?? true,
         description: indicator.description || '',
-        company_id: indicator.company_id || ''
+        company_id: indicator.company_id || '',
+        polarity: indicator.polarity || 'positive'
       })
     }
   }, [indicator])
@@ -198,6 +212,11 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
       // Se mudar a empresa, limpar o responsável selecionado
       if (field === 'company_id' && prev.company_id !== value) {
         updated.responsible_user_id = ''
+      }
+
+      // Se mudar o tipo, limpar a meta para evitar valor com símbolo errado
+      if (field === 'type' && prev.type !== value) {
+        updated.meta = rawMetaNumber(prev.meta)
       }
       
       return updated
@@ -318,24 +337,36 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
               <DollarSign className="h-4 w-4 text-green-500" />
               Meta *
             </label>
-            <input
-              type="text"
-              value={formData.meta}
-              onChange={(e) => handleChange('meta', e.target.value)}
-              placeholder={
-                formData.type === 'Percentual' ? 'Ex: 95%' :
-                formData.type === 'Monetário' || formData.type === 'Financeiro' ? 'Ex: R$ 500.000' :
-                formData.type === 'Dias' ? 'Ex: 5 dias' :
-                'Ex: 8.5'
-              }
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-gray-50 focus:bg-white font-medium"
-              required
-            />
-            <p className="mt-2 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
-              {formData.type === 'Percentual' && '💡 Use o símbolo % (ex: 95%)'}
-              {(formData.type === 'Monetário' || formData.type === 'Financeiro') && '💡 Use R$ (ex: R$ 500.000)'}
-              {formData.type === 'Dias' && '💡 Especifique em dias (ex: 5 dias)'}
-              {formData.type === 'Índice' && '💡 Use valor numérico (ex: 8.5)'}
+            <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-green-500 focus-within:ring-2 focus-within:ring-green-500 bg-gray-50 focus-within:bg-white transition-all">
+              {(formData.type === 'Monetário' || formData.type === 'Financeiro') && (
+                <span className="px-3 py-3 bg-emerald-50 text-emerald-700 font-bold text-sm border-r-2 border-gray-200 select-none">R$</span>
+              )}
+              <input
+                type="text"
+                inputMode="decimal"
+                value={formData.meta}
+                onChange={(e) => handleChange('meta', sanitizeNumericInput(e.target.value))}
+                onBlur={(e) => handleChange('meta', rawMetaNumber(e.target.value))}
+                placeholder={
+                  formData.type === 'Percentual' ? '95' :
+                  formData.type === 'Monetário' || formData.type === 'Financeiro' ? '500000' :
+                  formData.type === 'Dias' ? '5' : '8.5'
+                }
+                className="flex-1 px-4 py-3 bg-transparent outline-none font-medium text-gray-900 placeholder-gray-400"
+                required
+              />
+              {formData.type === 'Percentual' && (
+                <span className="px-3 py-3 bg-blue-50 text-blue-700 font-bold text-sm border-l-2 border-gray-200 select-none">%</span>
+              )}
+              {formData.type === 'Dias' && (
+                <span className="px-3 py-3 bg-orange-50 text-orange-700 font-bold text-sm border-l-2 border-gray-200 select-none">dias</span>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-gray-400 px-1">
+              {formData.type === 'Percentual' && 'Digite apenas o número — o % é adicionado automaticamente'}
+              {(formData.type === 'Monetário' || formData.type === 'Financeiro') && 'Digite apenas o valor — o R$ é adicionado automaticamente'}
+              {formData.type === 'Dias' && 'Digite apenas o número de dias'}
+              {formData.type === 'Índice' && 'Valor numérico (ex: 8.5)'}
             </p>
           </div>
 
@@ -389,30 +420,68 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
             />
           </div>
 
-          {/* Status Ativo */}
-          <div className="flex items-center justify-between p-5 bg-yellow-50 rounded-2xl border-2 border-yellow-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-500 rounded-xl flex items-center justify-center">
-                <Zap className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">Indicador Ativo</p>
-                <p className="text-sm text-gray-600">Este indicador será exibido na visualização</p>
+          {/* Polaridade + Status Ativo */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Polaridade */}
+            <div className="p-5 rounded-2xl border-2 border-gray-100 bg-gray-50">
+              <p className="font-semibold text-gray-900 mb-1">Polaridade do Indicador</p>
+              <p className="text-xs text-gray-500 mb-3">Define se atingir/superar a meta é bom ou ruim</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleChange('polarity', 'positive')}
+                  className={`flex-1 flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+                    formData.polarity === 'positive'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-xl">📈</span>
+                  <span>Positivo</span>
+                  <span className="text-[10px] font-normal opacity-70">Maior = melhor</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChange('polarity', 'negative')}
+                  className={`flex-1 flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+                    formData.polarity === 'negative'
+                      ? 'border-red-500 bg-red-50 text-red-700'
+                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-xl">📉</span>
+                  <span>Negativo</span>
+                  <span className="text-[10px] font-normal opacity-70">Meta = teto</span>
+                </button>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => handleChange('is_active', !formData.is_active)}
-              className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all shadow-inner ${
-                formData.is_active ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform ${
-                  formData.is_active ? 'translate-x-7' : 'translate-x-1'
+
+            {/* Status Ativo */}
+            <div className="flex items-center justify-between p-5 bg-yellow-50 rounded-2xl border-2 border-yellow-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-yellow-500 rounded-xl flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">Indicador Ativo</p>
+                  <p className="text-sm text-gray-600">Exibido na visualização</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleChange('is_active', !formData.is_active)}
+                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all shadow-inner ${
+                  formData.is_active ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-300'
                 }`}
-              />
-            </button>
+              >
+                <span
+                  className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform ${
+                    formData.is_active ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
           {/* Botões */}

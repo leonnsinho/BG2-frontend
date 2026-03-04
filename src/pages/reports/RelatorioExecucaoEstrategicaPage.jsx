@@ -18,7 +18,8 @@ import {
   FileText,
   Zap,
   CalendarRange,
-  X
+  X,
+  Download
 } from 'lucide-react'
 
 // ── helpers ────────────────────────────────────────────────────────────────────
@@ -109,6 +110,7 @@ export default function RelatorioExecucaoEstrategicaPage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // ── resolve company id ────────────────────────────────────────────────────────
 
@@ -272,7 +274,385 @@ export default function RelatorioExecucaoEstrategicaPage() {
 
   const topPerformer = assigneeCompletions[0] || null
 
-  // ── render ────────────────────────────────────────────────────────────────────
+  // ── export PDF ────────────────────────────────────────────────────────────────
+
+  const exportarPDF = async () => {
+    setExporting(true)
+    try {
+      // Buscar dados da empresa
+      let companyName = 'Empresa'
+      let logoUrl = null
+      if (companyId) {
+        const { data: comp } = await supabase
+          .from('companies')
+          .select('name, logo_url')
+          .eq('id', companyId)
+          .single()
+        if (comp) {
+          companyName = comp.name || 'Empresa'
+          logoUrl = comp.logo_url || null
+        }
+      }
+
+      const periodoLabel = (() => {
+        if (period === '1m') return formatMonthLabel(selectedMonth)
+        if (period === '3m') return 'Últimos 3 meses'
+        if (period === '6m') return 'Últimos 6 meses'
+        if (period === '1y') return 'Este ano'
+        if (period === 'custom' && customStart && customEnd) {
+          const fmt = (d) => new Date(d).toLocaleDateString('pt-BR')
+          return `${fmt(customStart)} – ${fmt(customEnd)}`
+        }
+        return 'Período personalizado'
+      })()
+
+      const geradoEm = new Date().toLocaleDateString('pt-BR', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      })
+
+      const bar = (value, color) => `
+        <div style="background:#2a2828;border-radius:4px;height:10px;width:100%;overflow:hidden;margin-top:4px">
+          <div style="background:${color};height:100%;border-radius:4px;width:${value}%"></div>
+        </div>`
+
+      const statBox = (value, label, color) => `
+        <div style="flex:1;min-width:120px;background:#2a2828;border:1px solid ${color}33;border-radius:10px;padding:16px 12px;text-align:center">
+          <div style="font-size:28px;font-weight:900;color:${color};line-height:1">${value}</div>
+          <div style="font-size:10px;color:#aaa;margin-top:6px;text-transform:uppercase;letter-spacing:.5px">${label}</div>
+        </div>`
+
+      const leaderRows = assigneeCompletions.slice(0, 8).map((u, i) => {
+        const medals = ['🥇', '🥈', '🥉']
+        const medal = i < 3 ? medals[i] : `#${i + 1}`
+        const barW = pct(u.count, assigneeCompletions[0].count)
+        return `
+          <tr>
+            <td style="padding:7px 8px;color:#ccc;font-size:11px;width:28px;text-align:center">${medal}</td>
+            <td style="padding:7px 8px;color:#e8e8e8;font-size:11px;font-weight:600">${formatName(u.name)}</td>
+            <td style="padding:7px 8px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="flex:1;background:#1a1a1a;border-radius:4px;height:8px;overflow:hidden">
+                  <div style="background:${i===0?'#EBA500':i===1?'#aaa':'#cd7f32'};height:100%;width:${barW}%"></div>
+                </div>
+                <span style="color:#EBA500;font-size:11px;font-weight:700;min-width:24px">${u.count}</span>
+              </div>
+            </td>
+          </tr>`
+      }).join('')
+
+      const atrasadasRows = atrasadas.slice(0, 15).map(t => {
+        const daysLate = Math.floor((new Date() - new Date(t.due_date)) / 86400000)
+        return `
+          <tr>
+            <td style="padding:6px 8px;color:#f87171;font-size:11px;font-weight:600;max-width:280px">${t.title}</td>
+            <td style="padding:6px 8px;color:#aaa;font-size:10px;white-space:nowrap">${new Date(t.due_date).toLocaleDateString('pt-BR')}</td>
+            <td style="padding:6px 8px;text-align:center">
+              <span style="background:#7f1d1d;color:#fca5a5;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px">${daysLate}d atraso</span>
+            </td>
+          </tr>`
+      }).join('')
+
+      const concluidasRows = concluidas.slice(0, 15).map(t => `
+        <tr>
+          <td style="padding:6px 8px;color:#86efac;font-size:11px;font-weight:600;max-width:280px">${t.title}</td>
+          <td style="padding:6px 8px;color:#aaa;font-size:10px;white-space:nowrap">${new Date(t.due_date).toLocaleDateString('pt-BR')}</td>
+          <td style="padding:6px 8px;color:#aaa;font-size:10px">${t.assigned_to_name ? formatName(t.assigned_to_name) : '–'}</td>
+        </tr>`
+      ).join('')
+
+      // Converter logo para base64 para evitar bloqueio de CORS na janela de impressão
+      let logoBase64 = null
+      if (logoUrl) {
+        try {
+          const { data: signedData } = await supabase.storage
+            .from('company-avatars')
+            .createSignedUrl(logoUrl, 3600)
+          if (signedData?.signedUrl) {
+            const resp = await fetch(signedData.signedUrl)
+            const blob = await resp.blob()
+            logoBase64 = await new Promise((res) => {
+              const reader = new FileReader()
+              reader.onloadend = () => res(reader.result)
+              reader.readAsDataURL(blob)
+            })
+          }
+        } catch {
+          logoBase64 = null
+        }
+      }
+
+      const logoHtml = logoBase64
+        ? `<img src="${logoBase64}" alt="logo" style="max-height:54px;max-width:160px;object-fit:contain;margin-bottom:10px" />`
+        : ''
+
+      const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Execução Estratégica – ${companyName}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=EB+Garamond:ital@1&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    @page { size: A4; margin: 0; }
+    html {
+      background: #373535 !important;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #373535 !important;
+      color: #e8e8e8;
+      min-height: 100vh;
+      padding: 0;
+    }
+    .page {
+      position: relative;
+      min-height: 100vh;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      background-color: #373535 !important;
+    }
+    .frame {
+      flex: 1;
+      border: 1.5px solid #EBA500;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      padding: 14px 20px;
+      position: relative;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #EBA50033;
+    }
+    .top-bar span { font-size: 10px; color: #EBA500; font-weight: 300; letter-spacing: .5px; }
+    .cover-section {
+      text-align: center;
+      padding: 20px 0 18px;
+      border-bottom: 1px solid #EBA50033;
+      margin-bottom: 18px;
+    }
+    .report-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: #f0ece6;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 14px;
+      line-height: 1.2;
+    }
+    .company-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #EBA500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .bg2-tag {
+      display: inline-block;
+      border: 1px solid #EBA500;
+      color: #EBA500;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      padding: 3px 10px;
+      border-radius: 2px;
+    }
+    .period-badge {
+      display: inline-block;
+      background: #EBA50022;
+      color: #EBA500;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-top: 8px;
+      letter-spacing: .5px;
+    }
+    .section-title {
+      font-size: 9px;
+      font-weight: 700;
+      color: #EBA500;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #EBA50033;
+    }
+    .stats-row { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .card { background: #2a2828; border: 1px solid #ffffff0f; border-radius: 8px; padding: 14px; }
+    table { width: 100%; border-collapse: collapse; }
+    tr:nth-child(even) td { background: #2a2828; }
+    tr:nth-child(odd) td { background: #252323; }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #EBA50033;
+    }
+    .footer-left { font-size: 9px; color: #9a9a9a; }
+    .footer-right { font-size: 10px; color: #9a9a9a; }
+    .footer-right em { font-family: 'EB Garamond', Georgia, serif; font-style: italic; font-size: 12px; color: #ccc; }
+    @media print {
+      html, body { background-color: #373535 !important; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
+  </style>
+</head>
+<body style="background-color:#373535;color:#e8e8e8">
+<div class="page" style="background-color:#373535">
+  <div class="frame">
+
+    <!-- Top bar -->
+    <div class="top-bar">
+      <span>bg2plan</span>
+      <span>Um jeito atraente de fazer gestão.</span>
+    </div>
+
+    <!-- Cover section -->
+    <div class="cover-section">
+      ${logoHtml}
+      <div class="report-title">Relatório de Execução Estratégica</div>
+      <div class="company-name">${companyName}</div>
+      <div class="bg2-tag">BG2</div>
+      <div><span class="period-badge">${periodoLabel}</span></div>
+      <div style="font-size:9px;color:#666;margin-top:8px">Gerado em ${geradoEm}</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="section-title">Métricas do Período</div>
+    <div class="stats-row">
+      ${statBox(totalComPrazo, 'Ações com prazo', '#EBA500')}
+      ${statBox(pctConcluidas + '%', 'Concluídas', '#4ade80')}
+      ${statBox(pctAtrasadas + '%', 'Em atraso', '#f87171')}
+      ${statBox(pctDentroP + '%', 'Dentro do prazo', '#60a5fa')}
+      ${statBox(taxaConclusaoGeral + '%', 'Taxa de conclusão', pctConcluidas >= 70 ? '#4ade80' : pctConcluidas >= 40 ? '#fbbf24' : '#f87171')}
+    </div>
+
+    <!-- Distribuição + Liderança -->
+    <div class="two-col">
+
+      <!-- Distribuição -->
+      <div class="card">
+        <div class="section-title">Distribuição de Status</div>
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="font-size:11px;color:#ccc">Concluídas</span>
+            <span style="font-size:11px;font-weight:700;color:#4ade80">${pctConcluidas}%</span>
+          </div>
+          ${bar(pctConcluidas, '#4ade80')}
+          <div style="font-size:9px;color:#666;margin-top:2px">${concluidas.length} de ${totalComPrazo} ações</div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="font-size:11px;color:#ccc">Em atraso</span>
+            <span style="font-size:11px;font-weight:700;color:#f87171">${pctAtrasadas}%</span>
+          </div>
+          ${bar(pctAtrasadas, '#f87171')}
+          <div style="font-size:9px;color:#666;margin-top:2px">${atrasadas.length} de ${totalComPrazo} ações</div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="font-size:11px;color:#ccc">Dentro do prazo</span>
+            <span style="font-size:11px;font-weight:700;color:#60a5fa">${pctDentroP}%</span>
+          </div>
+          ${bar(pctDentroP, '#60a5fa')}
+          <div style="font-size:9px;color:#666;margin-top:2px">${dentroDoP.length} de ${totalComPrazo} ações</div>
+        </div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid #ffffff0f">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:11px;color:#ccc;font-weight:600">Taxa de conclusão geral</span>
+            <span style="font-size:15px;font-weight:900;color:${taxaConclusaoGeral>=70?'#4ade80':taxaConclusaoGeral>=40?'#fbbf24':'#f87171'}">${taxaConclusaoGeral}%</span>
+          </div>
+          ${bar(taxaConclusaoGeral, taxaConclusaoGeral>=70?'#4ade80':taxaConclusaoGeral>=40?'#fbbf24':'#f87171')}
+        </div>
+      </div>
+
+      <!-- Performance -->
+      <div class="card">
+        <div class="section-title">Performance por Liderança</div>
+        ${assigneeCompletions.length === 0
+          ? '<p style="font-size:11px;color:#666;text-align:center;padding:20px 0">Nenhuma ação concluída por responsáveis.</p>'
+          : `<table>${leaderRows}</table>
+             ${ topPerformer ? `
+             <div style="margin-top:12px;padding:10px;background:#EBA50011;border:1px solid #EBA50033;border-radius:6px;display:flex;gap:8px;align-items:center">
+               <span style="font-size:16px">⚡</span>
+               <div>
+                 <div style="font-size:9px;color:#888;margin-bottom:1px">Destaque do período</div>
+                 <div style="font-size:12px;font-weight:700;color:#EBA500">${formatName(topPerformer.name)}</div>
+                 <div style="font-size:9px;color:#888">${topPerformer.count} ação${topPerformer.count!==1?'ões':''} concluída${topPerformer.count!==1?'s':''}</div>
+               </div>
+             </div>` : ''}`
+        }
+      </div>
+    </div>
+
+    <!-- Atraso + Concluídas -->
+    ${atrasadas.length > 0 ? `
+    <div class="card" style="margin-bottom:14px">
+      <div class="section-title">Ações em Atraso (${atrasadas.length})</div>
+      <table>
+        <thead><tr>
+          <th style="font-size:9px;color:#888;text-align:left;padding:4px 8px;font-weight:600;text-transform:uppercase">Ação</th>
+          <th style="font-size:9px;color:#888;text-align:left;padding:4px 8px;font-weight:600;text-transform:uppercase">Vencimento</th>
+          <th style="font-size:9px;color:#888;text-align:center;padding:4px 8px;font-weight:600;text-transform:uppercase">Atraso</th>
+        </tr></thead>
+        <tbody>${atrasadasRows}</tbody>
+      </table>
+      ${atrasadas.length > 15 ? `<p style="font-size:9px;color:#555;text-align:center;padding:6px">+ ${atrasadas.length - 15} ações não exibidas</p>` : ''}
+    </div>` : ''}
+
+    ${concluidas.length > 0 ? `
+    <div class="card" style="margin-bottom:14px">
+      <div class="section-title">Últimas Concluídas (${concluidas.length})</div>
+      <table>
+        <thead><tr>
+          <th style="font-size:9px;color:#888;text-align:left;padding:4px 8px;font-weight:600;text-transform:uppercase">Ação</th>
+          <th style="font-size:9px;color:#888;text-align:left;padding:4px 8px;font-weight:600;text-transform:uppercase">Prazo</th>
+          <th style="font-size:9px;color:#888;text-align:left;padding:4px 8px;font-weight:600;text-transform:uppercase">Responsável</th>
+        </tr></thead>
+        <tbody>${concluidasRows}</tbody>
+      </table>
+      ${concluidas.length > 15 ? `<p style="font-size:9px;color:#555;text-align:center;padding:6px">+ ${concluidas.length - 15} ações não exibidas</p>` : ''}
+    </div>` : ''}
+
+    <!-- Footer -->
+    <div class="footer">
+      <span class="footer-left">www.bg2plan.com.br</span>
+      <span class="footer-right">Powered by <em>bossa</em></span>
+    </div>
+
+  </div>
+</div>
+<script>
+  window.onload = () => { setTimeout(() => window.print(), 500) }
+<\/script>
+</body></html>`
+
+      const win = window.open('', '_blank')
+      win.document.write(html)
+      win.document.close()
+    } catch (err) {
+      console.error('Erro ao exportar PDF:', err)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -312,6 +692,14 @@ export default function RelatorioExecucaoEstrategicaPage() {
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               Atualizar
+            </button>
+            <button
+              onClick={exportarPDF}
+              disabled={exporting || loading}
+              className="flex items-center gap-2 px-4 py-2 bg-[#373535] text-[#EBA500] border border-[#EBA500]/60 rounded-xl text-sm font-medium hover:bg-[#2a2828] transition-all shadow-sm disabled:opacity-60"
+            >
+              {exporting ? <Loader className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Exportar PDF
             </button>
           </div>
 

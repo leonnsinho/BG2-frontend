@@ -8,7 +8,7 @@ import {
 import {
   BarChart3, TrendingUp, TrendingDown, Target, Filter,
   RefreshCw, Loader, FileText, ChevronLeft, ChevronRight,
-  Award, AlertCircle, CheckCircle2, Minus, ArrowUpRight, ArrowDownRight
+  Award, AlertCircle, CheckCircle2, Minus, ArrowUpRight, ArrowDownRight, Download
 } from 'lucide-react'
 
 // ── constants ─────────────────────────────────────────────────────────────────
@@ -64,11 +64,34 @@ function pctAttain(value, meta) {
   return Math.round((v / m) * 100)
 }
 
-function attainColor(pct) {
+function attainColor(pct, polarity = 'positive') {
   if (pct === null) return { dot: 'bg-gray-200', text: 'text-gray-400', bar: 'bg-gray-200' }
-  if (pct >= 100) return { dot: 'bg-emerald-500', text: 'text-emerald-600', bar: 'bg-emerald-500' }
-  if (pct >= 80)  return { dot: 'bg-amber-400',   text: 'text-amber-600',   bar: 'bg-amber-400' }
+  const isNeg = polarity === 'negative'
+  const good  = isNeg ? pct <= 100 : pct >= 100
+  const mid   = isNeg ? pct <= 120 : pct >= 80
+  if (good) return { dot: 'bg-emerald-500', text: 'text-emerald-600', bar: 'bg-emerald-500' }
+  if (mid)  return { dot: 'bg-amber-400',   text: 'text-amber-600',   bar: 'bg-amber-400' }
   return           { dot: 'bg-red-400',    text: 'text-red-500',    bar: 'bg-red-400' }
+}
+
+function cellClass(pct, polarity = 'positive') {
+  if (pct === null) return ''
+  const isNeg = polarity === 'negative'
+  const good  = isNeg ? pct <= 100 : pct >= 100
+  const mid   = isNeg ? pct <= 120 : pct >= 80
+  if (good) return 'bg-emerald-50 text-emerald-700 font-semibold'
+  if (mid)  return 'bg-amber-50 text-amber-700 font-semibold'
+  return 'bg-red-50 text-red-600 font-semibold'
+}
+
+function badgeClass(pct, polarity = 'positive') {
+  if (pct === null) return ''
+  const isNeg = polarity === 'negative'
+  const good  = isNeg ? pct <= 100 : pct >= 100
+  const mid   = isNeg ? pct <= 120 : pct >= 80
+  if (good) return 'bg-emerald-100 text-emerald-700'
+  if (mid)  return 'bg-amber-100 text-amber-700'
+  return 'bg-red-100 text-red-600'
 }
 
 function fmtValue(v, type) {
@@ -131,6 +154,7 @@ export default function RelatorioEvolucaoKPIsPage() {
   const [companyData, setCompanyData] = useState([])   // company_indicators rows
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   // ── resolve company id ───────────────────────────────────────────────────────
 
@@ -151,7 +175,7 @@ export default function RelatorioEvolucaoKPIsPage() {
       const [{ data: inds, error: e1 }, { data: cd, error: e2 }] = await Promise.all([
         supabase
           .from('management_indicators')
-          .select('id, name, journey, type, meta, is_active')
+          .select('id, name, journey, type, meta, polarity, is_active')
           .eq('company_id', companyId)
           .eq('is_active', true)
           .order('journey')
@@ -215,8 +239,11 @@ export default function RelatorioEvolucaoKPIsPage() {
       const latest = values[values.length - 1]
       const pct = pctAttain(latest, ind.meta)
       if (pct === null) return
-      if (pct >= 100) above++
-      else if (pct >= 80) onTrack++
+      const isNeg = ind.polarity === 'negative'
+      const good  = isNeg ? pct <= 100 : pct >= 100
+      const mid   = isNeg ? pct <= 120 : pct >= 80
+      if (good) above++
+      else if (mid) onTrack++
       else below++
     })
     const avgAttain = dataCount === 0 ? null : Math.round(
@@ -265,6 +292,272 @@ export default function RelatorioEvolucaoKPIsPage() {
     const diff = vals[vals.length - 1] - vals[0]
     return diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat'
   }, [selectedIndicator, cdMap])
+
+  // ── export PDF ─────────────────────────────────────────────────────────────
+
+  const exportarPDF = async () => {
+    setExporting(true)
+    try {
+      let companyName = 'Empresa'
+      let logoUrl = null
+      if (companyId) {
+        const { data: comp } = await supabase
+          .from('companies')
+          .select('name, logo_url')
+          .eq('id', companyId)
+          .single()
+        if (comp) {
+          companyName = comp.name || 'Empresa'
+          logoUrl = comp.logo_url || null
+        }
+      }
+
+      const geradoEm = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+
+      // Logo → base64
+      let logoBase64 = null
+      if (logoUrl) {
+        try {
+          const { data: signedData } = await supabase.storage
+            .from('company-avatars')
+            .createSignedUrl(logoUrl, 3600)
+          if (signedData?.signedUrl) {
+            const resp = await fetch(signedData.signedUrl)
+            const blob = await resp.blob()
+            logoBase64 = await new Promise((res) => {
+              const reader = new FileReader()
+              reader.onloadend = () => res(reader.result)
+              reader.readAsDataURL(blob)
+            })
+          }
+        } catch { logoBase64 = null }
+      }
+
+      const logoHtml = logoBase64
+        ? `<img src="${logoBase64}" alt="logo" style="max-height:54px;max-width:160px;object-fit:contain;margin-bottom:10px" />`
+        : ''
+
+      const statBox = (value, label, color) => `
+        <div style="flex:1;min-width:110px;background:#2a2828;border:1px solid ${color}33;border-radius:10px;padding:14px 10px;text-align:center">
+          <div style="font-size:26px;font-weight:900;color:${color};line-height:1">${value}</div>
+          <div style="font-size:10px;color:#aaa;margin-top:6px;text-transform:uppercase;letter-spacing:.5px">${label}</div>
+        </div>`
+
+      const attainBg  = (pct, polarity = 'positive') => { if (pct === null) return '#333'; const isNeg = polarity === 'negative'; const good = isNeg ? pct <= 100 : pct >= 100; const mid = isNeg ? pct <= 120 : pct >= 80; return good ? '#14532d' : mid ? '#78350f' : '#7f1d1d' }
+      const attainClr = (pct, polarity = 'positive') => { if (pct === null) return '#555'; const isNeg = polarity === 'negative'; const good = isNeg ? pct <= 100 : pct >= 100; const mid = isNeg ? pct <= 120 : pct >= 80; return good ? '#4ade80' : mid ? '#fbbf24' : '#f87171' }
+
+      const journeyColor = (j) => ({
+        'Estratégia': '#EBA500', 'Financeira': '#10b981', 'Receita': '#3b82f6',
+        'Pessoas & Cultura': '#8b5cf6', 'Operacional': '#f59e0b'
+      })[j] || '#EBA500'
+
+      const tableRows = indicators.map((ind, i) => {
+        const row = cdMap[ind.id]
+        const vals = MONTHS.map(m => (row ? parseNum(row[m]) : null))
+        const latestVal = vals.filter(v => v !== null).slice(-1)[0] ?? null
+        const attp = pctAttain(latestVal, ind.meta)
+        const rowBg = i % 2 === 0 ? '#252323' : '#2a2828'
+        const jc = journeyColor(ind.journey)
+        const monthCells = vals.map(v => {
+          const a = pctAttain(v, ind.meta)
+          const bg = a === null ? 'transparent' : attainBg(a, ind.polarity) + '44'
+          const cl = attainClr(a, ind.polarity)
+          return `<td style="padding:5px 4px;text-align:center;font-size:9px;font-weight:${v!==null?'600':'400'};color:${cl};background:${bg}">${v !== null ? fmtValue(v, ind.type) : '–'}</td>`
+        }).join('')
+        return `<tr style="background:${rowBg}">
+          <td style="padding:6px 8px;font-size:10px;font-weight:700;color:#e8e8e8;white-space:nowrap">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${jc};margin-right:5px;vertical-align:middle"></span>${ind.name}
+          </td>
+          <td style="padding:5px 4px;text-align:center;font-size:9px;color:#888">${fmtValue(ind.meta, ind.type)}</td>
+          ${monthCells}
+          <td style="padding:5px 6px;text-align:center">
+            ${attp !== null ? `<span style="background:${attainBg(attp, ind.polarity)};color:${attainClr(attp, ind.polarity)};font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px">${attp}%</span>` : '<span style="color:#555">–</span>'}
+          </td>
+        </tr>`
+      }).join('')
+
+      // ── Construir gráfico SVG programaticamente a partir dos dados ──────────
+      let chartSvgHtml = ''
+      if (selectedIndicator && chartData.length && !chartData.every(d => d.valor === null)) {
+        const W = 720, H = 200
+        const pad = { l: 56, r: 22, t: 16, b: 32 }
+        const pw = W - pad.l - pad.r   // plot width
+        const ph = H - pad.t - pad.b   // plot height
+
+        const allNums = [
+          ...chartData.map(d => d.valor).filter(v => v !== null),
+          ...chartData.map(d => d.tendencia).filter(v => v !== null),
+        ]
+        const metaNum = parseNum(selectedIndicator.meta)
+        if (metaNum !== null) allNums.push(metaNum)
+
+        const rawMin = Math.min(...allNums)
+        const rawMax = Math.max(...allNums)
+        const range = rawMax - rawMin || 1
+        const yMin = rawMin - range * 0.12
+        const yMax = rawMax + range * 0.12
+
+        const xOf = (i) => pad.l + (i / (MONTH_LABELS.length - 1)) * pw
+        const yOf = (v) => pad.t + ph - ((v - yMin) / (yMax - yMin)) * ph
+
+        const linePath = (points) => {
+          const pts = points.map((v, i) => v !== null ? [xOf(i), yOf(v)] : null)
+          let d = ''; let prevNull = true
+          pts.forEach(p => {
+            if (!p) { prevNull = true; return }
+            d += prevNull ? `M${p[0].toFixed(1)},${p[1].toFixed(1)}` : `L${p[0].toFixed(1)},${p[1].toFixed(1)}`
+            prevNull = false
+          })
+          return d
+        }
+
+        const trendPath = (() => {
+          const pts = chartData.map((d, i) => d.tendencia !== null ? [xOf(i), yOf(d.tendencia)] : null).filter(Boolean)
+          if (pts.length < 2) return ''
+          return `M${pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join('L')}`
+        })()
+
+        const formatY = (v) => {
+          if (Math.abs(v) >= 1000000) return `${(v/1000000).toFixed(1)}M`
+          if (Math.abs(v) >= 1000) return `${(v/1000).toFixed(0)}k`
+          return v % 1 === 0 ? String(v) : v.toFixed(1)
+        }
+
+        // Y-axis gridlines
+        const gridSteps = 4
+        const grids = Array.from({ length: gridSteps + 1 }, (_, i) => {
+          const v = yMin + (yMax - yMin) * (i / gridSteps)
+          const y = yOf(v).toFixed(1)
+          return `<line x1="${pad.l}" y1="${y}" x2="${W - pad.r}" y2="${y}" stroke="#3a3838" stroke-width="1" />
+            <text x="${pad.l - 4}" y="${y}" text-anchor="end" dominant-baseline="middle" font-size="8" fill="#666">${formatY(v)}</text>`
+        }).join('')
+
+        // X-axis labels
+        const xLabels = MONTH_LABELS.map((ml, i) =>
+          `<text x="${xOf(i).toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="8" fill="#666">${ml}</text>`
+        ).join('')
+
+        // Meta reference line
+        const metaLine = metaNum !== null ? (() => {
+          const y = yOf(metaNum).toFixed(1)
+          return `<line x1="${pad.l}" y1="${y}" x2="${W - pad.r}" y2="${y}" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="6,3" />
+            <text x="${W - pad.r + 3}" y="${y}" dominant-baseline="middle" font-size="8" fill="#9ca3af">Meta</text>`
+        })() : ''
+
+        // Dot circles for actual values
+        const dots = chartData.map((d, i) => d.valor !== null
+          ? `<circle cx="${xOf(i).toFixed(1)}" cy="${yOf(d.valor).toFixed(1)}" r="4" fill="${indicatorColor}" stroke="#1a1a1a" stroke-width="2" />`
+          : ''
+        ).join('')
+
+        chartSvgHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;background:#1e1c1c;border-radius:6px">
+          <rect width="${W}" height="${H}" fill="#1e1c1c" rx="6" />
+          ${grids}
+          ${xLabels}
+          ${metaLine}
+          ${trendPath ? `<path d="${trendPath}" fill="none" stroke="#f97316" stroke-width="2" stroke-dasharray="6,3" />` : ''}
+          <path d="${linePath(chartData.map(d => d.valor))}" fill="none" stroke="${indicatorColor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+          ${dots}
+        </svg>`
+      }
+
+      const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Evolução dos KPIs – ${companyName} – ${selectedYear}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=EB+Garamond:ital@1&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+    @page { size: A4 landscape; margin: 0; }
+    html { background:#373535 !important; }
+    body { font-family:'Inter',sans-serif; background-color:#373535 !important; color:#e8e8e8; min-height:100vh; }
+    .page { min-height:100vh; padding:18px; display:flex; flex-direction:column; background-color:#373535 !important; }
+    .frame { flex:1; border:1.5px solid #EBA500; border-radius:4px; display:flex; flex-direction:column; padding:14px 20px; }
+    .top-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #EBA50033; }
+    .top-bar span { font-size:10px; color:#EBA500; font-weight:300; letter-spacing:.5px; }
+    .cover-section { text-align:center; padding:14px 0 12px; border-bottom:1px solid #EBA50033; margin-bottom:14px; }
+    .report-title { font-size:18px; font-weight:900; color:#f0ece6; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; }
+    .company-name { font-size:12px; font-weight:700; color:#EBA500; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+    .bg2-tag { display:inline-block; border:1px solid #EBA500; color:#EBA500; font-size:9px; font-weight:700; letter-spacing:1.5px; padding:3px 10px; border-radius:2px; }
+    .year-badge { display:inline-block; background:#EBA50022; color:#EBA500; font-size:9px; font-weight:700; padding:3px 12px; border-radius:20px; margin-top:6px; }
+    .section-title { font-size:9px; font-weight:700; color:#EBA500; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+    .section-title::after { content:''; flex:1; height:1px; background:#EBA50033; }
+    .stats-row { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    table { width:100%; border-collapse:collapse; }
+    .footer { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px solid #EBA50033; }
+    .footer-left { font-size:9px; color:#9a9a9a; }
+    .footer-right { font-size:10px; color:#9a9a9a; }
+    .footer-right em { font-family:'EB Garamond',Georgia,serif; font-style:italic; font-size:12px; color:#ccc; }
+    @media print { html,body { background-color:#373535 !important; } * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; } }
+  </style>
+</head>
+<body style="background-color:#373535;color:#e8e8e8">
+<div class="page" style="background-color:#373535">
+  <div class="frame">
+    <div class="top-bar"><span>bg2plan</span><span>Um jeito atraente de fazer gestão.</span></div>
+    <div class="cover-section">
+      ${logoHtml}
+      <div class="report-title">Relatório de Evolução dos KPIs</div>
+      <div class="company-name">${companyName}</div>
+      <div class="bg2-tag">BG2</div>
+      <div><span class="year-badge">${selectedYear}</span></div>
+      <div style="font-size:9px;color:#666;margin-top:6px">Gerado em ${geradoEm}</div>
+    </div>
+    <div class="section-title">Resumo de Performance</div>
+    <div class="stats-row">
+      ${statBox(stats.total, 'KPIs Ativos', '#EBA500')}
+      ${statBox(stats.above, 'Acima da Meta', '#4ade80')}
+      ${statBox(stats.onTrack, 'Em Acompanhamento', '#fbbf24')}
+      ${statBox(stats.below, 'Abaixo da Meta', '#f87171')}
+      ${statBox(stats.avgAttain !== null ? stats.avgAttain + '%' : '–', 'Atingimento Médio', stats.avgAttain !== null && stats.avgAttain >= 70 ? '#4ade80' : stats.avgAttain !== null && stats.avgAttain >= 40 ? '#fbbf24' : '#f87171')}
+    </div>
+    ${selectedIndicator && chartSvgHtml ? `
+    <div class="section-title">Gráfico de Evolução — ${selectedIndicator.name}</div>
+    <div style="background:#2a2828;border:1px solid #ffffff0f;border-radius:8px;padding:12px 14px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:11px;font-weight:700;color:#e8e8e8">${selectedIndicator.name}</span>
+        <span style="font-size:9px;color:#888;border:1px solid #ffffff22;padding:2px 8px;border-radius:20px">${selectedIndicator.journey}</span>
+      </div>
+      <div style="display:flex;gap:16px;margin-bottom:8px;font-size:9px">
+        <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:3px;background:${indicatorColor};border-radius:2px"></span><span style="color:#ccc">Valor Real</span></span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:3px;background:#f97316;border-radius:2px;opacity:.7"></span><span style="color:#ccc">Tendência</span></span>
+        ${parseNum(selectedIndicator?.meta) !== null ? '<span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:0px;border-top:2px dashed #d1d5db"></span><span style="color:#ccc">Meta</span></span>' : ''}
+      </div>
+      ${chartSvgHtml}
+    </div>` : ''}
+    <div class="section-title">Histórico Anual — ${indicators.length} KPI${indicators.length !== 1 ? 's' : ''}</div>
+    <div style="background:#2a2828;border:1px solid #ffffff0f;border-radius:8px;overflow:hidden;margin-bottom:14px">
+      <table>
+        <thead>
+          <tr style="background:#1a1a1a">
+            <th style="padding:6px 8px;font-size:8px;color:#888;font-weight:700;text-transform:uppercase;text-align:left;min-width:140px">KPI</th>
+            <th style="padding:6px 4px;font-size:8px;color:#888;font-weight:700;text-transform:uppercase;text-align:center;width:50px">Meta</th>
+            ${MONTH_LABELS.map(ml => `<th style="padding:6px 4px;font-size:8px;color:#888;font-weight:700;text-transform:uppercase;text-align:center;width:42px">${ml}</th>`).join('')}
+            <th style="padding:6px 6px;font-size:8px;color:#EBA500;font-weight:700;text-transform:uppercase;text-align:center;width:52px">Ating.</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+    <div class="footer">
+      <span class="footer-left">www.bg2plan.com.br</span>
+      <span class="footer-right">Powered by <em>bossa</em></span>
+    </div>
+  </div>
+</div>
+<script>window.onload = () => { setTimeout(() => window.print(), 500) }<\/script>
+</body></html>`
+
+      const win = window.open('', '_blank')
+      win.document.write(html)
+      win.document.close()
+    } catch (err) {
+      console.error('Erro ao exportar PDF:', err)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   // ── render ────────────────────────────────────────────────────────────────────
 
@@ -339,6 +632,14 @@ export default function RelatorioEvolucaoKPIsPage() {
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Atualizando…' : 'Atualizar'}
+            </button>
+            <button
+              onClick={exportarPDF}
+              disabled={exporting || loading}
+              className="flex items-center gap-2 px-4 py-2 bg-[#373535] text-[#EBA500] border border-[#EBA500]/60 rounded-xl text-sm font-medium hover:bg-[#2a2828] transition-all shadow-sm disabled:opacity-60"
+            >
+              {exporting ? <Loader className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Exportar PDF
             </button>
           </div>
         </div>
@@ -419,8 +720,10 @@ export default function RelatorioEvolucaoKPIsPage() {
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${JOURNEY_BG[selectedIndicator.journey] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                         {selectedIndicator.journey}
                       </span>
-                      {trendDir === 'up' && <span className="flex items-center gap-0.5 text-xs font-semibold text-emerald-600"><ArrowUpRight className="h-3.5 w-3.5" />Tendência positiva</span>}
-                      {trendDir === 'down' && <span className="flex items-center gap-0.5 text-xs font-semibold text-red-500"><ArrowDownRight className="h-3.5 w-3.5" />Tendência negativa</span>}
+                      {trendDir === 'up' && selectedIndicator?.polarity !== 'negative' && <span className="flex items-center gap-0.5 text-xs font-semibold text-emerald-600"><ArrowUpRight className="h-3.5 w-3.5" />Tendência positiva</span>}
+                      {trendDir === 'down' && selectedIndicator?.polarity !== 'negative' && <span className="flex items-center gap-0.5 text-xs font-semibold text-red-500"><ArrowDownRight className="h-3.5 w-3.5" />Tendência negativa</span>}
+                      {trendDir === 'down' && selectedIndicator?.polarity === 'negative' && <span className="flex items-center gap-0.5 text-xs font-semibold text-emerald-600"><ArrowDownRight className="h-3.5 w-3.5" />Tendência positiva</span>}
+                      {trendDir === 'up' && selectedIndicator?.polarity === 'negative' && <span className="flex items-center gap-0.5 text-xs font-semibold text-red-500"><ArrowUpRight className="h-3.5 w-3.5" />Tendência negativa</span>}
                     </div>
                     <h2 className="text-lg font-bold text-gray-900">{selectedIndicator.name}</h2>
                   </div>
@@ -437,9 +740,7 @@ export default function RelatorioEvolucaoKPIsPage() {
                     </div>
                     {selAttain !== null && (
                       <div className={`flex flex-col items-center justify-center w-16 h-16 rounded-2xl font-bold text-sm flex-shrink-0 ${
-                        selAttain >= 100 ? 'bg-emerald-50 text-emerald-600' :
-                        selAttain >= 80  ? 'bg-amber-50 text-amber-600' :
-                                           'bg-red-50 text-red-500'
+                        (() => { const isNeg = selectedIndicator?.polarity === 'negative'; const g = isNeg ? selAttain <= 100 : selAttain >= 100; const m = isNeg ? selAttain <= 120 : selAttain >= 80; return g ? 'bg-emerald-50 text-emerald-600' : m ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-500' })()
                       }`}>
                         <span className="text-xl font-extrabold leading-none">{selAttain}%</span>
                         <span className="text-[10px] font-semibold mt-0.5 opacity-70">ating.</span>
@@ -553,7 +854,7 @@ export default function RelatorioEvolucaoKPIsPage() {
                       const vals = MONTHS.map(m => (row ? parseNum(row[m]) : null))
                       const latestVal = vals.filter(v => v !== null).slice(-1)[0] ?? null
                       const attain = pctAttain(latestVal, ind.meta)
-                      const ac = attainColor(attain)
+                      const ac = attainColor(attain, ind.polarity)
                       const isSelected = selectedIndicatorId === ind.id
                       const jColor = JOURNEY_COLORS[ind.journey] || '#EBA500'
 
@@ -585,11 +886,7 @@ export default function RelatorioEvolucaoKPIsPage() {
                           {/* Monthly values */}
                           {vals.map((v, i) => {
                             const a = pctAttain(v, ind.meta)
-                            const cellColor = a === null
-                              ? ''
-                              : a >= 100 ? 'bg-emerald-50 text-emerald-700 font-semibold'
-                              : a >= 80  ? 'bg-amber-50 text-amber-700 font-semibold'
-                              :            'bg-red-50 text-red-600 font-semibold'
+                            const cellColor = cellClass(a, ind.polarity)
                             return (
                               <td key={i} className={`px-1 py-3 text-center rounded ${cellColor}`}>
                                 {v !== null ? fmtValue(v, ind.type) : <span className="text-gray-300">–</span>}
@@ -600,11 +897,7 @@ export default function RelatorioEvolucaoKPIsPage() {
                           {/* Attainment */}
                           <td className="px-3 py-3 text-center">
                             {attain !== null ? (
-                              <span className={`inline-flex items-center justify-center px-2 py-1 rounded-lg font-bold text-xs ${
-                                attain >= 100 ? 'bg-emerald-100 text-emerald-700' :
-                                attain >= 80  ? 'bg-amber-100 text-amber-700' :
-                                                'bg-red-100 text-red-600'
-                              }`}>
+                              <span className={`inline-flex items-center justify-center px-2 py-1 rounded-lg font-bold text-xs ${badgeClass(attain, ind.polarity)}`}>
                                 {attain}%
                               </span>
                             ) : <span className="text-gray-300">–</span>}

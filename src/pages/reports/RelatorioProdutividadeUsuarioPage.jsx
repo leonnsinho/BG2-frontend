@@ -16,7 +16,8 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
-  Search
+  Search,
+  Download
 } from 'lucide-react'
 
 // ── helpers ────────────────────────────────────────────────────────────────────
@@ -117,6 +118,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState('atribuidas')
   const [sortDir, setSortDir] = useState('desc')
+  const [exporting, setExporting] = useState(false)
 
   // ── resolve company id ────────────────────────────────────────────────────────
 
@@ -327,6 +329,201 @@ export default function RelatorioProdutividadeUsuarioPage() {
     }
   }
 
+  // ── export PDF ──────────────────────────────────────────────────────────────
+
+  const exportarPDF = async () => {
+    setExporting(true)
+    try {
+      let companyName = 'Empresa'
+      let logoUrl = null
+      if (companyId) {
+        const { data: comp } = await supabase
+          .from('companies')
+          .select('name, logo_url')
+          .eq('id', companyId)
+          .single()
+        if (comp) {
+          companyName = comp.name || 'Empresa'
+          logoUrl = comp.logo_url || null
+        }
+      }
+
+      const periodoLabel = (() => {
+        if (period === '1m') return formatMonthLabel(selectedMonth)
+        if (period === '3m') return 'Últimos 3 meses'
+        if (period === '6m') return 'Últimos 6 meses'
+        if (period === '1y') return 'Este ano'
+        if (period === 'custom') {
+          const fmt = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : ''
+          if (customStart && customEnd) return `${fmt(customStart)} – ${fmt(customEnd)}`
+          if (customStart) return `A partir de ${fmt(customStart)}`
+          if (customEnd) return `Até ${fmt(customEnd)}`
+        }
+        return 'Período personalizado'
+      })()
+
+      const geradoEm = new Date().toLocaleDateString('pt-BR', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      })
+
+      // Logo → base64
+      let logoBase64 = null
+      if (logoUrl) {
+        try {
+          const { data: signedData } = await supabase.storage
+            .from('company-avatars')
+            .createSignedUrl(logoUrl, 3600)
+          if (signedData?.signedUrl) {
+            const resp = await fetch(signedData.signedUrl)
+            const blob = await resp.blob()
+            logoBase64 = await new Promise((res) => {
+              const reader = new FileReader()
+              reader.onloadend = () => res(reader.result)
+              reader.readAsDataURL(blob)
+            })
+          }
+        } catch { logoBase64 = null }
+      }
+
+      const logoHtml = logoBase64
+        ? `<img src="${logoBase64}" alt="logo" style="max-height:54px;max-width:160px;object-fit:contain;margin-bottom:10px" />`
+        : ''
+
+      const totaisGeral = { atribuidas: 0, concluidas: 0, atrasadas: 0, emAndamento: 0 }
+      filteredSorted.forEach(u => {
+        totaisGeral.atribuidas  += u.atribuidas
+        totaisGeral.concluidas  += u.concluidas
+        totaisGeral.atrasadas   += u.atrasadas
+        totaisGeral.emAndamento += u.emAndamento
+      })
+      const taxaGeral = totaisGeral.atribuidas
+        ? Math.round((totaisGeral.concluidas / totaisGeral.atribuidas) * 100)
+        : 0
+
+      const statBox = (value, label, color) => `
+        <div style="flex:1;min-width:110px;background:#2a2828;border:1px solid ${color}33;border-radius:10px;padding:14px 10px;text-align:center">
+          <div style="font-size:26px;font-weight:900;color:${color};line-height:1">${value}</div>
+          <div style="font-size:10px;color:#aaa;margin-top:6px;text-transform:uppercase;letter-spacing:.5px">${label}</div>
+        </div>`
+
+      const userRows = filteredSorted.map((u, i) => {
+        const pct = u.atribuidas ? Math.round((u.concluidas / u.atribuidas) * 100) : 0
+        const rowBg = i % 2 === 0 ? '#252323' : '#2a2828'
+        return `
+          <tr style="background:${rowBg}">
+            <td style="padding:8px 10px;font-size:11px;font-weight:600;color:#e8e8e8">${formatName(u.name)}</td>
+            <td style="padding:8px 10px;text-align:center">
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="flex:1;background:#1a1a1a;border-radius:4px;height:7px;overflow:hidden">
+                  <div style="background:${pct>=70?'#4ade80':pct>=40?'#fbbf24':'#f87171'};height:100%;width:${pct}%"></div>
+                </div>
+                <span style="font-size:10px;font-weight:700;color:${pct>=70?'#4ade80':pct>=40?'#fbbf24':'#f87171'};min-width:32px">${pct}%</span>
+              </div>
+            </td>
+            <td style="padding:8px 10px;text-align:center;font-size:12px;font-weight:700;color:#EBA500">${u.atribuidas}</td>
+            <td style="padding:8px 10px;text-align:center;font-size:12px;font-weight:700;color:#4ade80">${u.concluidas}</td>
+            <td style="padding:8px 10px;text-align:center;font-size:12px;font-weight:700;color:${u.atrasadas>0?'#f87171':'#666'}">${u.atrasadas}</td>
+            <td style="padding:8px 10px;text-align:center;font-size:12px;font-weight:700;color:#60a5fa">${u.emAndamento}</td>
+          </tr>`
+      }).join('')
+
+      const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Produtividade por Usuário – ${companyName}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=EB+Garamond:ital@1&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    @page { size: A4 landscape; margin: 0; }
+    html { background: #373535 !important; }
+    body { font-family: 'Inter', sans-serif; background-color: #373535 !important; color: #e8e8e8; min-height: 100vh; padding: 0; }
+    .page { position: relative; min-height: 100vh; padding: 18px; display: flex; flex-direction: column; background-color: #373535 !important; }
+    .frame { flex: 1; border: 1.5px solid #EBA500; border-radius: 4px; display: flex; flex-direction: column; padding: 14px 20px; position: relative; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #EBA50033; }
+    .top-bar span { font-size: 10px; color: #EBA500; font-weight: 300; letter-spacing: .5px; }
+    .cover-section { text-align: center; padding: 16px 0 14px; border-bottom: 1px solid #EBA50033; margin-bottom: 16px; }
+    .report-title { font-size: 20px; font-weight: 900; color: #f0ece6; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; line-height: 1.2; }
+    .company-name { font-size: 12px; font-weight: 700; color: #EBA500; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .bg2-tag { display: inline-block; border: 1px solid #EBA500; color: #EBA500; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; padding: 3px 10px; border-radius: 2px; }
+    .period-badge { display: inline-block; background: #EBA50022; color: #EBA500; font-size: 9px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-top: 8px; letter-spacing: .5px; }
+    .section-title { font-size: 9px; font-weight: 700; color: #EBA500; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: #EBA50033; }
+    .stats-row { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+    table { width: 100%; border-collapse: collapse; }
+    .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid #EBA50033; }
+    .footer-left { font-size: 9px; color: #9a9a9a; }
+    .footer-right { font-size: 10px; color: #9a9a9a; }
+    .footer-right em { font-family: 'EB Garamond', Georgia, serif; font-style: italic; font-size: 12px; color: #ccc; }
+    @media print { html, body { background-color: #373535 !important; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+  </style>
+</head>
+<body style="background-color:#373535;color:#e8e8e8">
+<div class="page" style="background-color:#373535">
+  <div class="frame">
+
+    <div class="top-bar">
+      <span>bg2plan</span>
+      <span>Um jeito atraente de fazer gestão.</span>
+    </div>
+
+    <div class="cover-section">
+      ${logoHtml}
+      <div class="report-title">Relatório de Produtividade por Usuário</div>
+      <div class="company-name">${companyName}</div>
+      <div class="bg2-tag">BG2</div>
+      <div><span class="period-badge">${periodoLabel}</span></div>
+      <div style="font-size:9px;color:#666;margin-top:6px">Gerado em ${geradoEm}</div>
+    </div>
+
+    <div class="section-title">Resumo do Período</div>
+    <div class="stats-row">
+      ${statBox(totaisGeral.atribuidas, 'Ações Atribuídas', '#EBA500')}
+      ${statBox(totaisGeral.concluidas, 'Concluídas', '#4ade80')}
+      ${statBox(totaisGeral.atrasadas, 'Em Atraso', '#f87171')}
+      ${statBox(totaisGeral.emAndamento, 'Em Andamento', '#60a5fa')}
+      ${statBox(taxaGeral + '%', 'Taxa de Conclusão', taxaGeral >= 70 ? '#4ade80' : taxaGeral >= 40 ? '#fbbf24' : '#f87171')}
+    </div>
+
+    <div class="section-title">Produtividade por Colaborador (${filteredSorted.length})</div>
+    <div style="background:#2a2828;border:1px solid #ffffff0f;border-radius:8px;overflow:hidden;margin-bottom:16px">
+      <table>
+        <thead>
+          <tr style="background:#1a1a1a">
+            <th style="padding:8px 10px;font-size:9px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.8px;text-align:left">Colaborador</th>
+            <th style="padding:8px 10px;font-size:9px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.8px;text-align:center">% Conclusão</th>
+            <th style="padding:8px 10px;font-size:9px;color:#EBA500;font-weight:700;text-transform:uppercase;letter-spacing:.8px;text-align:center">Atribuídas</th>
+            <th style="padding:8px 10px;font-size:9px;color:#4ade80;font-weight:700;text-transform:uppercase;letter-spacing:.8px;text-align:center">Concluídas</th>
+            <th style="padding:8px 10px;font-size:9px;color:#f87171;font-weight:700;text-transform:uppercase;letter-spacing:.8px;text-align:center">Atrasadas</th>
+            <th style="padding:8px 10px;font-size:9px;color:#60a5fa;font-weight:700;text-transform:uppercase;letter-spacing:.8px;text-align:center">Em Andamento</th>
+          </tr>
+        </thead>
+        <tbody>${userRows}</tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      <span class="footer-left">www.bg2plan.com.br</span>
+      <span class="footer-right">Powered by <em>bossa</em></span>
+    </div>
+
+  </div>
+</div>
+<script>
+  window.onload = () => { setTimeout(() => window.print(), 500) }
+<\/script>
+</body></html>`
+
+      const win = window.open('', '_blank')
+      win.document.write(html)
+      win.document.close()
+    } catch (err) {
+      console.error('Erro ao exportar PDF:', err)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // ── render ────────────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -369,14 +566,24 @@ export default function RelatorioProdutividadeUsuarioPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => loadData(true)}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-50 self-start"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Atualizando…' : 'Atualizar'}
-          </button>
+          <div className="flex items-center gap-2 self-start">
+            <button
+              onClick={() => loadData(true)}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Atualizando…' : 'Atualizar'}
+            </button>
+            <button
+              onClick={exportarPDF}
+              disabled={exporting || loading}
+              className="flex items-center gap-2 px-4 py-2 bg-[#373535] text-[#EBA500] border border-[#EBA500]/60 rounded-xl text-sm font-medium hover:bg-[#2a2828] transition-all shadow-sm disabled:opacity-60"
+            >
+              {exporting ? <Loader className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Exportar PDF
+            </button>
+          </div>
         </div>
 
         {/* ── Filtro de período ── */}
