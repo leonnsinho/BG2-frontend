@@ -685,22 +685,24 @@ export default function RelatorioExecucaoEstrategicaPage() {
               </p>
             </div>
 
-            <button
-              onClick={() => loadData(true)}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-60"
-            >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Atualizar
-            </button>
-            <button
-              onClick={exportarPDF}
-              disabled={exporting || loading}
-              className="flex items-center gap-2 px-4 py-2 bg-[#373535] text-[#EBA500] border border-[#EBA500]/60 rounded-xl text-sm font-medium hover:bg-[#2a2828] transition-all shadow-sm disabled:opacity-60"
-            >
-              {exporting ? <Loader className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Exportar PDF
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => loadData(true)}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-60"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Atualizar
+              </button>
+              <button
+                onClick={exportarPDF}
+                disabled={exporting || loading}
+                className="flex items-center gap-2 px-4 py-2 bg-[#373535] text-[#EBA500] border border-[#EBA500]/60 rounded-xl text-sm font-medium hover:bg-[#2a2828] transition-all shadow-sm disabled:opacity-60"
+              >
+                {exporting ? <Loader className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                Exportar PDF
+              </button>
+            </div>
           </div>
 
           {lastUpdated && (

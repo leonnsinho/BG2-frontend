@@ -173,6 +173,52 @@ const CompanyDashboardPage = () => {
     setCreateIsInternational(false)
   }
 
+  const fillTestData = () => {
+    const ts = Date.now()
+    setCreateFormData({
+      name: `Empresa Teste ${ts}`,
+      nome_fantasia: `Teste ${ts}`,
+      cnpj: '12.345.678/0001-99',
+      email: `teste${ts}@empresa.com.br`,
+      phone: '(11) 98765-4321',
+      website: 'https://www.empresateste.com.br',
+      industry: 'Tecnologia',
+      size: 'media',
+      inscricao_estadual: '123456789',
+      inscricao_municipal: '987654321',
+      num_colaboradores: '50',
+      regime_tributario: 'lucro_presumido',
+      contribuinte_icms: 'contribuinte',
+      is_partner_client: 'sim',
+      representante: {
+        nome: 'João da Silva Teste',
+        email: 'joao@empresateste.com.br',
+        telefone: '(11) 91234-5678',
+        endereco: 'Rua dos Testes, 100',
+        cpf: '123.456.789-00'
+      },
+      contato_cobranca: {
+        nome: 'Maria Financeiro',
+        cargo: 'Gerente Financeiro',
+        email: 'financeiro@empresateste.com.br',
+        telefone: '(11) 92222-3333'
+      },
+      melhor_dia_pagamento: '10',
+      forma_pagamento: 'boleto',
+      address: {
+        street: 'Avenida Paulista',
+        number: '1000',
+        complement: 'Sala 101',
+        neighborhood: 'Bela Vista',
+        city: 'São Paulo',
+        state: 'SP',
+        zip: '01310-100',
+        country: 'Brasil'
+      }
+    })
+    setCreateIsInternational(false)
+  }
+
   const handleCreateSubmit = async (e) => {
     e.preventDefault()
     if (!createFormData.name.trim()) { toast.error('Razão Social é obrigatória'); return }
@@ -771,7 +817,16 @@ const CompanyDashboardPage = () => {
                     <p className="text-sm text-gray-500">Cadastre uma nova empresa no sistema</p>
                   </div>
                 </div>
-                {/* Toggle Internacional */}
+                {/* Toggle Internacional + Empresa Teste */}
+                <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={fillTestData}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-300 text-amber-700 text-xs font-semibold rounded-lg hover:bg-amber-100 transition-all"
+                  title="Preencher com dados de teste"
+                >
+                  🧪 Empresa Teste
+                </button>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -791,6 +846,7 @@ const CompanyDashboardPage = () => {
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#EBA500]"></div>
                   <span className="ms-2 text-xs font-medium text-gray-700">🌍 Internacional</span>
                 </label>
+                </div>
               </div>
 
               <form onSubmit={handleCreateSubmit} className="p-4 sm:p-6 space-y-6">
@@ -1025,11 +1081,18 @@ const CompanyDashboardPage = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Melhor Dia para Pagamento *</label>
-                      <input type="text" value={createFormData.melhor_dia_pagamento} onChange={e => handleCreateInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: dia 10" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <input type="text" value={createFormData.melhor_dia_pagamento} onChange={e => handleCreateInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: 10" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
-                      <input type="text" value={createFormData.forma_pagamento} onChange={e => handleCreateInputChange('forma_pagamento', e.target.value)} placeholder="Ex: Boleto, Cartão de Crédito" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <select value={createFormData.forma_pagamento} onChange={e => handleCreateInputChange('forma_pagamento', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white">
+                        <option value="">Selecione...</option>
+                        <option value="boleto">Boleto Bancário</option>
+                        <option value="cartao_credito">Cartão de Crédito</option>
+                        <option value="pix">Pix</option>
+                        <option value="transferencia">Transferência Bancária</option>
+                        <option value="debito_automatico">Débito Automático</option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -2020,11 +2083,18 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Melhor Dia para Pagamento *</label>
-                <input value={formData.melhor_dia_pagamento} onChange={e => handleInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: dia 10" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <input value={formData.melhor_dia_pagamento} onChange={e => handleInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: 10" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
-                <input value={formData.forma_pagamento} onChange={e => handleInputChange('forma_pagamento', e.target.value)} placeholder="Ex: Boleto, Cartão de Crédito" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <select value={formData.forma_pagamento} onChange={e => handleInputChange('forma_pagamento', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white">
+                  <option value="">Selecione...</option>
+                  <option value="boleto">Boleto Bancário</option>
+                  <option value="cartao_credito">Cartão de Crédito</option>
+                  <option value="pix">Pix</option>
+                  <option value="transferencia">Transferência Bancária</option>
+                  <option value="debito_automatico">Débito Automático</option>
+                </select>
               </div>
             </div>
           </div>
