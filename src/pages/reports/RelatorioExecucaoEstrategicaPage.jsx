@@ -19,7 +19,8 @@ import {
   Zap,
   CalendarRange,
   X,
-  Download
+  Download,
+  List
 } from 'lucide-react'
 
 // ── helpers ────────────────────────────────────────────────────────────────────
@@ -59,13 +60,22 @@ function formatName(n) {
 
 // ── sub-components ─────────────────────────────────────────────────────────────
 
-function StatCard({ icon: Icon, iconBg, value, label, sub, borderColor = 'border-gray-100' }) {
+function StatCard({ icon: Icon, iconBg, value, label, sub, borderColor = 'border-gray-100', onDetail }) {
   return (
     <div className={`bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border-2 ${borderColor} flex flex-col gap-1`}>
       <div className="flex items-center justify-between mb-1">
         <div className={`p-2 rounded-xl ${iconBg}`}>
           <Icon className="h-5 w-5" />
         </div>
+        {onDetail && (
+          <button
+            onClick={onDetail}
+            className="flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-[#EBA500] transition-colors"
+          >
+            <List className="h-3.5 w-3.5" />
+            Detalhes
+          </button>
+        )}
       </div>
       <p className="text-2xl sm:text-3xl font-bold text-gray-900 leading-none">{value}</p>
       <p className="text-xs sm:text-sm font-semibold text-gray-700">{label}</p>
@@ -73,6 +83,165 @@ function StatCard({ icon: Icon, iconBg, value, label, sub, borderColor = 'border
     </div>
   )
 }
+
+function TaskDetailModal({ modal, onClose }) {
+  const [search, setSearch] = useState('')
+  if (!modal) return null
+  const { title, tasks, accentColor, accentHex, icon: ModalIcon } = modal
+
+  const now = new Date()
+  const filtered = search.trim()
+    ? tasks.filter(t => t.title?.toLowerCase().includes(search.toLowerCase()) || t.assigned_to_name?.toLowerCase().includes(search.toLowerCase()))
+    : tasks
+
+  const daysRelative = (dateStr) => {
+    if (!dateStr) return null
+    const d = new Date(dateStr)
+    const diff = Math.round((d - now) / (1000 * 60 * 60 * 24))
+    if (diff === 0) return { label: 'Hoje', cls: 'text-amber-600 bg-amber-50' }
+    if (diff > 0) return { label: `em ${diff}d`, cls: 'text-blue-600 bg-blue-50' }
+    return { label: `${Math.abs(diff)}d atrás`, cls: 'text-red-600 bg-red-50' }
+  }
+
+  const statusLabel = (s) => ({
+    completed:    { label: 'Concluída',    cls: 'bg-green-100 text-green-700' },
+    in_progress:  { label: 'Em andamento', cls: 'bg-blue-100 text-blue-700' },
+    pending:      { label: 'Pendente',     cls: 'bg-gray-100 text-gray-600' },
+    overdue:      { label: 'Atrasada',     cls: 'bg-red-100 text-red-700' },
+  })[s] || { label: s, cls: 'bg-gray-100 text-gray-500' }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div
+        className="relative bg-white w-full sm:max-w-xl max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Coloured top band */}
+        <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${accentHex}, ${accentHex}88)` }} />
+
+        {/* Header */}
+        <div className="px-5 pt-5 pb-4 flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl" style={{ background: `${accentHex}18` }}>
+              <ModalIcon className="h-5 w-5" style={{ color: accentHex }} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 leading-tight">{title}</h3>
+              <p className="text-xs text-gray-400 mt-0.5">{tasks.length} {tasks.length === 1 ? 'meta encontrada' : 'metas encontradas'}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Search */}
+        {tasks.length > 4 && (
+          <div className="px-5 pb-3">
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por nome ou responsável…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-[#EBA500] transition-all bg-gray-50"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Divider */}
+        <div className="h-px bg-gray-100 mx-5" />
+
+        {/* List */}
+        <div className="overflow-y-auto flex-1 px-5 py-3 space-y-2">
+          {filtered.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <FileText className="h-5 w-5 text-gray-400" />
+              </div>
+              <p className="text-sm font-medium text-gray-500">Nenhuma meta encontrada</p>
+              {search && <p className="text-xs text-gray-400 mt-1">Tente outro termo de busca</p>}
+            </div>
+          ) : filtered.map((t, idx) => {
+            const rel = daysRelative(t.due_date)
+            const st = statusLabel(t.status)
+            const progress = t.total_assignees > 0
+              ? Math.round((t.completed_assignees / t.total_assignees) * 100)
+              : null
+            return (
+              <div key={t.id} className="group flex gap-3 p-3.5 rounded-2xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-gray-200 hover:shadow-sm transition-all">
+                {/* Index dot */}
+                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white mt-0.5"
+                  style={{ background: accentHex }}>
+                  {idx + 1}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  {/* Title + status */}
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{t.title || 'Sem título'}</p>
+                    <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
+                  </div>
+
+                  {/* Meta row */}
+                  <div className="flex flex-wrap gap-2">
+                    {t.due_date && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <Calendar className="h-3 w-3 text-gray-400" />
+                        {new Date(t.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {rel && <span className={`ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${rel.cls}`}>{rel.label}</span>}
+                      </span>
+                    )}
+                    {t.assigned_to_name && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <Users className="h-3 w-3 text-gray-400" />
+                        {t.assigned_to_name}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Progress bar */}
+                  {progress !== null && (
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-gray-400 font-medium">Responsáveis concluídos</span>
+                        <span className="text-[10px] font-bold text-gray-600">{t.completed_assignees}/{t.total_assignees}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className="h-1.5 rounded-full transition-all"
+                          style={{ width: `${progress}%`, background: accentHex }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between">
+          <p className="text-xs text-gray-400">
+            Mostrando <span className="font-semibold text-gray-600">{filtered.length}</span> de <span className="font-semibold text-gray-600">{tasks.length}</span> metas
+          </p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-semibold text-white rounded-xl transition-all"
+            style={{ background: accentHex }}
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 function PctBar({ label, value, color, count, total }) {
   return (
@@ -253,6 +422,8 @@ export default function RelatorioExecucaoEstrategicaPage() {
     if (customEnd) return `Até ${fmt(customEnd)}`
     return 'Período personalizado'
   }, [period, customStart, customEnd])
+
+  const [detailModal, setDetailModal] = useState(null)
 
   // ── derived metrics ───────────────────────────────────────────────────────────
 
@@ -666,6 +837,7 @@ export default function RelatorioExecucaoEstrategicaPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 
@@ -831,6 +1003,7 @@ export default function RelatorioExecucaoEstrategicaPage() {
                 label="Metas concluídas"
                 sub={`${concluidas.length} ações`}
                 borderColor={pctConcluidas >= 70 ? 'border-green-200' : 'border-gray-100'}
+                onDetail={() => setDetailModal({ title: 'Metas Concluídas', tasks: concluidas, accentColor: 'bg-green-500', accentHex: '#22c55e', icon: CheckCircle2 })}
               />
               <StatCard
                 icon={AlertTriangle}
@@ -839,6 +1012,7 @@ export default function RelatorioExecucaoEstrategicaPage() {
                 label="Metas em atraso"
                 sub={`${atrasadas.length} ações`}
                 borderColor={pctAtrasadas > 20 ? 'border-red-200' : 'border-gray-100'}
+                onDetail={() => setDetailModal({ title: 'Metas em Atraso', tasks: atrasadas, accentColor: 'bg-red-500', accentHex: '#ef4444', icon: AlertTriangle })}
               />
               <StatCard
                 icon={Clock}
@@ -847,6 +1021,7 @@ export default function RelatorioExecucaoEstrategicaPage() {
                 label="Dentro do prazo"
                 sub={`${dentroDoP.length} ações abertas`}
                 borderColor="border-gray-100"
+                onDetail={() => setDetailModal({ title: 'Dentro do Prazo', tasks: dentroDoP, accentColor: 'bg-blue-500', accentHex: '#3b82f6', icon: Clock })}
               />
             </div>
 
@@ -1079,5 +1254,8 @@ export default function RelatorioExecucaoEstrategicaPage() {
         )}
       </div>
     </div>
+
+    <TaskDetailModal modal={detailModal} onClose={() => setDetailModal(null)} />
+  </>
   )
 }

@@ -786,6 +786,7 @@ export default function OperationalPoliciesPage() {
             .insert([{
               subblock_id: selectedSubblock,
               file_name: file.name,
+              name: file.name,
               file_size: file.size,
               file_type: file.type,
               file_url: urlData.signedUrl,
@@ -2645,7 +2646,7 @@ export default function OperationalPoliciesPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm sm:text-base font-semibold text-gray-900 truncate group-hover:text-[#EBA500] transition-colors">
-                                    {attachment.file_name}
+                                    {attachment.file_name || attachment.name || 'Sem nome'}
                                   </p>
                                   {attachment.description && (
                                     <p className="text-xs sm:text-sm text-gray-500 truncate">{attachment.description}</p>

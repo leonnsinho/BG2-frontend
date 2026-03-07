@@ -8,7 +8,8 @@ import {
 import {
   TrendingUp, TrendingDown, DollarSign, Calendar,
   AlertCircle, RefreshCw, Loader, Building2,
-  ArrowUpCircle, ArrowDownCircle, Wallet, ChevronDown, Download
+  ArrowUpCircle, ArrowDownCircle, Wallet, ChevronDown, Download,
+  X, Filter
 } from 'lucide-react'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -36,6 +37,160 @@ const monthLabel = (isoDate) => {
   return `${months[parseInt(m) - 1]}/${y.slice(2)}`
 }
 
+// ── transaction detail modal ─────────────────────────────────────────────────
+
+function TransactionDetailModal({ modal, onClose }) {
+  const [search, setSearch] = useState('')
+  if (!modal) return null
+  const { title, rows, accentHex, isReceber } = modal
+
+  const now = new Date()
+  const getName = (r) => r.dfc_itens?.nome || r.dfc_categorias?.nome || 'Sem categoria'
+
+  const filtered = search.trim()
+    ? rows.filter(r =>
+        getName(r).toLowerCase().includes(search.toLowerCase()) ||
+        String(r.valor || '').includes(search)
+      )
+    : rows
+
+  const daysLabel = (vencimento) => {
+    if (!vencimento) return null
+    const d = new Date(vencimento + 'T00:00:00')
+    const diff = Math.round((d - now) / (1000 * 60 * 60 * 24))
+    if (diff < 0)  return { label: `${Math.abs(diff)}d atrás`, cls: 'text-red-600 bg-red-50' }
+    if (diff === 0) return { label: 'Hoje', cls: 'text-amber-600 bg-amber-50' }
+    if (diff <= 7)  return { label: `em ${diff}d`, cls: 'text-amber-600 bg-amber-50' }
+    return { label: `em ${diff}d`, cls: 'text-blue-600 bg-blue-50' }
+  }
+
+  const totalFiltered = filtered.reduce((s, r) => s + (r.valor || 0), 0)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div
+        className="relative bg-white w-full sm:max-w-xl max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* accent band */}
+        <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${accentHex}, ${accentHex}88)` }} />
+
+        {/* header */}
+        <div className="px-5 pt-5 pb-4 flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl" style={{ background: `${accentHex}18` }}>
+              {isReceber
+                ? <ArrowUpCircle className="h-5 w-5" style={{ color: accentHex }} />
+                : <ArrowDownCircle className="h-5 w-5" style={{ color: accentHex }} />
+              }
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 leading-tight">{title}</h3>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {rows.length} {rows.length === 1 ? 'lançamento' : 'lançamentos'}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* search */}
+        {rows.length > 5 && (
+          <div className="px-5 pb-3">
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por categoria ou valor…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-[#EBA500] transition-all bg-gray-50"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="h-px bg-gray-100 mx-5" />
+
+        {/* list */}
+        <div className="overflow-y-auto flex-1 px-5 py-3 space-y-2">
+          {filtered.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <DollarSign className="h-5 w-5 text-gray-400" />
+              </div>
+              <p className="text-sm font-medium text-gray-500">Nenhum lançamento encontrado</p>
+              {search && <p className="text-xs text-gray-400 mt-1">Tente outro termo de busca</p>}
+            </div>
+          ) : filtered.map((r, idx) => {
+            const rel = daysLabel(r.vencimento)
+            const [y, m, d] = (r.vencimento || '').split('-')
+            return (
+              <div key={r.id || idx} className="flex gap-3 p-3.5 rounded-2xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-gray-200 hover:shadow-sm transition-all">
+                {/* index */}
+                <div
+                  className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white mt-0.5"
+                  style={{ background: accentHex }}
+                >
+                  {idx + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <p className="text-sm font-semibold text-gray-900 leading-snug">
+                      {getName(r)}
+                    </p>
+                    <span className="flex-shrink-0 text-sm font-bold" style={{ color: accentHex }}>
+                      {fmtCurrency(r.valor)}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {r.vencimento && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <Calendar className="h-3 w-3 text-gray-400" />
+                        {d}/{m}/{y}
+                        {rel && (
+                          <span className={`ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${rel.cls}`}>
+                            {rel.label}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                    {r.is_parcelado && (
+                      <span className="text-[10px] font-semibold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full">Parcelado</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* footer */}
+        <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-400">
+              Mostrando <span className="font-semibold text-gray-600">{filtered.length}</span> de <span className="font-semibold text-gray-600">{rows.length}</span> lançamentos
+            </p>
+            <p className="text-xs font-bold mt-0.5" style={{ color: accentHex }}>
+              Total: {fmtCurrency(totalFiltered)}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-semibold text-white rounded-xl transition-all"
+            style={{ background: accentHex }}
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function RelatorioPrevisibilidadeCaixaPage() {
@@ -51,6 +206,7 @@ export default function RelatorioPrevisibilidadeCaixaPage() {
   const [saidas, setSaidas]         = useState([])
   const [activeTab, setActiveTab]   = useState('receber') // 'receber' | 'pagar'
   const [exporting, setExporting]   = useState(false)
+  const [detailModal, setDetailModal] = useState(null)
 
   const isSuperAdmin = profile?.role === 'super_admin'
 
@@ -80,7 +236,7 @@ export default function RelatorioPrevisibilidadeCaixaPage() {
 
       let qE = supabase
         .from('dfc_entradas')
-        .select('id, valor, vencimento, categoria, item_id, is_parcelado, lancamento_pai_id')
+        .select('id, valor, vencimento, categoria, item_id, is_parcelado, lancamento_pai_id, dfc_itens(id, nome), dfc_categorias!categoria(id, nome)')
         .gte('vencimento', start)
         .lte('vencimento', end)
         .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
@@ -88,7 +244,7 @@ export default function RelatorioPrevisibilidadeCaixaPage() {
 
       let qS = supabase
         .from('dfc_saidas')
-        .select('id, valor, vencimento, categoria, item_id, is_parcelado, lancamento_pai_id')
+        .select('id, valor, vencimento, categoria, item_id, is_parcelado, lancamento_pai_id, dfc_itens(id, nome), dfc_categorias!categoria(id, nome)')
         .gte('vencimento', start)
         .lte('vencimento', end)
         .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
@@ -181,12 +337,20 @@ export default function RelatorioPrevisibilidadeCaixaPage() {
   }
 
   // ── card summary ──
-  const SummaryCard = ({ icon: Icon, label, value, color, sub }) => (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex flex-col gap-2">
+  const SummaryCard = ({ icon: Icon, label, value, color, sub, onDetail }) => (
+    <div
+      className={`bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex flex-col gap-2 ${
+        onDetail ? 'cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-[.98]' : ''
+      }`}
+      onClick={onDetail}
+    >
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
-        <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center`}>
-          <Icon className="h-5 w-5 text-white" />
+        <div className="flex items-center gap-2">
+          {onDetail && <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Ver detalhes</span>}
+          <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center`}>
+            <Icon className="h-5 w-5 text-white" />
+          </div>
         </div>
       </div>
       <p className="text-2xl font-bold text-gray-900">{fmtCurrency(value)}</p>
@@ -581,6 +745,7 @@ export default function RelatorioPrevisibilidadeCaixaPage() {
                 value={totalReceber}
                 color="bg-emerald-500"
                 sub={`Próximos ${horizon} dias · ${entradas.length} lançamento${entradas.length !== 1 ? 's' : ''}`}
+                onDetail={entradas.length > 0 ? () => setDetailModal({ title: 'Lançamentos a Receber', rows: entradas, accentHex: '#22c55e', isReceber: true }) : undefined}
               />
               <SummaryCard
                 icon={ArrowDownCircle}
@@ -588,6 +753,7 @@ export default function RelatorioPrevisibilidadeCaixaPage() {
                 value={totalPagar}
                 color="bg-red-500"
                 sub={`Próximos ${horizon} dias · ${saidas.length} lançamento${saidas.length !== 1 ? 's' : ''}`}
+                onDetail={saidas.length > 0 ? () => setDetailModal({ title: 'Lançamentos a Pagar', rows: saidas, accentHex: '#ef4444', isReceber: false }) : undefined}
               />
               <SummaryCard
                 icon={saldoLiquido >= 0 ? TrendingUp : TrendingDown}
@@ -732,6 +898,7 @@ export default function RelatorioPrevisibilidadeCaixaPage() {
         )}
 
       </div>
+      <TransactionDetailModal modal={detailModal} onClose={() => setDetailModal(null)} />
     </div>
   )
 }

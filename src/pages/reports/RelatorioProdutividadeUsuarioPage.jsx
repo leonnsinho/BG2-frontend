@@ -12,6 +12,7 @@ import {
   Loader,
   FileText,
   CalendarRange,
+  Calendar,
   X,
   ChevronUp,
   ChevronDown,
@@ -74,17 +75,24 @@ function avatarColor(idx) {
 
 // ── sub-components ─────────────────────────────────────────────────────────────
 
-function SummaryCard({ icon: Icon, iconBg, value, label, borderColor = 'border-gray-100' }) {
+function SummaryCard({ icon: Icon, iconBg, value, label, borderColor = 'border-gray-100', onDetail }) {
+  const Tag = onDetail ? 'button' : 'div'
   return (
-    <div className={`bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border-2 ${borderColor} flex flex-col gap-1`}>
+    <Tag
+      className={`bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border-2 ${borderColor} flex flex-col gap-1 w-full text-left transition-all ${
+        onDetail ? 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer active:scale-[.98]' : ''
+      }`}
+      onClick={onDetail}
+    >
       <div className="flex items-center justify-between mb-1">
         <div className={`p-2 rounded-xl ${iconBg}`}>
           <Icon className="h-5 w-5" />
         </div>
+        {onDetail && <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Ver detalhes</span>}
       </div>
       <p className="text-2xl sm:text-3xl font-bold text-gray-900 leading-none">{value}</p>
       <p className="text-xs sm:text-sm font-semibold text-gray-700">{label}</p>
-    </div>
+    </Tag>
   )
 }
 
@@ -93,6 +101,134 @@ function SortIcon({ field, sortField, sortDir }) {
   return sortDir === 'asc'
     ? <ChevronUp className="h-3.5 w-3.5 text-[#EBA500]" />
     : <ChevronDown className="h-3.5 w-3.5 text-[#EBA500]" />
+}
+
+function TaskDetailModal({ modal, onClose }) {
+  const [search, setSearch] = useState('')
+  if (!modal) return null
+  const { title, tasks, accentHex, icon: ModalIcon } = modal
+
+  const now = new Date()
+  const filtered = search.trim()
+    ? tasks.filter(t => (t.title || '').toLowerCase().includes(search.toLowerCase()) || (t.assigned_to_name || '').toLowerCase().includes(search.toLowerCase()))
+    : tasks
+
+  const daysRelative = (dateStr) => {
+    if (!dateStr) return null
+    const d = new Date(dateStr)
+    const diff = Math.round((d - now) / (1000 * 60 * 60 * 24))
+    if (diff === 0) return { label: 'Hoje', cls: 'text-amber-600 bg-amber-50' }
+    if (diff > 0) return { label: `em ${diff}d`, cls: 'text-blue-600 bg-blue-50' }
+    return { label: `${Math.abs(diff)}d atrás`, cls: 'text-red-600 bg-red-50' }
+  }
+
+  const statusLabel = (s) => ({
+    completed:   { label: 'Concluída',    cls: 'bg-green-100 text-green-700' },
+    in_progress: { label: 'Em andamento', cls: 'bg-blue-100 text-blue-700' },
+    pending:     { label: 'Pendente',     cls: 'bg-gray-100 text-gray-600' },
+    overdue:     { label: 'Atrasada',     cls: 'bg-red-100 text-red-700' },
+  })[s] || { label: s, cls: 'bg-gray-100 text-gray-500' }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div
+        className="relative bg-white w-full sm:max-w-xl max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${accentHex}, ${accentHex}88)` }} />
+
+        <div className="px-5 pt-5 pb-4 flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl" style={{ background: `${accentHex}18` }}>
+              <ModalIcon className="h-5 w-5" style={{ color: accentHex }} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 leading-tight">{title}</h3>
+              <p className="text-xs text-gray-400 mt-0.5">{tasks.length} {tasks.length === 1 ? 'ação encontrada' : 'ações encontradas'}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {tasks.length > 4 && (
+          <div className="px-5 pb-3">
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar ação…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-[#EBA500] transition-all bg-gray-50"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="h-px bg-gray-100 mx-5" />
+
+        <div className="overflow-y-auto flex-1 px-5 py-3 space-y-2">
+          {filtered.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <FileText className="h-5 w-5 text-gray-400" />
+              </div>
+              <p className="text-sm font-medium text-gray-500">Nenhuma ação encontrada</p>
+              {search && <p className="text-xs text-gray-400 mt-1">Tente outro termo de busca</p>}
+            </div>
+          ) : filtered.map((t, idx) => {
+            const rel = daysRelative(t.due_date)
+            const st = statusLabel(t.status)
+            return (
+              <div key={t.id} className="flex gap-3 p-3.5 rounded-2xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-gray-200 hover:shadow-sm transition-all">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white mt-0.5"
+                  style={{ background: accentHex }}>
+                  {idx + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{t.title || 'Sem título'}</p>
+                    <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {t.due_date && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <Calendar className="h-3 w-3 text-gray-400" />
+                        {new Date(t.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {rel && <span className={`ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${rel.cls}`}>{rel.label}</span>}
+                      </span>
+                    )}
+                    {t.assigned_to_name && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <Users className="h-3 w-3 text-gray-400" />
+                        {t.assigned_to_name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between">
+          <p className="text-xs text-gray-400">
+            Mostrando <span className="font-semibold text-gray-600">{filtered.length}</span> de <span className="font-semibold text-gray-600">{tasks.length}</span> ações
+          </p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-semibold text-white rounded-xl transition-all"
+            style={{ background: accentHex }}
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── main component ─────────────────────────────────────────────────────────────
@@ -119,6 +255,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
   const [sortField, setSortField] = useState('atribuidas')
   const [sortDir, setSortDir] = useState('desc')
   const [exporting, setExporting] = useState(false)
+  const [detailModal, setDetailModal] = useState(null)
 
   // ── resolve company id ────────────────────────────────────────────────────────
 
@@ -224,18 +361,20 @@ export default function RelatorioProdutividadeUsuarioPage() {
           userMap[userId] = {
             userId,
             name: profileMap[userId] || tasks.find(t => t.assigned_to === userId)?.assigned_to_name || 'Usuário',
-            atribuidas: 0, concluidas: 0, atrasadas: 0, emAndamento: 0
+            atribuidas: 0, concluidas: 0, atrasadas: 0, emAndamento: 0,
+            tasksAtribuidas: [], tasksConcluidas: [], tasksAtrasadas: [], tasksEmAndamento: []
           }
         }
         const u = userMap[userId]
         u.atribuidas++
+        u.tasksAtribuidas.push(task)
 
         const isCompleted = task.status === 'completed'
         const isOverdue = !isCompleted && task.due_date && new Date(task.due_date) < now
 
-        if (isCompleted)     u.concluidas++
-        else if (isOverdue)  u.atrasadas++
-        else                 u.emAndamento++
+        if (isCompleted)     { u.concluidas++;  u.tasksConcluidas.push(task) }
+        else if (isOverdue)  { u.atrasadas++;   u.tasksAtrasadas.push(task) }
+        else                 { u.emAndamento++; u.tasksEmAndamento.push(task) }
       }
 
       if (assignees && assignees.length > 0) {
@@ -297,12 +436,19 @@ export default function RelatorioProdutividadeUsuarioPage() {
   // ── derived / sorted data ─────────────────────────────────────────────────────
 
   const totals = useMemo(() => {
-    const t = { atribuidas: 0, concluidas: 0, atrasadas: 0, emAndamento: 0 }
+    const t = {
+      atribuidas: 0, concluidas: 0, atrasadas: 0, emAndamento: 0,
+      tasksAtribuidas: [], tasksConcluidas: [], tasksAtrasadas: [], tasksEmAndamento: []
+    }
     userData.forEach(u => {
       t.atribuidas  += u.atribuidas
       t.concluidas  += u.concluidas
       t.atrasadas   += u.atrasadas
       t.emAndamento += u.emAndamento
+      t.tasksAtribuidas  = t.tasksAtribuidas.concat(u.tasksAtribuidas  || [])
+      t.tasksConcluidas  = t.tasksConcluidas.concat(u.tasksConcluidas  || [])
+      t.tasksAtrasadas   = t.tasksAtrasadas.concat(u.tasksAtrasadas   || [])
+      t.tasksEmAndamento = t.tasksEmAndamento.concat(u.tasksEmAndamento || [])
     })
     return t
   }, [userData])
@@ -681,6 +827,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
             value={totals.atribuidas}
             label="Ações Atribuídas"
             borderColor="border-amber-200"
+            onDetail={totals.atribuidas > 0 ? () => setDetailModal({ title: 'Todas as Ações Atribuídas', tasks: totals.tasksAtribuidas, accentHex: '#EBA500', icon: Target }) : undefined}
           />
           <SummaryCard
             icon={CheckCircle2}
@@ -688,6 +835,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
             value={totals.concluidas}
             label="Ações Concluídas"
             borderColor="border-emerald-200"
+            onDetail={totals.concluidas > 0 ? () => setDetailModal({ title: 'Todas as Ações Concluídas', tasks: totals.tasksConcluidas, accentHex: '#22c55e', icon: CheckCircle2 }) : undefined}
           />
           <SummaryCard
             icon={AlertTriangle}
@@ -695,6 +843,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
             value={totals.atrasadas}
             label="Ações Atrasadas"
             borderColor="border-red-200"
+            onDetail={totals.atrasadas > 0 ? () => setDetailModal({ title: 'Todas as Ações Atrasadas', tasks: totals.tasksAtrasadas, accentHex: '#ef4444', icon: AlertTriangle }) : undefined}
           />
           <SummaryCard
             icon={Clock}
@@ -702,6 +851,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
             value={totals.emAndamento}
             label="Em Andamento"
             borderColor="border-blue-200"
+            onDetail={totals.emAndamento > 0 ? () => setDetailModal({ title: 'Todas em Andamento', tasks: totals.tasksEmAndamento, accentHex: '#3b82f6', icon: Clock }) : undefined}
           />
         </div>
 
@@ -793,29 +943,45 @@ export default function RelatorioProdutividadeUsuarioPage() {
                           </td>
                           {/* Atribuídas */}
                           <td className="px-4 py-3.5 text-center">
-                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-[#EBA500] font-bold text-sm">
+                            <button
+                              onClick={() => user.atribuidas > 0 && setDetailModal({ title: `Todas as Ações — ${formatName(user.name)}`, tasks: user.tasksAtribuidas, accentHex: '#EBA500', icon: Target })}
+                              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-[#EBA500] font-bold text-sm transition-colors ${user.atribuidas > 0 ? 'hover:bg-amber-100 cursor-pointer' : 'cursor-default'}`}
+                              title={user.atribuidas > 0 ? 'Ver ações' : ''}
+                            >
                               {user.atribuidas}
-                            </span>
+                            </button>
                           </td>
                           {/* Concluídas */}
                           <td className="px-4 py-3.5 text-center">
-                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 font-bold text-sm">
+                            <button
+                              onClick={() => user.concluidas > 0 && setDetailModal({ title: `Ações Concluídas — ${formatName(user.name)}`, tasks: user.tasksConcluidas, accentHex: '#22c55e', icon: CheckCircle2 })}
+                              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 font-bold text-sm transition-colors ${user.concluidas > 0 ? 'hover:bg-emerald-100 cursor-pointer' : 'cursor-default'}`}
+                              title={user.concluidas > 0 ? 'Ver ações concluídas' : ''}
+                            >
                               {user.concluidas}
-                            </span>
+                            </button>
                           </td>
                           {/* Atrasadas */}
                           <td className="px-4 py-3.5 text-center">
-                            <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm ${
-                              user.atrasadas > 0 ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-400'
-                            }`}>
+                            <button
+                              onClick={() => user.atrasadas > 0 && setDetailModal({ title: `Ações Atrasadas — ${formatName(user.name)}`, tasks: user.tasksAtrasadas, accentHex: '#ef4444', icon: AlertTriangle })}
+                              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm transition-colors ${
+                                user.atrasadas > 0 ? 'bg-red-50 text-red-500 hover:bg-red-100 cursor-pointer' : 'bg-gray-50 text-gray-400 cursor-default'
+                              }`}
+                              title={user.atrasadas > 0 ? 'Ver ações atrasadas' : ''}
+                            >
                               {user.atrasadas}
-                            </span>
+                            </button>
                           </td>
                           {/* Em Andamento */}
                           <td className="px-4 py-3.5 text-center">
-                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 font-bold text-sm">
+                            <button
+                              onClick={() => user.emAndamento > 0 && setDetailModal({ title: `Em Andamento — ${formatName(user.name)}`, tasks: user.tasksEmAndamento, accentHex: '#3b82f6', icon: Clock })}
+                              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 font-bold text-sm transition-colors ${user.emAndamento > 0 ? 'hover:bg-blue-100 cursor-pointer' : 'cursor-default'}`}
+                              title={user.emAndamento > 0 ? 'Ver ações em andamento' : ''}
+                            >
                               {user.emAndamento}
-                            </span>
+                            </button>
                           </td>
                         </tr>
                       )
@@ -855,15 +1021,19 @@ export default function RelatorioProdutividadeUsuarioPage() {
                       </div>
                       <div className="grid grid-cols-4 gap-2">
                         {[
-                          { label: 'Atribuídas', val: user.atribuidas, cls: 'bg-amber-50 text-[#EBA500]' },
-                          { label: 'Concluídas', val: user.concluidas, cls: 'bg-emerald-50 text-emerald-600' },
-                          { label: 'Atrasadas',  val: user.atrasadas,  cls: user.atrasadas > 0 ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-400' },
-                          { label: 'Andamento',  val: user.emAndamento, cls: 'bg-blue-50 text-blue-600' },
+                          { label: 'Atribuídas', val: user.atribuidas,  cls: 'bg-amber-50 text-[#EBA500]',    tasks: user.tasksAtribuidas,  accentHex: '#EBA500', icon: Target,       title: `Todas as Ações — ${formatName(user.name)}` },
+                          { label: 'Concluídas', val: user.concluidas,  cls: 'bg-emerald-50 text-emerald-600', tasks: user.tasksConcluidas,  accentHex: '#22c55e', icon: CheckCircle2, title: `Ações Concluídas — ${formatName(user.name)}` },
+                          { label: 'Atrasadas',  val: user.atrasadas,   cls: user.atrasadas > 0 ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-400', tasks: user.tasksAtrasadas,   accentHex: '#ef4444', icon: AlertTriangle, title: `Ações Atrasadas — ${formatName(user.name)}` },
+                          { label: 'Andamento',  val: user.emAndamento, cls: 'bg-blue-50 text-blue-600',       tasks: user.tasksEmAndamento, accentHex: '#3b82f6', icon: Clock,        title: `Em Andamento — ${formatName(user.name)}` },
                         ].map(stat => (
-                          <div key={stat.label} className={`rounded-xl p-2.5 text-center ${stat.cls}`}>
+                          <button
+                            key={stat.label}
+                            className={`rounded-xl p-2.5 text-center transition-opacity ${stat.cls} ${stat.val > 0 ? 'active:opacity-70' : 'cursor-default'}`}
+                            onClick={() => stat.val > 0 && setDetailModal({ title: stat.title, tasks: stat.tasks, accentHex: stat.accentHex, icon: stat.icon })}
+                          >
                             <p className="text-lg font-bold leading-none">{stat.val}</p>
                             <p className="text-[10px] font-semibold mt-1 leading-tight opacity-80">{stat.label}</p>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -881,6 +1051,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
           </>
         )}
       </div>
+      <TaskDetailModal modal={detailModal} onClose={() => setDetailModal(null)} />
     </div>
   )
 }

@@ -1134,7 +1134,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                       />
                       <FileText className="h-5 w-5 text-gray-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{attachment.name}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate">{attachment.name || attachment.file_name || 'Sem nome'}</p>
                         {attachment.type === 'file' && attachment.file_size && (
                           <p className="text-xs text-gray-500">
                             {(attachment.file_size / 1024).toFixed(1)} KB
@@ -1495,7 +1495,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                       <Paperclip className="h-5 w-5 text-gray-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
-                          {attachment.file_name}
+                          {attachment.file_name || attachment.name || 'Sem nome'}
                         </p>
                         {attachment.file_size && (
                           <p className="text-xs text-gray-500">
