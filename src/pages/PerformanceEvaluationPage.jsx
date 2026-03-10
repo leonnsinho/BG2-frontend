@@ -26,7 +26,8 @@ import {
   History,
   Clock,
   Trash2,
-  UserX
+  UserX,
+  Download
 } from 'lucide-react'
 
 const CLASSIFICATIONS = {
@@ -52,6 +53,7 @@ export default function PerformanceEvaluationPage() {
   const [userHistory, setUserHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCompany, setFilterCompany] = useState('all')
   const [companies, setCompanies] = useState([])
@@ -388,6 +390,225 @@ export default function PerformanceEvaluationPage() {
     } catch (error) {
       console.error('Erro ao remover usuário:', error)
       alert('❌ Erro ao remover usuário. Tente novamente.')
+    }
+  }
+
+  const exportarPDF = async () => {
+    if (!selectedUser || !userHistory.length) return
+    setExporting(true)
+    try {
+      let companyName = selectedUser.company_name || ''
+      let logoHtml = ''
+
+      if (selectedUser.company_id) {
+        const { data: companyData } = await supabase
+          .from('companies')
+          .select('name, logo_url')
+          .eq('id', selectedUser.company_id)
+          .single()
+
+        if (companyData) {
+          companyName = companyData.name || companyName
+          if (companyData.logo_url) {
+            try {
+              const res = await fetch(companyData.logo_url)
+              const blob = await res.blob()
+              const base64 = await new Promise(resolve => {
+                const reader = new FileReader()
+                reader.onloadend = () => resolve(reader.result)
+                reader.readAsDataURL(blob)
+              })
+              logoHtml = `<img src="${base64}" style="height:40px;object-fit:contain;" />`
+            } catch (e) { /* skip logo on error */ }
+          }
+        }
+      }
+
+      const chartData = [...userHistory].reverse()
+
+      const buildSvgChart = (data) => {
+        if (data.length < 2) return ''
+        const W = 560, H = 160
+        const pL = 45, pR = 20, pT = 15, pB = 30
+        const cW = W - pL - pR
+        const cH = H - pT - pB
+        const n = data.length
+        const xPos = (i) => pL + (i / (n - 1)) * cW
+        const yPos = (v) => pT + cH - (v / 3) * cH
+
+        let gridLines = ''
+        for (let v = 0; v <= 3; v++) {
+          const y = yPos(v)
+          gridLines += `<line x1="${pL}" y1="${y}" x2="${pL + cW}" y2="${y}" stroke="#555" stroke-width="1" stroke-dasharray="4,4"/>`
+          gridLines += `<text x="${pL - 8}" y="${y + 4}" fill="#aaa" font-size="10" text-anchor="end">${v}</text>`
+        }
+
+        let xLabels = ''
+        data.forEach((ev, i) => {
+          const [yr, mo, dy] = ev.evaluation_date.split('-')
+          const d = new Date(+yr, +mo - 1, +dy)
+          const label = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+          xLabels += `<text x="${xPos(i)}" y="${H - 5}" fill="#aaa" font-size="9" text-anchor="middle">${label}</text>`
+        })
+
+        const perfPoints = data.map((ev, i) => `${xPos(i)},${yPos(ev.performance_level)}`).join(' ')
+        const perfDots = data.map((ev, i) => `<circle cx="${xPos(i)}" cy="${yPos(ev.performance_level)}" r="5" fill="#EBA500"/>`).join('')
+        const potPoints = data.map((ev, i) => `${xPos(i)},${yPos(ev.potential_level)}`).join(' ')
+        const potDots = data.map((ev, i) => `<circle cx="${xPos(i)}" cy="${yPos(ev.potential_level)}" r="5" fill="#3b82f6"/>`).join('')
+
+        return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+          <rect width="${W}" height="${H}" fill="#2a2828"/>
+          ${gridLines}
+          <polyline points="${perfPoints}" fill="none" stroke="#EBA500" stroke-width="2.5"/>
+          ${perfDots}
+          <polyline points="${potPoints}" fill="none" stroke="#3b82f6" stroke-width="2.5"/>
+          ${potDots}
+          ${xLabels}
+        </svg>`
+      }
+
+      const svgChart = buildSvgChart(chartData)
+      const latestEval = userHistory[0]
+      const latestClass = latestEval ? CLASSIFICATIONS[latestEval.classification] : null
+      const now = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+      const lvl = (v) => v === 1 ? 'Baixo' : v === 2 ? 'Médio' : 'Alto'
+
+      const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Histórico de Avaliações - ${selectedUser.full_name}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; margin: 0; padding: 0; }
+    @page { size: A4 portrait; margin: 0; }
+    body { font-family: 'Inter', sans-serif; background: #373535; color: #e8e8e8; padding: 24px; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1.5px solid #EBA500; }
+    .logo-area { display: flex; align-items: center; gap: 12px; }
+    .brand { font-size: 22px; font-weight: 800; color: #EBA500; }
+    .sub { font-size: 11px; color: #aaa; }
+    .title-area { text-align: right; }
+    .title-area h1 { font-size: 16px; font-weight: 700; color: #e8e8e8; }
+    .title-area p { font-size: 11px; color: #aaa; }
+    .user-card { background: #2a2828; border: 1.5px solid #EBA500; border-radius: 8px; padding: 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+    .user-name { font-size: 18px; font-weight: 700; color: #EBA500; }
+    .user-meta { font-size: 12px; color: #aaa; margin-top: 4px; }
+    .class-badge { padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; color: #fff; }
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-card { background: #2a2828; border: 1px solid #555; border-radius: 6px; padding: 12px; text-align: center; }
+    .stat-value { font-size: 22px; font-weight: 800; color: #EBA500; }
+    .stat-label { font-size: 10px; color: #aaa; margin-top: 2px; }
+    .section-title { font-size: 13px; font-weight: 700; color: #EBA500; margin-bottom: 8px; }
+    .chart-box { background: #2a2828; border: 1px solid #555; border-radius: 6px; padding: 12px; margin-bottom: 16px; }
+    .chart-legend { display: flex; gap: 20px; margin-top: 8px; font-size: 11px; color: #aaa; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { background: #EBA500; color: #1a1a1a; font-weight: 700; padding: 8px 6px; text-align: left; }
+    td { padding: 7px 6px; border-bottom: 1px solid #444; vertical-align: top; }
+    tr:nth-child(even) td { background: #2a2828; }
+    .level-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+    .level-1 { background: #7f1d1d; color: #fca5a5; }
+    .level-2 { background: #78350f; color: #fcd34d; }
+    .level-3 { background: #14532d; color: #86efac; }
+    .footer { margin-top: 20px; padding-top: 12px; border-top: 1px solid #555; display: flex; justify-content: space-between; font-size: 10px; color: #888; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-area">
+      ${logoHtml}
+      <div>
+        <div class="brand">BG2 Partimap</div>
+        <div class="sub">Sistema de Gestão Estratégica</div>
+      </div>
+    </div>
+    <div class="title-area">
+      <h1>Histórico de Avaliações Nine Box</h1>
+      <p>Emitido em ${now}</p>
+    </div>
+  </div>
+
+  <div class="user-card">
+    <div>
+      <div class="user-name">${selectedUser.full_name}</div>
+      <div class="user-meta">${companyName}${selectedUser.email ? ' • ' + selectedUser.email : ''}</div>
+    </div>
+    ${latestClass ? `<div class="class-badge" style="background:${latestClass.color}">${latestClass.label}</div>` : ''}
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value">${userHistory.length}</div>
+      <div class="stat-label">Avaliações Registradas</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${latestEval ? lvl(latestEval.performance_level) : '—'}</div>
+      <div class="stat-label">Desempenho Atual</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${latestEval ? lvl(latestEval.potential_level) : '—'}</div>
+      <div class="stat-label">Alinhamento Cultural Atual</div>
+    </div>
+  </div>
+
+  ${chartData.length > 1 ? `
+  <div class="chart-box">
+    <div class="section-title">Evolução ao Longo do Tempo</div>
+    ${svgChart}
+    <div class="chart-legend">
+      <span><span class="dot" style="background:#EBA500"></span>Desempenho Técnico</span>
+      <span><span class="dot" style="background:#3b82f6"></span>Alinhamento Cultural</span>
+      <span style="margin-left:10px">1 = Baixo &nbsp;&nbsp; 2 = Médio &nbsp;&nbsp; 3 = Alto</span>
+    </div>
+  </div>` : ''}
+
+  <div class="section-title">Registro Completo de Avaliações</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Classificação</th>
+        <th>Desempenho</th>
+        <th>Alinhamento</th>
+        <th>Pontos Fortes</th>
+        <th>Áreas de Melhoria</th>
+        <th>Observações</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${userHistory.map(ev => {
+        const [y, m, d] = ev.evaluation_date.split('-')
+        const dt = new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR')
+        const cl = CLASSIFICATIONS[ev.classification]
+        return `<tr>
+          <td>${dt}</td>
+          <td><span class="level-badge" style="background:${cl?.color}33;color:${cl?.color};border:1px solid ${cl?.color}66">${cl?.label || ev.classification}</span></td>
+          <td><span class="level-badge level-${ev.performance_level}">${lvl(ev.performance_level)}</span></td>
+          <td><span class="level-badge level-${ev.potential_level}">${lvl(ev.potential_level)}</span></td>
+          <td>${ev.strengths || '—'}</td>
+          <td>${ev.areas_for_improvement || '—'}</td>
+          <td>${ev.notes || '—'}</td>
+        </tr>`
+      }).join('')}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <span>BG2 Partimap — Sistema de Avaliação Nine Box</span>
+    <span>${now}</span>
+  </div>
+  <script>window.onload = () => setTimeout(() => window.print(), 500)</script>
+</body>
+</html>`
+
+      const win = window.open('', '_blank')
+      win.document.write(html)
+      win.document.close()
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error)
+      alert('Erro ao exportar PDF. Tente novamente.')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -1038,12 +1259,27 @@ export default function PerformanceEvaluationPage() {
                     <p className="text-primary-100">{selectedUser.full_name} - {selectedUser.company_name}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setShowHistoryModal(false)}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200"
-                >
-                  <X className="h-6 w-6" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={exportarPDF}
+                    disabled={exporting}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#373535] text-[#EBA500] border border-[#EBA500]/60 rounded-xl text-sm font-medium hover:bg-[#2a2828] transition-all shadow-sm disabled:opacity-60"
+                    title="Exportar histórico como PDF"
+                  >
+                    {exporting ? (
+                      <div className="w-4 h-4 border-2 border-[#EBA500] border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    Exportar PDF
+                  </button>
+                  <button
+                    onClick={() => setShowHistoryModal(false)}
+                    className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
               </div>
             </div>
 
