@@ -618,20 +618,9 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
 
   // Obter itens de navegação baseados no usuário atual
   const navigationItems = React.useMemo(() => {
-    // USUÁRIOS NÃO VINCULADOS: Interface simplificada
+    // USUÁRIOS NÃO VINCULADOS: Sem itens de navegação
     if (permissions.isUnlinkedUser()) {
-      return [
-        {
-          name: 'Dashboard',
-          icon: Home,
-          href: '/'
-        },
-        {
-          name: 'Metas Atribuídas',
-          icon: Target,
-          href: '/goals/assigned'
-        }
-      ]
+      return []
     }
     
     // Se as permissões de ferramentas ainda estão carregando, mostrar skeleton
@@ -864,8 +853,8 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                     <span className="text-xs font-medium text-yellow-800">Status da Conta</span>
                   </div>
                   <div className="text-xs text-yellow-700">
-                    <p className="mb-1 font-medium">Aguardando Vinculação</p>
-                    <p>Entre em contato com o administrador da sua empresa para solicitar vinculação.</p>
+                    <p className="mb-1 font-medium">Aguardando vinculação</p>
+                    <p>Em breve você será associado a uma empresa e terá acesso completo ao sistema.</p>
                   </div>
                 </div>
               </div>

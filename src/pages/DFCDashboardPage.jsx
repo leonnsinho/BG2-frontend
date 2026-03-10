@@ -1365,18 +1365,6 @@ export default function DFCDashboardPage() {
       const saldoInicialVals = makeVals(saldoInicialMonths)
       for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleYellow, saldoInicialVals[c - 2] !== 0 ? saldoInicialVals[c - 2] : null)
 
-      // --- LINHA 4: CONCILIAÇÃO BANCÁRIA ---
-      rowNum++
-      ws.getRow(rowNum).height = 20
-      applyStyle(ws.getCell(rowNum, 1), styleYellowL, 'CONCILIAÇÃO BANCÁRIA')
-      for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleYellow, null)
-
-      // --- LINHA 5: SALDO DE CONCILIAÇÃO ---
-      rowNum++
-      ws.getRow(rowNum).height = 20
-      applyStyle(ws.getCell(rowNum, 1), styleYellowL, 'SALDO DE CONCILIAÇÃO')
-      for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleYellow, null)
-
       // Função auxiliar: linha de categoria (gris com prefixo)
       const addCatRow = (prefix, name, monthTotals) => {
         rowNum++
@@ -1490,11 +1478,6 @@ export default function DFCDashboardPage() {
       // ========= RESULTADOS FINAIS =========
       const lucroMonths = entradaTotals.map((v, i) => v - saidaTotals[i])
       addResultRow('(=) LUCRO LÍQUIDO', lucroMonths)
-
-      rowNum++
-      ws.getRow(rowNum).height = 20
-      applyStyle(ws.getCell(rowNum, 1), styleGrayL, '% de lucro')
-      for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleGray, null)
 
       // Saldo final cumulativo por mês
       const saldoFinalMonths = []

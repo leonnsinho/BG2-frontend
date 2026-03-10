@@ -72,6 +72,13 @@ function DFCPage() {
   const [companySearch, setCompanySearch] = useState('')
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false)
 
+  // Importação de arquivos
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importRows, setImportRows] = useState([])       // linhas parseadas
+  const [importErrors, setImportErrors] = useState([])  // erros por linha
+  const [importSaving, setImportSaving] = useState(false)
+  const [importCompanyId, setImportCompanyId] = useState('')
+
   // Sistema de parcelamento
   const [isParcelado, setIsParcelado] = useState(false)
   const [numeroParcelas, setNumeroParcelas] = useState(1)
@@ -87,6 +94,185 @@ function DFCPage() {
     mes: '',
     vencimento: ''
   })
+
+  // ─── Parser de importação ───────────────────────────────────────────────────
+  const parseOfx = (text) => {
+    const rows = []
+    const stmtTrnRegex = /<STMTTRN>(.*?)<\/STMTTRN>/gis
+    const modernMatches = [...text.matchAll(stmtTrnRegex)]
+    if (modernMatches.length > 0) {
+      modernMatches.forEach(m => {
+        const block = m[1]
+        const get = (tag) => { const r = new RegExp(`<${tag}>([^<]*)`, 'i'); const v = block.match(r); return v ? v[1].trim() : '' }
+        const dtRaw = get('DTPOSTED') || get('DTUSER')
+        const date = dtRaw ? `${dtRaw.substring(0,4)}-${dtRaw.substring(4,6)}-${dtRaw.substring(6,8)}` : ''
+        const trnamt = parseFloat(get('TRNAMT').replace(',', '.')) || 0
+        if (trnamt >= 0) return // saídas: apenas negativos (débitos)
+        rows.push({ descricao: get('MEMO') || get('NAME') || '', valor: Math.abs(trnamt).toFixed(2), vencimento: date, mes: date ? date.substring(0, 7) : '', categoria: '', item_id: '' })
+      })
+    } else {
+      // SGML OFX legado (sem fechamento de tags)
+      const lines = text.split(/\n/)
+      let inTrn = false; let cur = {}
+      lines.forEach(line => {
+        line = line.trim()
+        if (line === '<STMTTRN>') { inTrn = true; cur = {} }
+        else if (line === '</STMTTRN>') {
+          if (inTrn && cur._sign < 0) rows.push(cur)
+          inTrn = false; cur = {}
+        } else if (inTrn) {
+          const m2 = line.match(/^<([^>]+)>(.+)$/)
+          if (m2) {
+            const [, tag, val] = m2
+            if (tag === 'DTPOSTED' || tag === 'DTUSER') { const d = val.trim(); cur.vencimento = `${d.substring(0,4)}-${d.substring(4,6)}-${d.substring(6,8)}`; cur.mes = cur.vencimento.substring(0,7) }
+            if (tag === 'TRNAMT') { const v = parseFloat(val.trim().replace(',', '.')); cur.valor = Math.abs(v).toFixed(2); cur._sign = v }
+            if (tag === 'MEMO' || tag === 'NAME') cur.descricao = cur.descricao || val.trim()
+          }
+        }
+      })
+    }
+    return rows
+  }
+
+  // Interpreta valor em formato brasileiro (1.499,00) ou americano (1,499.00)
+  const parseAmount = (raw) => {
+    if (!raw) return 0
+    let s = raw.replace(/[^\d.,\-]/g, '').trim()
+    if (!s) return 0
+    const lastDot = s.lastIndexOf('.')
+    const lastComma = s.lastIndexOf(',')
+    if (lastDot > -1 && lastComma > -1) {
+      if (lastComma > lastDot) s = s.replace(/\./g, '').replace(',', '.')  // BR: 1.499,00
+      else s = s.replace(/,/g, '')                                          // US: 1,499.00
+    } else if (lastComma > -1) {
+      s = s.replace(',', '.')  // somente vírgula: trata como decimal
+    }
+    return parseFloat(s) || 0
+  }
+
+  const norm = (s) => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/["']/g, '')
+
+  const parseDate = (raw) => {
+    if (!raw) return ''
+    const s = raw.trim()
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) { const [d,mo,y] = s.split('/'); return `${y}-${mo}-${d}` }
+    if (/^\d{2}-\d{2}-\d{4}$/.test(s)) { const [d,mo,y] = s.split('-'); return `${y}-${mo}-${d}` }
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10)
+    if (/^\d{2}\/\d{2}\/\d{2}$/.test(s)) { const [d,mo,y] = s.split('/'); return `20${y}-${mo}-${d}` }
+    return ''
+  }
+
+  const parseCsv = (text) => {
+    const lines = text.split(/\r?\n/).filter(l => l.trim())
+    if (lines.length < 2) return []
+    const firstLine = lines[0]
+    const delim = (firstLine.split(';').length >= firstLine.split(',').length) ? ';' : ','
+    const splitLine = (l) => l.split(delim).map(c => c.trim().replace(/^["']|["']$/g, ''))
+    const headers = splitLine(firstLine).map(h => norm(h))
+    const idx = (names) => { for (const n of names) { const i = headers.findIndex(h => h === n || h.includes(n)); if (i > -1) return i } return -1 }
+    const iDesc = idx(['descricao','historico','description','memo','nome','name','lancamento'])
+    const iVal  = idx(['valor','value','amount','debito','saida','vlr'])
+    const iDate = idx(['data','date','vencimento','dtposted','data_lancamento','lancamento'])
+    const iCat  = idx(['categoria','category','cat'])
+    const rows = []
+    for (let i = 1; i < lines.length; i++) {
+      const cols = splitLine(lines[i])
+      if (cols.length < 2) continue
+      const valRaw = iVal >= 0 ? cols[iVal] : cols[cols.length - 1]
+      const val = parseAmount(valRaw)
+      if (val <= 0) continue
+      const dateRaw = iDate >= 0 ? cols[iDate] : ''
+      const date = parseDate(dateRaw)
+      const descRaw = iDesc >= 0 ? cols[iDesc] : (cols[1] || '')
+      rows.push({ descricao: descRaw, valor: Math.abs(val).toFixed(2), vencimento: date, mes: date ? date.substring(0,7) : '', categoria: iCat >= 0 ? cols[iCat] : '', item_id: '' })
+    }
+    return rows
+  }
+
+  const parseXml = (text) => {
+    const rows = []
+    try {
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(text, 'text/xml')
+      const nodes = doc.querySelectorAll('transaction, lancamento, entry, item, STMTTRN, row')
+      nodes.forEach(node => {
+        const get = (...tags) => { for (const t of tags) { const el = node.querySelector(t); if (el?.textContent) return el.textContent.trim() } return '' }
+        const valRaw = get('valor','value','amount','TRNAMT','debito','saida')
+        const val = parseFloat(valRaw.replace(',', '.')) || 0
+        if (val <= 0) return
+        const dateRaw = get('data','date','vencimento','DTPOSTED')
+        let date = ''
+        if (/\d{2}\/\d{2}\/\d{4}/.test(dateRaw)) { const [d,mo,y] = dateRaw.split('/'); date = `${y}-${mo}-${d}` }
+        else if (/\d{8}/.test(dateRaw)) { date = `${dateRaw.substring(0,4)}-${dateRaw.substring(4,6)}-${dateRaw.substring(6,8)}` }
+        else if (/\d{4}-\d{2}-\d{2}/.test(dateRaw)) { date = dateRaw.substring(0,10) }
+        rows.push({ descricao: get('descricao','description','memo','MEMO','NAME','historico'), valor: Math.abs(val).toFixed(2), vencimento: date, mes: date ? date.substring(0,7) : '', categoria: get('categoria','category'), item_id: '' })
+      })
+    } catch(e) { /* parse error */ }
+    return rows
+  }
+
+  const handleImportFile = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    e.target.value = ''
+    const ext = file.name.split('.').pop().toLowerCase()
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const buffer = ev.target.result
+      // Tenta UTF-8; se tiver caracteres inválidos (\uFFFD), usa ISO-8859-1
+      let text = new TextDecoder('utf-8').decode(buffer)
+      if (text.includes('\uFFFD')) text = new TextDecoder('iso-8859-1').decode(buffer)
+      let rows = []
+      if (ext === 'ofx' || ext === 'ofc') rows = parseOfx(text)
+      else if (ext === 'csv') rows = parseCsv(text)
+      else if (ext === 'xml') rows = parseXml(text)
+      else { toast.error('Formato não suportado. Use CSV, XML ou OFX.'); return }
+      if (rows.length === 0) { toast.error('Nenhum registro encontrado no arquivo.'); return }
+      const defaultCompany = getCurrentUserCompany() || (companies[0]?.id || '')
+      setImportCompanyId(defaultCompany)
+      setImportRows(rows.map(r => ({ ...r, company_id: defaultCompany })))
+      setImportErrors([])
+      setShowImportModal(true)
+    }
+    reader.readAsArrayBuffer(file)
+  }
+
+  const handleSaveImport = async () => {
+    const errs = importRows.map((r) => {
+      const e = []
+      if (!r.company_id) e.push('Empresa obrigatória')
+      if (!r.descricao?.trim()) e.push('Descrição obrigatória')
+      if (!r.valor || isNaN(parseFloat(r.valor))) e.push('Valor inválido')
+      if (!r.vencimento) e.push('Data obrigatória')
+      return e
+    })
+    setImportErrors(errs)
+    if (errs.some(e => e.length > 0)) { toast.error('Corrija os erros antes de importar.'); return }
+    setImportSaving(true)
+    try {
+      const records = importRows.map(r => ({
+        company_id: r.company_id,
+        categoria: r.categoria || null,
+        item_id: r.item_id || null,
+        descricao: r.descricao.trim(),
+        valor: parseFloat(r.valor),
+        mes: r.mes ? r.mes + '-01' : r.vencimento,
+        vencimento: r.vencimento,
+        created_by: profile.id
+      }))
+      const { error } = await supabase.from('dfc_saidas').insert(records)
+      if (error) throw error
+      toast.success(`${records.length} saída(s) importada(s) com sucesso!`)
+      setShowImportModal(false)
+      setImportRows([])
+      fetchSaidas()
+    } catch (err) {
+      toast.error('Erro ao importar: ' + err.message)
+    } finally {
+      setImportSaving(false)
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
 
   const isSuperAdmin = () => profile?.role === 'super_admin'
   const isCompanyAdmin = () => {
@@ -1107,6 +1293,12 @@ function DFCPage() {
               <Download className="h-4 w-4" />
               <span>Exportar CSV</span>
             </button>
+
+            <label className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 transition-all font-medium cursor-pointer">
+              <Upload className="h-4 w-4" />
+              <span>Importar</span>
+              <input type="file" accept=".csv,.xml,.ofx,.ofc" className="hidden" onChange={handleImportFile} />
+            </label>
 
             <button
               onClick={() => openModal()}
@@ -2315,6 +2507,135 @@ function DFCPage() {
               >
                 Fechar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ─── Modal de Importação ──────────────────────────────────────── */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Importar Saídas</h2>
+                <p className="text-sm text-gray-500">{importRows.length} registro(s) encontrado(s) — revise e confirme</p>
+              </div>
+              <button onClick={() => setShowImportModal(false)} className="p-2 hover:bg-gray-100 rounded-xl">
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Empresa padrão */}
+            {isSuperAdmin() && (
+              <div className="px-6 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-700">Empresa:</span>
+                <select
+                  value={importCompanyId}
+                  onChange={e => {
+                    const cid = e.target.value
+                    setImportCompanyId(cid)
+                    setImportRows(prev => prev.map(r => ({ ...r, company_id: cid })))
+                  }}
+                  className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white focus:border-[#EBA500] focus:outline-none"
+                >
+                  <option value="">Selecione...</option>
+                  {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            )}
+
+            {/* Tabela */}
+            <div className="overflow-auto flex-1 px-6 py-4">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="text-left px-3 py-2 font-semibold text-gray-700 border-b w-1/3 min-w-[260px]">Descrição</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-700 border-b w-32">Valor (R$)</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-700 border-b w-36">Vencimento</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-700 border-b w-32">Mês</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-700 border-b">Categoria</th>
+                    <th className="px-3 py-2 border-b w-10"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importRows.map((row, i) => (
+                    <tr key={i} className={importErrors[i]?.length > 0 ? 'bg-red-50' : 'hover:bg-gray-50'}>
+                      <td className="px-3 py-2 border-b border-gray-100">
+                        <textarea
+                          rows={3}
+                          className="w-full border border-gray-200 rounded-lg px-2 py-1 text-sm focus:border-[#EBA500] focus:outline-none resize-y"
+                          value={row.descricao}
+                          onChange={e => setImportRows(prev => prev.map((r,j) => j===i ? {...r, descricao: e.target.value} : r))}
+                        />
+                        {importErrors[i]?.map((er,k) => <p key={k} className="text-xs text-red-500 mt-0.5">{er}</p>)}
+                      </td>
+                      <td className="px-3 py-2 border-b border-gray-100">
+                        <input
+                          type="number" step="0.01" min="0"
+                          className="w-28 border border-gray-200 rounded-lg px-2 py-1 text-sm focus:border-[#EBA500] focus:outline-none"
+                          value={row.valor}
+                          onChange={e => setImportRows(prev => prev.map((r,j) => j===i ? {...r, valor: e.target.value} : r))}
+                        />
+                      </td>
+                      <td className="px-3 py-2 border-b border-gray-100">
+                        <input
+                          type="date"
+                          className="border border-gray-200 rounded-lg px-2 py-1 text-sm focus:border-[#EBA500] focus:outline-none"
+                          value={row.vencimento}
+                          onChange={e => setImportRows(prev => prev.map((r,j) => j===i ? {...r, vencimento: e.target.value, mes: e.target.value.substring(0,7)} : r))}
+                        />
+                      </td>
+                      <td className="px-3 py-2 border-b border-gray-100">
+                        <input
+                          type="month"
+                          className="border border-gray-200 rounded-lg px-2 py-1 text-sm focus:border-[#EBA500] focus:outline-none"
+                          value={row.mes}
+                          onChange={e => setImportRows(prev => prev.map((r,j) => j===i ? {...r, mes: e.target.value} : r))}
+                        />
+                      </td>
+                      <td className="px-3 py-2 border-b border-gray-100">
+                        <select
+                          className="border border-gray-200 rounded-lg px-2 py-1 text-sm focus:border-[#EBA500] focus:outline-none bg-white"
+                          value={row.categoria}
+                          onChange={e => setImportRows(prev => prev.map((r,j) => j===i ? {...r, categoria: e.target.value, item_id: ''} : r))}
+                        >
+                          <option value="">Sem categoria</option>
+                          {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-3 py-2 border-b border-gray-100">
+                        <button
+                          onClick={() => setImportRows(prev => prev.filter((_,j) => j!==i))}
+                          className="p-1 hover:bg-red-100 rounded text-red-500 transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between gap-3">
+              <p className="text-xs text-gray-500">Formatos suportados: CSV, XML, OFX/OFC (extrato bancário)</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowImportModal(false)}
+                  className="px-5 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveImport}
+                  disabled={importSaving || importRows.length === 0}
+                  className="px-5 py-2 bg-[#EBA500] text-white rounded-xl text-sm font-medium hover:bg-[#EBA500]/90 transition-all disabled:opacity-50"
+                >
+                  {importSaving ? 'Importando...' : `Importar ${importRows.length} registro(s)`}
+                </button>
+              </div>
             </div>
           </div>
         </div>

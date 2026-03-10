@@ -24,6 +24,7 @@ import ProcessManagementPage from './pages/ProcessManagementPage'
 import ProcessPersonalizationPage from './pages/ProcessPersonalizationPage'
 import JornadasPage from './pages/JornadasPage'
 import CreateCompanyPage from './pages/CreateCompanyPage'
+import UserCreateCompanyPage from './pages/UserCreateCompanyPage'
 import JourneyManagementOverview from './pages/JourneyManagement/index'
 import JourneyDetail from './pages/JourneyManagement/JourneyDetail'
 import ProcessEvaluationForm from './pages/JourneyManagement/ProcessEvaluationForm'
@@ -262,6 +263,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['super_admin']}>
             <CreateCompanyPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Criar empresa — disponível para usuários não vinculados */}
+      <Route 
+        path="/criar-empresa" 
+        element={
+          <ProtectedRoute>
+            <UserCreateCompanyPage />
           </ProtectedRoute>
         }
       />

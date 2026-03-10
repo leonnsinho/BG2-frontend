@@ -353,55 +353,50 @@ export default function UsersManagementPage() {
   const handleUpdateUser = async (userId, updates) => {
     try {
       setUpdating(true)
-      
-      console.log('🔄 Tentando atualizar usuário...')
-      console.log('   - User ID:', userId)
-      console.log('   - Updates:', updates)
-      console.log('   - Campo full_name:', updates.full_name)
-      
-      // Verificar se o registro existe antes de atualizar
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-      
-      if (checkError) {
-        console.error('❌ Erro ao buscar profile:', checkError)
-        throw checkError
-      }
-      
-      console.log('📋 Profile atual:', existingProfile)
-      
-      // Atualizar com timestamp
-      const updateData = {
-        ...updates,
-        updated_at: new Date().toISOString()
-      }
-      
-      console.log('📝 Dados para atualizar:', updateData)
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', userId)
-        .select()
 
-      if (error) {
-        console.error('❌ Erro ao atualizar no Supabase:', error)
-        throw error
+      // --- Atualizar email via Netlify Function (requer service role) ---
+      if (updates.email) {
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+        if (!token) throw new Error('Sessão expirada. Faça login novamente.')
+
+        const res = await fetch('/.netlify/functions/update-user-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            newEmail: updates.email,
+            requestingUserToken: token,
+          }),
+        })
+
+        const result = await res.json()
+        if (!res.ok) throw new Error(result.error || 'Erro ao atualizar email')
+
+        // Remove email dos updates para não tentar atualizar novamente abaixo
+        // (a Netlify function já atualizou o profiles)
+        delete updates.email
       }
-      
-      console.log('✅ Resposta do Supabase:', data)
-      console.log('✅ Novo full_name:', data?.[0]?.full_name)
+
+      // --- Atualizar nome (e outros campos) na tabela profiles ---
+      if (Object.keys(updates).length > 0) {
+        const updateData = { ...updates, updated_at: new Date().toISOString() }
+
+        const { error } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', userId)
+
+        if (error) throw error
+      }
 
       await loadUsers()
       setIsEditModalOpen(false)
       setSelectedUser(null)
-      alert('Nome do usuário atualizado com sucesso!')
+      toast.success('Usuário atualizado com sucesso!')
     } catch (error) {
       console.error('❌ ERRO COMPLETO:', error)
-      alert('Erro ao atualizar usuário: ' + error.message)
+      toast.error('Erro ao atualizar usuário: ' + error.message)
     } finally {
       setUpdating(false)
     }
@@ -852,6 +847,21 @@ export default function UsersManagementPage() {
       if (error) {
         console.error('Erro ao desativar vinculação:', error)
         throw error
+      }
+
+      // Verificar se o usuário ainda tem alguma empresa ativa
+      const { data: remainingLinks } = await supabase
+        .from('user_companies')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+
+      // Se não tem mais nenhuma empresa, rebaixar role para 'user'
+      if (!remainingLinks || remainingLinks.length === 0) {
+        await supabase
+          .from('profiles')
+          .update({ role: 'user', updated_at: new Date().toISOString() })
+          .eq('id', userId)
       }
 
       await loadUsers()
@@ -1792,19 +1802,22 @@ export default function UsersManagementPage() {
 // Componente Modal de Edição
 function EditUserModal({ user, onClose, onSave, loading }) {
   const [fullName, setFullName] = useState(user.full_name || '')
+  const [email, setEmail] = useState(user.email || '')
+  const emailChanged = email.trim() !== (user.email || '').trim()
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
     if (!fullName.trim()) {
       alert('Por favor, preencha o nome do usuário')
       return
     }
-    
-    console.log('📝 Enviando atualização - User ID:', user.id, 'Nome:', fullName)
-    
-    // Enviar apenas o nome para atualização
-    onSave(user.id, { full_name: fullName.trim() })
+    if (!email.trim() || !email.includes('@')) {
+      alert('Por favor, informe um email válido')
+      return
+    }
+    const updates = { full_name: fullName.trim() }
+    if (emailChanged) updates.email = email.trim()
+    onSave(user.id, updates)
   }
 
   return (
@@ -1818,9 +1831,9 @@ function EditUserModal({ user, onClose, onSave, loading }) {
           <form onSubmit={handleSubmit}>
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                Editar Nome do Usuário
+                Editar Usuário
               </h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1836,12 +1849,26 @@ function EditUserModal({ user, onClose, onSave, loading }) {
                     required
                   />
                 </div>
-                
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="email@empresa.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#EBA500]"
+                    required
+                  />
+                  {emailChanged && (
+                    <p className="mt-1 text-xs text-amber-600">⚠️ O email será atualizado no sistema de autenticação.</p>
+                  )}
+                </div>
+
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                   <p className="text-sm text-gray-600">
-                    <strong>Email:</strong> {user.email}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">
                     <strong>Função:</strong> {user.role || 'user'}
                   </p>
                   {user.companies?.name && (
