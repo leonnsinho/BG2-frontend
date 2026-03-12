@@ -1,11 +1,11 @@
-﻿import { useState } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import {
   Building2, ArrowLeft, ArrowRight, Save, Phone, Globe,
   CreditCard, Users, MapPin, Hash, Upload, Image as ImageIcon,
-  X, Wallet, Check
+  X, Wallet, Check, Zap, ClipboardList, Clock
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -14,7 +14,7 @@ const EMPTY_FORM = {
   website: '', industry: '', size: 'pequena', inscricao_estadual: '',
   inscricao_municipal: '', num_colaboradores: '', regime_tributario: '',
   contribuinte_icms: '', is_partner_client: '',
-  representante: { nome: '', email: '', telefone: '', endereco: '', cpf: '' },
+  representante: { nome: '', email: '', telefone: '', endereco: '', cpf: '', cargo: '' },
   contato_cobranca: { nome: '', cargo: '', email: '', telefone: '' },
   melhor_dia_pagamento: '', forma_pagamento: '',
   address: { street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zip: '', country: 'Brasil' }
@@ -29,15 +29,36 @@ const STEPS = [
   { label: 'Cobranca',            icon: CreditCard },
 ]
 
+const EMPTY_PF = {
+  nome: '', cpf: '', rg: '', telefone: '', email: '', email_nf: '',
+  forma_pagamento: '',
+  address: { street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zip: '' }
+}
+
+const PF_STEPS = [
+  { label: 'Dados Pessoais', icon: Users },
+  { label: 'Endereço',       icon: MapPin },
+  { label: 'Contato',        icon: Phone },
+]
+
 export default function UserCreateCompanyPage() {
   const navigate = useNavigate()
-  const { user, refreshProfile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
+  const [mode, setMode] = useState('basico') // 'basico' | 'completo'
+  const [pessoa_tipo, setPessoaTipo] = useState('pj') // 'pj' | 'pf'
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [isInternational, setIsInternational] = useState(false)
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState(null)
   const [formData, setFormData] = useState(EMPTY_FORM)
+  const [pfData, setPfData] = useState(EMPTY_PF)
+
+  // Detecta se o usuário já tem uma empresa em trial (para o modo "completar")
+  const trialCompany = profile?.user_companies?.find(
+    uc => uc.is_active && uc.companies?.subscription_status === 'trial'
+  )
+  const isCompleting = !!trialCompany  // true = completar cadastro de empresa trial existente
 
   const fillTestData = () => {
     setFormData({
@@ -84,6 +105,15 @@ export default function UserCreateCompanyPage() {
     toast.success('Dados de teste preenchidos!')
   }
 
+  const handlePfChange = (field, value) => {
+    if (field.startsWith('address.')) {
+      const sub = field.replace('address.', '')
+      setPfData(prev => ({ ...prev, address: { ...prev.address, [sub]: value } }))
+    } else {
+      setPfData(prev => ({ ...prev, [field]: value }))
+    }
+  }
+
   const handleChange = (field, value) => {
     if (field.startsWith('address.')) {
       const sub = field.replace('address.', '')
@@ -109,6 +139,93 @@ export default function UserCreateCompanyPage() {
     const reader = new FileReader()
     reader.onloadend = () => setLogoPreview(reader.result)
     reader.readAsDataURL(file)
+  }
+
+  const validatePfStep = () => {
+    switch (step) {
+      case 0:
+        if (!pfData.nome.trim())  { toast.error('Nome completo é obrigatório'); return false }
+        if (!pfData.cpf.trim())   { toast.error('CPF é obrigatório'); return false }
+        return true
+      case 1:
+        if (!pfData.address.street.trim()) { toast.error('Rua é obrigatória'); return false }
+        if (!pfData.address.city.trim())   { toast.error('Cidade é obrigatória'); return false }
+        if (!pfData.address.state.trim())  { toast.error('Estado é obrigatório'); return false }
+        if (!pfData.address.zip.trim())    { toast.error('CEP é obrigatório'); return false }
+        return true
+      case 2:
+        if (!pfData.telefone.trim())      { toast.error('Telefone é obrigatório'); return false }
+        if (!pfData.email.trim())         { toast.error('E-mail é obrigatório'); return false }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pfData.email)) { toast.error('E-mail inválido'); return false }
+        if (!pfData.forma_pagamento)      { toast.error('Forma de pagamento é obrigatória'); return false }
+        return true
+      default: return true
+    }
+  }
+
+  const handleSubmitPfBasico = async () => {
+    if (!pfData.nome.trim())     { toast.error('Nome completo é obrigatório'); return }
+    if (!pfData.email.trim())    { toast.error('E-mail é obrigatório'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pfData.email)) { toast.error('E-mail inválido'); return }
+    if (!pfData.telefone.trim()) { toast.error('Telefone é obrigatório'); return }
+    setLoading(true)
+    try {
+      const companyData = {
+        name: pfData.nome.trim(),
+        email: pfData.email.trim(),
+        phone: pfData.telefone.trim(),
+        representante_legal: { tipo: 'pf' },
+        created_by: user.id,
+        subscription_plan: 'basic',
+        subscription_status: 'trial',
+        is_active: true,
+      }
+      const { data: company, error: companyError } = await supabase
+        .from('companies').insert([companyData]).select().single()
+      if (companyError) throw companyError
+      await supabase.from('user_companies').insert([{ user_id: user.id, company_id: company.id, role: 'company_admin', is_active: true }])
+      await supabase.from('profiles').update({ role: 'company_admin' }).eq('id', user.id)
+      toast.success('Cadastro criado! Você tem 14 dias para completar os dados.')
+      await refreshProfile()
+      navigate('/dashboard')
+    } catch (error) {
+      toast.error(`Erro: ${error.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmitPfCompleto = async () => {
+    if (!validatePfStep()) return
+    setLoading(true)
+    try {
+      const companyData = {
+        name: pfData.nome.trim(),
+        cnpj: pfData.cpf.trim() || null,
+        email: pfData.email.trim(),
+        phone: pfData.telefone.trim() || null,
+        forma_pagamento: pfData.forma_pagamento || null,
+        address: Object.values(pfData.address).some(v => v.trim()) ? pfData.address : null,
+        representante_legal: { tipo: 'pf', rg: pfData.rg.trim() || null },
+        contato_cobranca: pfData.email_nf.trim() ? { email: pfData.email_nf.trim() } : null,
+        created_by: user.id,
+        subscription_plan: 'basic',
+        subscription_status: 'active',
+        is_active: true,
+      }
+      const { data: company, error: companyError } = await supabase
+        .from('companies').insert([companyData]).select().single()
+      if (companyError) throw companyError
+      await supabase.from('user_companies').insert([{ user_id: user.id, company_id: company.id, role: 'company_admin', is_active: true }])
+      await supabase.from('profiles').update({ role: 'company_admin' }).eq('id', user.id)
+      toast.success('Cadastro completo criado com sucesso!')
+      await refreshProfile()
+      navigate('/dashboard')
+    } catch (error) {
+      toast.error(`Erro: ${error.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const validateStep = () => {
@@ -228,6 +345,57 @@ export default function UserCreateCompanyPage() {
     }
   }
 
+  // ─── Cadastro rápido (trial 14 dias) ─────────────────────────────────────
+  const handleSubmitBasico = async () => {
+    if (!formData.name.trim())                    { toast.error('Razão Social é obrigatória'); return }
+    if (!formData.representante.nome.trim())      { toast.error('Nome do representante é obrigatório'); return }
+    if (!formData.representante.cargo.trim())     { toast.error('Cargo do representante é obrigatório'); return }
+    if (!formData.representante.email.trim())     { toast.error('E-mail do representante é obrigatório'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.representante.email)) { toast.error('E-mail do representante inválido'); return }
+    if (!formData.representante.telefone.trim())  { toast.error('Telefone do representante é obrigatório'); return }
+
+    setLoading(true)
+    try {
+      const companyData = {
+        name: formData.name.trim(),
+        representante_legal: {
+          nome:     formData.representante.nome.trim(),
+          cargo:    formData.representante.cargo.trim(),
+          email:    formData.representante.email.trim(),
+          telefone: formData.representante.telefone.trim(),
+        },
+        created_by: user.id,
+        subscription_plan: 'basic',
+        subscription_status: 'trial',
+        is_active: true,
+      }
+
+      const { data: company, error: companyError } = await supabase
+        .from('companies').insert([companyData]).select().single()
+      if (companyError) throw companyError
+
+      const { error: linkError } = await supabase.from('user_companies').insert([{
+        user_id: user.id, company_id: company.id, role: 'company_admin', is_active: true
+      }])
+      if (linkError) throw linkError
+
+      const { error: profileError } = await supabase
+        .from('profiles').update({ role: 'company_admin' }).eq('id', user.id)
+      if (profileError) throw profileError
+
+      toast.success('Empresa criada! Você tem 14 dias para completar o cadastro.')
+      await refreshProfile()
+      navigate('/dashboard')
+    } catch (error) {
+      console.error('Erro ao criar empresa (básico):', error)
+      if (error.message?.includes('cnpj')) toast.error('CNPJ já está em uso')
+      else toast.error(`Erro: ${error.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   const inp = 'w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]'
   const sel = inp + ' bg-white'
 
@@ -241,14 +409,20 @@ export default function UserCreateCompanyPage() {
         </button>
 
         {/* Page title */}
-        <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-[#EBA500]/10">
               <Building2 className="h-6 w-6 text-[#EBA500]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Criar Empresa</h1>
-              <p className="text-sm text-gray-500">Passo {step + 1} de {STEPS.length}</p>
+              <h1 className="text-xl font-bold text-gray-900">
+                {isCompleting ? 'Completar Cadastro da Empresa' : 'Criar Empresa'}
+              </h1>
+              <p className="text-sm text-gray-500">
+                {mode === 'basico'
+                  ? 'Preencha o mínimo para começar a usar o sistema'
+                  : `Passo ${step + 1} de ${STEPS.length}`}
+              </p>
             </div>
           </div>
           <button
@@ -259,6 +433,197 @@ export default function UserCreateCompanyPage() {
             Preencher teste
           </button>
         </div>
+
+        {/* ─── Toggle PJ / PF ──────────────────────────────────────────── */}
+        {!isCompleting && (
+          <div className="flex items-center gap-3 mb-5">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipo:</span>
+            <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => { setPessoaTipo('pj'); setStep(0) }}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  pessoa_tipo === 'pj' ? 'bg-white text-[#EBA500] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Pessoa Jurídica (PJ)
+              </button>
+              <button
+                onClick={() => { setPessoaTipo('pf'); setStep(0) }}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  pessoa_tipo === 'pf' ? 'bg-white text-[#EBA500] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Pessoa Física (PF)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Tabs: Básico / Completo ─────────────────────────────────── */}
+        {!isCompleting && (
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => { setMode('basico'); setStep(0) }}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 text-sm font-semibold transition-all ${
+                mode === 'basico'
+                  ? 'border-[#EBA500] bg-[#EBA500]/5 text-[#EBA500]'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+              }`}
+            >
+              <Zap className="h-4 w-4" />
+              Cadastro Rápido
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                mode === 'basico' ? 'bg-[#EBA500]/20 text-[#EBA500]' : 'bg-gray-100 text-gray-500'
+              }`}>padrão</span>
+            </button>
+            <button
+              onClick={() => { setMode('completo'); setStep(0) }}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 text-sm font-semibold transition-all ${
+                mode === 'completo'
+                  ? 'border-[#EBA500] bg-[#EBA500]/5 text-[#EBA500]'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+              }`}
+            >
+              <ClipboardList className="h-4 w-4" />
+              Cadastro Completo
+            </button>
+          </div>
+        )}
+
+        {/* ─── Modo Básico ──────────────────────────────────────────────── */}
+        {(mode === 'basico' && !isCompleting && pessoa_tipo === 'pj') && (
+          <>
+            {/* Banner de trial */}
+            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-5 text-sm text-amber-800">
+              <Clock className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+              <div>
+                <p className="font-semibold mb-0.5">Acesso de 14 dias grátis</p>
+                <p className="text-amber-700">Preencha apenas os dados básicos agora e complete o cadastro quando quiser. Após 14 dias, o cadastro completo será exigido para continuar usando o sistema.</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="p-6 sm:p-8 space-y-6">
+
+                {/* Informações da Empresa */}
+                <div className="space-y-4">
+                  <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-[#EBA500]" /> Informações da Empresa
+                  </h2>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Razão Social *</label>
+                    <input type="text" value={formData.name} onChange={e => handleChange('name', e.target.value)} placeholder="Ex: Empresa ABC Ltda" className={inp} />
+                  </div>
+                </div>
+
+                <hr className="border-gray-100" />
+
+                {/* Representante */}
+                <div className="space-y-4">
+                  <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-[#EBA500]" /> Representante
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
+                      <input type="text" value={formData.representante.nome} onChange={e => handleChange('representante.nome', e.target.value)} placeholder="Nome completo" className={inp} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Cargo *</label>
+                      <input type="text" value={formData.representante.cargo !== undefined ? formData.representante.cargo : ''} onChange={e => handleChange('representante.cargo', e.target.value)} placeholder="Ex: Diretor, CEO..." className={inp} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Telefone *</label>
+                      <input type="tel" value={formData.representante.telefone} onChange={e => handleChange('representante.telefone', e.target.value)} placeholder="(11) 99999-9999" className={inp} />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
+                      <input type="email" value={formData.representante.email} onChange={e => handleChange('representante.email', e.target.value)} placeholder="representante@empresa.com" className={inp} />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 sm:px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard')}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmitBasico}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {loading
+                    ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Criando...</>
+                    : <><Zap className="h-4 w-4" /> Começar agora</>}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ─── Modo Básico PF ───────────────────────────────────────────── */}
+        {(mode === 'basico' && !isCompleting && pessoa_tipo === 'pf') && (
+          <>
+            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-5 text-sm text-amber-800">
+              <Clock className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+              <div>
+                <p className="font-semibold mb-0.5">Acesso de 14 dias grátis</p>
+                <p className="text-amber-700">Preencha apenas os dados básicos agora e complete o cadastro quando quiser.</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="p-6 sm:p-8 space-y-4">
+                <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                  <Users className="h-4 w-4 text-[#EBA500]" /> Dados Pessoais
+                </h2>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome Completo *</label>
+                  <input type="text" value={pfData.nome} onChange={e => handlePfChange('nome', e.target.value)} placeholder="Seu nome completo" className={inp} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
+                  <input type="email" value={pfData.email} onChange={e => handlePfChange('email', e.target.value)} placeholder="seu@email.com" className={inp} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Telefone *</label>
+                  <input type="tel" value={pfData.telefone} onChange={e => handlePfChange('telefone', e.target.value)} placeholder="(11) 99999-9999" className={inp} />
+                </div>
+              </div>
+              <div className="px-6 sm:px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                <button type="button" onClick={() => navigate('/dashboard')}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
+                  <ArrowLeft className="w-4 h-4" /> Cancelar
+                </button>
+                <button type="button" onClick={handleSubmitPfBasico} disabled={loading}
+                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                  {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Criando...</> : <><Zap className="h-4 w-4" /> Começar agora</>}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ─── Modo Completo (wizard) ───────────────────────────────────── */}
+        {((mode === 'completo' || isCompleting) && pessoa_tipo === 'pj') && (<>
+
+        {/* Banner: completando cadastro trial */}
+        {isCompleting && (
+          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-5 text-sm text-amber-800">
+            <Clock className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+            <div>
+              <p className="font-semibold mb-0.5">Complete seu cadastro</p>
+              <p className="text-amber-700">Preencha todos os dados para liberar o acesso completo à plataforma sem restrições.</p>
+            </div>
+          </div>
+        )}
 
         {/* Step indicator */}
         <div className="flex items-center mb-6 gap-0">
@@ -606,6 +971,164 @@ export default function UserCreateCompanyPage() {
             )}
           </div>
         </div>
+
+        </>)} {/* end mode completo PJ */}
+
+        {/* ─── Modo Completo PF (wizard 3 passos) ──────────────────────── */}
+        {(mode === 'completo' && !isCompleting && pessoa_tipo === 'pf') && (
+          <>
+            {/* Step indicator PF */}
+            <div className="flex items-center mb-6 gap-0">
+              {PF_STEPS.map((s, i) => {
+                const Icon = s.icon
+                const done = i < step
+                const active = i === step
+                return (
+                  <div key={i} className="flex items-center flex-1 last:flex-none">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
+                        done   ? 'bg-[#EBA500] border-[#EBA500] text-white' :
+                        active ? 'bg-white border-[#EBA500] text-[#EBA500]' :
+                                 'bg-white border-gray-200 text-gray-400'
+                      }`}>
+                        {done ? <Check className="w-4 h-4" /> : <Icon className="w-3.5 h-3.5" />}
+                      </div>
+                      <span className={`text-[10px] mt-1 font-medium hidden sm:block ${active ? 'text-[#EBA500]' : done ? 'text-gray-600' : 'text-gray-300'}`}>
+                        {s.label}
+                      </span>
+                    </div>
+                    {i < PF_STEPS.length - 1 && (
+                      <div className={`flex-1 h-0.5 mb-4 mx-1 transition-all ${i < step ? 'bg-[#EBA500]' : 'bg-gray-200'}`} />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="p-6 sm:p-8">
+
+                {/* PF STEP 0 — Dados Pessoais */}
+                {step === 0 && (
+                  <div className="space-y-4">
+                    <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                      <Users className="h-4 w-4 text-[#EBA500]" /> Dados Pessoais
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Nome Completo *</label>
+                        <input type="text" value={pfData.nome} onChange={e => handlePfChange('nome', e.target.value)} placeholder="Seu nome completo" className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">CPF *</label>
+                        <input type="text" value={pfData.cpf} onChange={e => handlePfChange('cpf', e.target.value)} placeholder="000.000.000-00" className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">RG</label>
+                        <input type="text" value={pfData.rg} onChange={e => handlePfChange('rg', e.target.value)} placeholder="00.000.000-0" className={inp} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* PF STEP 1 — Endereço */}
+                {step === 1 && (
+                  <div className="space-y-4">
+                    <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-[#EBA500]" /> Endereço
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Rua / Logradouro *</label>
+                        <input type="text" value={pfData.address.street} onChange={e => handlePfChange('address.street', e.target.value)} placeholder="Rua, Avenida..." className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Número</label>
+                        <input type="text" value={pfData.address.number} onChange={e => handlePfChange('address.number', e.target.value)} placeholder="123" className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Complemento</label>
+                        <input type="text" value={pfData.address.complement} onChange={e => handlePfChange('address.complement', e.target.value)} placeholder="Apto, Bloco..." className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Bairro</label>
+                        <input type="text" value={pfData.address.neighborhood} onChange={e => handlePfChange('address.neighborhood', e.target.value)} placeholder="Centro" className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Cidade *</label>
+                        <input type="text" value={pfData.address.city} onChange={e => handlePfChange('address.city', e.target.value)} placeholder="São Paulo" className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Estado *</label>
+                        <input type="text" value={pfData.address.state} onChange={e => handlePfChange('address.state', e.target.value)} placeholder="SP" className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">CEP *</label>
+                        <input type="text" value={pfData.address.zip} onChange={e => handlePfChange('address.zip', e.target.value)} placeholder="00000-000" className={inp} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* PF STEP 2 — Contato & Cobrança */}
+                {step === 2 && (
+                  <div className="space-y-4">
+                    <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-[#EBA500]" /> Contato e Cobrança
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Telefone *</label>
+                        <input type="tel" value={pfData.telefone} onChange={e => handlePfChange('telefone', e.target.value)} placeholder="(11) 99999-9999" className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
+                        <input type="email" value={pfData.email} onChange={e => handlePfChange('email', e.target.value)} placeholder="seu@email.com" className={inp} />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">E-mail para receber NF / Boleto</label>
+                        <input type="email" value={pfData.email_nf} onChange={e => handlePfChange('email_nf', e.target.value)} placeholder="financeiro@email.com (deixe em branco para usar o mesmo)" className={inp} />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
+                        <select value={pfData.forma_pagamento} onChange={e => handlePfChange('forma_pagamento', e.target.value)} className={sel}>
+                          <option value="">Selecione...</option>
+                          <option value="boleto">Boleto Bancário</option>
+                          <option value="cartao_credito">Cartão de Crédito</option>
+                          <option value="pix">Pix</option>
+                          <option value="transferencia">Transferência Bancária</option>
+                          <option value="debito_automatico">Débito Automático</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Footer PF completo */}
+              <div className="px-6 sm:px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                <button type="button"
+                  onClick={step === 0 ? () => navigate('/dashboard') : prevStep}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
+                  <ArrowLeft className="w-4 h-4" />
+                  {step === 0 ? 'Cancelar' : 'Anterior'}
+                </button>
+                {step < PF_STEPS.length - 1 ? (
+                  <button type="button" onClick={() => { if (validatePfStep()) setStep(s => s + 1) }}
+                    className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+                    Próximo <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button type="button" onClick={handleSubmitPfCompleto} disabled={loading}
+                    className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                    {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Criando...</> : <><Save className="h-4 w-4" /> Criar Cadastro</>}
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
       </div>
     </div>

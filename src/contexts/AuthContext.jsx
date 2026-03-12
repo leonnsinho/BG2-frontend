@@ -153,7 +153,7 @@ export function AuthProvider({ children }) {
 
               const { data: companiesData } = await supabase
                 .from('companies')
-                .select('id, name')
+                .select('id, name, subscription_plan, subscription_status, created_at')
                 .in('id', companyIds)
 
               if (companiesData) {
@@ -242,7 +242,7 @@ export function AuthProvider({ children }) {
                         const companyIds = userCompaniesData.map(uc => uc.company_id)
                         const { data: companiesData } = await supabase
                           .from('companies')
-                          .select('id, name')
+                          .select('id, name, subscription_plan, subscription_status, created_at')
                           .in('id', companyIds)
 
                         if (companiesData) {

@@ -78,6 +78,55 @@ function NotificationManager() {
   )
 }
 
+// Guard: se o trial da empresa expirou (> 14 dias) e o cadastro está incompleto,
+// redireciona para /criar-empresa para forçar o preenchimento completo.
+// Não bloqueia páginas públicas nem /criar-empresa em si.
+function TrialExpiredGuard({ children }) {
+  const { profile, loading } = useAuth()
+  const contentRef = React.useRef(null)
+
+  const trialCompany = profile?.user_companies?.find(
+    uc => uc.is_active && uc.companies?.subscription_status === 'trial'
+  )
+
+  const isExpired = (() => {
+    if (!trialCompany) return false
+    const createdAt = trialCompany.companies?.created_at
+    if (!createdAt) return false
+    return (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24) > 14
+  })()
+
+  // Aplicar/remover atributo inert no wrapper do layout inteiro.
+  // inert bloqueia todo tipo de interação (cliques, teclado, foco) a nível do browser,
+  // independentemente do que o usuário apague via DevTools.
+  React.useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    if (isExpired) {
+      el.setAttribute('inert', '')
+    } else {
+      el.removeAttribute('inert')
+    }
+  }, [isExpired])
+
+  if (loading) return null
+  if (!profile) return children
+
+  return (
+    <>
+      {/* Wrapper com ref para aplicar inert quando trial expirado */}
+      <div ref={contentRef} style={{ display: 'contents' }}>
+        {children}
+      </div>
+      {/* Overlay visual independente — fora do subtree inert, não pode ser removido
+          junto com o modal sem perder o bloqueio do inert */}
+      {isExpired && (
+        <div className="fixed inset-0 z-[45] bg-black/60 backdrop-blur-sm" />
+      )}
+    </>
+  )
+}
+
 // Componente para redirecionar baseado no estado de auth
 function RootRedirect() {
   const { user, loading, isLoggingOut } = useAuth()
@@ -105,7 +154,7 @@ function AppRoutes() {
       <Route path="/complete-signup" element={<CompleteSignupPage />} />
       
       {/* Rotas protegidas com Layout/Sidebar persistente */}
-      <Route element={<ProtectedLayout />}>
+      <Route element={<TrialExpiredGuard><ProtectedLayout /></TrialExpiredGuard>}>
         <Route 
           path="/dashboard" 
           element={

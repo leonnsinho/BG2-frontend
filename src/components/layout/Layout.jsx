@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar'
 import { Button } from '../ui/Button'
 import { cn } from '../../utils/cn'
 import SmartAdvisorChat from '../SmartAdvisorChat'
+import TrialBanner from '../TrialBanner'
 
 const Layout = ({ children, className }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -55,6 +56,7 @@ const Layout = ({ children, className }) => {
         "flex flex-col transition-all duration-300",
         sidebarCollapsed ? "lg:ml-20" : "lg:ml-72"
       )}>
+        <TrialBanner sidebarCollapsed={sidebarCollapsed} />
         {/* Page Content */}
         <main className={cn(
           "flex-1 p-4 sm:p-6 lg:p-8 lg:pt-6",
