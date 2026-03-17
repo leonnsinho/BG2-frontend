@@ -19,6 +19,7 @@ import {
   ArrowLeft
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ConfirmModal from '../components/ui/ConfirmModal'
 
 // Estilos de animação para modais
 const modalStyles = `
@@ -63,6 +64,7 @@ function PlanoContasPage() {
   // Inicializar companyFilter com valor da URL se existir
   const initialCompanyFilter = searchParams.get('company') || searchParams.get('companyId') || 'all'
   const [companyFilter, setCompanyFilter] = useState(initialCompanyFilter)
+  const [confirmDialog, setConfirmDialog] = useState(null)
   
   const [collapsedCategories, setCollapsedCategories] = useState({})
   const [companySearchTerm, setCompanySearchTerm] = useState('') // Busca no modal
@@ -362,28 +364,35 @@ function PlanoContasPage() {
         return
       }
 
-      const confirmar = window.confirm(
-        `Deseja associar ${itensGlobais.length} itens globais à empresa selecionada?\n\n` +
-        `Isso criará vínculos para todos os itens que não estão associados a nenhuma empresa.`
-      )
+      setConfirmDialog({
+        title: `Associar ${itensGlobais.length} itens globais?`,
+        message: 'Isso criará vínculos para todos os itens que não estão associados a nenhuma empresa.',
+        confirmLabel: 'Associar',
+        variant: 'warning',
+        onConfirm: async () => {
+          setConfirmDialog(null)
+          try {
+            // Criar associações em massa
+            const associacoes = itensGlobais.map(item => ({
+              item_id: item.id,
+              company_id: companyFilter,
+              created_by: profile.id
+            }))
 
-      if (!confirmar) return
+            const { error } = await supabase
+              .from('dfc_itens_empresas')
+              .insert(associacoes)
 
-      // Criar associações em massa
-      const associacoes = itensGlobais.map(item => ({
-        item_id: item.id,
-        company_id: companyFilter,
-        created_by: profile.id
-      }))
+            if (error) throw error
 
-      const { error } = await supabase
-        .from('dfc_itens_empresas')
-        .insert(associacoes)
-
-      if (error) throw error
-
-      toast.success(`${itensGlobais.length} itens associados com sucesso!`)
-      fetchCategorias()
+            toast.success(`${itensGlobais.length} itens associados com sucesso!`)
+            fetchCategorias()
+          } catch (error) {
+            console.error('Erro ao associar itens:', error)
+            toast.error('Erro ao associar itens: ' + error.message)
+          }
+        }
+      })
     } catch (error) {
       console.error('Erro ao associar itens:', error)
       toast.error('Erro ao associar itens: ' + error.message)
@@ -1552,6 +1561,16 @@ function PlanoContasPage() {
         </div>
       )}
       </div>
+      {confirmDialog && (
+        <ConfirmModal
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel || 'Confirmar'}
+          variant={confirmDialog.variant || 'danger'}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </>
   )
 }

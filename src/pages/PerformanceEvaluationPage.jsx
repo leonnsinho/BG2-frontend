@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSearchParams } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import SuperAdminBanner from '../components/SuperAdminBanner'
+import ConfirmModal from '../components/ui/ConfirmModal'
 import { 
   Grid3x3, 
   Users, 
@@ -58,6 +59,7 @@ export default function PerformanceEvaluationPage() {
   const [filterCompany, setFilterCompany] = useState('all')
   const [companies, setCompanies] = useState([])
   const [userRole, setUserRole] = useState(null)
+  const [confirmDialog, setConfirmDialog] = useState(null)
 
   // Obter empresa do usuário atual se for company_admin
   const getCurrentUserCompany = () => {
@@ -328,69 +330,77 @@ export default function PerformanceEvaluationPage() {
     }
   }
 
-  const deleteEvaluation = async (evaluationId) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta avaliação?')) return
+  const deleteEvaluation = (evaluationId) => {
+    setConfirmDialog({
+      title: 'Excluir esta avaliação?',
+      message: 'Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          // Deletar histórico relacionado
+          await supabase
+            .from('performance_evaluation_history')
+            .delete()
+            .eq('evaluation_id', evaluationId)
 
-    try {
-      // Deletar histórico relacionado
-      await supabase
-        .from('performance_evaluation_history')
-        .delete()
-        .eq('evaluation_id', evaluationId)
+          // Deletar a avaliação
+          const { error } = await supabase
+            .from('performance_evaluations')
+            .delete()
+            .eq('id', evaluationId)
 
-      // Deletar a avaliação
-      const { error } = await supabase
-        .from('performance_evaluations')
-        .delete()
-        .eq('id', evaluationId)
+          if (error) throw error
 
-      if (error) throw error
+          // Atualizar histórico do usuário
+          const updatedHistory = userHistory.filter(e => e.id !== evaluationId)
+          setUserHistory(updatedHistory)
 
-      // Atualizar histórico do usuário
-      const updatedHistory = userHistory.filter(e => e.id !== evaluationId)
-      setUserHistory(updatedHistory)
+          // Se não houver mais avaliações, fechar o modal
+          if (updatedHistory.length === 0) {
+            setShowHistoryModal(false)
+          }
 
-      // Se não houver mais avaliações, fechar o modal
-      if (updatedHistory.length === 0) {
-        setShowHistoryModal(false)
+          await loadData()
+          alert('✅ Avaliação excluída com sucesso!')
+        } catch (error) {
+          console.error('Erro ao excluir avaliação:', error)
+          alert('❌ Erro ao excluir avaliação. Tente novamente.')
+        }
       }
-
-      await loadData()
-      alert('✅ Avaliação excluída com sucesso!')
-    } catch (error) {
-      console.error('Erro ao excluir avaliação:', error)
-      alert('❌ Erro ao excluir avaliação. Tente novamente.')
-    }
+    })
   }
 
-  const removeUserFromNineBox = async () => {
+  const removeUserFromNineBox = () => {
     if (!selectedUser) return
+    setConfirmDialog({
+      title: `Remover ${selectedUser.full_name} da Nine Box?`,
+      message: `Isso excluirá TODAS as ${userHistory.length} avaliação(ões) deste usuário. Esta ação não pode ser desfeita.`,
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          // Deletar todos os históricos do usuário
+          await supabase
+            .from('performance_evaluation_history')
+            .delete()
+            .eq('user_id', selectedUser.id)
 
-    const confirmMsg = `Tem certeza que deseja remover ${selectedUser.full_name} da Nine Box?\n\nIsso excluirá TODAS as ${userHistory.length} avaliação(ões) deste usuário.`
-    if (!window.confirm(confirmMsg)) return
+          // Deletar todas as avaliações do usuário
+          const { error } = await supabase
+            .from('performance_evaluations')
+            .delete()
+            .eq('user_id', selectedUser.id)
 
-    try {
-      // Deletar todos os históricos do usuário
-      await supabase
-        .from('performance_evaluation_history')
-        .delete()
-        .eq('user_id', selectedUser.id)
+          if (error) throw error
 
-      // Deletar todas as avaliações do usuário
-      const { error } = await supabase
-        .from('performance_evaluations')
-        .delete()
-        .eq('user_id', selectedUser.id)
-
-      if (error) throw error
-
-      setShowHistoryModal(false)
-      await loadData()
-      alert('✅ Usuário removido da Nine Box com sucesso!')
-    } catch (error) {
-      console.error('Erro ao remover usuário:', error)
-      alert('❌ Erro ao remover usuário. Tente novamente.')
-    }
+          setShowHistoryModal(false)
+          await loadData()
+          alert('✅ Usuário removido da Nine Box com sucesso!')
+        } catch (error) {
+          console.error('Erro ao remover usuário:', error)
+          alert('❌ Erro ao remover usuário. Tente novamente.')
+        }
+      }
+    })
   }
 
   const exportarPDF = async () => {
@@ -1530,6 +1540,16 @@ export default function PerformanceEvaluationPage() {
             </div>
           </div>
         </div>
+      )}
+      {confirmDialog && (
+        <ConfirmModal
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel || 'Excluir'}
+          variant={confirmDialog.variant || 'danger'}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
       )}
     </div>
   )

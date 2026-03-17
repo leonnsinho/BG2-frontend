@@ -28,6 +28,7 @@ import {
   ArrowLeft
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ConfirmModal from '../components/ui/ConfirmModal'
 
 function DFCEntradasPage() {
   const { profile } = useAuth()
@@ -38,6 +39,7 @@ function DFCEntradasPage() {
   const [categorias, setCategorias] = useState([])
   const [itensDB, setItensDB] = useState([])
   const [loading, setLoading] = useState(true)
+  const [confirmDialog, setConfirmDialog] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
@@ -2373,11 +2375,11 @@ function DFCEntradasPage() {
                           <span className="text-sm font-medium">Baixar</span>
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm('Deseja realmente excluir este documento?')) {
-                              deleteDocumento(doc)
-                            }
-                          }}
+                          onClick={() => setConfirmDialog({
+                            title: 'Excluir documento?',
+                            message: 'Esta ação não pode ser desfeita.',
+                            onConfirm: () => { setConfirmDialog(null); deleteDocumento(doc) }
+                          })}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
                           title="Excluir documento"
                         >
@@ -2713,6 +2715,16 @@ function DFCEntradasPage() {
             </div>
           </div>
         </div>
+      )}
+      {confirmDialog && (
+        <ConfirmModal
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel || 'Excluir'}
+          variant={confirmDialog.variant || 'danger'}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
       )}
     </div>
   )

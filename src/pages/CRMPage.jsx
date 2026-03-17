@@ -28,18 +28,6 @@ import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
 // ─── constants ────────────────────────────────────────────────────────────────
-const COLUMN_COLORS = [
-  { label: 'Roxo',    value: '#8b5cf6' },
-  { label: 'Azul',    value: '#3b82f6' },
-  { label: 'Verde',   value: '#22c55e' },
-  { label: 'Amarelo', value: '#f59e0b' },
-  { label: 'Vermelho',value: '#ef4444' },
-  { label: 'Rosa',    value: '#ec4899' },
-  { label: 'Ciano',   value: '#06b6d4' },
-  { label: 'Laranja', value: '#f97316' },
-  { label: 'Cinza',   value: '#6b7280' },
-]
-
 const ORIGENS = ['Indicação', 'Inbound', 'Outbound', 'Site/Blog', 'Redes Sociais', 'Evento', 'Parceiro', 'Outro']
 const STATUS_OPTIONS = [
   { value: 'ativo',   label: 'Ativo',   color: 'bg-blue-100 text-blue-700' },
@@ -68,6 +56,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   const [deleting, setDeleting] = useState(false)
   const [attachments, setAttachments] = useState([])
   const [uploading, setUploading] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const fileRef = useRef()
   const isNew = !card?.id
 
@@ -131,7 +120,6 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   }
 
   const handleDelete = async () => {
-    if (!window.confirm('Excluir este card? A ação não pode ser desfeita.')) return
     setDeleting(true)
     try {
       await supabase.from('crm_cards').delete().eq('id', card.id)
@@ -197,7 +185,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
           </h2>
           <div className="flex items-center gap-2">
             {!isNew && (
-              <button onClick={handleDelete} disabled={deleting}
+              <button onClick={() => setConfirmDelete(true)} disabled={deleting}
                 className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -350,11 +338,19 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
           </button>
         </div>
       </div>
+      {confirmDelete && (
+        <ConfirmModal
+          title={`Excluir card${card?.nome_empresa ? ` "${card.nome_empresa}"` : ''}`}
+          message="Esta ação não pode ser desfeita. O card e todos os seus anexos serão removidos permanentemente."
+          onConfirm={() => { setConfirmDelete(false); handleDelete() }}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
     </div>
   )
 }
 
-// ─── KanbanCard (draggable) ───────────────────────────────────────────────────
+// ─── KanbanCard (draggable) ───────────────────────────────────────────────
 function KanbanCard({ card, onEdit, isDragOverlay = false }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id, data: { type: 'card', card } })
   const style = {
@@ -485,7 +481,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
 // ─── ColumnModal ──────────────────────────────────────────────────────────────
 function ColumnModal({ column, onClose, onSaved }) {
   const [name, setName] = useState(column?.name || '')
-  const [color, setColor] = useState(column?.color || COLUMN_COLORS[0].value)
+  const [color, setColor] = useState(column?.color || '#3b82f6')
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
@@ -513,13 +509,12 @@ function ColumnModal({ column, onClose, onSaved }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-2">Cor</label>
-            <div className="flex flex-wrap gap-2">
-              {COLUMN_COLORS.map(c => (
-                <button key={c.value} onClick={() => setColor(c.value)} title={c.label}
-                  className={`w-7 h-7 rounded-full transition-all ${color === c.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-110'}`}
-                  style={{ background: c.value }} />
-              ))}
-            </div>
+            <input
+              type="color"
+              value={color}
+              onChange={e => setColor(e.target.value)}
+              className="w-full h-12 rounded-xl border-2 border-gray-200 cursor-pointer p-1"
+            />
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">
@@ -527,6 +522,39 @@ function ColumnModal({ column, onClose, onSaved }) {
           <button onClick={handleSave} disabled={saving}
             className="px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60">
             Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── ConfirmModal ────────────────────────────────────────────────────────────
+function ConfirmModal({ title, message, confirmLabel = 'Excluir', onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
+        <div className="flex items-start gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-50 shrink-0">
+            <Trash2 className="h-5 w-5 text-red-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-800">{title}</h3>
+            <p className="text-xs text-gray-500 mt-1 leading-relaxed">{message}</p>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 pt-1">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors"
+          >
+            {confirmLabel}
           </button>
         </div>
       </div>
@@ -547,6 +575,7 @@ export default function CRMPage() {
   const [activeCard, setActiveCard] = useState(null)
   const [activeColumn, setActiveColumn] = useState(null)
   const [search, setSearch] = useState('')
+  const [confirmDialog, setConfirmDialog] = useState(null) // { title, message, onConfirm }
 
   const companyId = profile?.user_companies?.find(uc => uc.is_active)?.company_id
 
@@ -610,17 +639,26 @@ export default function CRMPage() {
     }
   }
 
-  const handleDeleteColumn = async (colId) => {
+  const handleDeleteColumn = (colId) => {
     const count = (cards[colId] || []).length
-    if (!window.confirm(`Excluir esta coluna${count ? ` e ${count} card(s)?` : '?'}`)) return
-    try {
-      await supabase.from('crm_columns').delete().eq('id', colId)
-      setColumns(p => p.filter(c => c.id !== colId))
-      setCards(p => { const n = { ...p }; delete n[colId]; return n })
-      toast.success('Coluna excluída')
-    } catch (e) {
-      toast.error('Erro ao excluir')
-    }
+    const col = columns.find(c => c.id === colId)
+    setConfirmDialog({
+      title: `Excluir coluna "${col?.name || ''}"`,
+      message: count
+        ? `Esta coluna contém ${count} card${count > 1 ? 's' : ''}. Todos serão excluídos permanentemente.`
+        : 'Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          await supabase.from('crm_columns').delete().eq('id', colId)
+          setColumns(p => p.filter(c => c.id !== colId))
+          setCards(p => { const n = { ...p }; delete n[colId]; return n })
+          toast.success('Coluna excluída')
+        } catch (e) {
+          toast.error('Erro ao excluir')
+        }
+      },
+    })
   }
 
   // ── Card CRUD ──────────────────────────────────────────────────────────────
@@ -902,6 +940,14 @@ export default function CRMPage() {
           onClose={() => setCardModal(null)}
           onSaved={handleCardSaved}
           onDeleted={handleCardDeleted}
+        />
+      )}
+      {confirmDialog && (
+        <ConfirmModal
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
         />
       )}
     </div>

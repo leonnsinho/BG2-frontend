@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import IndicatorModal from '../../components/indicators/IndicatorModal'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 
 export default function ManageIndicatorsPage() {
   const { profile } = useAuth()
@@ -29,6 +30,7 @@ export default function ManageIndicatorsPage() {
   const [users, setUsers] = useState([])
   const [avatarUrls, setAvatarUrls] = useState({})
   const [companies, setCompanies] = useState([])
+  const [confirmDialog, setConfirmDialog] = useState(null)
 
   const journeys = ['Todas', 'Estratégia', 'Financeira', 'Receita', 'Pessoas & Cultura', 'Operacional']
   const statuses = ['Todos', 'Ativo', 'Inativo']
@@ -217,23 +219,28 @@ export default function ManageIndicatorsPage() {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Tem certeza que deseja excluir este indicador?')) return
+  const handleDelete = (id) => {
+    setConfirmDialog({
+      title: 'Excluir este indicador?',
+      message: 'Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          const { error } = await supabase
+            .from('management_indicators')
+            .delete()
+            .eq('id', id)
 
-    try {
-      const { error } = await supabase
-        .from('management_indicators')
-        .delete()
-        .eq('id', id)
+          if (error) throw error
 
-      if (error) throw error
-      
-      toast.success('Indicador excluído com sucesso')
-      loadIndicators()
-    } catch (error) {
-      console.error('Erro ao excluir:', error)
-      toast.error('Erro ao excluir indicador')
-    }
+          toast.success('Indicador excluído com sucesso')
+          loadIndicators()
+        } catch (error) {
+          console.error('Erro ao excluir:', error)
+          toast.error('Erro ao excluir indicador')
+        }
+      }
+    })
   }
 
   const handleDuplicate = async (indicator) => {
@@ -691,6 +698,16 @@ export default function ManageIndicatorsPage() {
             setEditingIndicator(null)
             loadIndicators()
           }}
+        />
+      )}
+      {confirmDialog && (
+        <ConfirmModal
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel="Excluir"
+          variant="danger"
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
         />
       )}
     </div>

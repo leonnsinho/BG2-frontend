@@ -15,7 +15,8 @@ import {
   TrendingUp,
   TrendingDown,
   Shield,
-  AlertCircle
+  AlertCircle,
+  Kanban
 } from 'lucide-react'
 
 const TOOL_ICONS = {
@@ -26,6 +27,7 @@ const TOOL_ICONS = {
   'dollar-sign': DollarSign,
   'trending-up': TrendingUp,
   'trending-down': TrendingDown,
+  'kanban': Kanban,
   'tool': Wrench
 }
 

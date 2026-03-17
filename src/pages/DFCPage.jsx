@@ -27,6 +27,7 @@ import {
   ArrowLeft
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ConfirmModal from '../components/ui/ConfirmModal'
 
 function DFCPage() {
   const { profile } = useAuth()
@@ -48,6 +49,7 @@ function DFCPage() {
   const [documentos, setDocumentos] = useState([])
   const [showDocumentosModal, setShowDocumentosModal] = useState(false)
   const [selectedSaidaDocumentos, setSelectedSaidaDocumentos] = useState(null)
+  const [confirmDialog, setConfirmDialog] = useState(null)
   
   // Estados para parcelas
   const [showParcelasModal, setShowParcelasModal] = useState(false)
@@ -2299,11 +2301,11 @@ function DFCPage() {
                           <span className="text-sm font-medium">Baixar</span>
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm('Deseja realmente excluir este documento?')) {
-                              deleteDocumento(doc)
-                            }
-                          }}
+                          onClick={() => setConfirmDialog({
+                            title: 'Excluir documento?',
+                            message: 'Esta ação não pode ser desfeita.',
+                            onConfirm: () => { setConfirmDialog(null); deleteDocumento(doc) }
+                          })}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
                           title="Excluir documento"
                         >
@@ -2639,6 +2641,16 @@ function DFCPage() {
             </div>
           </div>
         </div>
+      )}
+      {confirmDialog && (
+        <ConfirmModal
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel || 'Excluir'}
+          variant={confirmDialog.variant || 'danger'}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
       )}
     </div>
   )

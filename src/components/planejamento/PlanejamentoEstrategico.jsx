@@ -12,6 +12,7 @@ import TaskSidebar from './TaskSidebar'
 import ProcessProgressBar from '../process/ProcessProgressBar'
 import MaturityConfirmationModal from '../process/MaturityConfirmationModal'
 import MaturityConfirmModal from '../modals/MaturityConfirmModal'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import SuperAdminBanner from '../SuperAdminBanner'
 import DraggableProcessList from './DraggableProcessList'
 import toast from 'react-hot-toast'
@@ -191,6 +192,7 @@ const PlanejamentoEstrategico = () => {
   // 🔥 NOVO: Estado para modal de confirmação de amadurecimento
   const [maturityConfirmModalOpen, setMaturityConfirmModalOpen] = useState(false)
   const [processForMaturityConfirm, setProcessForMaturityConfirm] = useState(null)
+  const [confirmDialog, setConfirmDialog] = useState(null)
 
   // Adicionar CSS customizado para scrollbar
   useEffect(() => {
@@ -747,43 +749,43 @@ const PlanejamentoEstrategico = () => {
     }
   }
   
-  const handleResetOrder = async () => {
-    const confirmacao = window.confirm(
-      '🔄 Resetar Ordenação Manual?\n\n' +
-      'Isso irá remover a ordenação customizada e voltar para a ordenação automática por priority_score.\n\n' +
-      'Deseja continuar?'
-    )
-    
-    if (!confirmacao) return
-    
-    try {
-      console.log('🔄 Resetando ordem manual para jornada:', jornadaSelecionada?.nome)
-      
-      // Chamar função helper do banco que reseta a ordem
-      const { error } = await supabase.rpc('reset_strategic_priority_order', {
-        p_company_id: companyId
-      })
-      
-      if (error) {
-        console.error('❌ Erro ao resetar ordem:', error)
-        throw error
+  const handleResetOrder = () => {
+    setConfirmDialog({
+      title: 'Resetar Ordenação Manual?',
+      message: 'Isso irá remover a ordenação customizada e voltar para a ordenação automática por priority_score.',
+      confirmLabel: 'Resetar',
+      variant: 'warning',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          console.log('🔄 Resetando ordem manual para jornada:', jornadaSelecionada?.nome)
+          
+          // Chamar função helper do banco que reseta a ordem
+          const { error } = await supabase.rpc('reset_strategic_priority_order', {
+            p_company_id: companyId
+          })
+          
+          if (error) {
+            console.error('❌ Erro ao resetar ordem:', error)
+            throw error
+          }
+          
+          console.log('✅ Ordem resetada com sucesso!')
+          toast.success('✅ Ordenação resetada! Usando prioridade automática.', {
+            icon: '🔄',
+            duration: 3000
+          })
+          
+          // Recarregar processos
+          if (refetch) {
+            refetch()
+          }
+        } catch (error) {
+          console.error('❌ Erro ao resetar ordenação:', error)
+          toast.error('Erro ao resetar ordenação')
+        }
       }
-      
-      console.log('✅ Ordem resetada com sucesso!')
-      toast.success('✅ Ordenação resetada! Usando prioridade automática.', {
-        icon: '🔄',
-        duration: 3000
-      })
-      
-      // Recarregar processos
-      if (refetch) {
-        refetch()
-      }
-      
-    } catch (error) {
-      console.error('❌ Erro ao resetar ordenação:', error)
-      toast.error('Erro ao resetar ordenação')
-    }
+    })
   }
   
   // ====== Funções do Sistema de Amadurecimento ======
@@ -1567,32 +1569,35 @@ const PlanejamentoEstrategico = () => {
     }
   }
 
-  const apagarMeta = async (processoId) => {
+  const apagarMeta = (processoId) => {
     if (!companyId || !processoId) return
+    setConfirmDialog({
+      title: 'Apagar esta meta?',
+      message: 'Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          const { error } = await supabase
+            .from('process_goals')
+            .delete()
+            .eq('process_id', processoId)
+            .eq('company_id', companyId)
 
-    const confirmacao = window.confirm('Tem certeza que deseja apagar esta meta?')
-    if (!confirmacao) return
+          if (error) throw error
 
-    try {
-      const { error } = await supabase
-        .from('process_goals')
-        .delete()
-        .eq('process_id', processoId)
-        .eq('company_id', companyId)
-
-      if (error) throw error
-
-      setMetas(prev => {
-        const updated = { ...prev }
-        delete updated[processoId]
-        return updated
-      })
-      setEditandoMeta(null)
-      toast.success('Meta apagada com sucesso!', { icon: '🗑️' })
-    } catch (error) {
-      console.error('❌ Erro ao apagar meta:', error)
-      toast.error('Erro ao apagar meta')
-    }
+          setMetas(prev => {
+            const updated = { ...prev }
+            delete updated[processoId]
+            return updated
+          })
+          setEditandoMeta(null)
+          toast.success('Meta apagada com sucesso!', { icon: '🗑️' })
+        } catch (error) {
+          console.error('❌ Erro ao apagar meta:', error)
+          toast.error('Erro ao apagar meta')
+        }
+      }
+    })
   }
 
   const carregarPrazosResponsaveis = async () => {
@@ -3259,6 +3264,16 @@ const PlanejamentoEstrategico = () => {
         processName={processForMaturityConfirm?.nome || processForMaturityConfirm?.name}
         progress={processProgressMap[processForMaturityConfirm?.id]}
       />
+      {confirmDialog && (
+        <ConfirmModal
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel || 'Confirmar'}
+          variant={confirmDialog.variant || 'danger'}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   )
 }

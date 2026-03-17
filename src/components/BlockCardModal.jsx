@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { X, FileText, CheckSquare, Paperclip, Plus, Save, Trash2, Edit2, Download, ExternalLink, GripVertical, Bold, Italic, Link as LinkIcon, List, Heading, Upload, Loader2, Eye } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { renderIcon } from '../utils/iconRenderer'
+import ConfirmModal from './ui/ConfirmModal'
 
 export default function BlockCardModal({ block, isOpen, isInline = false, onClose, onUpdate }) {
   const [title, setTitle] = useState('')
@@ -19,6 +20,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
   const [attachmentType, setAttachmentType] = useState('file') // 'file' ou 'link'
   const [attachmentLink, setAttachmentLink] = useState('')
   const [saving, setSaving] = useState(false)
+  const [confirmDialog, setConfirmDialog] = useState(null)
   const editorRef = useRef(null) // Para o editor contentEditable
   const [isEditorInitialized, setIsEditorInitialized] = useState(false)
   const [activeFormats, setActiveFormats] = useState({
@@ -538,65 +540,64 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
     }
   }
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedAttachments.length === 0) return
-    
-    const confirmDelete = window.confirm(
-      `Tem certeza que deseja excluir ${selectedAttachments.length} anexo(s)?`
-    )
-    
-    if (!confirmDelete) return
+    setConfirmDialog({
+      title: `Excluir ${selectedAttachments.length} anexo(s)?`,
+      message: 'Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        setSaving(true)
+        let successCount = 0
+        let failCount = 0
 
-    setSaving(true)
-    let successCount = 0
-    let failCount = 0
+        for (const attachmentId of selectedAttachments) {
+          const attachment = attachments.find(a => a.id === attachmentId)
+          if (!attachment) continue
 
-    for (const attachmentId of selectedAttachments) {
-      const attachment = attachments.find(a => a.id === attachmentId)
-      if (!attachment) continue
+          try {
+            // Deletar do storage
+            if (attachment.file_path) {
+              const { error: storageError } = await supabase.storage
+                .from('policy-attachments')
+                .remove([attachment.file_path])
+              if (storageError) {
+                console.error('❌ Erro ao deletar do storage:', storageError)
+              }
+            }
 
-      try {
-        // Deletar do storage
-        if (attachment.file_path) {
-          const { error: storageError } = await supabase.storage
-            .from('policy-attachments')
-            .remove([attachment.file_path])
-          
-          if (storageError) {
-            console.error('❌ Erro ao deletar do storage:', storageError)
+            // Deletar do banco
+            const { error: dbError } = await supabase
+              .from('policy_attachments')
+              .delete()
+              .eq('id', attachmentId)
+
+            if (dbError) {
+              console.error('❌ Erro ao deletar do banco:', dbError)
+              failCount++
+            } else {
+              successCount++
+            }
+          } catch (err) {
+            console.error('❌ Erro ao deletar anexo:', err)
+            failCount++
           }
         }
 
-        // Deletar do banco
-        const { error: dbError } = await supabase
-          .from('policy_attachments')
-          .delete()
-          .eq('id', attachmentId)
+        // Atualizar lista de anexos
+        setAttachments(attachments.filter(a => !selectedAttachments.includes(a.id)))
+        setSelectedAttachments([])
+        setSaving(false)
 
-        if (dbError) {
-          console.error('❌ Erro ao deletar do banco:', dbError)
-          failCount++
+        if (successCount > 0 && failCount === 0) {
+          alert(`✅ ${successCount} anexo(s) excluído(s) com sucesso!`)
+        } else if (successCount > 0 && failCount > 0) {
+          alert(`⚠️ ${successCount} anexo(s) excluído(s), ${failCount} falharam.`)
         } else {
-          successCount++
+          alert('❌ Falha ao excluir anexos')
         }
-      } catch (err) {
-        console.error('❌ Erro ao deletar anexo:', err)
-        failCount++
       }
-    }
-
-    // Atualizar lista de anexos
-    setAttachments(attachments.filter(a => !selectedAttachments.includes(a.id)))
-    setSelectedAttachments([])
-    setSaving(false)
-    
-    if (successCount > 0 && failCount === 0) {
-      alert(`✅ ${successCount} anexo(s) excluído(s) com sucesso!`)
-    } else if (successCount > 0 && failCount > 0) {
-      alert(`⚠️ ${successCount} anexo(s) excluído(s), ${failCount} falharam.`)
-    } else {
-      alert('❌ Falha ao excluir anexos')
-    }
+    })
   }
 
   const handleAddLink = async () => {
@@ -1548,6 +1549,16 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
           )}
         </div>
       </div>
+      {confirmDialog && (
+        <ConfirmModal
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel || 'Excluir'}
+          variant={confirmDialog.variant || 'danger'}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   )
 }
