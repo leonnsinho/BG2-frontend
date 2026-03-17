@@ -80,6 +80,7 @@ function DFCPage() {
   const [importErrors, setImportErrors] = useState([])  // erros por linha
   const [importSaving, setImportSaving] = useState(false)
   const [importCompanyId, setImportCompanyId] = useState('')
+  const [importItensDB, setImportItensDB] = useState([])
 
   // Sistema de parcelamento
   const [isParcelado, setIsParcelado] = useState(false)
@@ -398,6 +399,33 @@ function DFCPage() {
 
     loadItensEmpresa()
   }, [formData.company_id])
+
+  // Carregar itens para o modal de importação quando a empresa mudar
+  useEffect(() => {
+    const loadImportItens = async () => {
+      if (!importCompanyId) {
+        setImportItensDB([])
+        return
+      }
+      try {
+        const { data: itensEmpresaIds } = await supabase
+          .from('dfc_itens_empresas')
+          .select('item_id')
+          .eq('company_id', importCompanyId)
+        const idsEmpresa = new Set(itensEmpresaIds?.map(ie => ie.item_id) || [])
+        const { data: todosItensAssociados } = await supabase.rpc('get_itens_com_associacoes')
+        const idsTodosAssociados = new Set(todosItensAssociados?.map(r => r.item_id) || [])
+        const { data: todosItens } = await supabase.from('dfc_itens').select('*').order('nome')
+        const filtrados = todosItens?.filter(item =>
+          idsEmpresa.has(item.id) || !idsTodosAssociados.has(item.id)
+        ) || []
+        setImportItensDB(filtrados)
+      } catch (e) {
+        setImportItensDB([])
+      }
+    }
+    loadImportItens()
+  }, [importCompanyId])
 
   // Gerar automaticamente as datas das parcelas quando houver mudanças
   useEffect(() => {
@@ -2557,6 +2585,7 @@ function DFCPage() {
                     <th className="text-left px-3 py-2 font-semibold text-gray-700 border-b w-36">Vencimento</th>
                     <th className="text-left px-3 py-2 font-semibold text-gray-700 border-b w-32">Mês</th>
                     <th className="text-left px-3 py-2 font-semibold text-gray-700 border-b">Categoria</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-700 border-b">Item</th>
                     <th className="px-3 py-2 border-b w-10"></th>
                   </tr>
                 </thead>
@@ -2605,6 +2634,20 @@ function DFCPage() {
                           <option value="">Sem categoria</option>
                           {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                         </select>
+                      </td>
+                      <td className="px-3 py-2 border-b border-gray-100">
+                        {row.categoria ? (
+                          <select
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-sm focus:border-[#EBA500] focus:outline-none bg-white min-w-[140px]"
+                            value={row.item_id}
+                            onChange={e => setImportRows(prev => prev.map((r,j) => j===i ? {...r, item_id: e.target.value} : r))}
+                          >
+                            <option value="">Sem item</option>
+                            {importItensDB.filter(it => it.categoria_id === row.categoria).map(it => <option key={it.id} value={it.id}>{it.nome}</option>)}
+                          </select>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">Selecione a categoria</span>
+                        )}
                       </td>
                       <td className="px-3 py-2 border-b border-gray-100">
                         <button

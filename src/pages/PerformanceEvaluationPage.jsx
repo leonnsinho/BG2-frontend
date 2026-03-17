@@ -423,12 +423,16 @@ export default function PerformanceEvaluationPage() {
             try {
               const res = await fetch(companyData.logo_url)
               const blob = await res.blob()
-              const base64 = await new Promise(resolve => {
+              if (!blob.type.startsWith('image/')) throw new Error('not an image')
+              const base64 = await new Promise((resolve, reject) => {
                 const reader = new FileReader()
                 reader.onloadend = () => resolve(reader.result)
+                reader.onerror = reject
                 reader.readAsDataURL(blob)
               })
-              logoHtml = `<img src="${base64}" style="height:40px;object-fit:contain;" />`
+              if (base64 && base64.startsWith('data:image/')) {
+                logoHtml = `<img src="${base64}" style="height:40px;object-fit:contain;" />`
+              }
             } catch (e) { /* skip logo on error */ }
           }
         }
@@ -528,7 +532,7 @@ export default function PerformanceEvaluationPage() {
     <div class="logo-area">
       ${logoHtml}
       <div>
-        <div class="brand">BG2 Partimap</div>
+        <div class="brand">BG2</div>
         <div class="sub">Sistema de Gestão Estratégica</div>
       </div>
     </div>
@@ -604,7 +608,7 @@ export default function PerformanceEvaluationPage() {
   </table>
 
   <div class="footer">
-    <span>BG2 Partimap — Sistema de Avaliação Nine Box</span>
+    <span>BG2 — Sistema de Avaliação Nine Box</span>
     <span>${now}</span>
   </div>
   <script>window.onload = () => setTimeout(() => window.print(), 500)</script>
