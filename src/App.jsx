@@ -37,6 +37,7 @@ import TaskPacksManagementPage from './pages/admin/TaskPacksManagementPage'
 import ProcessRequestsPage from './pages/ProcessRequestsPage'
 import AllProcessesPage from './pages/AllProcessesPage'
 import OperationalPoliciesPage from './pages/OperationalPoliciesPage'
+import CRMPage from './pages/CRMPage'
 import TasksInProgressNew from './pages/TasksInProgressNew'
 import TasksPage from './pages/TasksPage'
 import ActiveUsersPage from './pages/ActiveUsersPage'
@@ -372,6 +373,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['company_admin']}>
             <OperationalPoliciesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/crm" 
+        element={
+          <ProtectedRoute requiredRole={['company_admin']}>
+            <CRMPage />
           </ProtectedRoute>
         }
       />

@@ -1,0 +1,909 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+  useDroppable,
+  rectIntersection,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  useSortable,
+  horizontalListSortingStrategy,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
+  Plus, X, GripVertical, Edit2, Trash2, Save, Upload,
+  Building2, User, Phone, Mail, MapPin, Tag, DollarSign,
+  MessageSquare, Paperclip, ChevronDown, Check, AlertCircle,
+  Kanban, Search, Filter, MoreHorizontal, Download
+} from 'lucide-react'
+import { supabase } from '../services/supabase'
+import { useAuth } from '../contexts/AuthContext'
+import toast from 'react-hot-toast'
+
+// ─── constants ────────────────────────────────────────────────────────────────
+const COLUMN_COLORS = [
+  { label: 'Roxo',    value: '#8b5cf6' },
+  { label: 'Azul',    value: '#3b82f6' },
+  { label: 'Verde',   value: '#22c55e' },
+  { label: 'Amarelo', value: '#f59e0b' },
+  { label: 'Vermelho',value: '#ef4444' },
+  { label: 'Rosa',    value: '#ec4899' },
+  { label: 'Ciano',   value: '#06b6d4' },
+  { label: 'Laranja', value: '#f97316' },
+  { label: 'Cinza',   value: '#6b7280' },
+]
+
+const ORIGENS = ['Indicação', 'Inbound', 'Outbound', 'Site/Blog', 'Redes Sociais', 'Evento', 'Parceiro', 'Outro']
+const STATUS_OPTIONS = [
+  { value: 'ativo',   label: 'Ativo',   color: 'bg-blue-100 text-blue-700' },
+  { value: 'ganho',   label: 'Ganho',   color: 'bg-green-100 text-green-700' },
+  { value: 'perdido', label: 'Perdido', color: 'bg-red-100 text-red-700' },
+]
+
+const EMPTY_CARD = {
+  nome_empresa: '', nome_contato: '', cargo_contato: '',
+  email_contato: '', telefone_contato: '', origem_lead: '',
+  cidade_estado: '', segmento: '', observacoes: '',
+  valor_oportunidade: '', status: 'ativo',
+}
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
+const fmtMoney = (v) => {
+  if (!v && v !== 0) return ''
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+}
+
+// ─── CardModal ────────────────────────────────────────────────────────────────
+function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDeleted }) {
+  const { user } = useAuth()
+  const [form, setForm] = useState(card ? { ...card } : { ...EMPTY_CARD, column_id: columnId })
+  const [loading, setLoading] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [attachments, setAttachments] = useState([])
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef()
+  const isNew = !card?.id
+
+  const inp = 'w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all'
+  const sel = inp + ' bg-white'
+
+  useEffect(() => {
+    if (card?.id) loadAttachments(card.id)
+  }, [card?.id])
+
+  const loadAttachments = async (cardId) => {
+    const { data } = await supabase
+      .from('crm_card_attachments').select('*').eq('card_id', cardId).order('created_at')
+    setAttachments(data || [])
+  }
+
+  const handleChange = (field, value) => setForm(p => ({ ...p, [field]: value }))
+
+  const handleSave = async () => {
+    if (!form.nome_empresa?.trim() && !form.nome_contato?.trim()) {
+      toast.error('Informe ao menos o nome da empresa ou do contato')
+      return
+    }
+    setLoading(true)
+    try {
+      const payload = {
+        company_id: companyId,
+        column_id: form.column_id || columnId,
+        nome_empresa: form.nome_empresa?.trim() || null,
+        nome_contato: form.nome_contato?.trim() || null,
+        cargo_contato: form.cargo_contato?.trim() || null,
+        email_contato: form.email_contato?.trim() || null,
+        telefone_contato: form.telefone_contato?.trim() || null,
+        origem_lead: form.origem_lead || null,
+        cidade_estado: form.cidade_estado?.trim() || null,
+        segmento: form.segmento?.trim() || null,
+        observacoes: form.observacoes?.trim() || null,
+        valor_oportunidade: form.valor_oportunidade !== '' ? parseFloat(String(form.valor_oportunidade).replace(/[^\d.,]/g, '').replace(',', '.')) || null : null,
+        status: form.status || 'ativo',
+        updated_at: new Date().toISOString(),
+      }
+      let saved
+      if (isNew) {
+        payload.created_by = user?.id
+        payload.position = 9999
+        const { data, error } = await supabase.from('crm_cards').insert([payload]).select().single()
+        if (error) throw error
+        saved = data
+      } else {
+        const { data, error } = await supabase.from('crm_cards').update(payload).eq('id', card.id).select().single()
+        if (error) throw error
+        saved = data
+      }
+      toast.success(isNew ? 'Card criado!' : 'Card atualizado!')
+      onSaved(saved, isNew)
+    } catch (e) {
+      toast.error('Erro ao salvar: ' + e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!window.confirm('Excluir este card? A ação não pode ser desfeita.')) return
+    setDeleting(true)
+    try {
+      await supabase.from('crm_cards').delete().eq('id', card.id)
+      toast.success('Card excluído')
+      onDeleted(card.id)
+    } catch (e) {
+      toast.error('Erro ao excluir')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) { toast.error('Máximo 10MB'); return }
+    if (!card?.id) { toast.error('Salve o card primeiro para adicionar anexos'); return }
+    setUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${companyId}/${card.id}/${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage.from('crm-attachments').upload(path, file, { upsert: false })
+      if (upErr) throw upErr
+      const { data, error } = await supabase.from('crm_card_attachments').insert([{
+        card_id: card.id, company_id: companyId,
+        file_name: file.name, file_path: path,
+        file_size: file.size, mime_type: file.type,
+        uploaded_by: user?.id,
+      }]).select().single()
+      if (error) throw error
+      setAttachments(p => [...p, data])
+      toast.success('Anexo enviado!')
+    } catch (e) {
+      toast.error('Erro no upload: ' + e.message)
+    } finally {
+      setUploading(false)
+      fileRef.current.value = ''
+    }
+  }
+
+  const handleDeleteAttachment = async (att) => {
+    await supabase.storage.from('crm-attachments').remove([att.file_path])
+    await supabase.from('crm_card_attachments').delete().eq('id', att.id)
+    setAttachments(p => p.filter(a => a.id !== att.id))
+    toast.success('Anexo removido')
+  }
+
+  const handleDownload = async (att) => {
+    const { data } = await supabase.storage.from('crm-attachments').createSignedUrl(att.file_path, 60)
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+  }
+
+  const statusInfo = STATUS_OPTIONS.find(s => s.value === form.status) || STATUS_OPTIONS[0]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+            <Kanban className="h-4 w-4 text-[#EBA500]" />
+            {isNew ? 'Novo Card' : 'Editar Card'}
+          </h2>
+          <div className="flex items-center gap-2">
+            {!isNew && (
+              <button onClick={handleDelete} disabled={deleting}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+              <X className="h-5 w-5 text-gray-500" />
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+
+          {/* Coluna (mover card) */}
+          {!isNew && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Coluna</label>
+              <select value={form.column_id} onChange={e => handleChange('column_id', e.target.value)} className={sel}>
+                {columns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Status */}
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-16 shrink-0">Status</label>
+            <div className="flex gap-2">
+              {STATUS_OPTIONS.map(s => (
+                <button key={s.value} onClick={() => handleChange('status', s.value)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border-2 transition-all ${form.status === s.value ? s.color + ' border-current' : 'bg-gray-50 text-gray-400 border-transparent hover:border-gray-200'}`}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Empresa + Contato */}
+          <section>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5" /> Empresa
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nome da Empresa</label>
+                <input className={inp} value={form.nome_empresa} onChange={e => handleChange('nome_empresa', e.target.value)} placeholder="Acme Corp" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cidade / Estado</label>
+                <input className={inp} value={form.cidade_estado} onChange={e => handleChange('cidade_estado', e.target.value)} placeholder="São Paulo / SP" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label>
+                <input className={inp} value={form.segmento} onChange={e => handleChange('segmento', e.target.value)} placeholder="Tecnologia, Saúde..." />
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5" /> Contato
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nome do Contato</label>
+                <input className={inp} value={form.nome_contato} onChange={e => handleChange('nome_contato', e.target.value)} placeholder="João Silva" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cargo</label>
+                <input className={inp} value={form.cargo_contato} onChange={e => handleChange('cargo_contato', e.target.value)} placeholder="Diretor Comercial" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">E-mail</label>
+                <input type="email" className={inp} value={form.email_contato} onChange={e => handleChange('email_contato', e.target.value)} placeholder="joao@empresa.com" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Telefone</label>
+                <input type="tel" className={inp} value={form.telefone_contato} onChange={e => handleChange('telefone_contato', e.target.value)} placeholder="(11) 99999-9999" />
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <DollarSign className="h-3.5 w-3.5" /> Oportunidade
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Origem do Lead</label>
+                <select className={sel} value={form.origem_lead} onChange={e => handleChange('origem_lead', e.target.value)}>
+                  <option value="">Selecione...</option>
+                  {ORIGENS.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Valor da Oportunidade (R$)</label>
+                <input type="number" min="0" step="0.01" className={inp} value={form.valor_oportunidade}
+                  onChange={e => handleChange('valor_oportunidade', e.target.value)} placeholder="0,00" />
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <MessageSquare className="h-3.5 w-3.5" /> Histórico / Observações
+            </h4>
+            <textarea className={inp + ' resize-none'} rows={4}
+              value={form.observacoes} onChange={e => handleChange('observacoes', e.target.value)}
+              placeholder="Anotações, histórico de contatos, próximos passos..." />
+          </section>
+
+          {/* Anexos */}
+          <section>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <Paperclip className="h-3.5 w-3.5" /> Anexos
+            </h4>
+            {isNew && <p className="text-xs text-gray-400 mb-2">Salve o card primeiro para adicionar anexos.</p>}
+            <div className="space-y-2">
+              {attachments.map(att => (
+                <div key={att.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-xl border border-gray-100">
+                  <Paperclip className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                  <span className="text-xs text-gray-700 flex-1 truncate">{att.file_name}</span>
+                  <span className="text-xs text-gray-400">{att.file_size ? (att.file_size / 1024).toFixed(0) + ' KB' : ''}</span>
+                  <button onClick={() => handleDownload(att)} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
+                    <Download className="h-3.5 w-3.5 text-gray-500" />
+                  </button>
+                  <button onClick={() => handleDeleteAttachment(att)} className="p-1 hover:bg-red-50 rounded-lg transition-colors">
+                    <X className="h-3.5 w-3.5 text-red-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            {!isNew && (
+              <label className={`mt-2 flex items-center gap-2 px-3 py-2 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#EBA500]/50 hover:bg-amber-50/30 transition-all text-xs text-gray-400 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                <Upload className="h-3.5 w-3.5" />
+                {uploading ? 'Enviando...' : 'Clique para anexar arquivo (máx. 10MB)'}
+                <input ref={fileRef} type="file" className="hidden" onChange={handleFileUpload} />
+              </label>
+            )}
+          </section>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2 rounded-b-2xl">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+            Cancelar
+          </button>
+          <button onClick={handleSave} disabled={loading}
+            className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60">
+            {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Salvando...</> : <><Save className="h-4 w-4" />Salvar</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── KanbanCard (draggable) ───────────────────────────────────────────────────
+function KanbanCard({ card, onEdit, isDragOverlay = false }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id, data: { type: 'card', card } })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+  }
+  const statusInfo = STATUS_OPTIONS.find(s => s.value === card.status) || STATUS_OPTIONS[0]
+
+  if (isDragOverlay) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-100 shadow-2xl p-3 rotate-1 scale-105 cursor-grabbing">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex-1 min-w-0">
+            {card.nome_empresa && <p className="text-xs font-bold text-gray-800 truncate">{card.nome_empresa}</p>}
+            {card.nome_contato && <p className="text-xs text-gray-500 truncate">{card.nome_contato}{card.cargo_contato ? ` · ${card.cargo_contato}` : ''}</p>}
+          </div>
+          <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.label}</span>
+        </div>
+        {card.valor_oportunidade && <p className="text-xs font-semibold text-emerald-600">{fmtMoney(card.valor_oportunidade)}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onClick={() => onEdit(card)}
+      className={`bg-white rounded-xl border border-gray-100 shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-[#EBA500]/30 transition-all select-none ${isDragging ? 'opacity-30' : ''}`}
+    >
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex-1 min-w-0">
+          {card.nome_empresa && <p className="text-xs font-bold text-gray-800 truncate">{card.nome_empresa}</p>}
+          {card.nome_contato && <p className="text-xs text-gray-500 truncate">{card.nome_contato}{card.cargo_contato ? ` · ${card.cargo_contato}` : ''}</p>}
+        </div>
+        <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.label}</span>
+      </div>
+      {(card.segmento || card.cidade_estado) && (
+        <div className="flex flex-wrap gap-1 mb-1.5">
+          {card.segmento && <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded-full">{card.segmento}</span>}
+          {card.cidade_estado && <span className="text-[10px] bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{card.cidade_estado}</span>}
+        </div>
+      )}
+      {card.valor_oportunidade && (
+        <p className="text-xs font-semibold text-emerald-600">{fmtMoney(card.valor_oportunidade)}</p>
+      )}
+      {card.origem_lead && (
+        <p className="text-[10px] text-gray-400 mt-1">Origem: {card.origem_lead}</p>
+      )}
+    </div>
+  )
+}
+
+// ─── KanbanColumn ─────────────────────────────────────────────────────────────
+function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDeleteColumn, activeCardId }) {
+  const { setNodeRef, isOver } = useDroppable({ id: column.id, data: { type: 'column', columnId: column.id } })
+  const { attributes, listeners, setNodeRef: setColRef, transform, transition, isDragging } = useSortable({
+    id: `col-${column.id}`, data: { type: 'column', column },
+  })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  }
+  const cardIds = cards.map(c => c.id)
+  const totalValue = cards.reduce((s, c) => s + (parseFloat(c.valor_oportunidade) || 0), 0)
+
+  return (
+    <div ref={setColRef} style={style} className="flex flex-col w-72 shrink-0 group/col h-full">
+      {/* Column card wrapper */}
+      <div className={`flex flex-col min-h-0 h-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden transition-shadow ${isDragging ? 'shadow-xl' : 'hover:shadow-md'}`}>
+
+        {/* Colored top stripe */}
+        <div className="h-1 w-full shrink-0" style={{ background: column.color }} />
+
+        {/* Column header */}
+        <div className="flex items-center gap-2 px-3 pt-3 pb-2">
+          <div {...listeners} {...attributes} className="cursor-grab p-1 -ml-1 opacity-0 group-hover/col:opacity-40 transition-all">
+            <GripVertical className="h-4 w-4 text-gray-400" />
+          </div>
+          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: column.color }} />
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-bold text-gray-700 truncate block">{column.name}</span>
+            {totalValue > 0 && <span className="text-[10px] text-emerald-600 font-medium">{fmtMoney(totalValue)}</span>}
+          </div>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: column.color + '20', color: column.color }}>{cards.length}</span>
+          <div className="flex items-center gap-0.5 opacity-0 group-hover/col:opacity-100 transition-all">
+            <button onClick={() => onEditColumn(column)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+              <Edit2 className="h-3.5 w-3.5 text-gray-400" />
+            </button>
+            <button onClick={() => onDeleteColumn(column.id)} className="p-1 hover:bg-red-50 rounded-lg transition-colors">
+              <Trash2 className="h-3.5 w-3.5 text-red-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="mx-3 border-t border-gray-100" />
+
+        {/* Cards drop area */}
+        <div ref={setNodeRef}
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          className={`flex-1 min-h-0 overflow-y-auto p-2 [&::-webkit-scrollbar]:hidden transition-colors ${isOver ? 'bg-[#EBA500]/5' : 'bg-transparent'}`}
+        >
+          <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {cards.map(card => (
+                <KanbanCard key={card.id} card={card} onEdit={onEditCard} />
+              ))}
+            </div>
+          </SortableContext>
+          <button
+            onClick={() => onAddCard(column.id)}
+            className="mt-2 w-full flex items-center gap-1.5 px-3 py-2 text-xs text-gray-400 hover:text-[#EBA500] hover:bg-[#EBA500]/5 rounded-xl transition-colors border-2 border-dashed border-transparent hover:border-[#EBA500]/20"
+          >
+            <Plus className="h-3.5 w-3.5" /> Adicionar card
+          </button>
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+// ─── ColumnModal ──────────────────────────────────────────────────────────────
+function ColumnModal({ column, onClose, onSaved }) {
+  const [name, setName] = useState(column?.name || '')
+  const [color, setColor] = useState(column?.color || COLUMN_COLORS[0].value)
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    if (!name.trim()) { toast.error('Nome obrigatório'); return }
+    setSaving(true)
+    try {
+      onSaved({ ...column, name: name.trim(), color })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold text-gray-800">{column?.id ? 'Editar Coluna' : 'Nova Coluna'}</h2>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X className="h-4 w-4 text-gray-400" /></button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
+            <input autoFocus className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500]"
+              value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Prospecção, Proposta..." onKeyDown={e => e.key === 'Enter' && handleSave()} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-2">Cor</label>
+            <div className="flex flex-wrap gap-2">
+              {COLUMN_COLORS.map(c => (
+                <button key={c.value} onClick={() => setColor(c.value)} title={c.label}
+                  className={`w-7 h-7 rounded-full transition-all ${color === c.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-110'}`}
+                  style={{ background: c.value }} />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-6">
+          <button onClick={onClose} className="px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+          <button onClick={handleSave} disabled={saving}
+            className="px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60">
+            Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── CRMPage ──────────────────────────────────────────────────────────────────
+export default function CRMPage() {
+  const { profile } = useAuth()
+  const [columns, setColumns] = useState([])
+  const [cards, setCards] = useState({}) // { columnId: Card[] }
+  const [loading, setLoading] = useState(true)
+
+  const [cardModal, setCardModal] = useState(null)   // null | { card?: Card, columnId: string }
+  const [columnModal, setColumnModal] = useState(null) // null | column object
+
+  const [activeCard, setActiveCard] = useState(null)
+  const [activeColumn, setActiveColumn] = useState(null)
+  const [search, setSearch] = useState('')
+
+  const companyId = profile?.user_companies?.find(uc => uc.is_active)?.company_id
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  )
+
+  // ── Load ───────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (companyId) loadAll()
+  }, [companyId])
+
+  const loadAll = async () => {
+    setLoading(true)
+    try {
+      const [colRes, cardRes] = await Promise.all([
+        supabase.from('crm_columns').select('*').eq('company_id', companyId).order('position'),
+        supabase.from('crm_cards').select('*').eq('company_id', companyId).order('position'),
+      ])
+      if (colRes.error) throw colRes.error
+      if (cardRes.error) throw cardRes.error
+
+      const cols = colRes.data || []
+      setColumns(cols)
+      const grouped = {}
+      cols.forEach(c => { grouped[c.id] = [] })
+      ;(cardRes.data || []).forEach(card => {
+        if (grouped[card.column_id]) grouped[card.column_id].push(card)
+        else grouped[card.column_id] = [card]
+      })
+      setCards(grouped)
+    } catch (e) {
+      toast.error('Erro ao carregar CRM')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Column CRUD ────────────────────────────────────────────────────────────
+  const handleSaveColumn = async (col) => {
+    try {
+      if (col.id) {
+        const { data, error } = await supabase.from('crm_columns').update({
+          name: col.name, color: col.color, updated_at: new Date().toISOString()
+        }).eq('id', col.id).select().single()
+        if (error) throw error
+        setColumns(p => p.map(c => c.id === data.id ? data : c))
+      } else {
+        const position = columns.length
+        const { data, error } = await supabase.from('crm_columns').insert([{
+          company_id: companyId, name: col.name, color: col.color, position
+        }]).select().single()
+        if (error) throw error
+        setColumns(p => [...p, data])
+        setCards(p => ({ ...p, [data.id]: [] }))
+      }
+      setColumnModal(null)
+      toast.success('Coluna salva!')
+    } catch (e) {
+      toast.error('Erro: ' + e.message)
+    }
+  }
+
+  const handleDeleteColumn = async (colId) => {
+    const count = (cards[colId] || []).length
+    if (!window.confirm(`Excluir esta coluna${count ? ` e ${count} card(s)?` : '?'}`)) return
+    try {
+      await supabase.from('crm_columns').delete().eq('id', colId)
+      setColumns(p => p.filter(c => c.id !== colId))
+      setCards(p => { const n = { ...p }; delete n[colId]; return n })
+      toast.success('Coluna excluída')
+    } catch (e) {
+      toast.error('Erro ao excluir')
+    }
+  }
+
+  // ── Card CRUD ──────────────────────────────────────────────────────────────
+  const handleCardSaved = (saved, isNew) => {
+    setCards(prev => {
+      const updated = { ...prev }
+      // Remove from old column if moved
+      if (!isNew) {
+        Object.keys(updated).forEach(cid => {
+          updated[cid] = updated[cid].filter(c => c.id !== saved.id)
+        })
+      }
+      const col = saved.column_id
+      updated[col] = isNew
+        ? [...(updated[col] || []), saved]
+        : [...(updated[col] || []), saved]
+      return updated
+    })
+    setCardModal(null)
+  }
+
+  const handleCardDeleted = (cardId) => {
+    setCards(prev => {
+      const updated = { ...prev }
+      Object.keys(updated).forEach(cid => { updated[cid] = updated[cid].filter(c => c.id !== cardId) })
+      return updated
+    })
+    setCardModal(null)
+  }
+
+  // ── DnD ───────────────────────────────────────────────────────────────────
+  const onDragStart = (event) => {
+    const { active } = event
+    if (active.data.current?.type === 'card') {
+      setActiveCard(active.data.current.card)
+      setActiveColumn(null)
+    } else if (active.data.current?.type === 'column') {
+      setActiveColumn(active.data.current.column)
+      setActiveCard(null)
+    }
+  }
+
+  const onDragOver = (event) => {
+    const { active, over } = event
+    if (!over) return
+    if (active.data.current?.type !== 'card') return
+
+    const activeColId = Object.keys(cards).find(cid => cards[cid].some(c => c.id === active.id))
+    let overColId
+
+    if (over.data.current?.type === 'column') {
+      overColId = over.data.current.columnId
+    } else if (over.data.current?.type === 'card') {
+      overColId = Object.keys(cards).find(cid => cards[cid].some(c => c.id === over.id))
+    } else {
+      overColId = over.id
+    }
+
+    if (!activeColId || !overColId) return
+
+    if (activeColId === overColId) {
+      // Reorder within same column
+      setCards(prev => {
+        const colCards = [...(prev[activeColId] || [])]
+        const oldIdx = colCards.findIndex(c => c.id === active.id)
+        const newIdx = colCards.findIndex(c => c.id === over.id)
+        if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return prev
+        return { ...prev, [activeColId]: arrayMove(colCards, oldIdx, newIdx) }
+      })
+      return
+    }
+
+    // Move between columns
+    setCards(prev => {
+      const srcCards = [...(prev[activeColId] || [])]
+      const dstCards = [...(prev[overColId] || [])]
+      const cardIdx = srcCards.findIndex(c => c.id === active.id)
+      if (cardIdx === -1) return prev
+      const [moved] = srcCards.splice(cardIdx, 1)
+      const overIdx = dstCards.findIndex(c => c.id === over.id)
+      if (overIdx === -1) dstCards.push(moved)
+      else dstCards.splice(overIdx, 0, moved)
+      return { ...prev, [activeColId]: srcCards, [overColId]: dstCards }
+    })
+  }
+
+  const onDragEnd = async (event) => {
+    const { active, over } = event
+    setActiveCard(null)
+    setActiveColumn(null)
+    if (!over) return
+
+    // ── column reorder ───────────────────────────────────────────────────────
+    if (active.data.current?.type === 'column') {
+      const activeId = active.id.replace('col-', '')
+      const overId   = over.id.replace('col-', '')
+      const oldIdx = columns.findIndex(c => c.id === activeId)
+      const newIdx = columns.findIndex(c => c.id === overId)
+      if (oldIdx !== newIdx) {
+        const reordered = arrayMove(columns, oldIdx, newIdx)
+        setColumns(reordered)
+        await Promise.all(reordered.map((c, i) =>
+          supabase.from('crm_columns').update({ position: i }).eq('id', c.id)
+        ))
+      }
+      return
+    }
+
+    // ── card drop ────────────────────────────────────────────────────────────
+    if (active.data.current?.type !== 'card') return
+
+    const activeCardItem = Object.values(cards).flat().find(c => c.id === active.id)
+    if (!activeCardItem) return
+
+    let targetColId = over.data.current?.type === 'column'
+      ? over.data.current.columnId
+      : Object.keys(cards).find(cid => cards[cid].some(c => c.id === over.id))
+
+    if (!targetColId) targetColId = over.id
+
+    const finalCards = { ...cards }
+    // Persist new order + column
+    const targetList = [...(finalCards[targetColId] || [])]
+
+    const updates = []
+    targetList.forEach((c, i) => {
+      if (c.id === active.id && c.column_id !== targetColId) {
+        updates.push(supabase.from('crm_cards').update({ column_id: targetColId, position: i, updated_at: new Date().toISOString() }).eq('id', c.id))
+      } else {
+        updates.push(supabase.from('crm_cards').update({ position: i }).eq('id', c.id))
+      }
+    })
+    await Promise.all(updates)
+
+    // Also reorder other columns that were touched during dragOver
+    const allColIds = Object.keys(finalCards)
+    for (const cid of allColIds) {
+      if (cid === targetColId) continue
+      const list = finalCards[cid] || []
+      await Promise.all(list.map((c, i) => supabase.from('crm_cards').update({ position: i }).eq('id', c.id)))
+    }
+  }
+
+  // ── Filtered view ─────────────────────────────────────────────────────────
+  const filteredCards = useCallback((colId) => {
+    const list = cards[colId] || []
+    if (!search.trim()) return list
+    const q = search.toLowerCase()
+    return list.filter(c =>
+      (c.nome_empresa || '').toLowerCase().includes(q) ||
+      (c.nome_contato || '').toLowerCase().includes(q) ||
+      (c.segmento || '').toLowerCase().includes(q) ||
+      (c.cidade_estado || '').toLowerCase().includes(q)
+    )
+  }, [cards, search])
+
+  const colIds = columns.map(c => `col-${c.id}`)
+  const totalCards = Object.values(cards).flat().length
+  const totalValue = Object.values(cards).flat().reduce((s, c) => s + (parseFloat(c.valor_oportunidade) || 0), 0)
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" />
+    </div>
+  )
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 to-gray-100/50">
+      {/* Header */}
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200/60 bg-white/80 backdrop-blur-sm shrink-0">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 mr-auto">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow">
+              <Kanban className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-800">CRM — Pipeline de Vendas</h1>
+              <p className="text-xs text-gray-400">{totalCards} leads · {fmtMoney(totalValue)} em oportunidades</p>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              className="pl-8 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] w-48"
+              placeholder="Buscar lead..."
+              value={search} onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+
+          <button
+            onClick={() => setColumnModal({})}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors shadow-sm"
+          >
+            <Plus className="h-4 w-4" /> Nova Coluna
+          </button>
+        </div>
+      </div>
+
+      {/* Kanban board */}
+      {columns.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
+            <Kanban className="h-8 w-8 text-blue-300" />
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-gray-700">Seu pipeline está vazio</p>
+            <p className="text-sm text-gray-400 mt-1">Comece criando colunas para organizar seus leads</p>
+          </div>
+          <button onClick={() => setColumnModal({})}
+            className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+            <Plus className="h-4 w-4" /> Criar primeira coluna
+          </button>
+        </div>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={rectIntersection}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDragEnd={onDragEnd}
+        >
+          <div className="flex-1 overflow-x-auto overflow-y-hidden">
+            <div className="flex gap-4 p-4 h-full">
+              <SortableContext items={colIds} strategy={horizontalListSortingStrategy}>
+                {columns.map(col => (
+                  <KanbanColumn
+                    key={col.id}
+                    column={col}
+                    cards={filteredCards(col.id)}
+                    onAddCard={(colId) => setCardModal({ columnId: colId })}
+                    onEditCard={(card) => setCardModal({ card, columnId: card.column_id })}
+                    onEditColumn={(col) => setColumnModal(col)}
+                    onDeleteColumn={handleDeleteColumn}
+                    activeCardId={activeCard?.id}
+                  />
+                ))}
+              </SortableContext>
+
+              {/* Add column shortcut */}
+              <button
+                onClick={() => setColumnModal({})}
+                className="shrink-0 w-72 h-20 flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#EBA500]/50 hover:text-[#EBA500] hover:bg-amber-50/30 transition-all text-sm font-medium"
+              >
+                <Plus className="h-5 w-5" /> Adicionar coluna
+              </button>
+            </div>
+          </div>
+
+          <DragOverlay>
+            {activeCard && <KanbanCard card={activeCard} onEdit={() => {}} isDragOverlay />}
+            {activeColumn && (
+              <div className="w-72 bg-white rounded-2xl border-2 border-[#EBA500]/50 shadow-2xl p-3 opacity-90">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: activeColumn.color }} />
+                  <span className="text-sm font-bold text-gray-700">{activeColumn.name}</span>
+                </div>
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      )}
+
+      {/* Modals */}
+      {columnModal !== null && (
+        <ColumnModal
+          column={columnModal?.id ? columnModal : null}
+          onClose={() => setColumnModal(null)}
+          onSaved={handleSaveColumn}
+        />
+      )}
+      {cardModal !== null && (
+        <CardModal
+          card={cardModal.card}
+          columnId={cardModal.columnId}
+          companyId={companyId}
+          columns={columns}
+          onClose={() => setCardModal(null)}
+          onSaved={handleCardSaved}
+          onDeleted={handleCardDeleted}
+        />
+      )}
+    </div>
+  )
+}
