@@ -21,10 +21,12 @@ import {
   Plus, X, GripVertical, Edit2, Trash2, Save, Upload,
   Building2, User, Phone, Mail, MapPin, Tag, DollarSign,
   MessageSquare, Paperclip, ChevronDown, Check, AlertCircle,
-  Kanban, Search, Filter, MoreHorizontal, Download
+  Kanban, Search, Filter, MoreHorizontal, Download, ArrowLeft, LayoutGrid
 } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import EmojiIconPicker from '../components/EmojiIconPicker'
+import { renderIcon } from '../utils/iconRenderer'
 import toast from 'react-hot-toast'
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -436,7 +438,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
           </div>
           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: column.color }} />
           <div className="flex-1 min-w-0">
-            <span className="text-sm font-bold text-gray-700 truncate block">{column.name}</span>
+            <span className="text-sm font-bold text-gray-700 break-words block">{column.name}</span>
             {totalValue > 0 && <span className="text-[10px] text-emerald-600 font-medium">{fmtMoney(totalValue)}</span>}
           </div>
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: column.color + '20', color: column.color }}>{cards.length}</span>
@@ -565,9 +567,22 @@ function ConfirmModal({ title, message, confirmLabel = 'Excluir', onConfirm, onC
 // ─── CRMPage ──────────────────────────────────────────────────────────────────
 export default function CRMPage() {
   const { profile } = useAuth()
+
+  // ── boards list ──────────────────────────────────────────────────────────
+  const [boards, setBoards] = useState([])
+  const [boardsLoading, setBoardsLoading] = useState(true)
+  const [selectedBoard, setSelectedBoard] = useState(null)
+  const [newBoardModal, setNewBoardModal] = useState(false)
+  const [newBoardTitle, setNewBoardTitle] = useState('')
+  const [newBoardIcon, setNewBoardIcon] = useState('🎯')
+  const [showIconPicker, setShowIconPicker] = useState(false)
+
+  // ── board detail ─────────────────────────────────────────────────────────
   const [columns, setColumns] = useState([])
   const [cards, setCards] = useState({}) // { columnId: Card[] }
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState('')
 
   const [cardModal, setCardModal] = useState(null)   // null | { card?: Card, columnId: string }
   const [columnModal, setColumnModal] = useState(null) // null | column object
@@ -585,33 +600,118 @@ export default function CRMPage() {
 
   // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (companyId) loadAll()
+    if (companyId) loadBoards()
   }, [companyId])
 
-  const loadAll = async () => {
-    setLoading(true)
+  const loadBoards = async () => {
+    setBoardsLoading(true)
     try {
-      const [colRes, cardRes] = await Promise.all([
-        supabase.from('crm_columns').select('*').eq('company_id', companyId).order('position'),
-        supabase.from('crm_cards').select('*').eq('company_id', companyId).order('position'),
-      ])
-      if (colRes.error) throw colRes.error
-      if (cardRes.error) throw cardRes.error
+      const { data, error } = await supabase
+        .from('crm_boards')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('position')
+      if (error) throw error
+      setBoards(data || [])
+    } catch (e) {
+      toast.error('Erro ao carregar pipelines')
+    } finally {
+      setBoardsLoading(false)
+    }
+  }
 
+  const openBoard = async (board) => {
+    setSelectedBoard(board)
+    setSearch('')
+    setLoading(true)
+    setColumns([])
+    setCards({})
+    try {
+      const colRes = await supabase
+        .from('crm_columns')
+        .select('*')
+        .eq('board_id', board.id)
+        .order('position')
+      if (colRes.error) throw colRes.error
       const cols = colRes.data || []
       setColumns(cols)
+      const colIds = cols.map(c => c.id)
+      let cardData = []
+      if (colIds.length > 0) {
+        const cardRes = await supabase
+          .from('crm_cards')
+          .select('*')
+          .in('column_id', colIds)
+          .order('position')
+        if (cardRes.error) throw cardRes.error
+        cardData = cardRes.data || []
+      }
       const grouped = {}
       cols.forEach(c => { grouped[c.id] = [] })
-      ;(cardRes.data || []).forEach(card => {
+      cardData.forEach(card => {
         if (grouped[card.column_id]) grouped[card.column_id].push(card)
         else grouped[card.column_id] = [card]
       })
       setCards(grouped)
     } catch (e) {
-      toast.error('Erro ao carregar CRM')
+      toast.error('Erro ao carregar pipeline')
     } finally {
       setLoading(false)
     }
+  }
+
+  const backToList = () => {
+    setSelectedBoard(null)
+    setColumns([])
+    setCards({})
+    setSearch('')
+    setEditingTitle(false)
+  }
+
+  const createBoard = async () => {
+    const title = newBoardTitle.trim()
+    if (!title) return
+    const { data, error } = await supabase
+      .from('crm_boards')
+      .insert([{ company_id: companyId, title, icon: newBoardIcon || '🎯', position: boards.length }])
+      .select()
+      .single()
+    if (error) { toast.error('Erro ao criar pipeline'); return }
+    const updated = [...boards, data]
+    setBoards(updated)
+    setNewBoardModal(false)
+    setNewBoardTitle('')
+    setNewBoardIcon('🎯')
+    openBoard(data)
+  }
+
+  const handleDeleteBoard = (board) => {
+    setConfirmDialog({
+      title: `Excluir pipeline "${board.title}"`,
+      message: 'Todas as colunas e leads deste pipeline serão excluídos permanentemente.',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        await supabase.from('crm_boards').delete().eq('id', board.id)
+        setBoards(p => p.filter(b => b.id !== board.id))
+        toast.success('Pipeline excluído')
+      },
+    })
+  }
+
+  const handleSaveTitle = async () => {
+    const trimmed = titleDraft.trim()
+    if (!trimmed) { setEditingTitle(false); return }
+    const { data, error } = await supabase
+      .from('crm_boards')
+      .update({ title: trimmed, updated_at: new Date().toISOString() })
+      .eq('id', selectedBoard.id)
+      .select()
+      .single()
+    if (!error && data) {
+      setSelectedBoard(data)
+      setBoards(p => p.map(b => b.id === data.id ? data : b))
+    }
+    setEditingTitle(false)
   }
 
   // ── Column CRUD ────────────────────────────────────────────────────────────
@@ -626,7 +726,7 @@ export default function CRMPage() {
       } else {
         const position = columns.length
         const { data, error } = await supabase.from('crm_columns').insert([{
-          company_id: companyId, name: col.name, color: col.color, position
+          company_id: companyId, board_id: selectedBoard.id, name: col.name, color: col.color, position
         }]).select().single()
         if (error) throw error
         setColumns(p => [...p, data])
@@ -819,23 +919,190 @@ export default function CRMPage() {
   const totalCards = Object.values(cards).flat().length
   const totalValue = Object.values(cards).flat().reduce((s, c) => s + (parseFloat(c.valor_oportunidade) || 0), 0)
 
-  if (loading) return (
+  if (boardsLoading) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" />
     </div>
   )
 
+  // ── Boards list view ───────────────────────────────────────────────────────
+  if (!selectedBoard) return (
+    <div className="min-h-screen bg-white p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow">
+            <Kanban className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">CRM</h1>
+            <p className="text-xs text-gray-400">{boards.length} pipeline{boards.length !== 1 ? 's' : ''}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => { setNewBoardTitle(''); setNewBoardModal(true) }}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors shadow-sm"
+        >
+          <Plus className="h-4 w-4" /> Novo Pipeline
+        </button>
+      </div>
+
+      {/* Grid de boards */}
+      {boards.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-4 text-center py-24">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
+            <LayoutGrid className="h-8 w-8 text-blue-300" />
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-gray-700">Nenhum pipeline criado</p>
+            <p className="text-sm text-gray-400 mt-1">Crie seu primeiro pipeline de vendas para organizar seus leads</p>
+          </div>
+          <button
+            onClick={() => { setNewBoardTitle(''); setNewBoardModal(true) }}
+            className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Criar primeiro pipeline
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {boards.map(board => (
+            <div key={board.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all group flex flex-col">
+              <div className="p-5 flex-1">
+                <div className="flex items-start justify-between gap-2 mb-4">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-sm text-lg">
+                    {renderIcon(board.icon || '🎯', 'h-5 w-5 text-white')}
+                  </div>
+                  <button
+                    onClick={() => handleDeleteBoard(board)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 p-1 rounded-lg hover:bg-red-50"
+                    title="Excluir pipeline"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <h3 className="font-semibold text-gray-800 text-base leading-snug">{board.title}</h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Criado em {new Date(board.created_at).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+              <div className="px-5 pb-5">
+                <button
+                  onClick={() => openBoard(board)}
+                  className="w-full py-2 text-sm font-semibold text-[#EBA500] border border-[#EBA500]/40 rounded-xl hover:bg-[#EBA500] hover:text-white transition-colors"
+                >
+                  Abrir pipeline
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal: Novo Pipeline */}
+      {newBoardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+            <h2 className="text-lg font-bold text-gray-800 mb-4">Novo Pipeline</h2>
+
+            {/* Seletor de ícone */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ícone</label>
+              <button
+                type="button"
+                onClick={() => setShowIconPicker(true)}
+                className="w-14 h-14 rounded-2xl border-2 border-gray-200 hover:border-[#EBA500] flex items-center justify-center text-2xl transition-colors"
+                title="Escolher ícone"
+              >
+                {renderIcon(newBoardIcon || '🎯', 'h-8 w-8 text-gray-700')}
+              </button>
+            </div>
+
+            <input
+              autoFocus
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] mb-4"
+              placeholder="Ex: Vendas B2B, Prospecção 2026..."
+              value={newBoardTitle}
+              onChange={e => setNewBoardTitle(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') createBoard(); if (e.key === 'Escape') setNewBoardModal(false) }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setNewBoardModal(false)}
+                className="flex-1 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={createBoard}
+                disabled={!newBoardTitle.trim()}
+                className="flex-1 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-40"
+              >
+                Criar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showIconPicker && (
+        <EmojiIconPicker
+          value={newBoardIcon}
+          onChange={(icon) => { setNewBoardIcon(icon); setShowIconPicker(false) }}
+          onClose={() => setShowIconPicker(false)}
+        />
+      )}
+
+      {confirmDialog && (
+        <ConfirmModal
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          variant="danger"
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
+    </div>
+  )
+
+  // ── Board detail view ──────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 to-gray-100/50">
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-white">
       {/* Header */}
       <div className="px-4 sm:px-6 py-4 border-b border-gray-200/60 bg-white/80 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 mr-auto">
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow">
-              <Kanban className="h-5 w-5 text-white" />
+            <button
+              onClick={backToList}
+              className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
+              title="Voltar para pipelines"
+            >
+              <ArrowLeft className="h-4 w-4 text-gray-600" />
+            </button>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow text-lg">
+              {renderIcon(selectedBoard?.icon || '🎯', 'h-5 w-5 text-white')}
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-800">CRM — Pipeline de Vendas</h1>
+              {editingTitle ? (
+                <input
+                  className="text-lg font-bold text-gray-800 bg-transparent border-b-2 border-[#EBA500] outline-none w-full min-w-[160px] max-w-xs"
+                  value={titleDraft}
+                  onChange={e => setTitleDraft(e.target.value)}
+                  onBlur={handleSaveTitle}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSaveTitle(); if (e.key === 'Escape') setEditingTitle(false) }}
+                  placeholder="Nome do pipeline..."
+                  autoFocus
+                />
+              ) : (
+                <h1
+                  className="text-lg font-bold cursor-pointer transition-colors group flex items-center gap-1.5 text-gray-800 hover:text-[#EBA500]"
+                  onClick={() => { setTitleDraft(selectedBoard?.title || ''); setEditingTitle(true) }}
+                  title="Clique para editar o título"
+                >
+                  {selectedBoard?.title}
+                  <Edit2 className="h-3.5 w-3.5 opacity-0 group-hover:opacity-40 transition-opacity" />
+                </h1>
+              )}
               <p className="text-xs text-gray-400">{totalCards} leads · {fmtMoney(totalValue)} em oportunidades</p>
             </div>
           </div>
@@ -860,7 +1127,11 @@ export default function CRMPage() {
       </div>
 
       {/* Kanban board */}
-      {columns.length === 0 ? (
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" />
+        </div>
+      ) : columns.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
           <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
             <Kanban className="h-8 w-8 text-blue-300" />

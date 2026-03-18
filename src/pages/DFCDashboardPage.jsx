@@ -1195,7 +1195,8 @@ export default function DFCDashboardPage() {
       ? (selectedCompanyId === 'all' ? 'Todas as Empresas' : companies.find(c => c.id === selectedCompanyId)?.name || 'Empresa')
       : (currentCompany?.name || 'Empresa')
     const yearStart = `${year}-01-01`
-    const yearEnd = `${year}-12-31`
+    const todayStr = new Date().toISOString().split('T')[0]
+    const yearEnd = `${year}-12-31` < todayStr ? `${year}-12-31` : todayStr
 
     let entradasQuery = supabase
       .from('dfc_entradas').select('categoria, item_id, valor, mes, vencimento')
@@ -1300,8 +1301,13 @@ export default function DFCDashboardPage() {
     try {
       const { companyId, companyName, saldoInicial, saldoInicialMonths, entradasGroups, saidasGroups, entradaCats, saidaCats, itemMap } = await buscarDadosDFC(year)
 
+      // Limita meses exibidos: se for o ano actual, apenas até o mês de hoje
+      const today = new Date()
+      const lastMonth = year === today.getFullYear() ? today.getMonth() + 1 : 12 // 1-indexed
+      const totalCols = lastMonth + 2 // col 1 = descrição, cols 2..lastMonth+1 = meses, lastMonth+2 = TOTAL
+
       // Meses para cabeçalho
-      const MONTHS = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
+      const MONTHS = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'].slice(0, lastMonth)
       const numFmt = '#,##0.00'
 
       // --- Definições de estilo ---
@@ -1326,8 +1332,8 @@ export default function DFCDashboardPage() {
 
       // Larguras das colunas
       ws.getColumn(1).width = 42
-      for (let i = 2; i <= 13; i++) ws.getColumn(i).width = 14
-      ws.getColumn(14).width = 16
+      for (let i = 2; i <= lastMonth + 1; i++) ws.getColumn(i).width = 14
+      ws.getColumn(lastMonth + 2).width = 16
 
       let rowNum = 0
 
@@ -1341,16 +1347,17 @@ export default function DFCDashboardPage() {
         if (style.numFmt && typeof value === 'number') cell.numFmt = style.numFmt
       }
 
-      // Soma mensal + total
+      // Soma mensal + total (somente até lastMonth)
       const makeVals = (arr) => {
-        const a = arr || Array(12).fill(0)
+        const a = (arr || Array(12).fill(0)).slice(0, lastMonth)
         return [...a, a.reduce((s, v) => s + v, 0)]
       }
 
       // --- LINHA 1: Título ---
       rowNum++
-      ws.mergeCells(rowNum, 1, rowNum, 14)
-      applyStyle(ws.getCell(rowNum, 1), styleTitle, `DEMONSTRATIVO DE FLUXO DE CAIXA (DFC) ${year} - ${companyName.toUpperCase()}`)
+      ws.mergeCells(rowNum, 1, rowNum, totalCols)
+      const cutoffLabel = lastMonth < 12 ? ` (até ${today.toLocaleDateString('pt-BR')})` : ''
+      applyStyle(ws.getCell(rowNum, 1), styleTitle, `DEMONSTRATIVO DE FLUXO DE CAIXA (DFC) ${year}${cutoffLabel} - ${companyName.toUpperCase()}`)
       ws.getRow(rowNum).height = 50
 
       // --- LINHA 2: Cabeçalho meses ---
@@ -1363,7 +1370,7 @@ export default function DFCDashboardPage() {
       ws.getRow(rowNum).height = 20
       applyStyle(ws.getCell(rowNum, 1), styleYellowL, 'SALDO INICIAL')
       const saldoInicialVals = makeVals(saldoInicialMonths)
-      for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleYellow, saldoInicialVals[c - 2] !== 0 ? saldoInicialVals[c - 2] : null)
+      for (let c = 2; c <= totalCols; c++) applyStyle(ws.getCell(rowNum, c), styleYellow, saldoInicialVals[c - 2] !== 0 ? saldoInicialVals[c - 2] : null)
 
       // Função auxiliar: linha de categoria (gris com prefixo)
       const addCatRow = (prefix, name, monthTotals) => {
@@ -1371,7 +1378,7 @@ export default function DFCDashboardPage() {
         ws.getRow(rowNum).height = 20
         applyStyle(ws.getCell(rowNum, 1), styleGrayL, `${prefix} ${name.toUpperCase()}`)
         const vals = makeVals(monthTotals)
-        for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleGray, vals[c - 2])
+        for (let c = 2; c <= totalCols; c++) applyStyle(ws.getCell(rowNum, c), styleGray, vals[c - 2])
       }
 
       // Função auxiliar: linha de código da categoria
@@ -1379,7 +1386,7 @@ export default function DFCDashboardPage() {
         rowNum++
         ws.getRow(rowNum).height = 19
         applyStyle(ws.getCell(rowNum, 1), styleGrayCode, code)
-        for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleGrayCode, null)
+        for (let c = 2; c <= totalCols; c++) applyStyle(ws.getCell(rowNum, c), styleGrayCode, null)
       }
 
       // Função auxiliar: linha de item (branca)
@@ -1388,14 +1395,14 @@ export default function DFCDashboardPage() {
         ws.getRow(rowNum).height = 19
         applyStyle(ws.getCell(rowNum, 1), styleItemL, name)
         const vals = makeVals(monthVals)
-        for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleItem, vals[c - 2])
+        for (let c = 2; c <= totalCols; c++) applyStyle(ws.getCell(rowNum, c), styleItem, vals[c - 2])
       }
 
       // Função auxiliar: linha spacer
       const addSpacer = () => {
         rowNum++
         ws.getRow(rowNum).height = 8
-        for (let c = 1; c <= 14; c++) {
+        for (let c = 1; c <= totalCols; c++) {
           const cell = ws.getCell(rowNum, c)
           cell.fill = fill('FFFFFFFF')
         }
@@ -1407,7 +1414,7 @@ export default function DFCDashboardPage() {
         ws.getRow(rowNum).height = 20
         applyStyle(ws.getCell(rowNum, 1), styleYellowL, label)
         const vals = makeVals(monthTotals)
-        for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleYellow, vals[c - 2])
+        for (let c = 2; c <= totalCols; c++) applyStyle(ws.getCell(rowNum, c), styleYellow, vals[c - 2])
       }
 
       // Função auxiliar: linha de resultado calculado (cinza bold)
@@ -1416,7 +1423,7 @@ export default function DFCDashboardPage() {
         ws.getRow(rowNum).height = 20
         applyStyle(ws.getCell(rowNum, 1), styleGrayL, label)
         const vals = makeVals(monthTotals)
-        for (let c = 2; c <= 14; c++) applyStyle(ws.getCell(rowNum, c), styleGray, vals[c - 2])
+        for (let c = 2; c <= totalCols; c++) applyStyle(ws.getCell(rowNum, c), styleGray, vals[c - 2])
       }
 
       // ========= SEÇÃO ENTRADAS =========
