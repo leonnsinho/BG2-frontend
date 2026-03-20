@@ -328,7 +328,19 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
           }
         ]
       },
-      // 7) Administração
+      // 7) Ferramentas
+      {
+        name: 'Ferramentas',
+        icon: Grid3x3,
+        href: '/crm',
+        children: [
+          { name: 'CRM', href: '/crm', image: '/crm.png', gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadowColor: 'rgba(59, 130, 246, 0.4)' },
+          { name: 'Fluxo de Caixa', href: '/dfc', image: '/fluxo de caixa.png', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', shadowColor: 'rgba(16, 185, 129, 0.4)' },
+          { name: 'Avaliação de Desempenho', href: '/performance-evaluation', image: '/avaliação de desempenho.png', gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)', shadowColor: 'rgba(168, 85, 247, 0.4)' },
+          { name: 'Indicadores de Gestão', href: '/indicators', image: '/indicadores de gestão.png', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', shadowColor: 'rgba(245, 158, 11, 0.4)' }
+        ]
+      },
+      // 8) Administração
       {
         name: 'Administração',
         icon: Shield,
@@ -1189,12 +1201,21 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                             )}
                             onClick={onClose}
                           >
-                            <span 
-                              className={cn(
-                                "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
-                                isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
-                              )}
-                            ></span>
+                            {subItem.image ? (
+                              <div
+                                className="w-5 h-5 rounded-[6px] mr-3 flex-shrink-0 overflow-hidden"
+                                style={{ background: subItem.gradient }}
+                              >
+                                <img src={subItem.image} alt="" className="w-full h-full object-contain p-0.5" />
+                              </div>
+                            ) : (
+                              <span 
+                                className={cn(
+                                  "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
+                                  isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
+                                )}
+                              />
+                            )}
                             <span className="flex-1 text-left">{subItem.name}</span>
                             {/* 🔥 Badge para subitem se existir */}
                             {subItem.badge && subItem.badge > 0 && (
@@ -1418,12 +1439,21 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                               : "text-neutral-100"
                           )}
                         >
-                          <span 
-                            className={cn(
-                              "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
-                              isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
-                            )}
-                          />
+                          {subItem.image ? (
+                            <div
+                              className="w-5 h-5 rounded-[6px] mr-3 flex-shrink-0 overflow-hidden"
+                              style={{ background: subItem.gradient }}
+                            >
+                              <img src={subItem.image} alt="" className="w-full h-full object-contain p-0.5" />
+                            </div>
+                          ) : (
+                            <span 
+                              className={cn(
+                                "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
+                                isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
+                              )}
+                            />
+                          )}
                           <span className="flex-1">{subItem.name}</span>
                           {/* 🔥 Badge no dropdown se existir */}
                           {subItem.badge && subItem.badge > 0 && (
