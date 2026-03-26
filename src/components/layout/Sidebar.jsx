@@ -194,9 +194,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       {
         name: 'API',
         icon: Key,
-        href: '/admin/api-keys',
-        disabled: true,
-        badge: 'Em breve'
+        href: '/admin/api-keys'
       }
     ]
   }
@@ -294,7 +292,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
             name: 'Políticas de Gestão',
             href: '/operational-policies',
             children: [
-              { name: 'Estratégica', href: '/operational-policies?journey=estrategica' },
+              { name: 'Estratégia', href: '/operational-policies?journey=estrategica' },
               { name: 'Financeira', href: '/operational-policies?journey=financeira' },
               { name: 'Pessoas & Cultura', href: '/operational-policies?journey=pessoas-cultura' },
               { name: 'Receita', href: '/operational-policies?journey=receita' },

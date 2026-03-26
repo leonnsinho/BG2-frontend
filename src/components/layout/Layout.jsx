@@ -66,8 +66,8 @@ const Layout = ({ children, className }) => {
         </main>
       </div>
 
-      {/* Smart Advisor - Chat Flutuante Inteligente (desativado temporariamente) */}
-      {/* <SmartAdvisorChat /> */}
+      {/* Smart Advisor - Chat Flutuante Inteligente */}
+      <SmartAdvisorChat />
     </div>
   )
 }

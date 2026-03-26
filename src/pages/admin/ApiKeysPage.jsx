@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 
 // ─── FEATURE FLAG ─────────────────────────────────────────────────────────────
-const EM_DESENVOLVIMENTO = true
+const EM_DESENVOLVIMENTO = false
 
 // ── Coming Soon Screen ───────────────────────────────────────────────────────
 function EmDesenvolvimentoScreen() {
@@ -427,28 +427,6 @@ export default function ApiKeysPage() {
                 <CopyButton value={`${baseUrl}${path}`} />
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* === n8n Quick Start === */}
-        <div className="bg-gradient-to-br from-[#EBA500]/5 to-yellow-50 border border-[#EBA500]/20 rounded-3xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Zap className="h-5 w-5 text-[#EBA500]" />
-            <h2 className="text-base font-semibold text-gray-900">Configurar no n8n</h2>
-          </div>
-          <ol className="space-y-3 text-sm text-gray-700 list-decimal list-inside">
-            <li>Adicione um nó <strong>HTTP Request</strong></li>
-            <li>Defina o <strong>Method</strong> e a <strong>URL</strong> do endpoint desejado</li>
-            <li>Em <strong>Headers</strong>, adicione <code className="bg-white border border-gray-200 px-1.5 py-0.5 rounded font-mono text-xs">x-api-key</code> com o valor da chave criada acima</li>
-            <li>Em <strong>Body</strong> (para POST/PATCH), envie um JSON com os campos necessários</li>
-          </ol>
-          <div className="mt-4 bg-white border border-gray-200 rounded-xl p-4 text-xs font-mono text-gray-600 space-y-1">
-            <div><span className="text-purple-600">POST</span> <span className="text-blue-600">{baseUrl}/companies/{'<id>'}/tasks</span></div>
-            <div className="text-gray-400">Headers:</div>
-            <div className="pl-2 text-green-700">  x-api-key: pk_bg2_...</div>
-            <div className="pl-2 text-green-700">  Content-Type: application/json</div>
-            <div className="text-gray-400">Body:</div>
-            <div className="pl-2">{'{'} "title": "Revisão mensal", "priority": "high" {'}'}</div>
           </div>
         </div>
       </div>
