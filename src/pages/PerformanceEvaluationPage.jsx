@@ -153,9 +153,9 @@ export default function PerformanceEvaluationPage() {
       console.log('📊 Usuários antes de filtrar:', combinedUsers.length)
 
       // Filtrar usuários baseado no perfil do usuário atual
-      if (isCompanyAdmin() && !isSuperAdmin()) {
+      if (!isSuperAdmin()) {
         const currentUserCompany = getCurrentUserCompany()
-        console.log('🏢 Company Admin - Filtrando por empresa:', currentUserCompany?.name)
+        console.log('🏢 Usuário - Filtrando por empresa:', currentUserCompany?.name)
         
         if (currentUserCompany) {
           combinedUsers = combinedUsers.filter(user => 

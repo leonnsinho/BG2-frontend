@@ -16,7 +16,8 @@ import {
   TrendingDown,
   Shield,
   AlertCircle,
-  Kanban
+  Kanban,
+  Save
 } from 'lucide-react'
 
 const TOOL_ICONS = {
@@ -49,6 +50,8 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [animating, setAnimating] = useState(false)
+  // { [toolSlug]: 'allow' | 'deny' | 'remove' } — changes not yet saved
+  const [pendingChanges, setPendingChanges] = useState({})
 
   useEffect(() => {
     setTimeout(() => setAnimating(true), 10)
@@ -111,53 +114,83 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
     }
   }
 
-  const handlePermissionChange = async (toolSlug, permissionType) => {
+  // Returns the tool state with any pending local changes applied
+  const getEffectiveTool = (tool) => {
+    const pending = pendingChanges[tool.tool_slug]
+    if (!pending) return tool
+    if (pending === 'remove') {
+      return { ...tool, is_explicit: false, permission_type: 'default', has_access: true }
+    }
+    return { ...tool, is_explicit: true, permission_type: pending, has_access: pending === 'allow' }
+  }
+
+  // Update local state only — no Supabase call
+  const handlePermissionChange = (toolSlug, permissionType) => {
+    const tool = tools.find(t => t.tool_slug === toolSlug)
+    if (!tool) return
+
+    // Check if this action would revert to the original DB state (no-op)
+    const isNoop = permissionType === 'remove'
+      ? !tool.is_explicit
+      : (tool.is_explicit && tool.permission_type === permissionType)
+
+    setPendingChanges(prev => {
+      const next = { ...prev }
+      if (isNoop) {
+        delete next[toolSlug]
+      } else {
+        next[toolSlug] = permissionType
+      }
+      return next
+    })
+  }
+
+  const handleSave = async () => {
+    const entries = Object.entries(pendingChanges)
+    if (entries.length === 0) {
+      handleClose()
+      return
+    }
     try {
       setSaving(true)
+      const currentUserId = (await supabase.auth.getUser()).data.user?.id
 
-      // Buscar ID da ferramenta
-      const { data: toolData, error: toolError } = await supabase
-        .from('system_tools')
-        .select('id')
-        .eq('slug', toolSlug)
-        .single()
+      for (const [toolSlug, permissionType] of entries) {
+        const { data: toolData, error: toolError } = await supabase
+          .from('system_tools')
+          .select('id')
+          .eq('slug', toolSlug)
+          .single()
+        if (toolError) throw toolError
 
-      if (toolError) throw toolError
-
-      if (permissionType === 'remove') {
-        // Remover permissão personalizada
-        const { error: deleteError } = await supabase
-          .from('user_tool_permissions')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('tool_id', toolData.id)
-          .eq('company_id', companyId)
-
-        if (deleteError) throw deleteError
-        toast.success('Permissão personalizada removida')
-      } else {
-        // Inserir ou atualizar permissão
-        const { error: upsertError } = await supabase
-          .from('user_tool_permissions')
-          .upsert({
-            user_id: user.id,
-            tool_id: toolData.id,
-            company_id: companyId,
-            permission_type: permissionType,
-            granted_by: (await supabase.auth.getUser()).data.user?.id
-          }, {
-            onConflict: 'user_id,tool_id,company_id'
-          })
-
-        if (upsertError) throw upsertError
-        toast.success(`Permissão definida como: ${permissionType === 'allow' ? 'Permitir' : 'Negar'}`)
+        if (permissionType === 'remove') {
+          const { error } = await supabase
+            .from('user_tool_permissions')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('tool_id', toolData.id)
+            .eq('company_id', companyId)
+          if (error) throw error
+        } else {
+          const { error } = await supabase
+            .from('user_tool_permissions')
+            .upsert({
+              user_id: user.id,
+              tool_id: toolData.id,
+              company_id: companyId,
+              permission_type: permissionType,
+              granted_by: currentUserId
+            }, { onConflict: 'user_id,tool_id,company_id' })
+          if (error) throw error
+        }
       }
-      
-      // Recarregar lista
+
+      toast.success('Permissões salvas com sucesso!')
+      setPendingChanges({})
       await loadTools()
     } catch (error) {
-      console.error('Erro ao alterar permissão:', error)
-      toast.error('Erro ao alterar permissão')
+      console.error('Erro ao salvar permissões:', error)
+      toast.error('Erro ao salvar permissões')
     } finally {
       setSaving(false)
     }
@@ -204,8 +237,10 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
     }
   }
 
-  // Agrupar por categoria
-  const groupedTools = tools.reduce((acc, tool) => {
+  // Agrupar por categoria usando o estado efetivo (DB + alterações locais pendentes)
+  const hasPendingChanges = Object.keys(pendingChanges).length > 0
+
+  const groupedTools = tools.map(getEffectiveTool).reduce((acc, tool) => {
     const category = tool.tool_category || 'other'
     if (!acc[category]) acc[category] = []
     acc[category].push(tool)
@@ -366,14 +401,32 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
         <div className="flex-shrink-0 px-4 sm:px-8 py-4 sm:py-6 border-t border-gray-100 bg-gray-50 rounded-b-3xl">
           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0">
             <p className="text-xs sm:text-sm text-gray-500 text-center sm:text-left">
-              {tools.length} ferramenta{tools.length !== 1 ? 's' : ''} disponível{tools.length !== 1 ? 'is' : ''}
+              {hasPendingChanges
+                ? <span className="text-amber-600 font-medium">{Object.keys(pendingChanges).length} alteraç{Object.keys(pendingChanges).length === 1 ? 'ão' : 'ões'} não salva{Object.keys(pendingChanges).length === 1 ? '' : 's'}</span>
+                : <>{tools.length} ferramenta{tools.length !== 1 ? 's' : ''} disponível{tools.length !== 1 ? 'is' : ''}</>
+              }
             </p>
-            <button
-              onClick={handleClose}
-              className="px-6 py-3 sm:py-2.5 bg-gradient-to-r from-[#EBA500] to-[#d49400] text-white rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 active:scale-95 transition-all"
-            >
-              Concluir
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleClose}
+                disabled={saving}
+                className="px-5 py-3 sm:py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-3 sm:py-2.5 bg-gradient-to-r from-[#EBA500] to-[#d49400] text-white rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:transform-none"
+              >
+                {saving ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                {saving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

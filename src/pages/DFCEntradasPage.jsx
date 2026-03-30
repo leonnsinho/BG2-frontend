@@ -331,9 +331,10 @@ function DFCEntradasPage() {
     return gestorCompany?.company_id || null
   }
 
-  // Obter empresa atual (company_admin ou gestor)
+  // Obter empresa atual (company_admin, gestor ou user)
   const getCurrentUserCompany = () => {
-    return getCompanyAdminCompany() || getGestorCompany()
+    return getCompanyAdminCompany() || getGestorCompany() ||
+      profile?.user_companies?.find(uc => uc.is_active)?.company_id || null
   }
 
   useEffect(() => {
@@ -499,7 +500,7 @@ function DFCEntradasPage() {
       let itensFiltrados = itensData || []
       const userCompanyId = getCurrentUserCompany()
       
-      if ((isCompanyAdmin() || isGestor()) && !isSuperAdmin() && userCompanyId) {
+      if (!isSuperAdmin() && userCompanyId) {
         // Buscar IDs de itens associados à empresa do usuário
         const { data: itensEmpresaIds } = await supabase
           .from('dfc_itens_empresas')

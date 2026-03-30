@@ -96,7 +96,8 @@ function PlanoContasPage() {
     return profile?.user_companies?.some(uc => uc.role === 'gestor' && uc.is_active) || false
   }
   
-  const isAuthorized = () => isSuperAdmin() || isCompanyAdmin() || isGestor()
+  const isAuthorized = () => isSuperAdmin() || isCompanyAdmin() || isGestor() ||
+    profile?.user_companies?.some(uc => uc.is_active)
   
   const getCompanyAdminCompany = () => {
     if (!isCompanyAdmin()) return null
@@ -115,7 +116,8 @@ function PlanoContasPage() {
   }
 
   const getCurrentUserCompany = () => {
-    return getCompanyAdminCompany() || getGestorCompany()
+    return getCompanyAdminCompany() || getGestorCompany() ||
+      profile?.user_companies?.find(uc => uc.is_active)?.company_id || null
   }
 
   // Verificar se o item pode ser editado/deletado pelo usuário
@@ -153,7 +155,7 @@ function PlanoContasPage() {
       if (companyFromUrl && companyFromUrl !== 'all' && companyFromUrl !== companyFilter) {
         // Se há company na URL e é diferente do atual, usar ele
         setCompanyFilter(companyFromUrl)
-      } else if (!companyFromUrl && (isCompanyAdmin() || isGestor())) {
+      } else if (!companyFromUrl && !isSuperAdmin()) {
         // Se não há company na URL, auto-selecionar empresa para company_admin e gestor
         const companyId = getCurrentUserCompany()
         if (companyId && companyFilter === 'all') {
@@ -221,7 +223,7 @@ function PlanoContasPage() {
       // Para company_admin, precisamos identificar quais itens são REALMENTE globais
       // (não têm nenhuma associação em dfc_itens_empresas)
       let idsItensComAssociacoes = []
-      if (isCompanyAdmin() && !isSuperAdmin()) {
+      if (!isSuperAdmin()) {
         // Usar RPC function que ignora RLS para obter TODOS os IDs de itens com associações
         const { data: todosIdsComAssociacao, error: errorIds } = await supabase
           .rpc('get_itens_com_associacoes')
@@ -262,7 +264,7 @@ function PlanoContasPage() {
       console.log('🏷️ DEBUG ITENS - Itens globais (sem empresa):', itensComEmpresas.filter(i => i.empresas.length === 0).length)
 
       // FILTRO CRÍTICO: Para company_admin, mostrar APENAS itens da sua empresa + itens globais
-      if (isCompanyAdmin() && !isSuperAdmin() && idsItensComAssociacoes.length > 0) {
+      if (!isSuperAdmin() && idsItensComAssociacoes.length > 0) {
         const itensAntes = itensComEmpresas.length
         itensComEmpresas = itensComEmpresas.filter(item => {
           // Mostrar se:

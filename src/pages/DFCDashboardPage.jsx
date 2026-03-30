@@ -131,9 +131,16 @@ export default function DFCDashboardPage() {
     return { id: gestorCompany.company_id, name: gestorCompany.companies?.name }
   }
 
-  // Obter empresa atual (company_admin ou gestor)
+  // Obter empresa atual (company_admin, gestor ou user)
   const getCurrentUserCompany = () => {
-    return getCompanyAdminCompany() || getGestorCompany()
+    const fromCompanyAdmin = getCompanyAdminCompany()
+    if (fromCompanyAdmin) return fromCompanyAdmin
+    const fromGestor = getGestorCompany()
+    if (fromGestor) return fromGestor
+    // Fallback para role 'user'
+    const activeCompany = profile?.user_companies?.find(uc => uc.is_active)
+    if (activeCompany) return { id: activeCompany.company_id, name: activeCompany.companies?.name }
+    return null
   }
 
   // Carregar empresas (apenas para super admin)
