@@ -97,10 +97,21 @@ export function useToolPermissions() {
     return permissions[toolSlug] === 'deny'
   }
 
+  /**
+   * Versão estrita: só retorna true se houver um 'allow' explícito.
+   * Usada para role 'user', onde ferramentas são bloqueadas por padrão.
+   * @param {string} toolSlug
+   * @returns {boolean}
+   */
+  const hasToolAccessStrict = (toolSlug) => {
+    return permissions[toolSlug] === 'allow'
+  }
+
   return {
     permissions,
     loading,
     hasToolAccess,
+    hasToolAccessStrict,
     isToolDenied
   }
 }

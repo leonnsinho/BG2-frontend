@@ -91,6 +91,7 @@ if (typeof document !== 'undefined' && !document.getElementById('sidebar-dropdow
 
 // Mapa de rotas para slugs de ferramentas
 const ROUTE_TO_TOOL_SLUG = {
+  '/crm': 'crm',
   '/performance-evaluation': 'performance-evaluation',
   '/planejamento-estrategico': 'planejamento-estrategico',
   '/business-model': 'business-model',
@@ -350,7 +351,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     ]
   }
 
-  // 🔥 Usuário comum - APENAS Dashboard e Minhas Tarefas (se tiver empresa)
+  // 🔥 Usuário comum - Dashboard, Minhas Tarefas + ferramentas habilitadas
   const userItems = [...baseItems]
   
   // Se o usuário está associado a uma empresa (via user_companies)
@@ -362,6 +363,41 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       icon: CheckSquare,
       href: '/tarefas',
       roles: ['user']
+    })
+
+    // Ferramentas habilitadas para o usuário (controladas por user_tool_permissions)
+    // O filtro do sidebar vai remover automaticamente as que estiverem com deny
+    userItems.push({
+      name: 'Ferramentas',
+      icon: Grid3x3,
+      href: '/crm',
+      children: [
+        { name: 'CRM', href: '/crm', image: '/crm.png', gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadowColor: 'rgba(59, 130, 246, 0.4)' },
+        { name: 'Fluxo de Caixa', href: '/dfc', image: '/fluxo de caixa.png', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', shadowColor: 'rgba(16, 185, 129, 0.4)' },
+        { name: 'Avaliação de Desempenho', href: '/performance-evaluation', image: '/avaliação de desempenho.png', gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)', shadowColor: 'rgba(168, 85, 247, 0.4)' },
+        { name: 'Indicadores de Gestão', href: '/indicators', image: '/indicadores de gestão.png', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', shadowColor: 'rgba(245, 158, 11, 0.4)' }
+      ]
+    })
+
+    // Seção Estratégia — itens controlados por tool permissions (filtro remove os sem acesso)
+    userItems.push({
+      name: 'Estratégia',
+      icon: Target,
+      href: '/journey-management/overview',
+      children: [
+        { name: 'Diagnóstico do Negócio', href: '/journey-management/overview' },
+        { name: 'Modelo de Negócio', href: '/business-model' }
+      ]
+    })
+
+    // Seção Execução — itens controlados por tool permissions
+    userItems.push({
+      name: 'Execução',
+      icon: Kanban,
+      href: '/planejamento-estrategico',
+      children: [
+        { name: 'Planejamento Estratégico', href: '/planejamento-estrategico' }
+      ]
     })
   }
 
@@ -454,7 +490,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const { getAccessibleJourneys } = useAuthPermissions()
   const permissions = usePermissions()
   const { pendingCount } = useMaturityApprovals() // 🔥 NOVO: Hook de aprovações pendentes
-  const { hasToolAccess, loading: toolPermissionsLoading } = useToolPermissions() // 🔥 NOVO: Hook de permissões de ferramentas
+  const { hasToolAccess, hasToolAccessStrict, loading: toolPermissionsLoading } = useToolPermissions() // 🔥 NOVO: Hook de permissões de ferramentas
   const [expandedItems, setExpandedItems] = React.useState(['Jornadas'])
   const [expandedSubItems, setExpandedSubItems] = React.useState(() => {
     // Auto-expandir se a rota atual for de um sub-sub-item
@@ -662,33 +698,46 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     // Usuários vinculados: interface normal
     const items = getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess)
 
-    // Filtrar itens baseado nas permissões de ferramentas
-    const filteredItems = items.filter(item => {
-      // Se o item tem um href mapeado para tool_slug, verificar permissão
-      const toolSlug = ROUTE_TO_TOOL_SLUG[item.href]
-      if (toolSlug) {
-        const access = hasToolAccess(toolSlug)
-        if (!access) {
-          return false
-        }
-      }
+    // Um "usuário regular" é quem NÃO tem nenhum papel privilegiado —
+    // nem como global role, nem como role dentro de qualquer empresa.
+    // Usar as funções de permissions (que checam user_companies também),
+    // não apenas profile.role (que é sempre 'user' para company_admins).
+    const isRegularUser = !permissions.isSuperAdmin() &&
+                          !permissions.isGestor() &&
+                          !permissions.isAnyManager() &&
+                          !permissions.isCompanyAdmin()
 
-      // Se tem children, filtrar os filhos também
-      if (item.children) {
-        item.children = item.children.filter(child => {
-          const childToolSlug = ROUTE_TO_TOOL_SLUG[child.href]
-          if (childToolSlug) {
-            return hasToolAccess(childToolSlug)
-          }
-          return true
-        })
-      }
+    // Escolher a função de verificação correta:
+    // - Usuário regular: deny-by-default (só mostra com allow explícito)
+    // - Roles privilegiados: allow-by-default (mostra sempre, exceto deny explícito)
+    const checkAccess = isRegularUser ? hasToolAccessStrict : hasToolAccess
+
+    // Aplicar filtro de tool permissions em TODOS os itens e seus filhos.
+    // O filtro por ROUTE_TO_TOOL_SLUG abrange qualquer seção do menu (Performance,
+    // Ferramentas, Super Admin etc.) — não apenas o bloco "Ferramentas".
+    const filteredItems = items.map(item => {
+      if (!item.children) return item
+
+      const filteredChildren = item.children.filter(child => {
+        const childToolSlug = ROUTE_TO_TOOL_SLUG[child.href]
+        if (childToolSlug) return checkAccess(childToolSlug)
+        return true
+      })
+
+      return { ...item, children: filteredChildren }
+    }).filter(item => {
+      // Filtrar itens de nível raiz sem children (ex: link direto numa tool)
+      const rootToolSlug = ROUTE_TO_TOOL_SLUG[item.href]
+      if (rootToolSlug && !item.children && !checkAccess(rootToolSlug)) return false
+
+      // Remover qualquer bloco de menu que ficou sem filhos após o filtro
+      if (item.children?.length === 0) return false
 
       return true
     })
 
     return filteredItems
-  }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess])
+  }, [profile?.role, profile?.user_companies?.map(uc => uc.role).join(','), accessibleJourneys, journeysLoading, pendingCount, hasToolAccess])
 
   const toggleExpanded = (itemName) => {
     setExpandedItems(prev => 

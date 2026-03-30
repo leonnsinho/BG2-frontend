@@ -186,7 +186,7 @@ function AppRoutes() {
       <Route 
         path="/planejamento-estrategico" 
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor', 'gestor_financeiro', 'gestor_estrategico', 'gestor_pessoas_cultura', 'gestor_vendas_marketing', 'gestor_operacional', 'user']} requiredToolSlug="planejamento-estrategico">
             <PlanejamentoEstrategicoPage />
           </ProtectedRoute>
         }
@@ -195,7 +195,7 @@ function AppRoutes() {
       <Route 
         path="/business-model" 
         element={
-          <ProtectedRoute requiredRole={['company_admin']}>
+          <ProtectedRoute requiredRole={['company_admin', 'user']} requiredToolSlug="business-model">
             <BusinessModelPage />
           </ProtectedRoute>
         }
@@ -379,7 +379,7 @@ function AppRoutes() {
       <Route 
         path="/crm" 
         element={
-          <ProtectedRoute requiredRole={['company_admin']}>
+          <ProtectedRoute requiredRole={['company_admin', 'user']} requiredToolSlug="crm">
             <CRMPage />
           </ProtectedRoute>
         }
@@ -413,7 +413,7 @@ function AppRoutes() {
       <Route 
         path="/performance-evaluation" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'user']} requiredToolSlug="performance-evaluation">
             <PerformanceEvaluationPage />
           </ProtectedRoute>
         }
@@ -423,7 +423,7 @@ function AppRoutes() {
       <Route 
         path="/indicators" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'user']} requiredToolSlug="management-indicators">
             <IndicatorsPage />
           </ProtectedRoute>
         }
@@ -431,7 +431,7 @@ function AppRoutes() {
       <Route 
         path="/indicators/manage" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'user']} requiredToolSlug="management-indicators">
             <ManageIndicatorsPage />
           </ProtectedRoute>
         }
@@ -509,7 +509,7 @@ function AppRoutes() {
       <Route 
         path="/dfc" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor', 'user']} requiredToolSlug="dfc-complete">
             <DFCDashboardPage />
           </ProtectedRoute>
         }
@@ -519,7 +519,7 @@ function AppRoutes() {
       <Route 
         path="/dfc/saidas" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor', 'user']} requiredToolSlug="dfc-complete">
             <DFCSaidasPage />
           </ProtectedRoute>
         }
@@ -529,7 +529,7 @@ function AppRoutes() {
       <Route 
         path="/dfc/entradas" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor', 'user']} requiredToolSlug="dfc-complete">
             <DFCEntradasPage />
           </ProtectedRoute>
         }
@@ -539,17 +539,17 @@ function AppRoutes() {
       <Route 
         path="/dfc/plano-contas" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'gestor', 'user']} requiredToolSlug="dfc-complete">
             <PlanoContasPage />
           </ProtectedRoute>
         }
       />
       
-      {/* Rotas de Gerenciamento de Jornadas (Super Admin) */}
+      {/* Rotas de Gerenciamento de Jornadas (Super Admin, Company Admin e User com permissão) */}
       <Route 
         path="/journey-management" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'user']} requiredToolSlug="journey-overview">
             <JourneyManagementOverview />
           </ProtectedRoute>
         }
@@ -557,7 +557,7 @@ function AppRoutes() {
       <Route 
         path="/journey-management/overview" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'user']} requiredToolSlug="journey-overview">
             <JourneyManagementOverview />
           </ProtectedRoute>
         }
@@ -565,7 +565,7 @@ function AppRoutes() {
       <Route 
         path="/journey-management/:journeySlug" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'user']} requiredToolSlug="journey-overview">
             <JourneyDetail />
           </ProtectedRoute>
         }
@@ -573,7 +573,7 @@ function AppRoutes() {
       <Route 
         path="/journey-management/:journeySlug/:processId/evaluate" 
         element={
-          <ProtectedRoute requiredRole={['super_admin', 'company_admin']}>
+          <ProtectedRoute requiredRole={['super_admin', 'company_admin', 'user']} requiredToolSlug="journey-overview">
             <ProcessEvaluationForm />
           </ProtectedRoute>
         }

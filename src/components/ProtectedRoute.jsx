@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/useAuth'
+import { useToolPermissions } from '../hooks/useToolPermissions'
 import LoadingScreen from './LoadingScreen'
 
 // Componente para proteger rotas que precisam de autenticação
-export function ProtectedRoute({ children, requiredRole = null, fallback = null }) {
+export function ProtectedRoute({ children, requiredRole = null, requiredToolSlug = null, fallback = null }) {
   const { user, profile, loading } = useAuth()
   const permissions = usePermissions()
+  const { hasToolAccess, hasToolAccessStrict, loading: toolPermissionsLoading } = useToolPermissions()
   const [profileLoadTimeout, setProfileLoadTimeout] = useState(false)
   
   // Timeout para evitar loading infinito do perfil
@@ -60,6 +62,27 @@ export function ProtectedRoute({ children, requiredRole = null, fallback = null 
 
     if (!hasRequiredRole()) {
       return fallback || <AccessDenied />
+    }
+  }
+
+  // Verificar permissão de ferramenta (tool slug)
+  if (requiredToolSlug) {
+    // Aguardar carregamento das permissões antes de decidir
+    if (toolPermissionsLoading) return <LoadingScreen />
+
+    // Roles privilegiados: allow-by-default (bloqueia só se tiver deny explícito)
+    // Usuário regular: deny-by-default (precisa de allow explícito)
+    const isPrivileged = permissions.isSuperAdmin() ||
+                         permissions.isCompanyAdmin() ||
+                         permissions.isGestor() ||
+                         permissions.isAnyManager()
+
+    const hasTool = isPrivileged
+      ? hasToolAccess(requiredToolSlug)
+      : hasToolAccessStrict(requiredToolSlug)
+
+    if (!hasTool) {
+      return <Navigate to="/dashboard" replace />
     }
   }
 
