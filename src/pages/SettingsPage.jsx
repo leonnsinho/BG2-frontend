@@ -85,6 +85,11 @@ const SettingsPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [avatarSignedUrl, setAvatarSignedUrl] = useState('') // 🔥 NOVO: URL assinada do avatar
 
+  // Exclusão de conta
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
   // Estados para os formulários
   const [profileForm, setProfileForm] = useState({
     full_name: profile?.full_name || '',
@@ -420,6 +425,34 @@ const SettingsPage = () => {
     }
   }
 
+  // Excluir conta
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Erro ao excluir conta')
+      toast.success('Conta excluída com sucesso.')
+      await supabase.auth.signOut()
+      window.location.href = '/login'
+    } catch (err) {
+      toast.error('Erro ao excluir conta: ' + err.message)
+    } finally {
+      setDeleteLoading(false)
+      setShowDeleteModal(false)
+    }
+  }
+
   // Upload de avatar
   const handleAvatarUpload = async (event) => {
     const file = event.target.files[0]
@@ -726,8 +759,67 @@ const SettingsPage = () => {
                   </Button>
                 </div>
               </form>
+
+              {/* Zona de Perigo */}
+              <div className="mt-10 pt-6 border-t border-red-100">
+                <h3 className="text-base font-semibold text-red-600 mb-1 flex items-center gap-2">
+                  <Trash2 className="w-4 h-4" />
+                  Zona de Perigo
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Excluir sua conta remove permanentemente todos os seus dados. Esta ação não pode ser desfeita.
+                </p>
+                <button
+                  onClick={() => { setDeleteConfirmText(''); setShowDeleteModal(true) }}
+                  className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors"
+                >
+                  Excluir minha conta
+                </button>
+              </div>
             </div>
           </Card>
+        )}
+
+        {/* Modal de confirmação de exclusão de conta */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && setShowDeleteModal(false)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100">
+                  <Trash2 className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Excluir conta</h3>
+                  <p className="text-xs text-gray-500">Esta ação é permanente e irreversível</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Todos os seus dados serão apagados: perfil, configurações e histórico. Para confirmar, digite <strong>EXCLUIR</strong> abaixo.
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                placeholder="Digite EXCLUIR para confirmar"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 mb-4"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmText !== 'EXCLUIR' || deleteLoading}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleteLoading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Excluindo...</> : <><Trash2 className="h-4 w-4" />Excluir conta</>}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Aba Senha */}

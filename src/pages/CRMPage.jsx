@@ -21,7 +21,8 @@ import {
   Plus, X, GripVertical, Edit2, Trash2, Save, Upload,
   Building2, User, Phone, Mail, MapPin, Tag, DollarSign,
   MessageSquare, Paperclip, ChevronDown, Check, AlertCircle,
-  Kanban, Search, Filter, MoreHorizontal, Download, ArrowLeft, LayoutGrid
+  Kanban, Search, Filter, MoreHorizontal, Download, ArrowLeft, LayoutGrid,
+  Users, Package, Import, ChevronRight, Globe, Briefcase, ArrowUpRight
 } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -42,12 +43,70 @@ const EMPTY_CARD = {
   email_contato: '', telefone_contato: '', origem_lead: '',
   cidade_estado: '', segmento: '', observacoes: '',
   valor_oportunidade: '', status: 'ativo',
+  lead_id: null, product_id: null, contact_id: null,
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const fmtMoney = (v) => {
   if (!v && v !== 0) return ''
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+}
+
+// ─── ImportOrCreatePicker ─────────────────────────────────────────────────────
+// Generic component: shows a list of existing items + button to create new inline
+function ImportOrCreatePicker({ title, Icon, colorClass, items, selected, onSelect, onCreateClick, renderItem, renderSelected, placeholder }) {
+  const [open, setOpen] = useState(false)
+
+  if (selected) {
+    return (
+      <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${colorClass} bg-opacity-10`}>
+        <Icon className="h-4 w-4 shrink-0" />
+        <div className="flex-1 min-w-0 text-sm">{renderSelected(selected)}</div>
+        <button onClick={() => onSelect(null)} className="text-gray-400 hover:text-red-400 transition-colors shrink-0">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative">
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl border-2 border-dashed text-sm transition-all ${open ? 'border-[#EBA500] bg-amber-50/40' : 'border-gray-200 hover:border-gray-300 text-gray-500'}`}
+        >
+          <Import className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-left text-xs">{placeholder}</span>
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`} />
+        </button>
+        <button
+          type="button"
+          onClick={onCreateClick}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-dashed border-gray-200 hover:border-[#EBA500] hover:bg-amber-50/40 text-xs text-gray-500 hover:text-[#EBA500] transition-all shrink-0"
+          title={`Criar ${title}`}
+        >
+          <Plus className="h-3.5 w-3.5" /> Criar
+        </button>
+      </div>
+      {open && (
+        <div className="absolute top-full mt-1 left-0 right-0 z-10 bg-white border border-gray-200 rounded-xl shadow-lg max-h-44 overflow-y-auto">
+          {items.length === 0 ? (
+            <p className="text-xs text-gray-400 px-3 py-3">Nenhum {title.toLowerCase()} cadastrado.</p>
+          ) : (
+            items.map(item => (
+              <button key={item.id} type="button" onClick={() => { onSelect(item); setOpen(false) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors">
+                <Icon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                <span className="text-xs text-gray-700 truncate">{renderItem(item)}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ─── CardModal ────────────────────────────────────────────────────────────────
@@ -62,20 +121,140 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   const fileRef = useRef()
   const isNew = !card?.id
 
-  const inp = 'w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all'
-  const sel = inp + ' bg-white'
+  // entity data
+  const [leads, setLeads] = useState([])
+  const [products, setProducts] = useState([])
+  const [contacts, setContacts] = useState([])
+  const [selectedLead, setSelectedLead] = useState(null)
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [selectedContact, setSelectedContact] = useState(null)
+
+  // create-inline sub-modal
+  const [createMode, setCreateMode] = useState(null) // 'lead' | 'product' | 'contact'
+  const [createForm, setCreateForm] = useState({})
+  const [createSaving, setCreateSaving] = useState(false)
 
   useEffect(() => {
+    loadEntities()
     if (card?.id) loadAttachments(card.id)
-  }, [card?.id])
+  }, [])
+
+  const loadEntities = async () => {
+    const [{ data: ls }, { data: ps }, { data: cs }] = await Promise.all([
+      supabase.from('crm_leads').select('*').eq('company_id', companyId).order('nome_empresa'),
+      supabase.from('crm_products').select('*').eq('company_id', companyId).order('nome'),
+      supabase.from('crm_contacts').select('*, crm_leads(nome_empresa)').eq('company_id', companyId).order('nome'),
+    ])
+    const lList = ls || [], pList = ps || [], cList = cs || []
+    setLeads(lList)
+    setProducts(pList)
+    setContacts(cList)
+    // pre-select if editing
+    if (card?.lead_id)    setSelectedLead(lList.find(x => x.id === card.lead_id) || null)
+    if (card?.product_id) setSelectedProduct(pList.find(x => x.id === card.product_id) || null)
+    if (card?.contact_id) setSelectedContact(cList.find(x => x.id === card.contact_id) || null)
+  }
 
   const loadAttachments = async (cardId) => {
-    const { data } = await supabase
-      .from('crm_card_attachments').select('*').eq('card_id', cardId).order('created_at')
+    const { data } = await supabase.from('crm_card_attachments').select('*').eq('card_id', cardId).order('created_at')
     setAttachments(data || [])
   }
 
-  const handleChange = (field, value) => setForm(p => ({ ...p, [field]: value }))
+  // Apply selected lead data to form
+  const pickLead = (lead) => {
+    setSelectedLead(lead)
+    if (lead) {
+      setForm(p => ({
+        ...p,
+        lead_id: lead.id,
+        nome_empresa: lead.nome_empresa || p.nome_empresa,
+        cidade_estado: lead.cidade_estado || p.cidade_estado,
+        segmento: lead.segmento || p.segmento,
+        origem_lead: lead.origem_lead || p.origem_lead,
+      }))
+    } else {
+      setForm(p => ({ ...p, lead_id: null }))
+    }
+  }
+
+  const pickProduct = (product) => {
+    setSelectedProduct(product)
+    if (product) {
+      setForm(p => ({
+        ...p,
+        product_id: product.id,
+        valor_oportunidade: product.valor ?? p.valor_oportunidade,
+      }))
+    } else {
+      setForm(p => ({ ...p, product_id: null }))
+    }
+  }
+
+  const pickContact = (contact) => {
+    setSelectedContact(contact)
+    if (contact) {
+      setForm(p => ({
+        ...p,
+        contact_id: contact.id,
+        nome_contato: contact.nome || p.nome_contato,
+        cargo_contato: contact.cargo || p.cargo_contato,
+        email_contato: contact.email || p.email_contato,
+        telefone_contato: contact.telefone || p.telefone_contato,
+      }))
+    } else {
+      setForm(p => ({ ...p, contact_id: null }))
+    }
+  }
+
+  // Inline create helpers
+  const openCreate = (mode) => {
+    setCreateForm(
+      mode === 'lead' ? { nome_empresa: '', cidade_estado: '', segmento: '', origem_lead: '' } :
+      mode === 'product' ? { nome: '', valor: '', unidade: '', descricao: '' } :
+      { nome: '', cargo: '', email: '', telefone: '', lead_id: '' }
+    )
+    setCreateMode(mode)
+  }
+
+  const handleInlineCreate = async () => {
+    setCreateSaving(true)
+    try {
+      if (createMode === 'lead') {
+        if (!createForm.nome_empresa?.trim()) { toast.error('Nome da empresa obrigatório'); return }
+        const { data, error } = await supabase.from('crm_leads').insert([{
+          ...createForm, company_id: companyId, created_by: user?.id
+        }]).select().single()
+        if (error) throw error
+        const updated = [...leads, data]
+        setLeads(updated)
+        pickLead(data)
+      } else if (createMode === 'product') {
+        if (!createForm.nome?.trim()) { toast.error('Nome do produto obrigatório'); return }
+        const { data, error } = await supabase.from('crm_products').insert([{
+          ...createForm,
+          valor: createForm.valor !== '' ? parseFloat(String(createForm.valor).replace(',', '.')) || null : null,
+          company_id: companyId, created_by: user?.id
+        }]).select().single()
+        if (error) throw error
+        const updated = [...products, data]
+        setProducts(updated)
+        pickProduct(data)
+      } else if (createMode === 'contact') {
+        if (!createForm.nome?.trim()) { toast.error('Nome do contato obrigatório'); return }
+        const { data, error } = await supabase.from('crm_contacts').insert([{
+          ...createForm, lead_id: createForm.lead_id || null,
+          company_id: companyId, created_by: user?.id
+        }]).select('*, crm_leads(nome_empresa)').single()
+        if (error) throw error
+        const updated = [...contacts, data]
+        setContacts(updated)
+        pickContact(data)
+      }
+      toast.success('Criado com sucesso!')
+      setCreateMode(null)
+    } catch (e) { toast.error('Erro: ' + e.message) }
+    finally { setCreateSaving(false) }
+  }
 
   const handleSave = async () => {
     if (!form.nome_empresa?.trim() && !form.nome_contato?.trim()) {
@@ -98,6 +277,9 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         observacoes: form.observacoes?.trim() || null,
         valor_oportunidade: form.valor_oportunidade !== '' ? parseFloat(String(form.valor_oportunidade).replace(/[^\d.,]/g, '').replace(',', '.')) || null : null,
         status: form.status || 'ativo',
+        lead_id: form.lead_id || null,
+        product_id: form.product_id || null,
+        contact_id: form.contact_id || null,
         updated_at: new Date().toISOString(),
       }
       let saved
@@ -176,6 +358,71 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
 
   const statusInfo = STATUS_OPTIONS.find(s => s.value === form.status) || STATUS_OPTIONS[0]
 
+  // ── Inline create sub-form ───────────────────────────────────────────────
+  if (createMode) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && setCreateMode(null)}>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <button onClick={() => setCreateMode(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
+            <h3 className="text-sm font-bold text-gray-800">
+              {createMode === 'lead' ? 'Criar novo Lead' : createMode === 'product' ? 'Criar novo Produto' : 'Criar novo Contato'}
+            </h3>
+          </div>
+
+          {createMode === 'lead' && (
+            <div className="space-y-3">
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Nome da Empresa *</label><input className={INP} value={createForm.nome_empresa} onChange={e => setCreateForm(p=>({...p,nome_empresa:e.target.value}))} placeholder="Acme Corp" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-xs font-medium text-gray-600 mb-1">Cidade/Estado</label><input className={INP} value={createForm.cidade_estado} onChange={e => setCreateForm(p=>({...p,cidade_estado:e.target.value}))} placeholder="SP" /></div>
+                <div><label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label><input className={INP} value={createForm.segmento} onChange={e => setCreateForm(p=>({...p,segmento:e.target.value}))} placeholder="Tecnologia" /></div>
+              </div>
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Origem</label>
+                <select className={SEL} value={createForm.origem_lead} onChange={e => setCreateForm(p=>({...p,origem_lead:e.target.value}))}>
+                  <option value="">Selecione...</option>{ORIGENS.map(o=><option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {createMode === 'product' && (
+            <div className="space-y-3">
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label><input className={INP} value={createForm.nome} onChange={e => setCreateForm(p=>({...p,nome:e.target.value}))} placeholder="Ex: Consultoria" /></div>
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Descrição</label><textarea className={INP+' resize-none'} rows={2} value={createForm.descricao} onChange={e => setCreateForm(p=>({...p,descricao:e.target.value}))} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-xs font-medium text-gray-600 mb-1">Valor (R$)</label><input type="number" className={INP} value={createForm.valor} onChange={e => setCreateForm(p=>({...p,valor:e.target.value}))} placeholder="0,00" /></div>
+                <div><label className="block text-xs font-medium text-gray-600 mb-1">Unidade</label><input className={INP} value={createForm.unidade} onChange={e => setCreateForm(p=>({...p,unidade:e.target.value}))} placeholder="por mês" /></div>
+              </div>
+            </div>
+          )}
+
+          {createMode === 'contact' && (
+            <div className="space-y-3">
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label><input className={INP} value={createForm.nome} onChange={e => setCreateForm(p=>({...p,nome:e.target.value}))} placeholder="João Silva" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-xs font-medium text-gray-600 mb-1">Cargo</label><input className={INP} value={createForm.cargo} onChange={e => setCreateForm(p=>({...p,cargo:e.target.value}))} placeholder="Diretor" /></div>
+                <div><label className="block text-xs font-medium text-gray-600 mb-1">Empresa</label>
+                  <select className={SEL} value={createForm.lead_id} onChange={e => setCreateForm(p=>({...p,lead_id:e.target.value}))}>
+                    <option value="">Sem vínculo</option>{leads.map(l=><option key={l.id} value={l.id}>{l.nome_empresa}</option>)}
+                  </select>
+                </div>
+                <div><label className="block text-xs font-medium text-gray-600 mb-1">E-mail</label><input type="email" className={INP} value={createForm.email} onChange={e => setCreateForm(p=>({...p,email:e.target.value}))} placeholder="joao@..." /></div>
+                <div><label className="block text-xs font-medium text-gray-600 mb-1">Telefone</label><input type="tel" className={INP} value={createForm.telefone} onChange={e => setCreateForm(p=>({...p,telefone:e.target.value}))} placeholder="(11) 99..." /></div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 mt-5">
+            <button onClick={() => setCreateMode(null)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+            <button onClick={handleInlineCreate} disabled={createSaving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
+              {createSaving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Criar e vincular
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
@@ -205,7 +452,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
           {!isNew && (
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Coluna</label>
-              <select value={form.column_id} onChange={e => handleChange('column_id', e.target.value)} className={sel}>
+              <select value={form.column_id} onChange={e => setForm(p => ({ ...p, column_id: e.target.value }))} className={SEL}>
                 {columns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -216,7 +463,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-16 shrink-0">Status</label>
             <div className="flex gap-2">
               {STATUS_OPTIONS.map(s => (
-                <button key={s.value} onClick={() => handleChange('status', s.value)}
+                <button key={s.value} onClick={() => setForm(p => ({ ...p, status: s.value }))}
                   className={`px-3 py-1 rounded-full text-xs font-medium border-2 transition-all ${form.status === s.value ? s.color + ' border-current' : 'bg-gray-50 text-gray-400 border-transparent hover:border-gray-200'}`}>
                   {s.label}
                 </button>
@@ -224,77 +471,117 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
             </div>
           </div>
 
-          {/* Empresa + Contato */}
+          {/* LEAD */}
           <section>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5" /> Empresa
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5" /> Lead / Empresa
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ImportOrCreatePicker
+              title="Lead"
+              Icon={Building2}
+              colorClass="border-blue-200 text-blue-700"
+              items={leads}
+              selected={selectedLead}
+              onSelect={pickLead}
+              onCreateClick={() => openCreate('lead')}
+              renderItem={l => l.nome_empresa + (l.segmento ? ` · ${l.segmento}` : '')}
+              renderSelected={l => <><span className="font-semibold">{l.nome_empresa}</span>{l.segmento && <span className="text-xs text-gray-400 ml-1">· {l.segmento}</span>}</>}
+              placeholder="Importar lead existente..."
+            />
+            {/* Editable fields — prefilled from lead but editable */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
               <div className="sm:col-span-2">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Nome da Empresa</label>
-                <input className={inp} value={form.nome_empresa} onChange={e => handleChange('nome_empresa', e.target.value)} placeholder="Acme Corp" />
+                <input className={INP} value={form.nome_empresa} onChange={e => setForm(p => ({...p, nome_empresa: e.target.value}))} placeholder="Acme Corp" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Cidade / Estado</label>
-                <input className={inp} value={form.cidade_estado} onChange={e => handleChange('cidade_estado', e.target.value)} placeholder="São Paulo / SP" />
+                <input className={INP} value={form.cidade_estado} onChange={e => setForm(p => ({...p, cidade_estado: e.target.value}))} placeholder="São Paulo / SP" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label>
-                <input className={inp} value={form.segmento} onChange={e => handleChange('segmento', e.target.value)} placeholder="Tecnologia, Saúde..." />
+                <input className={INP} value={form.segmento} onChange={e => setForm(p => ({...p, segmento: e.target.value}))} placeholder="Tecnologia, Saúde..." />
               </div>
             </div>
           </section>
 
+          {/* CONTATO */}
           <section>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
               <User className="h-3.5 w-3.5" /> Contato
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ImportOrCreatePicker
+              title="Contato"
+              Icon={User}
+              colorClass="border-purple-200 text-purple-700"
+              items={contacts}
+              selected={selectedContact}
+              onSelect={pickContact}
+              onCreateClick={() => openCreate('contact')}
+              renderItem={c => c.nome + (c.cargo ? ` · ${c.cargo}` : '') + (c.crm_leads?.nome_empresa ? ` (${c.crm_leads.nome_empresa})` : '')}
+              renderSelected={c => <><span className="font-semibold">{c.nome}</span>{c.cargo && <span className="text-xs text-gray-400 ml-1">· {c.cargo}</span>}</>}
+              placeholder="Importar contato existente..."
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Nome do Contato</label>
-                <input className={inp} value={form.nome_contato} onChange={e => handleChange('nome_contato', e.target.value)} placeholder="João Silva" />
+                <input className={INP} value={form.nome_contato} onChange={e => setForm(p => ({...p, nome_contato: e.target.value}))} placeholder="João Silva" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Cargo</label>
-                <input className={inp} value={form.cargo_contato} onChange={e => handleChange('cargo_contato', e.target.value)} placeholder="Diretor Comercial" />
+                <input className={INP} value={form.cargo_contato} onChange={e => setForm(p => ({...p, cargo_contato: e.target.value}))} placeholder="Diretor Comercial" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">E-mail</label>
-                <input type="email" className={inp} value={form.email_contato} onChange={e => handleChange('email_contato', e.target.value)} placeholder="joao@empresa.com" />
+                <input type="email" className={INP} value={form.email_contato} onChange={e => setForm(p => ({...p, email_contato: e.target.value}))} placeholder="joao@empresa.com" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Telefone</label>
-                <input type="tel" className={inp} value={form.telefone_contato} onChange={e => handleChange('telefone_contato', e.target.value)} placeholder="(11) 99999-9999" />
+                <input type="tel" className={INP} value={form.telefone_contato} onChange={e => setForm(p => ({...p, telefone_contato: e.target.value}))} placeholder="(11) 99999-9999" />
               </div>
             </div>
           </section>
 
+          {/* PRODUTO / OPORTUNIDADE */}
           <section>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-              <DollarSign className="h-3.5 w-3.5" /> Oportunidade
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <DollarSign className="h-3.5 w-3.5" /> Oportunidade / Produto
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ImportOrCreatePicker
+              title="Produto"
+              Icon={Package}
+              colorClass="border-emerald-200 text-emerald-700"
+              items={products}
+              selected={selectedProduct}
+              onSelect={pickProduct}
+              onCreateClick={() => openCreate('product')}
+              renderItem={p => p.nome + (p.valor ? ` · ${fmtMoney(p.valor)}` : '')}
+              renderSelected={p => <><span className="font-semibold">{p.nome}</span>{p.valor && <span className="text-xs text-gray-400 ml-1">· {fmtMoney(p.valor)}</span>}</>}
+              placeholder="Importar produto existente..."
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Origem do Lead</label>
-                <select className={sel} value={form.origem_lead} onChange={e => handleChange('origem_lead', e.target.value)}>
+                <select className={SEL} value={form.origem_lead} onChange={e => setForm(p => ({...p, origem_lead: e.target.value}))}>
                   <option value="">Selecione...</option>
                   {ORIGENS.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Valor da Oportunidade (R$)</label>
-                <input type="number" min="0" step="0.01" className={inp} value={form.valor_oportunidade}
-                  onChange={e => handleChange('valor_oportunidade', e.target.value)} placeholder="0,00" />
+                <input type="number" min="0" step="0.01" className={INP} value={form.valor_oportunidade}
+                  onChange={e => setForm(p => ({...p, valor_oportunidade: e.target.value}))} placeholder="0,00" />
               </div>
             </div>
           </section>
 
+          {/* Observações */}
           <section>
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
               <MessageSquare className="h-3.5 w-3.5" /> Histórico / Observações
             </h4>
-            <textarea className={inp + ' resize-none'} rows={4}
-              value={form.observacoes} onChange={e => handleChange('observacoes', e.target.value)}
+            <textarea className={INP + ' resize-none'} rows={4}
+              value={form.observacoes} onChange={e => setForm(p => ({...p, observacoes: e.target.value}))}
               placeholder="Anotações, histórico de contatos, próximos passos..." />
           </section>
 
@@ -564,9 +851,437 @@ function ConfirmModal({ title, message, confirmLabel = 'Excluir', onConfirm, onC
   )
 }
 
+// ─── helpers ────────────────────────────────────────────────────────────────
+const INP = 'w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all'
+const SEL = INP + ' bg-white'
+
+// ─── LeadsModal ───────────────────────────────────────────────────────────────
+function LeadsModal({ companyId, onClose }) {
+  const { user } = useAuth()
+  const [leads, setLeads] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const EMPTY = { nome_empresa: '', cidade_estado: '', segmento: '', origem_lead: '', website: '', observacoes: '' }
+  const [form, setForm] = useState(EMPTY)
+
+  useEffect(() => { loadLeads() }, [])
+
+  const loadLeads = async () => {
+    setLoading(true)
+    const { data } = await supabase.from('crm_leads').select('*').eq('company_id', companyId).order('nome_empresa')
+    setLeads(data || [])
+    setLoading(false)
+  }
+
+  const openNew = () => { setForm(EMPTY); setEditing(null); setShowForm(true) }
+  const openEdit = (l) => { setForm({ ...l }); setEditing(l); setShowForm(true) }
+
+  const handleSave = async () => {
+    if (!form.nome_empresa?.trim()) { toast.error('Nome da empresa obrigatório'); return }
+    setSaving(true)
+    try {
+      const payload = { ...form, company_id: companyId, updated_at: new Date().toISOString() }
+      if (editing) {
+        const { error } = await supabase.from('crm_leads').update(payload).eq('id', editing.id)
+        if (error) throw error
+      } else {
+        payload.created_by = user?.id
+        const { error } = await supabase.from('crm_leads').insert([payload])
+        if (error) throw error
+      }
+      toast.success(editing ? 'Lead atualizado!' : 'Lead cadastrado!')
+      setShowForm(false)
+      loadLeads()
+    } catch (e) { toast.error('Erro: ' + e.message) }
+    finally { setSaving(false) }
+  }
+
+  const handleDelete = async (id) => {
+    await supabase.from('crm_leads').delete().eq('id', id)
+    setLeads(p => p.filter(l => l.id !== id))
+    toast.success('Lead removido')
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-[#EBA500]" /> Leads / Empresas
+          </h2>
+          <div className="flex items-center gap-2">
+            <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+              <Plus className="h-3.5 w-3.5" /> Novo Lead
+            </button>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loading ? (
+            <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" /></div>
+          ) : showForm ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
+                <h3 className="text-sm font-bold text-gray-700">{editing ? 'Editar Lead' : 'Novo Lead'}</h3>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nome da Empresa *</label>
+                <input className={INP} value={form.nome_empresa} onChange={e => setForm(p => ({...p, nome_empresa: e.target.value}))} placeholder="Acme Corp" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Cidade / Estado</label>
+                  <input className={INP} value={form.cidade_estado} onChange={e => setForm(p => ({...p, cidade_estado: e.target.value}))} placeholder="São Paulo / SP" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label>
+                  <input className={INP} value={form.segmento} onChange={e => setForm(p => ({...p, segmento: e.target.value}))} placeholder="Tecnologia, Saúde..." />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Origem</label>
+                  <select className={SEL} value={form.origem_lead} onChange={e => setForm(p => ({...p, origem_lead: e.target.value}))}>
+                    <option value="">Selecione...</option>
+                    {ORIGENS.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Website</label>
+                  <input className={INP} value={form.website} onChange={e => setForm(p => ({...p, website: e.target.value}))} placeholder="https://..." />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Observações</label>
+                <textarea className={INP + ' resize-none'} rows={3} value={form.observacoes} onChange={e => setForm(p => ({...p, observacoes: e.target.value}))} placeholder="Notas sobre este lead..." />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+                <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
+                  {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Salvar
+                </button>
+              </div>
+            </div>
+          ) : leads.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+              <Building2 className="h-10 w-10 text-gray-200" />
+              <p className="text-sm text-gray-500">Nenhum lead cadastrado ainda.</p>
+              <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl"><Plus className="h-4 w-4" /> Adicionar lead</button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {leads.map(l => (
+                <div key={l.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 group">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                    <Building2 className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{l.nome_empresa}</p>
+                    <p className="text-xs text-gray-400 truncate">{[l.segmento, l.cidade_estado].filter(Boolean).join(' · ') || 'Sem detalhes'}</p>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => openEdit(l)} className="p-1.5 hover:bg-gray-200 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
+                    <button onClick={() => handleDelete(l.id)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── ProductsModal ────────────────────────────────────────────────────────────
+function ProductsModal({ companyId, onClose }) {
+  const { user } = useAuth()
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const EMPTY = { nome: '', descricao: '', valor: '', unidade: '' }
+  const [form, setForm] = useState(EMPTY)
+
+  useEffect(() => { loadProducts() }, [])
+
+  const loadProducts = async () => {
+    setLoading(true)
+    const { data } = await supabase.from('crm_products').select('*').eq('company_id', companyId).order('nome')
+    setProducts(data || [])
+    setLoading(false)
+  }
+
+  const openNew = () => { setForm(EMPTY); setEditing(null); setShowForm(true) }
+  const openEdit = (p) => { setForm({ ...p, valor: p.valor ?? '' }); setEditing(p); setShowForm(true) }
+
+  const handleSave = async () => {
+    if (!form.nome?.trim()) { toast.error('Nome do produto obrigatório'); return }
+    setSaving(true)
+    try {
+      const payload = {
+        ...form,
+        valor: form.valor !== '' ? parseFloat(String(form.valor).replace(',', '.')) || null : null,
+        company_id: companyId,
+        updated_at: new Date().toISOString()
+      }
+      if (editing) {
+        const { error } = await supabase.from('crm_products').update(payload).eq('id', editing.id)
+        if (error) throw error
+      } else {
+        payload.created_by = user?.id
+        const { error } = await supabase.from('crm_products').insert([payload])
+        if (error) throw error
+      }
+      toast.success(editing ? 'Produto atualizado!' : 'Produto cadastrado!')
+      setShowForm(false)
+      loadProducts()
+    } catch (e) { toast.error('Erro: ' + e.message) }
+    finally { setSaving(false) }
+  }
+
+  const handleDelete = async (id) => {
+    await supabase.from('crm_products').delete().eq('id', id)
+    setProducts(p => p.filter(x => x.id !== id))
+    toast.success('Produto removido')
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+            <Package className="h-4 w-4 text-[#EBA500]" /> Produtos / Serviços
+          </h2>
+          <div className="flex items-center gap-2">
+            <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+              <Plus className="h-3.5 w-3.5" /> Novo Produto
+            </button>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loading ? (
+            <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" /></div>
+          ) : showForm ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
+                <h3 className="text-sm font-bold text-gray-700">{editing ? 'Editar Produto' : 'Novo Produto'}</h3>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
+                <input className={INP} value={form.nome} onChange={e => setForm(p => ({...p, nome: e.target.value}))} placeholder="Ex: Consultoria Mensal" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Descrição</label>
+                <textarea className={INP + ' resize-none'} rows={2} value={form.descricao} onChange={e => setForm(p => ({...p, descricao: e.target.value}))} placeholder="Detalhes do produto ou serviço..." />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Valor (R$)</label>
+                  <input type="number" min="0" step="0.01" className={INP} value={form.valor} onChange={e => setForm(p => ({...p, valor: e.target.value}))} placeholder="0,00" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Unidade</label>
+                  <input className={INP} value={form.unidade} onChange={e => setForm(p => ({...p, unidade: e.target.value}))} placeholder="por mês, por licença..." />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+                <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
+                  {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Salvar
+                </button>
+              </div>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+              <Package className="h-10 w-10 text-gray-200" />
+              <p className="text-sm text-gray-500">Nenhum produto cadastrado ainda.</p>
+              <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl"><Plus className="h-4 w-4" /> Adicionar produto</button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {products.map(p => (
+                <div key={p.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 group">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                    <Package className="h-4 w-4 text-emerald-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{p.nome}</p>
+                    <p className="text-xs text-gray-400 truncate">{p.valor ? fmtMoney(p.valor) + (p.unidade ? ' · ' + p.unidade : '') : 'Sem valor definido'}</p>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => openEdit(p)} className="p-1.5 hover:bg-gray-200 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
+                    <button onClick={() => handleDelete(p.id)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── ContactsModal ────────────────────────────────────────────────────────────
+function ContactsModal({ companyId, onClose }) {
+  const { user } = useAuth()
+  const [contacts, setContacts] = useState([])
+  const [leads, setLeads] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const EMPTY = { nome: '', cargo: '', email: '', telefone: '', lead_id: '', observacoes: '' }
+  const [form, setForm] = useState(EMPTY)
+
+  useEffect(() => { loadAll() }, [])
+
+  const loadAll = async () => {
+    setLoading(true)
+    const [{ data: c }, { data: l }] = await Promise.all([
+      supabase.from('crm_contacts').select('*, crm_leads(nome_empresa)').eq('company_id', companyId).order('nome'),
+      supabase.from('crm_leads').select('id, nome_empresa').eq('company_id', companyId).order('nome_empresa')
+    ])
+    setContacts(c || [])
+    setLeads(l || [])
+    setLoading(false)
+  }
+
+  const openNew = () => { setForm(EMPTY); setEditing(null); setShowForm(true) }
+  const openEdit = (c) => { setForm({ ...c, lead_id: c.lead_id || '' }); setEditing(c); setShowForm(true) }
+
+  const handleSave = async () => {
+    if (!form.nome?.trim()) { toast.error('Nome do contato obrigatório'); return }
+    setSaving(true)
+    try {
+      const payload = { ...form, lead_id: form.lead_id || null, company_id: companyId, updated_at: new Date().toISOString() }
+      if (editing) {
+        const { error } = await supabase.from('crm_contacts').update(payload).eq('id', editing.id)
+        if (error) throw error
+      } else {
+        payload.created_by = user?.id
+        const { error } = await supabase.from('crm_contacts').insert([payload])
+        if (error) throw error
+      }
+      toast.success(editing ? 'Contato atualizado!' : 'Contato cadastrado!')
+      setShowForm(false)
+      loadAll()
+    } catch (e) { toast.error('Erro: ' + e.message) }
+    finally { setSaving(false) }
+  }
+
+  const handleDelete = async (id) => {
+    await supabase.from('crm_contacts').delete().eq('id', id)
+    setContacts(p => p.filter(c => c.id !== id))
+    toast.success('Contato removido')
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+            <Users className="h-4 w-4 text-[#EBA500]" /> Contatos
+          </h2>
+          <div className="flex items-center gap-2">
+            <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+              <Plus className="h-3.5 w-3.5" /> Novo Contato
+            </button>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loading ? (
+            <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" /></div>
+          ) : showForm ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
+                <h3 className="text-sm font-bold text-gray-700">{editing ? 'Editar Contato' : 'Novo Contato'}</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
+                  <input className={INP} value={form.nome} onChange={e => setForm(p => ({...p, nome: e.target.value}))} placeholder="João Silva" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Cargo</label>
+                  <input className={INP} value={form.cargo} onChange={e => setForm(p => ({...p, cargo: e.target.value}))} placeholder="Diretor Comercial" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Empresa (Lead)</label>
+                  <select className={SEL} value={form.lead_id} onChange={e => setForm(p => ({...p, lead_id: e.target.value}))}>
+                    <option value="">Sem vínculo</option>
+                    {leads.map(l => <option key={l.id} value={l.id}>{l.nome_empresa}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">E-mail</label>
+                  <input type="email" className={INP} value={form.email} onChange={e => setForm(p => ({...p, email: e.target.value}))} placeholder="joao@empresa.com" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Telefone</label>
+                  <input type="tel" className={INP} value={form.telefone} onChange={e => setForm(p => ({...p, telefone: e.target.value}))} placeholder="(11) 99999-9999" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Observações</label>
+                  <textarea className={INP + ' resize-none'} rows={2} value={form.observacoes} onChange={e => setForm(p => ({...p, observacoes: e.target.value}))} placeholder="Notas sobre este contato..." />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+                <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
+                  {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Salvar
+                </button>
+              </div>
+            </div>
+          ) : contacts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+              <Users className="h-10 w-10 text-gray-200" />
+              <p className="text-sm text-gray-500">Nenhum contato cadastrado ainda.</p>
+              <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl"><Plus className="h-4 w-4" /> Adicionar contato</button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {contacts.map(c => (
+                <div key={c.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 group">
+                  <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+                    <User className="h-4 w-4 text-purple-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{c.nome}{c.cargo ? ` · ${c.cargo}` : ''}</p>
+                    <p className="text-xs text-gray-400 truncate">{c.crm_leads?.nome_empresa || 'Sem empresa'}{c.email ? ' · ' + c.email : ''}</p>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-gray-200 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
+                    <button onClick={() => handleDelete(c.id)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── CRMPage ──────────────────────────────────────────────────────────────────
 export default function CRMPage() {
   const { profile } = useAuth()
+
+  // ── entity modals ────────────────────────────────────────────────────────
+  const [showLeadsModal, setShowLeadsModal] = useState(false)
+  const [showProductsModal, setShowProductsModal] = useState(false)
+  const [showContactsModal, setShowContactsModal] = useState(false)
 
   // ── boards list ──────────────────────────────────────────────────────────
   const [boards, setBoards] = useState([])
@@ -939,12 +1654,32 @@ export default function CRMPage() {
             <p className="text-xs text-gray-400">{boards.length} pipeline{boards.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
-        <button
-          onClick={() => { setNewBoardTitle(''); setNewBoardModal(true) }}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors shadow-sm"
-        >
-          <Plus className="h-4 w-4" /> Novo Pipeline
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowLeadsModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors"
+          >
+            <Building2 className="h-4 w-4" /> Leads
+          </button>
+          <button
+            onClick={() => setShowProductsModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors"
+          >
+            <Package className="h-4 w-4" /> Produtos
+          </button>
+          <button
+            onClick={() => setShowContactsModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors"
+          >
+            <Users className="h-4 w-4" /> Contatos
+          </button>
+          <button
+            onClick={() => { setNewBoardTitle(''); setNewBoardModal(true) }}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors shadow-sm"
+          >
+            <Plus className="h-4 w-4" /> Novo Pipeline
+          </button>
+        </div>
       </div>
 
       {/* Grid de boards */}
@@ -1052,6 +1787,10 @@ export default function CRMPage() {
           onClose={() => setShowIconPicker(false)}
         />
       )}
+
+      {showLeadsModal && <LeadsModal companyId={companyId} onClose={() => setShowLeadsModal(false)} />}
+      {showProductsModal && <ProductsModal companyId={companyId} onClose={() => setShowProductsModal(false)} />}
+      {showContactsModal && <ContactsModal companyId={companyId} onClose={() => setShowContactsModal(false)} />}
 
       {confirmDialog && (
         <ConfirmModal

@@ -687,6 +687,33 @@ export default function UsersManagementPage() {
     }
   }
 
+  const handlePermanentDeleteUser = async (userId, userName) => {
+    if (!confirm(`⚠️ EXCLUIR PERMANENTEMENTE\n\nTem certeza que deseja excluir a conta de "${userName}"?\n\nTodos os dados do usuário serão removidos. Esta ação NÃO pode ser desfeita.`)) return
+    try {
+      setUpdating(true)
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account-admin`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ target_user_id: userId }),
+        }
+      )
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Erro ao excluir conta')
+      toast.success(`Conta de "${userName}" excluída com sucesso`)
+      await loadUsers()
+    } catch (err) {
+      toast.error('Erro ao excluir: ' + err.message)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
   const handleDeleteUser = async (userId) => {
     try {
       setUpdating(true);
@@ -1621,6 +1648,22 @@ export default function UsersManagementPage() {
                       <p className="text-xs text-gray-600">
                         {selectedUserForActions.is_active ? 'Bloquear acesso ao sistema' : 'Reativar acesso'}
                       </p>
+                    </div>
+                  </button>
+                  {/* Excluir permanentemente */}
+                  <button
+                    onClick={() => {
+                      closeActionsModal()
+                      handlePermanentDeleteUser(selectedUserForActions.id, selectedUserForActions.full_name)
+                    }}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-red-50 to-red-100/30 hover:from-red-100 hover:to-red-200/50 border-2 border-red-300 hover:border-red-400 transition-all duration-200 group hover:shadow-md"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Trash2 className="h-5 w-5 text-red-700" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-red-700">Excluir Conta Permanentemente</p>
+                      <p className="text-xs text-red-500">Remove todos os dados — ação irreversível</p>
                     </div>
                   </button>
                 </div>
