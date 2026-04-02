@@ -390,7 +390,13 @@ function VideoOrIcon({ size = 'md' }) {
   const sz = size === 'sm' ? 'h-4 w-4' : 'h-6 w-6'
 
   if (videoFailed) {
-    return <Sparkles className={`${sz} text-white`} />
+    return (
+      <img
+        src="/image_chat.png"
+        alt="Assistente IA"
+        className="w-11 h-11 object-cover rounded-full"
+      />
+    )
   }
 
   return (

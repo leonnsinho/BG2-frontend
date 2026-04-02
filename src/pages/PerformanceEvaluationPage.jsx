@@ -696,23 +696,24 @@ export default function PerformanceEvaluationPage() {
 
       {/* Nine Box Matrix - DESTAQUE */}
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-3 sm:p-6 lg:p-8 border border-gray-200">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-3 sm:p-4 border border-gray-200">
           {/* Container com scroll horizontal no mobile */}
           <div className="overflow-x-auto -mx-3 sm:mx-0">
             <div className="min-w-[700px] px-3 sm:px-0">
               <div className="grid grid-cols-4 gap-0">
                 {/* Label lateral esquerdo - Alinhamento Cultural */}
-                <div className="col-span-1 flex flex-col justify-center items-center border-r border-gray-300 pr-2 sm:pr-4">
+                <div className="col-span-1 flex flex-col justify-center items-center pr-2 sm:pr-3">
                   <div className="transform -rotate-90 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
-                      <span className="text-sm sm:text-base lg:text-lg font-bold text-gray-700">ALINHAMENTO CULTURAL</span>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 bg-purple-50 rounded-xl border border-purple-200">
+                      <TrendingUp className="h-4 w-4 text-purple-600" />
+                      <span className="text-xs sm:text-sm font-bold text-gray-700">ALINHAMENTO CULTURAL</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Matriz 3x3 */}
-                <div className="col-span-3 grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+                <div className="col-span-3">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
               {/* Linha superior - Alto Alinhamento Cultural */}
               {[1, 2, 3].map(perf => {
                 const key = `${perf}-3`
@@ -723,7 +724,7 @@ export default function PerformanceEvaluationPage() {
                 return (
                   <div
                     key={key}
-                    className="aspect-square rounded-xl sm:rounded-2xl border-2 p-2 sm:p-3 lg:p-4 transition-all hover:shadow-lg cursor-pointer"
+                    className="min-h-[140px] rounded-xl sm:rounded-2xl border-2 p-2 sm:p-3 transition-all hover:shadow-lg cursor-pointer"
                     style={{
                       borderColor: classInfo.color,
                       backgroundColor: `${classInfo.color}10`
@@ -784,15 +785,15 @@ export default function PerformanceEvaluationPage() {
                 return (
                   <div
                     key={key}
-                    className="aspect-square rounded-2xl border-2 p-4 transition-all hover:shadow-lg cursor-pointer"
+                    className="min-h-[140px] rounded-xl sm:rounded-2xl border-2 p-2 sm:p-3 transition-all hover:shadow-lg cursor-pointer"
                     style={{
                       borderColor: classInfo.color,
                       backgroundColor: `${classInfo.color}10`
                     }}
                   >
                     <div className="flex flex-col h-full">
-                      <div className="mb-2">
-                        <h3 className="font-bold text-sm" style={{ color: classInfo.color }}>
+                      <div className="mb-1 sm:mb-2">
+                        <h3 className="font-bold text-xs sm:text-sm" style={{ color: classInfo.color }}>
                           {classInfo.label}
                         </h3>
                         <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Médio Alinhamento</p>
@@ -845,15 +846,15 @@ export default function PerformanceEvaluationPage() {
                 return (
                   <div
                     key={key}
-                    className="aspect-square rounded-2xl border-2 p-4 transition-all hover:shadow-lg cursor-pointer"
+                    className="min-h-[140px] rounded-xl sm:rounded-2xl border-2 p-2 sm:p-3 transition-all hover:shadow-lg cursor-pointer"
                     style={{
                       borderColor: classInfo.color,
                       backgroundColor: `${classInfo.color}10`
                     }}
                   >
                     <div className="flex flex-col h-full">
-                      <div className="mb-2">
-                        <h3 className="font-bold text-sm" style={{ color: classInfo.color }}>
+                      <div className="mb-1 sm:mb-2">
+                        <h3 className="font-bold text-xs sm:text-sm" style={{ color: classInfo.color }}>
                           {classInfo.label}
                         </h3>
                         <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Baixo Alinhamento</p>
@@ -896,14 +897,14 @@ export default function PerformanceEvaluationPage() {
                 )
               })}
             </div>
-          </div>
-
-          {/* Label inferior - Desempenho Técnico */}
-          <div className="col-span-3 mt-3 sm:mt-4 lg:mt-6 text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 sm:px-6 sm:py-2 bg-blue-50 rounded-xl border border-blue-200">
-              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-              <span className="text-sm sm:text-base lg:text-lg font-bold text-gray-700">DESEMPENHO TÉCNICO</span>
-            </div>
+                {/* Label inferior - Desempenho Técnico */}
+                <div className="mt-2 sm:mt-3 text-center">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 bg-blue-50 rounded-xl border border-blue-200">
+                    <ChevronRight className="h-4 w-4 text-blue-600" />
+                    <span className="text-xs sm:text-sm font-bold text-gray-700">DESEMPENHO TÉCNICO</span>
+                  </div>
+                </div>
+                </div>
           </div>
           </div>
         </div>
