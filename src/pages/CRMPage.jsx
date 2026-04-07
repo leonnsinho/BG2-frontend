@@ -122,6 +122,22 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   const fileRef = useRef()
   const isNew = !card?.id
 
+  // observations (multi-card history)
+  const [observations, setObservations] = useState(() => {
+    const raw = card?.observacoes
+    if (!raw) return []
+    try { const p = JSON.parse(raw); if (Array.isArray(p)) return p } catch {}
+    return [{ id: crypto.randomUUID(), text: raw, created_at: new Date().toISOString() }]
+  })
+  const [newObsText, setNewObsText] = useState('')
+
+  const addObservation = () => {
+    if (!newObsText.trim()) return
+    setObservations(prev => [...prev, { id: crypto.randomUUID(), text: newObsText.trim(), created_at: new Date().toISOString() }])
+    setNewObsText('')
+  }
+  const removeObservation = (id) => setObservations(prev => prev.filter(o => o.id !== id))
+
   // entity data
   const [leads, setLeads] = useState([])
   const [products, setProducts] = useState([])
@@ -275,7 +291,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         origem_lead: form.origem_lead || null,
         cidade_estado: form.cidade_estado?.trim() || null,
         segmento: form.segmento?.trim() || null,
-        observacoes: form.observacoes?.trim() || null,
+        observacoes: observations.length > 0 ? JSON.stringify(observations) : null,
         valor_oportunidade: form.valor_oportunidade !== '' ? parseFloat(String(form.valor_oportunidade).replace(/[^\d.,]/g, '').replace(',', '.')) || null : null,
         status: form.status || 'ativo',
         lead_id: form.lead_id || null,
@@ -581,9 +597,43 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
               <MessageSquare className="h-3.5 w-3.5" /> Histórico / Observações
             </h4>
-            <textarea className={INP + ' resize-none'} rows={4}
-              value={form.observacoes} onChange={e => setForm(p => ({...p, observacoes: e.target.value}))}
-              placeholder="Anotações, histórico de contatos, próximos passos..." />
+            {observations.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {observations.map(obs => (
+                  <div key={obs.id} className="flex gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-700 whitespace-pre-wrap break-words">{obs.text}</p>
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        {new Date(obs.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => removeObservation(obs.id)} className="shrink-0 p-1 hover:bg-red-50 rounded-lg transition-colors self-start">
+                      <X className="h-3.5 w-3.5 text-gray-300 hover:text-red-400" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <textarea
+                className={INP + ' resize-none flex-1'}
+                rows={2}
+                value={newObsText}
+                onChange={e => setNewObsText(e.target.value)}
+                placeholder="Adicionar observação..."
+                onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addObservation() }}
+              />
+              <button
+                type="button"
+                onClick={addObservation}
+                disabled={!newObsText.trim()}
+                className="shrink-0 self-end px-3 py-2 bg-[#EBA500] hover:bg-[#d99500] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl transition-colors"
+                title="Adicionar (Ctrl+Enter)"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">Ctrl+Enter para adicionar rapidamente</p>
           </section>
 
           {/* Anexos */}

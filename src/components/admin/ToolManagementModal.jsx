@@ -240,12 +240,10 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
   // Agrupar por categoria usando o estado efetivo (DB + alterações locais pendentes)
   const hasPendingChanges = Object.keys(pendingChanges).length > 0
 
-  const groupedTools = tools.map(getEffectiveTool).reduce((acc, tool) => {
-    const category = tool.tool_category || 'other'
-    if (!acc[category]) acc[category] = []
-    acc[category].push(tool)
-    return acc
-  }, {})
+  const HIDDEN_SLUGS = ['dfc-entradas', 'dfc-saidas']
+  const flatTools = tools
+    .map(getEffectiveTool)
+    .filter(t => !HIDDEN_SLUGS.includes(t.tool_slug))
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4 overflow-hidden">
@@ -299,100 +297,87 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
                 </div>
               </div>
 
-              {/* Ferramentas agrupadas por categoria */}
-              {Object.entries(groupedTools).map(([category, categoryTools]) => {
-                const colors = getCategoryColors(category)
-                
-                return (
-                  <div key={category} className="space-y-2 sm:space-y-3">
-                    <h3 className="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                      <div className={`h-0.5 sm:h-1 w-6 sm:w-8 rounded-full bg-gradient-to-r ${colors.bg}`}></div>
-                      {CATEGORY_LABELS[category] || 'Outros'}
-                    </h3>
+              {/* Ferramentas */}
+              <div className="grid gap-2 sm:gap-3">
+                {flatTools.map((tool) => {
+                  const Icon = getToolIcon(tool.tool_icon)
+                  const status = getPermissionStatus(tool)
+                  const StatusIcon = status.icon
 
-                    <div className="grid gap-2 sm:gap-3">
-                      {categoryTools.map((tool) => {
-                        const Icon = getToolIcon(tool.tool_icon)
-                        const status = getPermissionStatus(tool)
-                        const StatusIcon = status.icon
+                  return (
+                    <div
+                      key={tool.tool_id}
+                      className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 transition-all duration-200 hover:shadow-md w-full max-w-full overflow-hidden"
+                    >
+                      <div className="flex items-center gap-1.5 sm:gap-4 w-full max-w-full">
+                        {/* Icon */}
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+                          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
+                        </div>
 
-                        return (
-                          <div
-                            key={tool.tool_id}
-                            className={`bg-gradient-to-r ${colors.bg} border ${colors.border} rounded-xl sm:rounded-2xl p-2.5 sm:p-4 transition-all duration-200 hover:shadow-md w-full max-w-full overflow-hidden`}
-                          >
-                            <div className="flex items-center gap-1.5 sm:gap-4 w-full max-w-full">
-                              {/* Icon */}
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0">
-                                <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${colors.text}`} />
-                              </div>
-
-                              {/* Info */}
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-sm sm:text-base text-gray-900 truncate">
-                                  {tool.tool_name}
-                                </h4>
-                                <p className="text-xs text-gray-600 truncate hidden sm:block">
-                                  {tool.tool_description || tool.tool_route}
-                                </p>
-                                <div className="flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1">
-                                  <StatusIcon className={`h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 ${status.color}`} />
-                                  <span className={`text-[10px] sm:text-xs font-medium ${status.color} truncate`}>
-                                    {status.label}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Actions */}
-                              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                                {/* Permitir */}
-                                <button
-                                  onClick={() => handlePermissionChange(tool.tool_slug, 'allow')}
-                                  disabled={saving || (tool.is_explicit && tool.permission_type === 'allow')}
-                                  className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all active:scale-95 ${
-                                    tool.is_explicit && tool.permission_type === 'allow'
-                                      ? 'bg-green-600 text-white shadow-md'
-                                      : 'bg-white hover:bg-green-50 text-green-600 border border-green-200 hover:border-green-300'
-                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                  title="Permitir acesso"
-                                >
-                                  <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                </button>
-
-                                {/* Bloquear */}
-                                <button
-                                  onClick={() => handlePermissionChange(tool.tool_slug, 'deny')}
-                                  disabled={saving || (tool.is_explicit && tool.permission_type === 'deny')}
-                                  className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all active:scale-95 ${
-                                    tool.is_explicit && tool.permission_type === 'deny'
-                                      ? 'bg-red-600 text-white shadow-md'
-                                      : 'bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-300'
-                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                  title="Bloquear acesso"
-                                >
-                                  <Ban className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                </button>
-
-                                {/* Resetar para padrão */}
-                                {tool.is_explicit && (
-                                  <button
-                                    onClick={() => handlePermissionChange(tool.tool_slug, 'remove')}
-                                    disabled={saving}
-                                    className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title="Voltar ao padrão"
-                                  >
-                                    <RotateCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm sm:text-base text-gray-900 truncate">
+                            {tool.tool_name}
+                          </h4>
+                          <p className="text-xs text-gray-600 truncate hidden sm:block">
+                            {tool.tool_description || tool.tool_route}
+                          </p>
+                          <div className="flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1">
+                            <StatusIcon className={`h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 ${status.color}`} />
+                            <span className={`text-[10px] sm:text-xs font-medium ${status.color} truncate`}>
+                              {status.label}
+                            </span>
                           </div>
-                        )
-                      })}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                          {/* Permitir */}
+                          <button
+                            onClick={() => handlePermissionChange(tool.tool_slug, 'allow')}
+                            disabled={saving || (tool.is_explicit && tool.permission_type === 'allow')}
+                            className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all active:scale-95 ${
+                              tool.is_explicit && tool.permission_type === 'allow'
+                                ? 'bg-green-600 text-white shadow-md'
+                                : 'bg-white hover:bg-green-50 text-green-600 border border-green-200 hover:border-green-300'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            title="Permitir acesso"
+                          >
+                            <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          </button>
+
+                          {/* Bloquear */}
+                          <button
+                            onClick={() => handlePermissionChange(tool.tool_slug, 'deny')}
+                            disabled={saving || (tool.is_explicit && tool.permission_type === 'deny')}
+                            className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all active:scale-95 ${
+                              tool.is_explicit && tool.permission_type === 'deny'
+                                ? 'bg-red-600 text-white shadow-md'
+                                : 'bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-300'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            title="Bloquear acesso"
+                          >
+                            <Ban className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          </button>
+
+                          {/* Resetar para padrão */}
+                          {tool.is_explicit && (
+                            <button
+                              onClick={() => handlePermissionChange(tool.tool_slug, 'remove')}
+                              disabled={saving}
+                              className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Voltar ao padrão"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           )}
         </div>

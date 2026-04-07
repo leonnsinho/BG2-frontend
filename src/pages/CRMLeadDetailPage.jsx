@@ -306,49 +306,6 @@ export default function CRMLeadDetailPage() {
         </div>
       </div>
 
-      {/* ── Deals / Cards ── */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-green-500" /> Negociações no Pipeline ({cards.length})
-          </h2>
-          <button onClick={() => navigate('/crm')} className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#EBA500] transition-colors">
-            Ver pipeline <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        <div className="px-6 py-4">
-          {cards.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-              <DollarSign className="h-8 w-8 text-gray-200" />
-              <p className="text-sm text-gray-400">Nenhuma negociação vinculada a este lead.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {cards.map(card => (
-                <div key={card.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{card.nome_empresa || '—'}</p>
-                      {card.status && (
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[card.status] || 'bg-gray-100 text-gray-600'}`}>
-                          {card.status}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                      {card.crm_columns?.title && <span className="text-xs text-gray-400">{card.crm_columns.title}</span>}
-                      {card.nome_contato && <span className="text-xs text-gray-500 flex items-center gap-1"><User className="h-3 w-3" />{card.nome_contato}</span>}
-                      {card.valor_oportunidade && <span className="text-xs text-green-600 font-medium">{fmtMoney(card.valor_oportunidade)}</span>}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
     </div>
   )
 }
