@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   DndContext,
   DragOverlay,
@@ -858,6 +859,9 @@ const SEL = INP + ' bg-white'
 // ─── LeadsModal ───────────────────────────────────────────────────────────────
 function LeadsModal({ companyId, onClose }) {
   const { user } = useAuth()
+  const navigate = useNavigate()
+
+  // leads
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -866,6 +870,16 @@ function LeadsModal({ companyId, onClose }) {
   const EMPTY = { nome_empresa: '', cidade_estado: '', segmento: '', origem_lead: '', website: '', observacoes: '' }
   const [form, setForm] = useState(EMPTY)
 
+  // contacts (expandable panel)
+  const [contactsOpen, setContactsOpen] = useState(false)
+  const [contacts, setContacts] = useState([])
+  const [contactsLoading, setContactsLoading] = useState(false)
+  const [showContactForm, setShowContactForm] = useState(false)
+  const [editingContact, setEditingContact] = useState(null)
+  const [savingContact, setSavingContact] = useState(false)
+  const EMPTY_C = { nome: '', cargo: '', email: '', telefone: '', lead_id: '', observacoes: '' }
+  const [contactForm, setContactForm] = useState(EMPTY_C)
+
   useEffect(() => { loadLeads() }, [])
 
   const loadLeads = async () => {
@@ -873,6 +887,21 @@ function LeadsModal({ companyId, onClose }) {
     const { data } = await supabase.from('crm_leads').select('*').eq('company_id', companyId).order('nome_empresa')
     setLeads(data || [])
     setLoading(false)
+  }
+
+  const toggleContacts = async () => {
+    if (!contactsOpen) {
+      setContactsLoading(true)
+      const { data } = await supabase
+        .from('crm_contacts')
+        .select('*, crm_leads(nome_empresa)')
+        .eq('company_id', companyId)
+        .order('nome')
+      setContacts(data || [])
+      setContactsLoading(false)
+    }
+    setContactsOpen(o => !o)
+    setShowContactForm(false)
   }
 
   const openNew = () => { setForm(EMPTY); setEditing(null); setShowForm(true) }
@@ -904,89 +933,218 @@ function LeadsModal({ companyId, onClose }) {
     toast.success('Lead removido')
   }
 
+  const openNewContact = () => { setContactForm(EMPTY_C); setEditingContact(null); setShowContactForm(true) }
+  const openEditContact = (c) => { setContactForm({ ...c, lead_id: c.lead_id || '' }); setEditingContact(c); setShowContactForm(true) }
+
+  const saveContact = async () => {
+    if (!contactForm.nome?.trim()) { toast.error('Nome obrigatório'); return }
+    setSavingContact(true)
+    try {
+      const payload = { ...contactForm, lead_id: contactForm.lead_id || null, company_id: companyId, updated_at: new Date().toISOString() }
+      if (editingContact) {
+        const { error } = await supabase.from('crm_contacts').update(payload).eq('id', editingContact.id)
+        if (error) throw error
+        setContacts(p => p.map(c => c.id === editingContact.id ? { ...c, ...payload, crm_leads: leads.find(l => l.id === payload.lead_id) || c.crm_leads } : c))
+      } else {
+        const { data, error } = await supabase.from('crm_contacts').insert([{ ...payload, created_by: user?.id }]).select('*, crm_leads(nome_empresa)').single()
+        if (error) throw error
+        setContacts(p => [...p, data])
+      }
+      toast.success(editingContact ? 'Contato atualizado!' : 'Contato cadastrado!')
+      setShowContactForm(false)
+    } catch (e) { toast.error('Erro: ' + e.message) }
+    finally { setSavingContact(false) }
+  }
+
+  const deleteContact = async (id) => {
+    await supabase.from('crm_contacts').delete().eq('id', id)
+    setContacts(p => p.filter(c => c.id !== id))
+    toast.success('Contato removido')
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
             <Building2 className="h-4 w-4 text-[#EBA500]" /> Leads / Empresas
           </h2>
           <div className="flex items-center gap-2">
-            <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
-              <Plus className="h-3.5 w-3.5" /> Novo Lead
-            </button>
+            {contactsOpen ? (
+              <>
+                <button onClick={openNewContact} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors">
+                  <Plus className="h-3.5 w-3.5" /> Novo Contato
+                </button>
+                <button onClick={toggleContacts} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                  <ChevronDown className="h-3.5 w-3.5" /> Ocultar
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={toggleContacts} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors">
+                  <Users className="h-3.5 w-3.5" /> Contatos
+                </button>
+                <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+                  <Plus className="h-3.5 w-3.5" /> Novo Lead
+                </button>
+              </>
+            )}
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {loading ? (
-            <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" /></div>
-          ) : showForm ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-4">
-                <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
-                <h3 className="text-sm font-bold text-gray-700">{editing ? 'Editar Lead' : 'Novo Lead'}</h3>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nome da Empresa *</label>
-                <input className={INP} value={form.nome_empresa} onChange={e => setForm(p => ({...p, nome_empresa: e.target.value}))} placeholder="Acme Corp" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Cidade / Estado</label>
-                  <input className={INP} value={form.cidade_estado} onChange={e => setForm(p => ({...p, cidade_estado: e.target.value}))} placeholder="São Paulo / SP" />
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {/* ── Leads section ── */}
+          {!contactsOpen && (
+            loading ? (
+              <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" /></div>
+            ) : showForm ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
+                  <h3 className="text-sm font-bold text-gray-700">{editing ? 'Editar Lead' : 'Novo Lead'}</h3>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label>
-                  <input className={INP} value={form.segmento} onChange={e => setForm(p => ({...p, segmento: e.target.value}))} placeholder="Tecnologia, Saúde..." />
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome da Empresa *</label>
+                  <input className={INP} value={form.nome_empresa} onChange={e => setForm(p => ({...p, nome_empresa: e.target.value}))} placeholder="Acme Corp" />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Origem</label>
-                  <select className={SEL} value={form.origem_lead} onChange={e => setForm(p => ({...p, origem_lead: e.target.value}))}>
-                    <option value="">Selecione...</option>
-                    {ORIGENS.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Website</label>
-                  <input className={INP} value={form.website} onChange={e => setForm(p => ({...p, website: e.target.value}))} placeholder="https://..." />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Observações</label>
-                <textarea className={INP + ' resize-none'} rows={3} value={form.observacoes} onChange={e => setForm(p => ({...p, observacoes: e.target.value}))} placeholder="Notas sobre este lead..." />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-                <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
-                  {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Salvar
-                </button>
-              </div>
-            </div>
-          ) : leads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-              <Building2 className="h-10 w-10 text-gray-200" />
-              <p className="text-sm text-gray-500">Nenhum lead cadastrado ainda.</p>
-              <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl"><Plus className="h-4 w-4" /> Adicionar lead</button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {leads.map(l => (
-                <div key={l.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 group">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                    <Building2 className="h-4 w-4 text-blue-500" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Cidade / Estado</label>
+                    <input className={INP} value={form.cidade_estado} onChange={e => setForm(p => ({...p, cidade_estado: e.target.value}))} placeholder="São Paulo / SP" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{l.nome_empresa}</p>
-                    <p className="text-xs text-gray-400 truncate">{[l.segmento, l.cidade_estado].filter(Boolean).join(' · ') || 'Sem detalhes'}</p>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label>
+                    <input className={INP} value={form.segmento} onChange={e => setForm(p => ({...p, segmento: e.target.value}))} placeholder="Tecnologia, Saúde..." />
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => openEdit(l)} className="p-1.5 hover:bg-gray-200 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
-                    <button onClick={() => handleDelete(l.id)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Origem</label>
+                    <select className={SEL} value={form.origem_lead} onChange={e => setForm(p => ({...p, origem_lead: e.target.value}))}>
+                      <option value="">Selecione...</option>
+                      {ORIGENS.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Website</label>
+                    <input className={INP} value={form.website} onChange={e => setForm(p => ({...p, website: e.target.value}))} placeholder="https://..." />
                   </div>
                 </div>
-              ))}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Observações</label>
+                  <textarea className={INP + ' resize-none'} rows={3} value={form.observacoes} onChange={e => setForm(p => ({...p, observacoes: e.target.value}))} placeholder="Notas sobre este lead..." />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+                  <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
+                    {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Salvar
+                  </button>
+                </div>
+              </div>
+            ) : leads.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                <Building2 className="h-10 w-10 text-gray-200" />
+                <p className="text-sm text-gray-500">Nenhum lead cadastrado ainda.</p>
+                <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl"><Plus className="h-4 w-4" /> Adicionar lead</button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {leads.map(l => (
+                  <div key={l.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 group cursor-pointer" onClick={() => { onClose(); navigate(`/crm/lead/${l.id}`) }}>
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                      <Building2 className="h-4 w-4 text-blue-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{l.nome_empresa}</p>
+                      <p className="text-xs text-gray-400 truncate">{[l.segmento, l.cidade_estado].filter(Boolean).join(' · ') || 'Sem detalhes'}</p>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={(e) => { e.stopPropagation(); openEdit(l) }} className="p-1.5 hover:bg-gray-200 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(l.id) }} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+
+          {/* ── Contacts expanded section ── */}
+          {contactsOpen && (
+            <div className="space-y-3">
+              {/* New contact form */}
+              {showContactForm && (
+                <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-gray-700">{editingContact ? 'Editar contato' : 'Novo contato'}</p>
+                    <button onClick={() => setShowContactForm(false)}><X className="h-4 w-4 text-gray-400 hover:text-gray-600" /></button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
+                      <input className={INP} value={contactForm.nome} onChange={e => setContactForm(p => ({...p, nome: e.target.value}))} placeholder="João Silva" autoFocus />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Cargo</label>
+                      <input className={INP} value={contactForm.cargo} onChange={e => setContactForm(p => ({...p, cargo: e.target.value}))} placeholder="Diretor Comercial" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Empresa (Lead)</label>
+                      <select className={SEL} value={contactForm.lead_id} onChange={e => setContactForm(p => ({...p, lead_id: e.target.value}))}>
+                        <option value="">Sem vínculo</option>
+                        {leads.map(l => <option key={l.id} value={l.id}>{l.nome_empresa}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">E-mail</label>
+                      <input type="email" className={INP} value={contactForm.email} onChange={e => setContactForm(p => ({...p, email: e.target.value}))} placeholder="joao@empresa.com" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Telefone</label>
+                      <input type="tel" className={INP} value={contactForm.telefone} onChange={e => setContactForm(p => ({...p, telefone: e.target.value}))} placeholder="(11) 99999-9999" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Observações</label>
+                      <textarea className={INP + ' resize-none'} rows={2} value={contactForm.observacoes} onChange={e => setContactForm(p => ({...p, observacoes: e.target.value}))} />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => setShowContactForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+                    <button onClick={saveContact} disabled={savingContact} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl disabled:opacity-60">
+                      {savingContact ? <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /> : <Save className="h-3.5 w-3.5" />} Salvar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Contacts list */}
+              {contactsLoading ? (
+                <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400" /></div>
+              ) : contacts.length === 0 && !showContactForm ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                  <Users className="h-10 w-10 text-gray-200" />
+                  <p className="text-sm text-gray-500">Nenhum contato cadastrado ainda.</p>
+                  <button onClick={openNewContact} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl"><Plus className="h-4 w-4" /> Adicionar contato</button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {contacts.map(c => (
+                    <div key={c.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 group">
+                      <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center shrink-0 text-sm font-bold text-purple-600">
+                        {c.nome.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{c.nome}{c.cargo ? <span className="font-normal text-gray-500"> · {c.cargo}</span> : ''}</p>
+                        <p className="text-xs text-gray-400 truncate">{c.crm_leads?.nome_empresa || 'Sem empresa'}{c.email ? ' · ' + c.email : ''}</p>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEditContact(c)} className="p-1.5 hover:bg-gray-200 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
+                        <button onClick={() => deleteContact(c.id)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1668,12 +1826,6 @@ export default function CRMPage() {
             <Package className="h-4 w-4" /> Produtos
           </button>
           <button
-            onClick={() => setShowContactsModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors"
-          >
-            <Users className="h-4 w-4" /> Contatos
-          </button>
-          <button
             onClick={() => { setNewBoardTitle(''); setNewBoardModal(true) }}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors shadow-sm"
           >
@@ -1790,7 +1942,6 @@ export default function CRMPage() {
 
       {showLeadsModal && <LeadsModal companyId={companyId} onClose={() => setShowLeadsModal(false)} />}
       {showProductsModal && <ProductsModal companyId={companyId} onClose={() => setShowProductsModal(false)} />}
-      {showContactsModal && <ContactsModal companyId={companyId} onClose={() => setShowContactsModal(false)} />}
 
       {confirmDialog && (
         <ConfirmModal

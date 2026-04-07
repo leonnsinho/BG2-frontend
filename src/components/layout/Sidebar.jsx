@@ -91,7 +91,6 @@ if (typeof document !== 'undefined' && !document.getElementById('sidebar-dropdow
 
 // Mapa de rotas para slugs de ferramentas
 const ROUTE_TO_TOOL_SLUG = {
-  '/crm': 'crm',
   '/performance-evaluation': 'performance-evaluation',
   '/planejamento-estrategico': 'planejamento-estrategico',
   '/business-model': 'business-model',
@@ -195,7 +194,9 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       {
         name: 'API',
         icon: Key,
-        href: '/admin/api-keys'
+        href: '/admin/api-keys',
+        disabled: true,
+        badge: 'Em breve'
       }
     ]
   }
@@ -293,11 +294,10 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
             name: 'Políticas de Gestão',
             href: '/operational-policies',
             children: [
-              { name: 'Estratégia', href: '/operational-policies?journey=estrategica' },
+              { name: 'Estratégica', href: '/operational-policies?journey=estrategica' },
               { name: 'Financeira', href: '/operational-policies?journey=financeira' },
               { name: 'Pessoas & Cultura', href: '/operational-policies?journey=pessoas-cultura' },
-              { name: 'Receita', href: '/operational-policies?journey=receita' },
-              { name: 'Operacional', href: '/operational-policies?journey=operacional' }
+              { name: 'Receita', href: '/operational-policies?journey=receita' }
             ]
           }
         ]
@@ -317,29 +317,10 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
               { name: 'Produtividade por Usuário', href: '/reports/produtividade-usuario' },
               { name: 'Evolução dos KPIs', href: '/reports/evolucao-kpis' }
             ]
-          },
-          {
-            name: 'Relatórios Financeiros Estratégicos',
-            href: '/reports/previsibilidade-caixa',
-            children: [
-              { name: 'Previsibilidade de Caixa', href: '/reports/previsibilidade-caixa' }
-            ]
           }
         ]
       },
-      // 7) Ferramentas
-      {
-        name: 'Ferramentas',
-        icon: Grid3x3,
-        href: '/crm',
-        children: [
-          { name: 'CRM', href: '/crm', image: '/crm.png', gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadowColor: 'rgba(59, 130, 246, 0.4)' },
-          { name: 'Fluxo de Caixa', href: '/dfc', image: '/fluxo de caixa.png', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', shadowColor: 'rgba(16, 185, 129, 0.4)' },
-          { name: 'Avaliação de Desempenho', href: '/performance-evaluation', image: '/avaliação de desempenho.png', gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)', shadowColor: 'rgba(168, 85, 247, 0.4)' },
-          { name: 'Indicadores de Gestão', href: '/indicators', image: '/indicadores de gestão.png', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', shadowColor: 'rgba(245, 158, 11, 0.4)' }
-        ]
-      },
-      // 8) Administração
+      // 7) Administração
       {
         name: 'Administração',
         icon: Shield,
@@ -351,7 +332,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     ]
   }
 
-  // 🔥 Usuário comum - Dashboard, Minhas Tarefas + ferramentas habilitadas
+  // 🔥 Usuário comum - APENAS Dashboard e Minhas Tarefas (se tiver empresa)
   const userItems = [...baseItems]
   
   // Se o usuário está associado a uma empresa (via user_companies)
@@ -363,41 +344,6 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       icon: CheckSquare,
       href: '/tarefas',
       roles: ['user']
-    })
-
-    // Ferramentas habilitadas para o usuário (controladas por user_tool_permissions)
-    // O filtro do sidebar vai remover automaticamente as que estiverem com deny
-    userItems.push({
-      name: 'Ferramentas',
-      icon: Grid3x3,
-      href: '/crm',
-      children: [
-        { name: 'CRM', href: '/crm', image: '/crm.png', gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadowColor: 'rgba(59, 130, 246, 0.4)' },
-        { name: 'Fluxo de Caixa', href: '/dfc', image: '/fluxo de caixa.png', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', shadowColor: 'rgba(16, 185, 129, 0.4)' },
-        { name: 'Avaliação de Desempenho', href: '/performance-evaluation', image: '/avaliação de desempenho.png', gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)', shadowColor: 'rgba(168, 85, 247, 0.4)' },
-        { name: 'Indicadores de Gestão', href: '/indicators', image: '/indicadores de gestão.png', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', shadowColor: 'rgba(245, 158, 11, 0.4)' }
-      ]
-    })
-
-    // Seção Estratégia — itens controlados por tool permissions (filtro remove os sem acesso)
-    userItems.push({
-      name: 'Estratégia',
-      icon: Target,
-      href: '/journey-management/overview',
-      children: [
-        { name: 'Diagnóstico do Negócio', href: '/journey-management/overview' },
-        { name: 'Modelo de Negócio', href: '/business-model' }
-      ]
-    })
-
-    // Seção Execução — itens controlados por tool permissions
-    userItems.push({
-      name: 'Execução',
-      icon: Kanban,
-      href: '/planejamento-estrategico',
-      children: [
-        { name: 'Planejamento Estratégico', href: '/planejamento-estrategico' }
-      ]
     })
   }
 
@@ -490,7 +436,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const { getAccessibleJourneys } = useAuthPermissions()
   const permissions = usePermissions()
   const { pendingCount } = useMaturityApprovals() // 🔥 NOVO: Hook de aprovações pendentes
-  const { hasToolAccess, hasToolAccessStrict, loading: toolPermissionsLoading } = useToolPermissions() // 🔥 NOVO: Hook de permissões de ferramentas
+  const { hasToolAccess, loading: toolPermissionsLoading } = useToolPermissions() // 🔥 NOVO: Hook de permissões de ferramentas
   const [expandedItems, setExpandedItems] = React.useState(['Jornadas'])
   const [expandedSubItems, setExpandedSubItems] = React.useState(() => {
     // Auto-expandir se a rota atual for de um sub-sub-item
@@ -665,9 +611,20 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
 
   // Obter itens de navegação baseados no usuário atual
   const navigationItems = React.useMemo(() => {
-    // USUÁRIOS NÃO VINCULADOS: Sem itens de navegação
+    // USUÁRIOS NÃO VINCULADOS: Interface simplificada
     if (permissions.isUnlinkedUser()) {
-      return []
+      return [
+        {
+          name: 'Dashboard',
+          icon: Home,
+          href: '/'
+        },
+        {
+          name: 'Metas Atribuídas',
+          icon: Target,
+          href: '/goals/assigned'
+        }
+      ]
     }
     
     // Se as permissões de ferramentas ainda estão carregando, mostrar skeleton
@@ -698,46 +655,33 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     // Usuários vinculados: interface normal
     const items = getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess)
 
-    // Um "usuário regular" é quem NÃO tem nenhum papel privilegiado —
-    // nem como global role, nem como role dentro de qualquer empresa.
-    // Usar as funções de permissions (que checam user_companies também),
-    // não apenas profile.role (que é sempre 'user' para company_admins).
-    const isRegularUser = !permissions.isSuperAdmin() &&
-                          !permissions.isGestor() &&
-                          !permissions.isAnyManager() &&
-                          !permissions.isCompanyAdmin()
+    // Filtrar itens baseado nas permissões de ferramentas
+    const filteredItems = items.filter(item => {
+      // Se o item tem um href mapeado para tool_slug, verificar permissão
+      const toolSlug = ROUTE_TO_TOOL_SLUG[item.href]
+      if (toolSlug) {
+        const access = hasToolAccess(toolSlug)
+        if (!access) {
+          return false
+        }
+      }
 
-    // Escolher a função de verificação correta:
-    // - Usuário regular: deny-by-default (só mostra com allow explícito)
-    // - Roles privilegiados: allow-by-default (mostra sempre, exceto deny explícito)
-    const checkAccess = isRegularUser ? hasToolAccessStrict : hasToolAccess
-
-    // Aplicar filtro de tool permissions em TODOS os itens e seus filhos.
-    // O filtro por ROUTE_TO_TOOL_SLUG abrange qualquer seção do menu (Performance,
-    // Ferramentas, Super Admin etc.) — não apenas o bloco "Ferramentas".
-    const filteredItems = items.map(item => {
-      if (!item.children) return item
-
-      const filteredChildren = item.children.filter(child => {
-        const childToolSlug = ROUTE_TO_TOOL_SLUG[child.href]
-        if (childToolSlug) return checkAccess(childToolSlug)
-        return true
-      })
-
-      return { ...item, children: filteredChildren }
-    }).filter(item => {
-      // Filtrar itens de nível raiz sem children (ex: link direto numa tool)
-      const rootToolSlug = ROUTE_TO_TOOL_SLUG[item.href]
-      if (rootToolSlug && !item.children && !checkAccess(rootToolSlug)) return false
-
-      // Remover qualquer bloco de menu que ficou sem filhos após o filtro
-      if (item.children?.length === 0) return false
+      // Se tem children, filtrar os filhos também
+      if (item.children) {
+        item.children = item.children.filter(child => {
+          const childToolSlug = ROUTE_TO_TOOL_SLUG[child.href]
+          if (childToolSlug) {
+            return hasToolAccess(childToolSlug)
+          }
+          return true
+        })
+      }
 
       return true
     })
 
     return filteredItems
-  }, [profile?.role, profile?.user_companies?.map(uc => uc.role).join(','), accessibleJourneys, journeysLoading, pendingCount, hasToolAccess])
+  }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess])
 
   const toggleExpanded = (itemName) => {
     setExpandedItems(prev => 
@@ -913,8 +857,8 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                     <span className="text-xs font-medium text-yellow-800">Status da Conta</span>
                   </div>
                   <div className="text-xs text-yellow-700">
-                    <p className="mb-1 font-medium">Aguardando vinculação</p>
-                    <p>Em breve você será associado a uma empresa e terá acesso completo ao sistema.</p>
+                    <p className="mb-1 font-medium">Aguardando Vinculação</p>
+                    <p>Entre em contato com o administrador da sua empresa para solicitar vinculação.</p>
                   </div>
                 </div>
               </div>
@@ -1248,21 +1192,12 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                             )}
                             onClick={onClose}
                           >
-                            {subItem.image ? (
-                              <div
-                                className="w-5 h-5 rounded-[6px] mr-3 flex-shrink-0 overflow-hidden"
-                                style={{ background: subItem.gradient }}
-                              >
-                                <img src={subItem.image} alt="" className="w-full h-full object-contain p-0.5" />
-                              </div>
-                            ) : (
-                              <span 
-                                className={cn(
-                                  "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
-                                  isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
-                                )}
-                              />
-                            )}
+                            <span 
+                              className={cn(
+                                "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
+                                isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
+                              )}
+                            ></span>
                             <span className="flex-1 text-left">{subItem.name}</span>
                             {/* 🔥 Badge para subitem se existir */}
                             {subItem.badge && subItem.badge > 0 && (
@@ -1437,7 +1372,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                       {item.children.map((subItem) => (
                         subItem.children ? (
                           <div key={subItem.name}>
-                            {/* Sub-item label (não clicável, é um agrupador) */}}
+                            {/* Sub-item label (não clicável, é um agrupador) */}
                             <div className="flex items-center px-4 py-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                               <span className="w-2 h-2 rounded-full mr-3 bg-neutral-500 flex-shrink-0" />
                               {subItem.name}
@@ -1486,21 +1421,12 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                               : "text-neutral-100"
                           )}
                         >
-                          {subItem.image ? (
-                            <div
-                              className="w-5 h-5 rounded-[6px] mr-3 flex-shrink-0 overflow-hidden"
-                              style={{ background: subItem.gradient }}
-                            >
-                              <img src={subItem.image} alt="" className="w-full h-full object-contain p-0.5" />
-                            </div>
-                          ) : (
-                            <span 
-                              className={cn(
-                                "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
-                                isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
-                              )}
-                            />
-                          )}
+                          <span 
+                            className={cn(
+                              "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
+                              isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
+                            )}
+                          />
                           <span className="flex-1">{subItem.name}</span>
                           {/* 🔥 Badge no dropdown se existir */}
                           {subItem.badge && subItem.badge > 0 && (
