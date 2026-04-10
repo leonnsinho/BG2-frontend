@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Building2, User, Phone, Mail, MapPin, Tag,
   Globe, Plus, Edit2, Trash2, Save, X, ExternalLink,
-  Briefcase, MessageSquare, DollarSign, ChevronRight
+  Briefcase, MessageSquare, DollarSign, ChevronRight, Search, Package
 } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -33,6 +33,7 @@ export default function CRMLeadDetailPage() {
   const [contacts, setContacts] = useState([])
   const [cards, setCards] = useState([])
   const [loading, setLoading] = useState(true)
+  const [cardSearch, setCardSearch] = useState('')
 
   // ── edit lead inline ──
   const [editingLead, setEditingLead] = useState(false)
@@ -53,20 +54,56 @@ export default function CRMLeadDetailPage() {
   const loadAll = async () => {
     setLoading(true)
     try {
-      const [{ data: l }, { data: c }, { data: k }] = await Promise.all([
+      const [{ data: l }, { data: c }] = await Promise.all([
         supabase.from('crm_leads').select('*').eq('id', leadId).single(),
         supabase.from('crm_contacts').select('*').eq('lead_id', leadId).order('nome'),
-        supabase
-          .from('crm_cards')
-          .select('*, crm_columns:column_id(title)')
-          .eq('lead_id', leadId)
-          .order('created_at', { ascending: false }),
       ])
       if (!l) { toast.error('Lead não encontrado'); navigate('/crm'); return }
       setLead(l)
       setLeadForm({ ...l })
       setContacts(c || [])
-      setCards(k || [])
+
+      // RLS exige: boards filtrado por company_id, columns por board_id, cards por column_id
+      const { data: boards } = await supabase
+        .from('crm_boards')
+        .select('id, title')
+        .eq('company_id', l.company_id)
+
+      const boardList = boards || []
+      const colMap = {}  // colId -> { title, board }
+      
+      if (boardList.length > 0) {
+        await Promise.all(boardList.map(async (board) => {
+          const { data: cols } = await supabase
+            .from('crm_columns')
+            .select('id, name')
+            .eq('board_id', board.id)
+          ;(cols || []).forEach(col => { colMap[col.id] = { title: col.name, board } })
+        }))
+      }
+
+      const validColIds = Object.keys(colMap)
+      let allCards = []
+      if (validColIds.length > 0) {
+        const { data: cardsData, error: cardsError } = await supabase
+          .from('crm_cards')
+          .select('*')
+          .in('column_id', validColIds)
+          .order('created_at', { ascending: false })
+        if (cardsError) console.error('Erro ao buscar cards:', cardsError)
+        allCards = (cardsData || []).map(card => ({
+          ...card,
+          crm_columns: colMap[card.column_id] || null,
+          crm_boards: colMap[card.column_id]?.board || null,
+        }))
+      }
+
+      const leadNome = l.nome_empresa?.trim().toLowerCase()
+      const filtered = allCards.filter(card =>
+        card.lead_id === leadId ||
+        (leadNome && card.nome_empresa?.trim().toLowerCase() === leadNome)
+      )
+      setCards(filtered)
     } catch (e) {
       toast.error('Erro ao carregar lead')
     } finally {
@@ -303,6 +340,92 @@ export default function CRMLeadDetailPage() {
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* ── Negociações vinculadas ── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-green-500" /> Negociações no Pipeline ({cards.length})
+          </h2>
+          <button onClick={() => navigate('/crm')} className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#EBA500] transition-colors">
+            Ver pipelines <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Filtros */}
+        {cards.length > 0 && (
+          <div className="px-6 pt-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+              <input
+                type="text"
+                value={cardSearch}
+                onChange={e => setCardSearch(e.target.value)}
+                placeholder="Filtrar por empresa, contato ou produto..."
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/40 focus:border-[#EBA500] bg-gray-50"
+              />
+              {cardSearch && (
+                <button onClick={() => setCardSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="px-6 py-4">
+          {(() => {
+            const q = cardSearch.trim().toLowerCase()
+            const filtered = q
+              ? cards.filter(card =>
+                  card.nome_empresa?.toLowerCase().includes(q) ||
+                  card.nome_contato?.toLowerCase().includes(q) ||
+                  card.segmento?.toLowerCase().includes(q) ||
+                  card.crm_boards?.title?.toLowerCase().includes(q) ||
+                  card.crm_columns?.title?.toLowerCase().includes(q)
+                )
+              : cards
+            if (filtered.length === 0) return (
+              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+                <DollarSign className="h-8 w-8 text-gray-200" />
+                <p className="text-sm text-gray-400">{q ? 'Nenhum resultado para esta busca.' : 'Nenhuma negociação vinculada a esta empresa.'}</p>
+              </div>
+            )
+            return (
+              <div className="space-y-2">
+                {filtered.map(card => (
+                  <div key={card.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{card.nome_empresa || card.nome_contato || '—'}</p>
+                        {card.status && (
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[card.status] || 'bg-gray-100 text-gray-600'}`}>
+                            {card.status}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                        {card.crm_boards?.title && <span className="text-xs font-medium text-[#EBA500]">Pipeline: {card.crm_boards.title}</span>}
+                        {card.crm_columns?.title && <span className="text-xs text-gray-400">→ {card.crm_columns.title}</span>}
+                        {card.nome_contato && <span className="text-xs text-gray-500 flex items-center gap-1"><User className="h-3 w-3" />{card.nome_contato}</span>}
+                        {card.valor_oportunidade && <span className="text-xs text-green-600 font-medium">{fmtMoney(card.valor_oportunidade)}</span>}
+                      </div>
+                    </div>
+                    {card.crm_boards?.id && (
+                      <button
+                        onClick={() => navigate('/crm', { state: { boardId: card.crm_boards.id } })}
+                        className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#EBA500] border border-[#EBA500]/30 rounded-lg hover:bg-amber-50 transition-colors"
+                      >
+                        Ver <ChevronRight className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   DndContext,
   DragOverlay,
@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import SuperAdminBanner from '../components/SuperAdminBanner'
 import EmojiIconPicker from '../components/EmojiIconPicker'
 import { renderIcon } from '../utils/iconRenderer'
 import toast from 'react-hot-toast'
@@ -1482,7 +1483,6 @@ function ContactsModal({ companyId, onClose }) {
   )
 }
 
-// ─── CRMPage ──────────────────────────────────────────────────────────────────
 export default function CRMPage() {
   const { profile } = useAuth()
 
@@ -1515,7 +1515,11 @@ export default function CRMPage() {
   const [search, setSearch] = useState('')
   const [confirmDialog, setConfirmDialog] = useState(null) // { title, message, onConfirm }
 
-  const companyId = profile?.user_companies?.find(uc => uc.is_active)?.company_id
+  const [searchParams] = useSearchParams()
+  const adminCompanyId = searchParams.get('from') === 'admin' ? searchParams.get('companyId') : null
+  const companyId = adminCompanyId || profile?.user_companies?.find(uc => uc.is_active)?.company_id
+  const location = useLocation()
+  const navigate = useNavigate()
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -1525,6 +1529,15 @@ export default function CRMPage() {
   useEffect(() => {
     if (companyId) loadBoards()
   }, [companyId])
+
+  // Auto-abrir board se navegamos de outra página com state.boardId
+  useEffect(() => {
+    const boardId = location.state?.boardId
+    if (boardId && boards.length > 0 && !selectedBoard) {
+      const target = boards.find(b => b.id === boardId)
+      if (target) openBoard(target)
+    }
+  }, [boards, location.state])
 
   const loadBoards = async () => {
     setBoardsLoading(true)
@@ -1843,14 +1856,19 @@ export default function CRMPage() {
   const totalValue = Object.values(cards).flat().reduce((s, c) => s + (parseFloat(c.valor_oportunidade) || 0), 0)
 
   if (boardsLoading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" />
+    <div className="min-h-screen flex flex-col">
+      <SuperAdminBanner />
+      <div className="flex-1 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" />
+      </div>
     </div>
   )
 
   // ── Boards list view ───────────────────────────────────────────────────────
   if (!selectedBoard) return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="min-h-screen bg-white">
+      <SuperAdminBanner />
+      <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
@@ -2002,12 +2020,14 @@ export default function CRMPage() {
           onCancel={() => setConfirmDialog(null)}
         />
       )}
+      </div>
     </div>
   )
 
   // ── Board detail view ──────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-white">
+      <SuperAdminBanner />
       {/* Header */}
       <div className="px-4 sm:px-6 py-4 border-b border-gray-200/60 bg-white/80 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3 flex-wrap">

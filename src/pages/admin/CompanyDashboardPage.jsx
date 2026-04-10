@@ -12,6 +12,7 @@ import {
   Grid3x3,
   BarChart3,
   Users,
+  Kanban,
   ArrowRight,
   Wallet,
   ListChecks,
@@ -452,6 +453,7 @@ const CompanyDashboardPage = () => {
         path === '/indicators' || 
         path === '/performance-evaluation' ||
         path === '/dfc' ||
+        path === '/crm' ||
         path === '/journey-management/overview' ||
         path === '/business-model' ||
         path === '/admin/users') {
@@ -538,6 +540,19 @@ const CompanyDashboardPage = () => {
           icon: Briefcase,
           path: '/business-model',
           color: 'purple'
+        }
+      ]
+    },
+    {
+      category: 'Ferramentas',
+      color: 'blue',
+      items: [
+        {
+          name: 'CRM',
+          description: 'Gerencie leads, contatos e pipeline de vendas',
+          icon: Kanban,
+          path: '/crm',
+          color: 'blue'
         }
       ]
     },
