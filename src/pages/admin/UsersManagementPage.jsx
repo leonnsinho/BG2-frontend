@@ -30,7 +30,9 @@ import {
   Heart,
   MoreVertical,
   X,
-  Wrench
+  Wrench,
+  Tag,
+  Plus
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
 import ToolManagementModal from '../../components/admin/ToolManagementModal'
@@ -89,6 +91,11 @@ const STATUS_COLORS = {
   'pending': 'yellow'
 }
 
+const TAG_COLORS = [
+  '#EF4444', '#F97316', '#EAB308', '#22C55E',
+  '#14B8A6', '#3B82F6', '#8B5CF6', '#EC4899', '#6B7280'
+]
+
 export default function UsersManagementPage() {
   const { user, profile } = useAuth()
   const [searchParams] = useSearchParams()
@@ -130,6 +137,13 @@ export default function UsersManagementPage() {
   // Estados para gerenciamento de ferramentas
   const [showToolModal, setShowToolModal] = useState(false)
   const [selectedUserForTools, setSelectedUserForTools] = useState(null)
+
+  // Estados para tags
+  const [tags, setTags] = useState([])
+  const [userTagsMap, setUserTagsMap] = useState({})
+  const [showTagModal, setShowTagModal] = useState(false)
+  const [selectedUserForTags, setSelectedUserForTags] = useState(null)
+  const [tagModalAnimating, setTagModalAnimating] = useState(false)
 
   // Ícones das jornadas
   const journeyIcons = {
@@ -326,6 +340,10 @@ export default function UsersManagementPage() {
 
       console.log('✅ Usuários finais para exibir:', combinedUsers.length)
       setUsers(combinedUsers)
+
+      // Carregar tag assignments da empresa do admin logado
+      const adminCompanyId = getCurrentUserCompany()?.id
+      if (adminCompanyId) loadTagAssignments(adminCompanyId)
       
       // Carregar logos das empresas
       const logoUrls = {}
@@ -766,6 +784,143 @@ export default function UsersManagementPage() {
     }
   }
 
+  // ─── Tag functions ──────────────────────────────────────────────────────────
+
+  const loadTagAssignments = async (filterCompanyId = null) => {
+    if (!filterCompanyId) {
+      // Sem empresa: limpa mapa
+      setUserTagsMap({})
+      return
+    }
+    try {
+      // 1. Buscar assignments via RPC (SECURITY DEFINER bypassa RLS)
+      const { data: assignments, error: aError } = await supabase
+        .rpc('get_company_tag_assignments', { p_company_id: filterCompanyId })
+      if (aError) {
+        console.error('Erro RPC get_company_tag_assignments:', aError)
+        toast.error('Erro ao carregar tags: ' + aError.message)
+        return
+      }
+
+      if (!assignments?.length) { setUserTagsMap({}); return }
+
+      // 2. Buscar as tags referenciadas via RPC
+      const { data: tagRows, error: tError } = await supabase
+        .rpc('get_company_tags', { p_company_id: filterCompanyId })
+      if (tError) {
+        console.error('Erro RPC get_company_tags:', tError)
+        return
+      }
+
+      const tagById = Object.fromEntries((tagRows || []).map(t => [t.id, t]))
+
+      const map = {}
+      for (const a of assignments) {
+        const tag = tagById[a.tag_id]
+        if (!tag) continue
+        if (!map[a.user_id]) map[a.user_id] = []
+        if (!map[a.user_id].some(t => t.id === tag.id)) {
+          map[a.user_id].push(tag)
+        }
+      }
+      setUserTagsMap(map)
+    } catch (e) {
+      console.error('Erro ao carregar tag assignments:', e)
+    }
+  }
+
+  const openTagModal = async (targetUser) => {
+    setSelectedUserForTags(targetUser)
+    // Fallback: se targetUser não tem companies, usa empresa do admin logado
+    const companyId = targetUser.companies?.id || getCurrentUserCompany()?.id
+    console.log('openTagModal: targetUser=', targetUser.email, 'companyId=', companyId,
+      '(targetUser.companies?.id=', targetUser.companies?.id,
+      ', getCurrentUserCompany()?.id=', getCurrentUserCompany()?.id, ')')
+    if (!companyId) {
+      toast.error('Erro: empresa não identificada para gerenciar tags')
+      return
+    }
+    const { data, error } = await supabase
+      .rpc('get_company_tags', { p_company_id: companyId })
+    if (error) toast.error('Erro ao carregar tags: ' + error.message)
+    setTags(data || [])
+    // Recarregar assignments do DB para garantir estado fresco
+    await loadTagAssignments(companyId)
+    setShowTagModal(true)
+    setTimeout(() => setTagModalAnimating(true), 10)
+  }
+
+  const closeTagModal = () => {
+    setTagModalAnimating(false)
+    setTimeout(() => {
+      setShowTagModal(false)
+      setSelectedUserForTags(null)
+    }, 200)
+  }
+
+  const createTag = async (name, color, companyId) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_tags')
+        .insert({ name: name.trim(), color, company_id: companyId, created_by: user?.id })
+        .select()
+        .single()
+      if (error) throw error
+      setTags(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)))
+      return data
+    } catch (e) {
+      toast.error('Erro ao criar tag: ' + e.message)
+      return null
+    }
+  }
+
+  const deleteTag = async (tagId) => {
+    if (!confirm('Excluir esta tag? Ela será removida de todos os usuários.')) return
+    try {
+      const { error } = await supabase.from('user_tags').delete().eq('id', tagId)
+      if (error) throw error
+      setTags(prev => prev.filter(t => t.id !== tagId))
+      setUserTagsMap(prev => {
+        const next = { ...prev }
+        for (const uid of Object.keys(next)) {
+          next[uid] = (next[uid] || []).filter(t => t.id !== tagId)
+        }
+        return next
+      })
+      toast.success('Tag excluída')
+    } catch (e) {
+      toast.error('Erro ao excluir tag: ' + e.message)
+    }
+  }
+
+  const toggleTagAssignment = async (tag, userId, companyId) => {
+    const userTags = userTagsMap[userId] || []
+    const alreadyAssigned = userTags.some(t => t.id === tag.id)
+    try {
+      if (alreadyAssigned) {
+        const { error } = await supabase.rpc('remove_user_tag', {
+          p_user_id:    userId,
+          p_tag_id:     tag.id,
+          p_company_id: companyId
+        })
+        if (error) throw error
+      } else {
+        const { data, error } = await supabase.rpc('assign_user_tag', {
+          p_user_id:     userId,
+          p_tag_id:      tag.id,
+          p_company_id:  companyId,
+          p_assigned_by: user?.id
+        })
+        if (error) throw error
+      }
+      const cid = companyId || getCurrentUserCompany()?.id
+      await loadTagAssignments(cid)
+    } catch (e) {
+      console.error('toggleTagAssignment error:', e)
+      toast.error('Erro ao atualizar tag: ' + e.message)
+    }
+  }
+
   // Vincular usuário a empresa ou alterar empresa existente
   const handleLinkToCompany = async (userId, companyId, role = 'user') => {
     try {
@@ -1128,6 +1283,9 @@ export default function UsersManagementPage() {
                     Jornadas
                   </th>
                   <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                    Tags
+                  </th>
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                     Status
                   </th>
                 </tr>
@@ -1193,6 +1351,7 @@ export default function UsersManagementPage() {
                               <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
                               <span className="truncate">{user.email}</span>
                             </div>
+
                           </div>
                         </div>
                       </td>
@@ -1240,6 +1399,25 @@ export default function UsersManagementPage() {
                           </div>
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
+                        )}
+                      </td>
+
+                      {/* Coluna Tags */}
+                      <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+                        {(userTagsMap[user.id] || []).length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {(userTagsMap[user.id] || []).map(tag => (
+                              <span
+                                key={tag.id}
+                                className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-white whitespace-nowrap"
+                                style={{ backgroundColor: tag.color }}
+                              >
+                                {tag.name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
                         )}
                       </td>
                       
@@ -1603,6 +1781,27 @@ export default function UsersManagementPage() {
                     </button>
                   )}
 
+                  {/* Gerenciar Tags */}
+                  {selectedUserForActions.companies?.id && (
+                    <button
+                      onClick={() => {
+                        openTagModal(selectedUserForActions)
+                        closeActionsModal()
+                      }}
+                      className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-violet-50 to-violet-100/30 hover:from-violet-100 hover:to-violet-200/50 border border-violet-200/50 hover:border-violet-300 transition-all duration-200 group hover:shadow-md active:scale-[0.98]"
+                    >
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                        <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-violet-600" />
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="font-semibold text-sm sm:text-base text-gray-900">Gerenciar Tags</p>
+                        <p className="text-xs text-gray-600">
+                          {(userTagsMap[selectedUserForActions.id] || []).length} tag(s) atribuída(s)
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
                   {/* Desvincular da Empresa */}
                   {selectedUserForActions.companies?.name && (
                     <button
@@ -1838,6 +2037,167 @@ export default function UsersManagementPage() {
           onClose={() => setShowToolModal(false)}
         />
       )}
+
+      {/* Tag Modal */}
+      {showTagModal && selectedUserForTags && (
+        <TagModal
+          targetUser={selectedUserForTags}
+          companyId={selectedUserForTags.companies?.id || getCurrentUserCompany()?.id}
+          tags={tags}
+          userTagsMap={userTagsMap}
+          animating={tagModalAnimating}
+          onClose={closeTagModal}
+          onCreateTag={createTag}
+          onDeleteTag={deleteTag}
+          onToggleTag={toggleTagAssignment}
+        />
+      )}
+    </div>
+  )
+}
+
+// ─── Tag Modal ───────────────────────────────────────────────────────────────
+function TagModal({ targetUser, companyId, tags, userTagsMap, animating, onClose, onCreateTag, onDeleteTag, onToggleTag }) {
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagColor, setNewTagColor] = useState(TAG_COLORS[5]) // blue default
+  const [creating, setCreating] = useState(false)
+
+  const userTags = userTagsMap[targetUser.id] || []
+
+  const handleCreate = async (e) => {
+    e.preventDefault()
+    if (!newTagName.trim() || !companyId) return
+    setCreating(true)
+    await onCreateTag(newTagName, newTagColor, companyId)
+    setNewTagName('')
+    setCreating(false)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className={`relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col transition-all duration-300 ${
+          animating ? 'translate-y-0 sm:scale-100 opacity-100' : 'translate-y-full sm:translate-y-0 sm:scale-95 opacity-0'
+        }`}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex-shrink-0 px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-lg">
+              <Tag className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Gerenciar Tags</h3>
+              <p className="text-sm text-gray-500">{targetUser.full_name || targetUser.email}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all">
+            <X className="w-4 h-4 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {/* Nova tag */}
+          <form onSubmit={handleCreate} className="bg-violet-50 rounded-2xl p-4 border border-violet-200/60">
+            <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-3">Nova tag</p>
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={newTagName}
+                onChange={e => setNewTagName(e.target.value)}
+                placeholder="Nome da tag..."
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400"
+                maxLength={30}
+              />
+              <button
+                type="submit"
+                disabled={!newTagName.trim() || creating}
+                className="px-4 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 disabled:opacity-40 transition-colors flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" /> Criar
+              </button>
+            </div>
+            {/* Color swatches */}
+            <div className="flex flex-wrap gap-2">
+              {TAG_COLORS.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setNewTagColor(c)}
+                  className={`w-7 h-7 rounded-full border-2 transition-transform ${newTagColor === c ? 'scale-125 border-gray-800' : 'border-transparent hover:scale-110'}`}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              ))}
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold text-white ml-auto"
+                style={{ backgroundColor: newTagColor }}
+              >
+                {newTagName || 'Prévia'}
+              </span>
+            </div>
+          </form>
+
+          {/* Lista de tags */}
+          {tags.length === 0 ? (
+            <div className="text-center py-10 text-gray-400 text-sm">Nenhuma tag criada ainda</div>
+          ) : (
+            <div className="space-y-2">
+              {tags.map(tag => {
+                const assigned = userTags.some(t => t.id === tag.id)
+                return (
+                  <div
+                    key={tag.id}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                      assigned ? 'border-violet-300 bg-violet-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <span
+                      className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: tag.color }}
+                    >
+                      {tag.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="flex-1 text-sm font-medium text-gray-800">{tag.name}</span>
+                    <button
+                      onClick={() => onToggleTag(tag, targetUser.id, companyId)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        assigned
+                          ? 'bg-violet-600 text-white hover:bg-violet-700'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {assigned ? 'Remover' : 'Atribuir'}
+                    </button>
+                    <button
+                      onClick={() => onDeleteTag(tag.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                      title="Excluir tag"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100">
+          <button
+            onClick={onClose}
+            className="w-full py-3 bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-xl font-medium hover:from-gray-900 hover:to-black transition-all shadow-md"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

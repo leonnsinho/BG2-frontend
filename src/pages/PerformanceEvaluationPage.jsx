@@ -57,9 +57,12 @@ export default function PerformanceEvaluationPage() {
   const [exporting, setExporting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCompany, setFilterCompany] = useState('all')
+  const [filterTag, setFilterTag] = useState([])
   const [companies, setCompanies] = useState([])
   const [userRole, setUserRole] = useState(null)
   const [confirmDialog, setConfirmDialog] = useState(null)
+  const [availableTags, setAvailableTags] = useState([])
+  const [userTagsMap, setUserTagsMap] = useState({})
 
   // Obter empresa do usuário atual se for company_admin
   const getCurrentUserCompany = () => {
@@ -194,7 +197,27 @@ export default function PerformanceEvaluationPage() {
       setUsers(combinedUsers || [])
       setEvaluations(Object.values(latestEvaluations) || [])
       setCompanies(companiesData)
-      
+
+      // Carregar tags da empresa atual
+      const tagCompanyId = isSuperAdmin()
+        ? (searchParams.get('company') || searchParams.get('companyId') || null)
+        : getCurrentUserCompany()?.id
+      if (tagCompanyId) {
+        const { data: tagsData } = await supabase
+          .rpc('get_company_tags', { p_company_id: tagCompanyId })
+        setAvailableTags(tagsData || [])
+
+        const { data: assignments } = await supabase
+          .rpc('get_company_tag_assignments', { p_company_id: tagCompanyId })
+        const map = {}
+        ;(assignments || []).forEach(a => {
+          if (!map[a.user_id]) map[a.user_id] = []
+          const tag = (tagsData || []).find(t => t.id === a.tag_id)
+          if (tag && !map[a.user_id].some(t => t.id === tag.id)) map[a.user_id].push(tag)
+        })
+        setUserTagsMap(map)
+      }
+
       // Verificar se há um parâmetro company ou companyId na URL
       const companyFromUrl = searchParams.get('company') || searchParams.get('companyId')
       if (companyFromUrl) {
@@ -641,7 +664,8 @@ export default function PerformanceEvaluationPage() {
       const matchesSearch = u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           u.email?.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesCompany = filterCompany === 'all' || u.company_id === filterCompany
-      return matchesSearch && matchesCompany
+      const matchesTag = filterTag.length === 0 || filterTag.every(tid => (userTagsMap[u.id] || []).some(t => t.id === tid))
+      return matchesSearch && matchesCompany && matchesTag
     })
 
     filteredUsers.forEach(u => {
@@ -915,30 +939,72 @@ export default function PerformanceEvaluationPage() {
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Filtros e Estatísticas</h2>
           
           {/* Filtros */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar usuário..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-              />
+          <div className="flex flex-col gap-3 mb-6">
+            {/* Linha 1: busca + empresa */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar usuário..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                />
+              </div>
+
+              {/* Filtro de empresa - apenas para super_admin */}
+              {userRole === 'super_admin' && (
+                <select
+                  value={filterCompany}
+                  onChange={(e) => setFilterCompany(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm sm:text-base"
+                >
+                  <option value="all">Todas as empresas</option>
+                  {companies.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
-            {/* Filtro de empresa - apenas para super_admin */}
-            {userRole === 'super_admin' && (
-              <select
-                value={filterCompany}
-                onChange={(e) => setFilterCompany(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm sm:text-base"
-              >
-                <option value="all">Todas as empresas</option>
-                {companies.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+            {/* Linha 2: filtro de tags */}
+            {availableTags.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => setFilterTag([])}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                    filterTag.length === 0
+                      ? 'bg-gray-800 text-white border-gray-800'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  Todas as tags
+                </button>
+                {availableTags.map(tag => {
+                  const selected = filterTag.includes(tag.id)
+                  return (
+                    <button
+                      key={tag.id}
+                      onClick={() => setFilterTag(prev =>
+                        prev.includes(tag.id) ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
+                      )}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                        selected ? 'text-white border-transparent shadow-md' : 'bg-white border-gray-300 hover:border-gray-400'
+                      }`}
+                      style={selected ? { backgroundColor: tag.color, borderColor: tag.color } : { color: tag.color }}
+                    >
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color }} />
+                      {tag.name}
+                    </button>
+                  )
+                })}
+                {filterTag.length > 0 && (
+                  <span className="text-xs text-gray-400 ml-1">
+                    {filterTag.length} tag{filterTag.length > 1 ? 's' : ''} selecionada{filterTag.length > 1 ? 's' : ''} (AND)
+                  </span>
+                )}
+              </div>
             )}
           </div>
 
@@ -1000,7 +1066,8 @@ export default function PerformanceEvaluationPage() {
                 const matchesSearch = u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                                     u.email?.toLowerCase().includes(searchTerm.toLowerCase())
                 const matchesCompany = filterCompany === 'all' || u.company_id === filterCompany
-                return matchesSearch && matchesCompany
+                const matchesTag = filterTag.length === 0 || filterTag.every(tid => (userTagsMap[u.id] || []).some(t => t.id === tid))
+                return matchesSearch && matchesCompany && matchesTag
               })
               .map(u => (
                 <div
