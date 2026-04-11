@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -25,7 +25,10 @@ import {
   File,
   Eye,
   Check,
-  ArrowLeft
+  ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ConfirmModal from '../components/ui/ConfirmModal'
@@ -70,6 +73,13 @@ function DFCEntradasPage() {
   const [dataInicio, setDataInicio] = useState('')
   const [dataFim, setDataFim] = useState('')
   const [initialized, setInitialized] = useState(false)
+  const [sortCol, setSortCol] = useState('vencimento')
+  const [sortDir, setSortDir] = useState('desc')
+
+  // Scroll sync entre barra superior e tabela
+  const tableWrapRef = useRef(null)
+  const topBarRef = useRef(null)
+  const [scrollWidth, setScrollWidth] = useState(0)
   
   // Busca de empresa no formulário
   const [companySearch, setCompanySearch] = useState('')
@@ -620,7 +630,7 @@ function DFCEntradasPage() {
           ),
           dfc_entradas_documentos (count)
         `)
-        .is('lancamento_pai_id', null) // Apenas lançamentos principais (não parcelas filhas)
+        // Todos os lançamentos (pais + parcelas filhas) para filtro por data funcionar corretamente
         .order('vencimento', { ascending: false })
 
       if (companyFilter !== 'all') {
@@ -1241,18 +1251,28 @@ function DFCEntradasPage() {
 
   // Filtrar entradas
   const filteredEntradas = useMemo(() => {
+    const hasDateFilter = (mesFilter && mesFilter !== 'all' && mesFilter !== '') || (dataInicio && dataFim)
+
     return entradas.filter(entrada => {
+      // Quando há filtro de data: mostra parcelas filhas com data individual;
+      // exclui o registro PAI parcelado para evitar dupla contagem.
+      // Quando não há filtro: comportamento padrão — só registros principais.
+      if (hasDateFilter) {
+        if (entrada.is_parcelado && entrada.lancamento_pai_id === null) return false
+      } else {
+        if (entrada.lancamento_pai_id !== null) return false
+      }
+
       const itemNome = entrada.dfc_itens?.nome || ''
       const matchSearch = !searchTerm || 
         entrada.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
         itemNome.toLowerCase().includes(searchTerm.toLowerCase())
       
-      // Filtro por mês de referência (se estiver usando)
+      // Filtro por mês de referência
       const matchMes = mesFilter === 'all' || mesFilter === '' || 
         entrada.mes.substring(0, 7) === mesFilter
       
       // Filtro por período personalizado (usando data de vencimento)
-      // Só aplica se o usuário explicitamente preencheu as datas
       let matchPeriodo = true
       if (dataInicio && dataFim && entrada.vencimento) {
         const dataVencimento = new Date(entrada.vencimento + 'T00:00:00')
@@ -1262,8 +1282,20 @@ function DFCEntradasPage() {
       }
       
       return matchSearch && matchMes && matchPeriodo
+    }).sort((a, b) => {
+      if (sortCol === 'vencimento') {
+        const da = a.vencimento || ''
+        const db = b.vencimento || ''
+        return sortDir === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
+      }
+      if (sortCol === 'valor') {
+        const va = parseFloat(a.valor) || 0
+        const vb = parseFloat(b.valor) || 0
+        return sortDir === 'asc' ? va - vb : vb - va
+      }
+      return 0
     })
-  }, [entradas, searchTerm, mesFilter, dataInicio, dataFim])
+  }, [entradas, searchTerm, mesFilter, dataInicio, dataFim, sortCol, sortDir])
 
   // Calcular totais
   const totais = useMemo(() => {
@@ -1278,6 +1310,10 @@ function DFCEntradasPage() {
     })
 
     return { total, porCategoria }
+  }, [filteredEntradas])
+
+  useEffect(() => {
+    if (tableWrapRef.current) setScrollWidth(tableWrapRef.current.scrollWidth)
   }, [filteredEntradas])
 
   const formatCurrency = (value, currencyCode = 'BRL') => {
@@ -1574,7 +1610,18 @@ function DFCEntradasPage() {
           </h2>
         </div>
 
-        <div className="overflow-x-auto">
+        <div
+          ref={topBarRef}
+          onScroll={() => { if (tableWrapRef.current) tableWrapRef.current.scrollLeft = topBarRef.current.scrollLeft }}
+          className="overflow-x-scroll overflow-y-hidden border-b border-gray-100 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-gray-50 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 hover:[&::-webkit-scrollbar-thumb]:bg-[#ae2a2a]/50"
+        >
+          <div style={{ width: scrollWidth, height: 1 }} />
+        </div>
+        <div
+          ref={tableWrapRef}
+          onScroll={() => { if (topBarRef.current) topBarRef.current.scrollLeft = tableWrapRef.current.scrollLeft }}
+          className="overflow-x-auto"
+        >
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
               <tr>
@@ -1591,13 +1638,19 @@ function DFCEntradasPage() {
                   Descrição
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
-                  Valor
+                  <button className="inline-flex items-center gap-1 hover:text-[#ae2a2a] transition-colors" onClick={() => { if (sortCol === 'valor') setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortCol('valor'); setSortDir('asc') } }}>
+                    Valor
+                    {sortCol === 'valor' ? (sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
+                  </button>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Mês
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
-                  Vencimento
+                  <button className="inline-flex items-center gap-1 hover:text-[#ae2a2a] transition-colors" onClick={() => { if (sortCol === 'vencimento') setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortCol('vencimento'); setSortDir('asc') } }}>
+                    Vencimento
+                    {sortCol === 'vencimento' ? (sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
+                  </button>
                 </th>
                 <th className="px-6 py-4 text-right text-xs font-semibold text-[#373435] uppercase tracking-wider">
                   Ações

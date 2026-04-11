@@ -46,6 +46,7 @@ const EMPTY_CARD = {
   cidade_estado: '', segmento: '', observacoes: '',
   valor_oportunidade: '', status: 'ativo',
   lead_id: null, product_id: null, contact_id: null,
+  quantidade: 1, desconto_percentual: '',
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -195,14 +196,23 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     }
   }
 
+  const calcValorOportunidade = (baseValor, quantidade, descontoPerc) => {
+    if (baseValor === null || baseValor === undefined || baseValor === '') return ''
+    const base = parseFloat(baseValor) || 0
+    const qty  = parseInt(quantidade) || 1
+    const disc = parseFloat(descontoPerc) || 0
+    return (base * qty * (1 - disc / 100)).toFixed(2)
+  }
+
   const pickProduct = (product) => {
     setSelectedProduct(product)
     if (product) {
-      setForm(p => ({
-        ...p,
-        product_id: product.id,
-        valor_oportunidade: product.valor ?? p.valor_oportunidade,
-      }))
+      setForm(p => {
+        const novoValor = product.valor != null
+          ? calcValorOportunidade(product.valor, p.quantidade || 1, p.desconto_percentual || 0)
+          : p.valor_oportunidade
+        return { ...p, product_id: product.id, valor_oportunidade: novoValor }
+      })
     } else {
       setForm(p => ({ ...p, product_id: null }))
     }
@@ -294,6 +304,8 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         segmento: form.segmento?.trim() || null,
         observacoes: observations.length > 0 ? JSON.stringify(observations) : null,
         valor_oportunidade: form.valor_oportunidade !== '' ? parseFloat(String(form.valor_oportunidade).replace(/[^\d.,]/g, '').replace(',', '.')) || null : null,
+        quantidade: parseInt(form.quantidade) >= 1 ? parseInt(form.quantidade) : 1,
+        desconto_percentual: form.desconto_percentual !== '' && form.desconto_percentual !== null && form.desconto_percentual !== undefined ? parseFloat(form.desconto_percentual) || null : null,
         status: form.status || 'ativo',
         lead_id: form.lead_id || null,
         product_id: form.product_id || null,
@@ -586,7 +598,45 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Valor da Oportunidade (R$)</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Quantidade <span className="text-gray-400">(mín. 1)</span></label>
+                <input
+                  type="number" min="1" step="1" className={INP}
+                  value={form.quantidade ?? 1}
+                  onChange={e => {
+                    const qty = Math.max(1, parseInt(e.target.value) || 1)
+                    setForm(p => {
+                      const novo = selectedProduct?.valor != null
+                        ? calcValorOportunidade(selectedProduct.valor, qty, p.desconto_percentual || 0)
+                        : p.valor_oportunidade
+                      return { ...p, quantidade: qty, valor_oportunidade: novo }
+                    })
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Desconto <span className="text-gray-400">(%)</span></label>
+                <input
+                  type="number" min="0" max="100" step="0.01" className={INP}
+                  value={form.desconto_percentual ?? ''}
+                  placeholder="0"
+                  onChange={e => {
+                    const disc = e.target.value
+                    setForm(p => {
+                      const novo = selectedProduct?.valor != null
+                        ? calcValorOportunidade(selectedProduct.valor, p.quantidade || 1, disc || 0)
+                        : p.valor_oportunidade
+                      return { ...p, desconto_percentual: disc, valor_oportunidade: novo }
+                    })
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Valor da Oportunidade (R$)
+                  {selectedProduct?.valor != null && (form.quantidade > 1 || form.desconto_percentual) && (
+                    <span className="ml-1 text-[10px] text-emerald-600 font-normal">calculado automaticamente</span>
+                  )}
+                </label>
                 <input type="number" min="0" step="0.01" className={INP} value={form.valor_oportunidade}
                   onChange={e => setForm(p => ({...p, valor_oportunidade: e.target.value}))} placeholder="0,00" />
               </div>
