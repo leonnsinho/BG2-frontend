@@ -23,7 +23,7 @@ import {
   Building2, User, Phone, Mail, MapPin, Tag, DollarSign,
   MessageSquare, Paperclip, ChevronDown, Check, AlertCircle,
   Kanban, Search, Filter, MoreHorizontal, Download, ArrowLeft, LayoutGrid,
-  Users, Package, Import, ChevronRight, Globe, Briefcase, ArrowUpRight
+  Users, Package, Import, ChevronRight, Globe, Briefcase, ArrowUpRight, FileSpreadsheet
 } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -45,9 +45,14 @@ const EMPTY_CARD = {
   email_contato: '', telefone_contato: '', origem_lead: '',
   cidade_estado: '', segmento: '', observacoes: '',
   valor_oportunidade: '', status: 'ativo',
-  lead_id: null, product_id: null, contact_id: null,
-  quantidade: 1, desconto_percentual: '',
+  lead_id: null, contact_id: null,
 }
+
+const ESTADOS_BR = [
+  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA',
+  'MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN',
+  'RS','RO','RR','SC','SP','SE','TO'
+]
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const fmtMoney = (v) => {
@@ -145,8 +150,8 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   const [products, setProducts] = useState([])
   const [contacts, setContacts] = useState([])
   const [selectedLead, setSelectedLead] = useState(null)
-  const [selectedProduct, setSelectedProduct] = useState(null)
   const [selectedContact, setSelectedContact] = useState(null)
+  const [lineItems, setLineItems] = useState([]) // { lineId, dbId, product_id, product, nome_produto, valor_unitario, quantidade, desconto_percentual, valor_linha }
 
   // create-inline sub-modal
   const [createMode, setCreateMode] = useState(null) // 'lead' | 'product' | 'contact'
@@ -155,7 +160,10 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
 
   useEffect(() => {
     loadEntities()
-    if (card?.id) loadAttachments(card.id)
+    if (card?.id) {
+      loadAttachments(card.id)
+      loadLineItems(card.id)
+    }
   }, [])
 
   const loadEntities = async () => {
@@ -170,7 +178,6 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     setContacts(cList)
     // pre-select if editing
     if (card?.lead_id)    setSelectedLead(lList.find(x => x.id === card.lead_id) || null)
-    if (card?.product_id) setSelectedProduct(pList.find(x => x.id === card.product_id) || null)
     if (card?.contact_id) setSelectedContact(cList.find(x => x.id === card.contact_id) || null)
   }
 
@@ -187,7 +194,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         ...p,
         lead_id: lead.id,
         nome_empresa: lead.nome_empresa || p.nome_empresa,
-        cidade_estado: lead.cidade_estado || p.cidade_estado,
+        cidade_estado: lead.cidade ? [lead.cidade, lead.estado].filter(Boolean).join(' / ') : (lead.cidade_estado || p.cidade_estado),
         segmento: lead.segmento || p.segmento,
         origem_lead: lead.origem_lead || p.origem_lead,
       }))
@@ -196,26 +203,57 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     }
   }
 
-  const calcValorOportunidade = (baseValor, quantidade, descontoPerc) => {
-    if (baseValor === null || baseValor === undefined || baseValor === '') return ''
-    const base = parseFloat(baseValor) || 0
-    const qty  = parseInt(quantidade) || 1
-    const disc = parseFloat(descontoPerc) || 0
-    return (base * qty * (1 - disc / 100)).toFixed(2)
+  const loadLineItems = async (cardId) => {
+    const { data } = await supabase
+      .from('crm_card_products')
+      .select('*, crm_products(*)')
+      .eq('card_id', cardId)
+      .order('created_at')
+    if (data) {
+      setLineItems(data.map(row => ({
+        lineId: row.id,
+        dbId: row.id,
+        product_id: row.product_id,
+        product: row.crm_products || null,
+        nome_produto: row.nome_produto,
+        valor_unitario: row.valor_unitario ?? '',
+        quantidade: row.quantidade,
+        desconto_percentual: row.desconto_percentual ?? '',
+        valor_linha: row.valor_linha ?? '',
+      })))
+    }
   }
 
-  const pickProduct = (product) => {
-    setSelectedProduct(product)
-    if (product) {
-      setForm(p => {
-        const novoValor = product.valor != null
-          ? calcValorOportunidade(product.valor, p.quantidade || 1, p.desconto_percentual || 0)
-          : p.valor_oportunidade
-        return { ...p, product_id: product.id, valor_oportunidade: novoValor }
-      })
-    } else {
-      setForm(p => ({ ...p, product_id: null }))
-    }
+  const calcLinha = (vu, qty, disc) => {
+    const base = parseFloat(vu) || 0
+    if (!base) return ''
+    return (base * (parseInt(qty) || 1) * (1 - (parseFloat(disc) || 0) / 100)).toFixed(2)
+  }
+
+  const addLineItem = (product) => {
+    const vu = product?.valor ?? ''
+    setLineItems(prev => [...prev, {
+      lineId: crypto.randomUUID(),
+      dbId: null,
+      product_id: product?.id || null,
+      product: product || null,
+      nome_produto: product?.nome || '',
+      valor_unitario: vu,
+      quantidade: 1,
+      desconto_percentual: '',
+      valor_linha: vu !== '' ? parseFloat(vu).toFixed(2) : '',
+    }])
+  }
+
+  const removeLineItem = (lineId) => setLineItems(prev => prev.filter(li => li.lineId !== lineId))
+
+  const updateLineItem = (lineId, field, value) => {
+    setLineItems(prev => prev.map(li => {
+      if (li.lineId !== lineId) return li
+      const updated = { ...li, [field]: value }
+      updated.valor_linha = calcLinha(updated.valor_unitario, updated.quantidade, updated.desconto_percentual)
+      return updated
+    }))
   }
 
   const pickContact = (contact) => {
@@ -237,7 +275,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   // Inline create helpers
   const openCreate = (mode) => {
     setCreateForm(
-      mode === 'lead' ? { nome_empresa: '', cidade_estado: '', segmento: '', origem_lead: '' } :
+      mode === 'lead' ? { nome_empresa: '', cidade: '', estado: '', segmento: '', origem_lead: '' } :
       mode === 'product' ? { nome: '', valor: '', unidade: '', descricao: '' } :
       { nome: '', cargo: '', email: '', telefone: '', lead_id: '' }
     )
@@ -266,7 +304,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         if (error) throw error
         const updated = [...products, data]
         setProducts(updated)
-        pickProduct(data)
+        addLineItem(data)
       } else if (createMode === 'contact') {
         if (!createForm.nome?.trim()) { toast.error('Nome do contato obrigatório'); return }
         const { data, error } = await supabase.from('crm_contacts').insert([{
@@ -291,6 +329,11 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     }
     setLoading(true)
     try {
+      const totalItems = lineItems.reduce((s, li) => s + (parseFloat(li.valor_linha) || 0), 0)
+      const valorOp = lineItems.length > 0
+        ? (totalItems || null)
+        : (form.valor_oportunidade !== '' ? parseFloat(String(form.valor_oportunidade).replace(/[^\d.,]/g, '').replace(',', '.')) || null : null)
+
       const payload = {
         company_id: companyId,
         column_id: form.column_id || columnId,
@@ -303,12 +346,9 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         cidade_estado: form.cidade_estado?.trim() || null,
         segmento: form.segmento?.trim() || null,
         observacoes: observations.length > 0 ? JSON.stringify(observations) : null,
-        valor_oportunidade: form.valor_oportunidade !== '' ? parseFloat(String(form.valor_oportunidade).replace(/[^\d.,]/g, '').replace(',', '.')) || null : null,
-        quantidade: parseInt(form.quantidade) >= 1 ? parseInt(form.quantidade) : 1,
-        desconto_percentual: form.desconto_percentual !== '' && form.desconto_percentual !== null && form.desconto_percentual !== undefined ? parseFloat(form.desconto_percentual) || null : null,
+        valor_oportunidade: valorOp,
         status: form.status || 'ativo',
         lead_id: form.lead_id || null,
-        product_id: form.product_id || null,
         contact_id: form.contact_id || null,
         updated_at: new Date().toISOString(),
       }
@@ -323,6 +363,23 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         const { data, error } = await supabase.from('crm_cards').update(payload).eq('id', card.id).select().single()
         if (error) throw error
         saved = data
+      }
+      // Save line items
+      const cardId = saved.id
+      await supabase.from('crm_card_products').delete().eq('card_id', cardId)
+      if (lineItems.length > 0) {
+        const rows = lineItems.map(li => ({
+          card_id: cardId,
+          company_id: companyId,
+          product_id: li.product_id || null,
+          nome_produto: li.nome_produto || '',
+          valor_unitario: li.valor_unitario !== '' ? parseFloat(li.valor_unitario) || null : null,
+          quantidade: parseInt(li.quantidade) || 1,
+          desconto_percentual: li.desconto_percentual !== '' && li.desconto_percentual != null ? parseFloat(li.desconto_percentual) || null : null,
+          valor_linha: li.valor_linha !== '' ? parseFloat(li.valor_linha) || null : null,
+        }))
+        const { error: liErr } = await supabase.from('crm_card_products').insert(rows)
+        if (liErr) throw liErr
       }
       toast.success(isNew ? 'Card criado!' : 'Card atualizado!')
       onSaved(saved, isNew)
@@ -404,7 +461,8 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
             <div className="space-y-3">
               <div><label className="block text-xs font-medium text-gray-600 mb-1">Nome da Empresa *</label><input className={INP} value={createForm.nome_empresa} onChange={e => setCreateForm(p=>({...p,nome_empresa:e.target.value}))} placeholder="Acme Corp" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-xs font-medium text-gray-600 mb-1">Cidade/Estado</label><input className={INP} value={createForm.cidade_estado} onChange={e => setCreateForm(p=>({...p,cidade_estado:e.target.value}))} placeholder="SP" /></div>
+                <div><label className="block text-xs font-medium text-gray-600 mb-1">Cidade</label><input className={INP} value={createForm.cidade} onChange={e => setCreateForm(p=>({...p,cidade:e.target.value}))} placeholder="São Paulo" /></div>
+                <div><label className="block text-xs font-medium text-gray-600 mb-1">Estado</label><select className={SEL} value={createForm.estado} onChange={e => setCreateForm(p=>({...p,estado:e.target.value}))}><option value="">Selecione...</option>{ESTADOS_BR.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
                 <div><label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label><input className={INP} value={createForm.segmento} onChange={e => setCreateForm(p=>({...p,segmento:e.target.value}))} placeholder="Tecnologia" /></div>
               </div>
               <div><label className="block text-xs font-medium text-gray-600 mb-1">Origem</label>
@@ -575,20 +633,74 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
           {/* PRODUTO / OPORTUNIDADE */}
           <section>
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-              <DollarSign className="h-3.5 w-3.5" /> Oportunidade / Produto
+              <DollarSign className="h-3.5 w-3.5" /> Oportunidade / Produtos
             </h4>
+
+            {/* Line items */}
+            {lineItems.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {lineItems.map(li => (
+                  <div key={li.lineId} className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100">
+                    {/* Header */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Package className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                        <span className="text-xs font-semibold text-gray-800 truncate">{li.nome_produto || '—'}</span>
+                        {li.valor_unitario !== '' && li.valor_unitario !== null && (
+                          <span className="text-[10px] text-gray-400 shrink-0"> · {fmtMoney(li.valor_unitario)}/un.</span>
+                        )}
+                      </div>
+                      <button type="button" onClick={() => removeLineItem(li.lineId)}
+                        className="shrink-0 p-1 hover:bg-red-100 rounded-lg transition-colors">
+                        <X className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
+                      </button>
+                    </div>
+                    {/* Fields */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-500 mb-1">Qtd.</label>
+                        <input type="number" min="1" step="1"
+                          className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 focus:border-emerald-400 focus:outline-none bg-white"
+                          value={li.quantidade}
+                          onChange={e => updateLineItem(li.lineId, 'quantidade', Math.max(1, parseInt(e.target.value) || 1))}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-500 mb-1">Desconto %</label>
+                        <input type="number" min="0" max="100" step="0.01" placeholder="0"
+                          className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 focus:border-emerald-400 focus:outline-none bg-white"
+                          value={li.desconto_percentual}
+                          onChange={e => updateLineItem(li.lineId, 'desconto_percentual', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-500 mb-1">Valor (R$)</label>
+                        <input type="number" min="0" step="0.01" placeholder="0,00"
+                          className="w-full text-xs px-2 py-1.5 rounded-lg border border-emerald-200 focus:border-emerald-400 focus:outline-none bg-white font-semibold text-emerald-700"
+                          value={li.valor_linha}
+                          onChange={e => setLineItems(prev => prev.map(x => x.lineId === li.lineId ? { ...x, valor_linha: e.target.value } : x))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Picker — sempre visível para adicionar mais */}
             <ImportOrCreatePicker
               title="Produto"
               Icon={Package}
               colorClass="border-emerald-200 text-emerald-700"
               items={products}
-              selected={selectedProduct}
-              onSelect={pickProduct}
+              selected={null}
+              onSelect={p => { if (p) addLineItem(p) }}
               onCreateClick={() => openCreate('product')}
               renderItem={p => p.nome + (p.valor ? ` · ${fmtMoney(p.valor)}` : '')}
-              renderSelected={p => <><span className="font-semibold">{p.nome}</span>{p.valor && <span className="text-xs text-gray-400 ml-1">· {fmtMoney(p.valor)}</span>}</>}
-              placeholder="Importar produto existente..."
+              renderSelected={() => null}
+              placeholder="Adicionar produto..."
             />
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Origem do Lead</label>
@@ -598,47 +710,17 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Quantidade <span className="text-gray-400">(mín. 1)</span></label>
-                <input
-                  type="number" min="1" step="1" className={INP}
-                  value={form.quantidade ?? 1}
-                  onChange={e => {
-                    const qty = Math.max(1, parseInt(e.target.value) || 1)
-                    setForm(p => {
-                      const novo = selectedProduct?.valor != null
-                        ? calcValorOportunidade(selectedProduct.valor, qty, p.desconto_percentual || 0)
-                        : p.valor_oportunidade
-                      return { ...p, quantidade: qty, valor_oportunidade: novo }
-                    })
-                  }}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Desconto <span className="text-gray-400">(%)</span></label>
-                <input
-                  type="number" min="0" max="100" step="0.01" className={INP}
-                  value={form.desconto_percentual ?? ''}
-                  placeholder="0"
-                  onChange={e => {
-                    const disc = e.target.value
-                    setForm(p => {
-                      const novo = selectedProduct?.valor != null
-                        ? calcValorOportunidade(selectedProduct.valor, p.quantidade || 1, disc || 0)
-                        : p.valor_oportunidade
-                      return { ...p, desconto_percentual: disc, valor_oportunidade: novo }
-                    })
-                  }}
-                />
-              </div>
-              <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Valor da Oportunidade (R$)
-                  {selectedProduct?.valor != null && (form.quantidade > 1 || form.desconto_percentual) && (
-                    <span className="ml-1 text-[10px] text-emerald-600 font-normal">calculado automaticamente</span>
-                  )}
+                  {lineItems.length > 0 ? 'Total dos Produtos' : 'Valor da Oportunidade (R$)'}
                 </label>
-                <input type="number" min="0" step="0.01" className={INP} value={form.valor_oportunidade}
-                  onChange={e => setForm(p => ({...p, valor_oportunidade: e.target.value}))} placeholder="0,00" />
+                {lineItems.length > 0 ? (
+                  <div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-bold text-emerald-700">
+                    {fmtMoney(lineItems.reduce((s, li) => s + (parseFloat(li.valor_linha) || 0), 0))}
+                  </div>
+                ) : (
+                  <input type="number" min="0" step="0.01" className={INP} value={form.valor_oportunidade}
+                    onChange={e => setForm(p => ({...p, valor_oportunidade: e.target.value}))} placeholder="0,00" />
+                )}
               </div>
             </div>
           </section>
@@ -968,7 +1050,7 @@ function LeadsModal({ companyId, onClose }) {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
-  const EMPTY = { nome_empresa: '', cidade_estado: '', segmento: '', origem_lead: '', website: '', observacoes: '' }
+  const EMPTY = { nome_empresa: '', cidade: '', estado: '', segmento: '', origem_lead: '', website: '', observacoes: '' }
   const [form, setForm] = useState(EMPTY)
 
   // contacts (expandable panel)
@@ -980,6 +1062,10 @@ function LeadsModal({ companyId, onClose }) {
   const [savingContact, setSavingContact] = useState(false)
   const EMPTY_C = { nome: '', cargo: '', email: '', telefone: '', lead_id: '', observacoes: '' }
   const [contactForm, setContactForm] = useState(EMPTY_C)
+  const [newContacts, setNewContacts] = useState([{ _key: 1, nome: '', cargo: '', telefone: '', email: '' }])
+  const [importing, setImporting] = useState(false)
+  const importLeadsCsvRef = useRef(null)
+  const importContactsCsvRef = useRef(null)
 
   useEffect(() => { loadLeads() }, [])
 
@@ -1005,21 +1091,42 @@ function LeadsModal({ companyId, onClose }) {
     setShowContactForm(false)
   }
 
-  const openNew = () => { setForm(EMPTY); setEditing(null); setShowForm(true) }
-  const openEdit = (l) => { setForm({ ...l }); setEditing(l); setShowForm(true) }
+  const openNew = () => { setForm(EMPTY); setEditing(null); setNewContacts([{ _key: Date.now(), nome: '', cargo: '', telefone: '', email: '' }]); setShowForm(true) }
+  const openEdit = (l) => { setForm({ ...l }); setEditing(l); setNewContacts([]); setShowForm(true) }
+
+  const addNewContact = () => setNewContacts(p => [...p, { _key: Date.now(), nome: '', cargo: '', telefone: '', email: '' }])
+  const removeNewContact = (key) => setNewContacts(p => p.filter(c => c._key !== key))
+  const updateNewContact = (key, field, value) => setNewContacts(p => p.map(c => c._key === key ? { ...c, [field]: value } : c))
 
   const handleSave = async () => {
     if (!form.nome_empresa?.trim()) { toast.error('Nome da empresa obrigatório'); return }
     setSaving(true)
     try {
       const payload = { ...form, company_id: companyId, updated_at: new Date().toISOString() }
+      let leadId = editing?.id
       if (editing) {
         const { error } = await supabase.from('crm_leads').update(payload).eq('id', editing.id)
         if (error) throw error
       } else {
         payload.created_by = user?.id
-        const { error } = await supabase.from('crm_leads').insert([payload])
+        const { data: inserted, error } = await supabase.from('crm_leads').insert([payload]).select('id').single()
         if (error) throw error
+        leadId = inserted.id
+      }
+      // insert inline new contacts
+      const toInsert = newContacts.filter(c => c.nome.trim())
+      if (toInsert.length > 0) {
+        await supabase.from('crm_contacts').insert(
+          toInsert.map(c => ({
+            nome: c.nome.trim(),
+            cargo: c.cargo.trim() || null,
+            telefone: c.telefone.trim() || null,
+            email: c.email.trim() || null,
+            lead_id: leadId,
+            company_id: companyId,
+            created_by: user?.id,
+          }))
+        )
       }
       toast.success(editing ? 'Lead atualizado!' : 'Lead cadastrado!')
       setShowForm(false)
@@ -1063,6 +1170,98 @@ function LeadsModal({ companyId, onClose }) {
     toast.success('Contato removido')
   }
 
+  const parseCSV = (text) => {
+    const lines = text.trim().split(/\r?\n/)
+    if (lines.length < 2) return []
+    const header = lines[0]
+    const delim = header.includes(';') ? ';' : ','
+    return lines.slice(1).filter(l => l.trim()).map(line => {
+      const cols = []
+      let cur = '', inQuotes = false
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i]
+        if (ch === '"') { inQuotes = !inQuotes }
+        else if (ch === delim && !inQuotes) { cols.push(cur.trim()); cur = '' }
+        else { cur += ch }
+      }
+      cols.push(cur.trim())
+      return cols
+    })
+  }
+
+  const handleImportLeadsCSV = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setImporting(true)
+    try {
+      const text = await file.text()
+      const rows = parseCSV(text)
+      if (rows.length === 0) { toast.error('Nenhuma linha encontrada no arquivo'); return }
+      let leadsInserted = 0, contactsInserted = 0, errors = 0
+      for (const row of rows) {
+        const [nomeEmpresa = '', cidade = '', estado = '', nomeContato = '', cargo = '', telefone = '', email = ''] = row
+        if (!nomeEmpresa.trim()) continue
+        const { data: leadData, error: leadError } = await supabase
+          .from('crm_leads')
+          .insert([{ nome_empresa: nomeEmpresa.trim(), cidade: cidade.trim() || null, estado: estado.trim() || null, company_id: companyId, created_by: user?.id }])
+          .select('id').single()
+        if (leadError) { errors++; continue }
+        leadsInserted++
+        if (nomeContato.trim()) {
+          const { error: ce } = await supabase.from('crm_contacts').insert([{
+            nome: nomeContato.trim(), cargo: cargo.trim() || null,
+            telefone: telefone.trim() || null, email: email.trim() || null,
+            lead_id: leadData.id, company_id: companyId, created_by: user?.id
+          }])
+          if (!ce) contactsInserted++
+        }
+      }
+      const msg = `${leadsInserted} lead${leadsInserted !== 1 ? 's' : ''} importado${leadsInserted !== 1 ? 's' : ''}` +
+        (contactsInserted ? `, ${contactsInserted} contato${contactsInserted !== 1 ? 's' : ''}` : '') +
+        (errors ? ` (${errors} erro${errors !== 1 ? 's' : ''})` : '')
+      toast.success(msg)
+      loadLeads()
+    } catch (err) { toast.error('Erro ao processar arquivo: ' + err.message) }
+    finally { setImporting(false) }
+  }
+
+  const handleImportContactsCSV = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setImporting(true)
+    try {
+      const text = await file.text()
+      const rows = parseCSV(text)
+      if (rows.length === 0) { toast.error('Nenhuma linha encontrada no arquivo'); return }
+      // Build leads map for name matching
+      const { data: allLeads } = await supabase.from('crm_leads').select('id, nome_empresa').eq('company_id', companyId)
+      const leadsMap = {}
+      ;(allLeads || []).forEach(l => { leadsMap[l.nome_empresa.toLowerCase().trim()] = l.id })
+      let inserted = 0, errors = 0
+      for (const row of rows) {
+        const [nomeEmpresa = '', , , nomeContato = '', cargo = '', telefone = '', email = ''] = row
+        if (!nomeContato.trim()) continue
+        const leadId = nomeEmpresa.trim() ? (leadsMap[nomeEmpresa.trim().toLowerCase()] || null) : null
+        const { error } = await supabase.from('crm_contacts').insert([{
+          nome: nomeContato.trim(), cargo: cargo.trim() || null,
+          telefone: telefone.trim() || null, email: email.trim() || null,
+          lead_id: leadId, company_id: companyId, created_by: user?.id
+        }])
+        if (error) errors++; else inserted++
+      }
+      const msg = `${inserted} contato${inserted !== 1 ? 's' : ''} importado${inserted !== 1 ? 's' : ''}` +
+        (errors ? ` (${errors} erro${errors !== 1 ? 's' : ''})` : '')
+      toast.success(msg)
+      if (contactsOpen) {
+        const { data } = await supabase.from('crm_contacts').select('*, crm_leads(nome_empresa)').eq('company_id', companyId).order('nome')
+        setContacts(data || [])
+      }
+    } catch (err) { toast.error('Erro ao processar arquivo: ' + err.message) }
+    finally { setImporting(false) }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
@@ -1073,8 +1272,14 @@ function LeadsModal({ companyId, onClose }) {
             <Building2 className="h-4 w-4 text-[#EBA500]" /> Leads / Empresas
           </h2>
           <div className="flex items-center gap-2">
+            {/* hidden file inputs */}
+            <input ref={importLeadsCsvRef} type="file" accept=".csv" className="hidden" onChange={handleImportLeadsCSV} />
+            <input ref={importContactsCsvRef} type="file" accept=".csv" className="hidden" onChange={handleImportContactsCSV} />
             {contactsOpen ? (
               <>
+                <button onClick={() => importContactsCsvRef.current?.click()} disabled={importing} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60" title="Importar contatos de planilha CSV">
+                  <FileSpreadsheet className="h-3.5 w-3.5" /> Importar CSV
+                </button>
                 <button onClick={openNewContact} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors">
                   <Plus className="h-3.5 w-3.5" /> Novo Contato
                 </button>
@@ -1084,6 +1289,9 @@ function LeadsModal({ companyId, onClose }) {
               </>
             ) : (
               <>
+                <button onClick={() => importLeadsCsvRef.current?.click()} disabled={importing} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60" title="Importar empresas de planilha CSV">
+                  <FileSpreadsheet className="h-3.5 w-3.5" /> Importar CSV
+                </button>
                 <button onClick={toggleContacts} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors">
                   <Users className="h-3.5 w-3.5" /> Contatos
                 </button>
@@ -1113,8 +1321,15 @@ function LeadsModal({ companyId, onClose }) {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Cidade / Estado</label>
-                    <input className={INP} value={form.cidade_estado} onChange={e => setForm(p => ({...p, cidade_estado: e.target.value}))} placeholder="São Paulo / SP" />
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Cidade</label>
+                    <input className={INP} value={form.cidade || ''} onChange={e => setForm(p => ({...p, cidade: e.target.value}))} placeholder="São Paulo" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Estado</label>
+                    <select className={SEL} value={form.estado || ''} onChange={e => setForm(p => ({...p, estado: e.target.value}))}>
+                      <option value="">Selecione...</option>
+                      {ESTADOS_BR.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label>
@@ -1136,6 +1351,39 @@ function LeadsModal({ companyId, onClose }) {
                   <label className="block text-xs font-medium text-gray-600 mb-1">Observações</label>
                   <textarea className={INP + ' resize-none'} rows={3} value={form.observacoes} onChange={e => setForm(p => ({...p, observacoes: e.target.value}))} placeholder="Notas sobre este lead..." />
                 </div>
+
+                {/* ── Inline contacts ── */}
+                <div className="pt-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-bold text-gray-700 flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-purple-400" /> Contatos</p>
+                    <button type="button" onClick={addNewContact} className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-semibold">
+                      <Plus className="h-3.5 w-3.5" /> Adicionar contato
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {newContacts.map((c, idx) => (
+                      <div key={c._key} className="relative p-3 bg-purple-50 border border-purple-100 rounded-xl">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold text-purple-600">Contato {idx + 1}</span>
+                          {newContacts.length > 1 && (
+                            <button type="button" onClick={() => removeNewContact(c._key)} className="p-0.5 hover:bg-purple-100 rounded text-purple-300 hover:text-red-400">
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="col-span-2">
+                            <input className={INP} value={c.nome} onChange={e => updateNewContact(c._key, 'nome', e.target.value)} placeholder="Nome *" />
+                          </div>
+                          <input className={INP} value={c.cargo} onChange={e => updateNewContact(c._key, 'cargo', e.target.value)} placeholder="Cargo" />
+                          <input type="tel" className={INP} value={c.telefone} onChange={e => updateNewContact(c._key, 'telefone', e.target.value)} placeholder="Telefone" />
+                          <input type="email" className={INP + ' col-span-2'} value={c.email} onChange={e => updateNewContact(c._key, 'email', e.target.value)} placeholder="E-mail" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex justify-end gap-2 pt-2">
                   <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
                   <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
@@ -1158,7 +1406,7 @@ function LeadsModal({ companyId, onClose }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-800 truncate">{l.nome_empresa}</p>
-                      <p className="text-xs text-gray-400 truncate">{[l.segmento, l.cidade_estado].filter(Boolean).join(' · ') || 'Sem detalhes'}</p>
+                      <p className="text-xs text-gray-400 truncate">{[l.segmento, l.cidade, l.estado].filter(Boolean).join(' · ') || 'Sem detalhes'}</p>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={(e) => { e.stopPropagation(); openEdit(l) }} className="p-1.5 hover:bg-gray-200 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
@@ -1897,7 +2145,8 @@ export default function CRMPage() {
       (c.nome_empresa || '').toLowerCase().includes(q) ||
       (c.nome_contato || '').toLowerCase().includes(q) ||
       (c.segmento || '').toLowerCase().includes(q) ||
-      (c.cidade_estado || '').toLowerCase().includes(q)
+      (c.cidade || '').toLowerCase().includes(q) ||
+      (c.estado || '').toLowerCase().includes(q)
     )
   }, [cards, search])
 
