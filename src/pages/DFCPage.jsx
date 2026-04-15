@@ -294,7 +294,10 @@ function DFCPage() {
   const isGestor = () => {
     return profile?.user_companies?.some(uc => uc.role === 'gestor' && uc.is_active) || false
   }
-  const isAuthorized = () => isSuperAdmin() || isCompanyAdmin() || isGestor()
+  const isUser = () => {
+    return profile?.user_companies?.some(uc => uc.role === 'user' && uc.is_active) || false
+  }
+  const isAuthorized = () => isSuperAdmin() || isCompanyAdmin() || isGestor() || isUser()
   
   // Obter empresa do company admin
   const getCompanyAdminCompany = () => {

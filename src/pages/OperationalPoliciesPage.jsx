@@ -137,7 +137,7 @@ export default function OperationalPoliciesPage() {
   // 🔥 NOVO: Verificar se há companyId na URL (Super Admin) ou usar do perfil
   const urlCompanyId = searchParams.get('companyId')
   const userCompanyId = urlCompanyId || profile?.user_companies?.find(uc => 
-    uc.role === 'company_admin' && uc.is_active
+    uc.is_active
   )?.company_id
 
   useEffect(() => {
@@ -2012,9 +2012,8 @@ export default function OperationalPoliciesPage() {
   }
 
   // Verificar se é company_admin em user_companies
-  const isCompanyAdmin = profile?.user_companies?.some(uc => 
-    uc.role === 'company_admin' && uc.is_active
-  ) || profile?.role === 'super_admin'
+  const isCompanyAdmin = profile?.user_companies?.some(uc => uc.is_active)
+    || profile?.role === 'super_admin'
 
   if (!isCompanyAdmin) {
     return (

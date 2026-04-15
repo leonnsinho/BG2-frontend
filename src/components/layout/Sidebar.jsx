@@ -99,8 +99,19 @@ const ROUTE_TO_TOOL_SLUG = {
   '/dfc': 'dfc-complete',
   '/dfc/entradas': 'dfc-entradas',
   '/dfc/saidas': 'dfc-saidas',
-  '/indicators': 'management-indicators',
-  '/indicators/manage': 'management-indicators'
+  // Módulo Performance — uma única permissão controla todo o bloco
+  '/indicators': 'modulo-performance',
+  '/indicators/manage': 'modulo-performance',
+  '/reports/execucao-estrategica': 'modulo-performance',
+  '/reports/produtividade-usuario': 'modulo-performance',
+  '/reports/evolucao-kpis': 'modulo-performance',
+  // Políticas de Gestão — pai controla o bloco, sub-slugs controlam cada jornada
+  '/operational-policies': 'politicas-gestao',
+  '/operational-policies?journey=estrategica': 'politicas-estrategica',
+  '/operational-policies?journey=financeira': 'politicas-financeira',
+  '/operational-policies?journey=pessoas-cultura': 'politicas-pessoas-cultura',
+  '/operational-policies?journey=receita': 'politicas-receita',
+  '/operational-policies?journey=operacional': 'politicas-operacional',
 }
 
 // Função para obter itens de navegação baseados no perfil do usuário
@@ -202,31 +213,68 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     ]
   }
 
-  // Gestor Geral (antigo consultant) - Múltiplas empresas, todas as jornadas
+  // Gestor Geral — mesmo conjunto de itens que company_admin (sem painel Admin).
+  // Itens filtrados por hasToolAccess (allow-by-default): deny oculta, allow garante visibilidade.
   if (permissions.isGestor()) {
-    // Obter itens específicos baseados nas jornadas atribuídas
-    const managerSpecificItems = getManagerSpecificItems(accessibleJourneys)
-    
     return [
       ...baseItems,
       ...afterDashboardItems,
       {
-        name: 'Planejamento Estratégico',
+        name: 'Estratégia',
+        icon: Target,
+        href: '/journey-management/overview',
+        children: [
+          { name: 'Diagnóstico do Negócio', href: '/journey-management/overview' },
+          { name: 'Modelo de Negócio', href: '/business-model' }
+        ]
+      },
+      {
+        name: 'Execução',
         icon: Kanban,
-        href: '/planejamento-estrategico'
+        href: '/planejamento-estrategico',
+        children: [
+          { name: 'Planejamento Estratégico', href: '/planejamento-estrategico' },
+          {
+            name: 'Políticas de Gestão',
+            href: '/operational-policies',
+            children: [
+              { name: 'Estratégica', href: '/operational-policies?journey=estrategica' },
+              { name: 'Financeira', href: '/operational-policies?journey=financeira' },
+              { name: 'Pessoas & Cultura', href: '/operational-policies?journey=pessoas-cultura' },
+              { name: 'Receita', href: '/operational-policies?journey=receita' },
+              { name: 'Operacional', href: '/operational-policies?journey=operacional' }
+            ]
+          }
+        ]
       },
       {
-        name: 'Tarefas em Andamento',
-        icon: CheckSquare,
-        href: '/tarefas-andamento'
+        name: 'Performance',
+        icon: TrendingUp,
+        href: '/indicators',
+        children: [
+          { name: 'Indicadores de Gestão', href: '/indicators' },
+          {
+            name: 'Relatórios de planejamento estratégico',
+            href: '/reports/execucao-estrategica',
+            children: [
+              { name: 'Execução Estratégica', href: '/reports/execucao-estrategica' },
+              { name: 'Produtividade por Usuário', href: '/reports/produtividade-usuario' },
+              { name: 'Evolução dos KPIs', href: '/reports/evolucao-kpis' }
+            ]
+          }
+        ]
       },
       {
-        name: 'Usuários Ativos',
-        icon: Users,
-        href: '/usuarios-ativos'
-      },
-      // Adicionar itens específicos baseados nas jornadas atribuídas
-      ...managerSpecificItems
+        name: 'Ferramentas',
+        icon: Grid3x3,
+        href: '/crm',
+        children: [
+          { name: 'CRM', href: '/crm', image: '/crm.png', gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadowColor: 'rgba(59, 130, 246, 0.4)' },
+          { name: 'Fluxo de Caixa', href: '/dfc', image: '/fluxo de caixa.png', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', shadowColor: 'rgba(16, 185, 129, 0.4)' },
+          { name: 'Avaliação de Desempenho', href: '/performance-evaluation', image: '/avaliação de desempenho.png', gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)', shadowColor: 'rgba(168, 85, 247, 0.4)' },
+          { name: 'Indicadores de Gestão', href: '/indicators', image: '/indicadores de gestão.png', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', shadowColor: 'rgba(245, 158, 11, 0.4)' }
+        ]
+      }
     ]
   }
 
@@ -346,22 +394,66 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     ]
   }
 
-  // 🔥 Usuário comum - APENAS Dashboard e Minhas Tarefas (se tiver empresa)
-  const userItems = [...baseItems]
-  
-  // Se o usuário está associado a uma empresa (via user_companies)
+  // 🔥 Usuário comum - itens visíveis são filtrados por permissões explícitas de ferramentas
   const hasCompany = profile?.company_id || (profile?.user_companies && profile.user_companies.length > 0)
 
-  if (hasCompany) {
-    userItems.push({
-      name: 'Minhas Ações',
-      icon: CheckSquare,
-      href: '/tarefas',
-      roles: ['user']
-    })
+  if (!hasCompany) {
+    return [...baseItems]
   }
 
-  return userItems
+  // Retorna o mesmo conjunto de itens que company_admin, sem o painel de Administração.
+  // O sidebar filtra estes itens com hasToolAccessStrict (deny-by-default para role 'user').
+  return [
+    ...baseItems,
+    ...afterDashboardItems,
+    {
+      name: 'Estratégia',
+      icon: Target,
+      href: '/journey-management/overview',
+      children: [
+        { name: 'Diagnóstico do Negócio', href: '/journey-management/overview' },
+        { name: 'Modelo de Negócio', href: '/business-model' }
+      ]
+    },
+    {
+      name: 'Execução',
+      icon: Kanban,
+      href: '/planejamento-estrategico',
+      children: [
+        { name: 'Planejamento Estratégico', href: '/planejamento-estrategico' },
+        {
+          name: 'Políticas de Gestão',
+          href: '/operational-policies',
+          children: [
+            { name: 'Estratégica', href: '/operational-policies?journey=estrategica' },
+            { name: 'Financeira', href: '/operational-policies?journey=financeira' },
+            { name: 'Pessoas & Cultura', href: '/operational-policies?journey=pessoas-cultura' },
+            { name: 'Receita', href: '/operational-policies?journey=receita' },
+            { name: 'Operacional', href: '/operational-policies?journey=operacional' }
+          ]
+        }
+      ]
+    },
+    {
+      name: 'Performance',
+      icon: TrendingUp,
+      href: '/indicators',
+      children: [
+        { name: 'Indicadores de Gestão', href: '/indicators' }
+      ]
+    },
+    {
+      name: 'Ferramentas',
+      icon: Grid3x3,
+      href: '/crm',
+      children: [
+        { name: 'CRM', href: '/crm', image: '/crm.png', gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadowColor: 'rgba(59, 130, 246, 0.4)' },
+        { name: 'Fluxo de Caixa', href: '/dfc', image: '/fluxo de caixa.png', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', shadowColor: 'rgba(16, 185, 129, 0.4)' },
+        { name: 'Avaliação de Desempenho', href: '/performance-evaluation', image: '/avaliação de desempenho.png', gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)', shadowColor: 'rgba(168, 85, 247, 0.4)' },
+        { name: 'Indicadores de Gestão', href: '/indicators', image: '/indicadores de gestão.png', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', shadowColor: 'rgba(245, 158, 11, 0.4)' }
+      ]
+    }
+  ]
 }
 
 // Função para obter subitens de jornadas baseados nos acessos permitidos
@@ -450,7 +542,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const { getAccessibleJourneys } = useAuthPermissions()
   const permissions = usePermissions()
   const { pendingCount } = useMaturityApprovals() // 🔥 NOVO: Hook de aprovações pendentes
-  const { hasToolAccess, loading: toolPermissionsLoading } = useToolPermissions() // 🔥 NOVO: Hook de permissões de ferramentas
+  const { hasToolAccess, hasToolAccessStrict, loading: toolPermissionsLoading } = useToolPermissions() // 🔥 NOVO: Hook de permissões de ferramentas
   const [expandedItems, setExpandedItems] = React.useState(['Jornadas'])
   const [expandedSubItems, setExpandedSubItems] = React.useState(() => {
     // Auto-expandir se a rota atual for de um sub-sub-item
@@ -670,16 +762,30 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     const items = getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess)
 
     // Filtrar itens baseado nas permissões de ferramentas
+    // Para role 'user': deny-by-default (precisa de allow explícito)
+    // Para roles privilegiadas: allow-by-default
+    const isPlainUser = profile?.role === 'user' &&
+      !permissions.isSuperAdmin() && !permissions.isCompanyAdmin() && !permissions.isAnyManager()
+    const checkTool = (slug) => isPlainUser ? hasToolAccessStrict(slug) : hasToolAccess(slug)
+
     const filteredItems = items.filter(item => {
-      // Se tem children, filtrar apenas os filhos (não usar o href do pai como tool slug)
-      // Isso evita que um bloco como "Ferramentas" desapareça só porque seu href
-      // coincide com o slug de uma ferramenta bloqueada (ex: href='/crm')
       if (item.children) {
         item.children = item.children.filter(child => {
+          // 1º: verificar slug do próprio child (e.g. 'politicas-gestao' ou 'planejamento-estrategico')
           const childToolSlug = ROUTE_TO_TOOL_SLUG[child.href]
-          if (childToolSlug) {
-            return hasToolAccess(childToolSlug)
+          if (childToolSlug && !checkTool(childToolSlug)) return false
+
+          // 2º: se child tem sub-children (nível 3), filtrar eles também
+          if (child.children) {
+            child.children = child.children.filter(grandchild => {
+              const gcSlug = ROUTE_TO_TOOL_SLUG[grandchild.href]
+              if (gcSlug) return checkTool(gcSlug)
+              return true
+            })
+            // Se todos os sub-children foram removidos, remover o próprio child
+            if (child.children.length === 0) return false
           }
+
           return true
         })
         // Remover o pai apenas se todos os filhos foram bloqueados
@@ -690,14 +796,14 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
       // Item folha (sem children): verificar permissão diretamente pelo href
       const toolSlug = ROUTE_TO_TOOL_SLUG[item.href]
       if (toolSlug) {
-        return hasToolAccess(toolSlug)
+        return checkTool(toolSlug)
       }
 
       return true
     })
 
     return filteredItems
-  }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess])
+  }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess, hasToolAccessStrict])
 
   const toggleExpanded = (itemName) => {
     setExpandedItems(prev => 

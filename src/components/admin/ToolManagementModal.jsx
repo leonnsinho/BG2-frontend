@@ -17,7 +17,9 @@ import {
   Shield,
   AlertCircle,
   Kanban,
-  Save
+  Save,
+  Users,
+  Settings
 } from 'lucide-react'
 
 const TOOL_ICONS = {
@@ -29,7 +31,9 @@ const TOOL_ICONS = {
   'trending-up': TrendingUp,
   'trending-down': TrendingDown,
   'kanban': Kanban,
-  'tool': Wrench
+  'tool': Wrench,
+  'users': Users,
+  'settings': Settings
 }
 
 const CATEGORY_COLORS = {
@@ -44,6 +48,15 @@ const CATEGORY_LABELS = {
   'financial': 'Financeiro',
   'operational': 'Operacional'
 }
+
+// Slugs dos sub-módulos de Políticas de Gestão (renderizados aninhados dentro do card pai)
+const POLITICAS_CHILDREN_SLUGS = [
+  'politicas-estrategica',
+  'politicas-financeira',
+  'politicas-pessoas-cultura',
+  'politicas-receita',
+  'politicas-operacional',
+]
 
 export default function ToolManagementModal({ user, onClose, companyId }) {
   const [tools, setTools] = useState([])
@@ -68,7 +81,7 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
     try {
       setLoading(true)
 
-      // Buscar todas as ferramentas ativas
+      // 1. Buscar todas as ferramentas ativas
       const { data: toolsData, error: toolsError } = await supabase
         .from('system_tools')
         .select('*')
@@ -76,18 +89,30 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
         .order('order_index')
         .order('name')
 
-      if (toolsError) throw toolsError
+      if (toolsError) {
+        console.error('[ToolModal] Erro ao buscar system_tools:', toolsError)
+        throw toolsError
+      }
 
-      // Buscar permissões do usuário para esta empresa
+      // 2. Buscar permissões explícitas do usuário para esta empresa
       const { data: permissionsData, error: permissionsError } = await supabase
         .from('user_tool_permissions')
         .select('*')
         .eq('user_id', user.id)
         .eq('company_id', companyId)
 
-      if (permissionsError) throw permissionsError
+      if (permissionsError) {
+        // RLS pode bloquear leitura para super_admin — continua com lista vazia
+        console.warn('[ToolModal] Aviso ao buscar permissões (verificar RLS se vazio):', permissionsError)
+      }
 
-      // Combinar dados
+      console.log('[ToolModal] loadTools →', {
+        userId: user.id,
+        companyId,
+        tools: toolsData?.length,
+        permissions: permissionsData?.length ?? 0,
+      })
+
       const permissionsMap = {}
       permissionsData?.forEach(perm => {
         permissionsMap[perm.tool_id] = perm
@@ -102,13 +127,13 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
         tool_category: tool.category,
         has_access: permissionsMap[tool.id]?.permission_type === 'allow' || !permissionsMap[tool.id],
         permission_type: permissionsMap[tool.id]?.permission_type || 'default',
-        is_explicit: !!permissionsMap[tool.id]
+        is_explicit: !!permissionsMap[tool.id],
       })) || []
 
       setTools(combinedTools)
     } catch (error) {
-      console.error('Erro ao carregar ferramentas:', error)
-      toast.error('Erro ao carregar ferramentas')
+      console.error('[ToolModal] Erro crítico ao carregar ferramentas:', error)
+      toast.error('Erro ao carregar ferramentas: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -155,13 +180,25 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
       setSaving(true)
       const currentUserId = (await supabase.auth.getUser()).data.user?.id
 
+      console.log('[ToolModal] handleSave →', {
+        targetUser: user.id,
+        companyId,
+        callerUserId: currentUserId,
+        changes: pendingChanges,
+      })
+
       for (const [toolSlug, permissionType] of entries) {
+        // Buscar id da ferramenta pelo slug
         const { data: toolData, error: toolError } = await supabase
           .from('system_tools')
           .select('id')
           .eq('slug', toolSlug)
           .single()
-        if (toolError) throw toolError
+
+        if (toolError) {
+          console.error('[ToolModal] Erro ao buscar tool:', toolSlug, toolError)
+          throw toolError
+        }
 
         if (permissionType === 'remove') {
           const { error } = await supabase
@@ -170,18 +207,39 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
             .eq('user_id', user.id)
             .eq('tool_id', toolData.id)
             .eq('company_id', companyId)
-          if (error) throw error
+          if (error) {
+            console.error('[ToolModal] Erro ao remover permissão:', error)
+            throw error
+          }
+          console.log('[ToolModal] Removida permissão:', toolSlug)
         } else {
-          const { error } = await supabase
+          // Upsert com .select() para detectar bloqueio silencioso de RLS
+          const { data: upserted, error } = await supabase
             .from('user_tool_permissions')
             .upsert({
               user_id: user.id,
               tool_id: toolData.id,
               company_id: companyId,
               permission_type: permissionType,
-              granted_by: currentUserId
+              granted_by: currentUserId,
             }, { onConflict: 'user_id,tool_id,company_id' })
-          if (error) throw error
+            .select('id')
+
+          if (error) {
+            console.error('[ToolModal] Erro no upsert:', toolSlug, error)
+            throw error
+          }
+
+          if (!upserted || upserted.length === 0) {
+            // RLS bloqueou sem lançar erro — sem permissão para salvar
+            console.error('[ToolModal] RLS bloqueou o upsert silenciosamente para', toolSlug, { targetUser: user.id, companyId })
+            throw new Error(
+              `Sem permissão para alterar a ferramenta "${toolSlug}". ` +
+              'Execute o script fix_user_tool_permissions_rls.sql no Supabase.'
+            )
+          }
+
+          console.log('[ToolModal] Salva permissão:', toolSlug, '→', permissionType, upserted)
         }
       }
 
@@ -189,8 +247,8 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
       setPendingChanges({})
       await loadTools()
     } catch (error) {
-      console.error('Erro ao salvar permissões:', error)
-      toast.error('Erro ao salvar permissões')
+      console.error('[ToolModal] Erro ao salvar permissões:', error)
+      toast.error(error.message || 'Erro ao salvar permissões')
     } finally {
       setSaving(false)
     }
@@ -202,7 +260,7 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
   }
 
   const getToolIcon = (iconName) => {
-    const Icon = TOOL_ICONS[iconName] || Tool
+    const Icon = TOOL_ICONS[iconName] || Wrench
     return Icon
   }
 
@@ -240,7 +298,9 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
   // Agrupar por categoria usando o estado efetivo (DB + alterações locais pendentes)
   const hasPendingChanges = Object.keys(pendingChanges).length > 0
 
-  const HIDDEN_SLUGS = ['dfc-entradas', 'dfc-saidas']
+  // dfc-entradas/saidas são sub-ferramentas do dfc-complete
+  // management-indicators está subsumed pelo modulo-performance
+  const HIDDEN_SLUGS = ['dfc-entradas', 'dfc-saidas', 'management-indicators', ...POLITICAS_CHILDREN_SLUGS]
   const flatTools = tools
     .map(getEffectiveTool)
     .filter(t => !HIDDEN_SLUGS.includes(t.tool_slug))
@@ -303,6 +363,11 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
                   const Icon = getToolIcon(tool.tool_icon)
                   const status = getPermissionStatus(tool)
                   const StatusIcon = status.icon
+
+                  // Sub-módulos aninhados (ex: filhos de Políticas de Gestão)
+                  const childTools = tool.tool_slug === 'politicas-gestao'
+                    ? tools.map(getEffectiveTool).filter(t => POLITICAS_CHILDREN_SLUGS.includes(t.tool_slug))
+                    : []
 
                   return (
                     <div
@@ -374,6 +439,76 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
                           )}
                         </div>
                       </div>
+
+                      {/* Sub-módulos aninhados (Políticas de Gestão) */}
+                      {childTools.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {childTools.map((child) => {
+                            const ChildIcon = getToolIcon(child.tool_icon)
+                            const childStatus = getPermissionStatus(child)
+                            const ChildStatusIcon = childStatus.icon
+
+                            return (
+                              <div
+                                key={child.tool_id}
+                                className="bg-white border border-gray-200 rounded-xl p-2 flex items-center gap-2"
+                              >
+                                {/* mini icon */}
+                                <div className="w-7 h-7 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0">
+                                  <ChildIcon className="h-3.5 w-3.5 text-gray-500" />
+                                </div>
+
+                                {/* name + status */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-gray-800 truncate">{child.tool_name}</p>
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    <ChildStatusIcon className={`h-2.5 w-2.5 flex-shrink-0 ${childStatus.color}`} />
+                                    <span className={`text-[9px] font-medium ${childStatus.color} truncate`}>{childStatus.label}</span>
+                                  </div>
+                                </div>
+
+                                {/* mini actions */}
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <button
+                                    onClick={() => handlePermissionChange(child.tool_slug, 'allow')}
+                                    disabled={saving || (child.is_explicit && child.permission_type === 'allow')}
+                                    className={`p-1 rounded-lg transition-all active:scale-95 ${
+                                      child.is_explicit && child.permission_type === 'allow'
+                                        ? 'bg-green-600 text-white shadow-sm'
+                                        : 'bg-gray-50 hover:bg-green-50 text-green-600 border border-green-200'
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    title="Permitir acesso"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handlePermissionChange(child.tool_slug, 'deny')}
+                                    disabled={saving || (child.is_explicit && child.permission_type === 'deny')}
+                                    className={`p-1 rounded-lg transition-all active:scale-95 ${
+                                      child.is_explicit && child.permission_type === 'deny'
+                                        ? 'bg-red-600 text-white shadow-sm'
+                                        : 'bg-gray-50 hover:bg-red-50 text-red-600 border border-red-200'
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    title="Bloquear acesso"
+                                  >
+                                    <Ban className="h-3 w-3" />
+                                  </button>
+                                  {child.is_explicit && (
+                                    <button
+                                      onClick={() => handlePermissionChange(child.tool_slug, 'remove')}
+                                      disabled={saving}
+                                      className="p-1 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 border border-gray-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title="Voltar ao padrão"
+                                    >
+                                      <RotateCcw className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   )
                 })}

@@ -372,7 +372,7 @@ function AppRoutes() {
       <Route 
         path="/operational-policies" 
         element={
-          <ProtectedRoute requiredRole={['company_admin']}>
+          <ProtectedRoute requiredRole={['company_admin', 'gestor', 'user']} requiredToolSlug="politicas-gestao">
             <OperationalPoliciesPage />
           </ProtectedRoute>
         }

@@ -55,6 +55,7 @@ export function ProtectedRoute({ children, requiredRole = null, requiredToolSlug
       if (roleArray.includes('super_admin') && permissions.isSuperAdmin()) return true
       if (roleArray.includes('consultant') && permissions.isConsultant()) return true
       if (roleArray.includes('company_admin') && permissions.isCompanyAdmin()) return true
+      if (roleArray.includes('gestor') && permissions.isGestor()) return true
       if (roleArray.includes('user') && permissions.isUser()) return true
       
       return false
