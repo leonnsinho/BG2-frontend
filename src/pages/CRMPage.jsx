@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import * as XLSX from 'xlsx'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   DndContext,
@@ -277,7 +278,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     setCreateForm(
       mode === 'lead' ? { nome_empresa: '', cidade: '', estado: '', segmento: '', origem_lead: '' } :
       mode === 'product' ? { nome: '', valor: '', unidade: '', descricao: '' } :
-      { nome: '', cargo: '', email: '', telefone: '', lead_id: '' }
+      { nome: '', cargo: '', email: '', telefone: '', lead_id: selectedLead?.id || '' }
     )
     setCreateMode(mode)
   }
@@ -602,13 +603,13 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
               title="Contato"
               Icon={User}
               colorClass="border-purple-200 text-purple-700"
-              items={contacts}
+              items={selectedLead ? contacts.filter(c => c.lead_id === selectedLead.id) : contacts}
               selected={selectedContact}
               onSelect={pickContact}
               onCreateClick={() => openCreate('contact')}
               renderItem={c => c.nome + (c.cargo ? ` · ${c.cargo}` : '') + (c.crm_leads?.nome_empresa ? ` (${c.crm_leads.nome_empresa})` : '')}
               renderSelected={c => <><span className="font-semibold">{c.nome}</span>{c.cargo && <span className="text-xs text-gray-400 ml-1">· {c.cargo}</span>}</>}
-              placeholder="Importar contato existente..."
+              placeholder={selectedLead ? `Contatos de ${selectedLead.nome_empresa}...` : 'Importar contato existente...'}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
               <div>
@@ -1064,6 +1065,7 @@ function LeadsModal({ companyId, onClose }) {
   const [contactForm, setContactForm] = useState(EMPTY_C)
   const [newContacts, setNewContacts] = useState([{ _key: 1, nome: '', cargo: '', telefone: '', email: '' }])
   const [importing, setImporting] = useState(false)
+  const [importPreview, setImportPreview] = useState(null) // { type: 'leads'|'contacts', rows: [] }
   const importLeadsCsvRef = useRef(null)
   const importContactsCsvRef = useRef(null)
 
@@ -1200,66 +1202,81 @@ function LeadsModal({ companyId, onClose }) {
     })
   }
 
+  // Unifica leitura de CSV e XLSX — retorna array de arrays (sem header)
+  const parseSpreadsheetFile = async (file) => {
+    const isXlsx = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')
+    if (isXlsx) {
+      const buffer = await file.arrayBuffer()
+      const wb = XLSX.read(buffer, { type: 'array' })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+      // Remove header row (first row) and return rest as string arrays
+      return data.slice(1).filter(row => row.some(cell => String(cell).trim())).map(row =>
+        row.map(cell => String(cell ?? '').trim())
+      )
+    } else {
+      const text = await file.text()
+      return parseCSV(text)
+    }
+  }
+
   const handleImportLeadsCSV = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = ''
     setImporting(true)
     try {
-      const text = await file.text()
-      const rows = parseCSV(text)
+      const rows = await parseSpreadsheetFile(file)
       if (rows.length === 0) { toast.error('Nenhuma linha encontrada no arquivo'); return }
-      let leadsInserted = 0, contactsInserted = 0, errors = 0
-      for (const row of rows) {
-        const [nomeEmpresa = '', cidade = '', estado = '', nomeContato = '', cargo = '', telefone = '', email = ''] = row
-        if (!nomeEmpresa.trim()) continue
-        const { data: leadData, error: leadError } = await supabase
-          .from('crm_leads')
-          .insert([{ nome_empresa: nomeEmpresa.trim(), cidade: cidade.trim() || null, estado: estado.trim() || null, company_id: companyId, created_by: user?.id }])
-          .select('id').single()
-        if (leadError) { errors++; continue }
-        leadsInserted++
-        if (nomeContato.trim()) {
-          const { error: ce } = await supabase.from('crm_contacts').insert([{
-            nome: nomeContato.trim(), cargo: cargo.trim() || null,
-            telefone: telefone.trim() || null, email: email.trim() || null,
-            lead_id: leadData.id, company_id: companyId, created_by: user?.id
-          }])
-          if (!ce) contactsInserted++
-        }
-      }
-      const msg = `${leadsInserted} lead${leadsInserted !== 1 ? 's' : ''} importado${leadsInserted !== 1 ? 's' : ''}` +
-        (contactsInserted ? `, ${contactsInserted} contato${contactsInserted !== 1 ? 's' : ''}` : '') +
-        (errors ? ` (${errors} erro${errors !== 1 ? 's' : ''})` : '')
-      toast.success(msg)
-      loadLeads()
+      const preview = rows
+        .filter(row => row[0]?.trim())
+        .map(([nomeEmpresa = '', cidade = '', estado = '', nomeContato = '', cargo = '', telefone = '', email = '']) => ({
+          nomeEmpresa: nomeEmpresa.trim(), cidade: cidade.trim(), estado: estado.trim(),
+          nomeContato: nomeContato.trim(), cargo: cargo.trim(), telefone: telefone.trim(), email: email.trim()
+        }))
+      if (preview.length === 0) { toast.error('Nenhum lead válido encontrado'); return }
+      setImportPreview({ type: 'leads', rows: preview })
     } catch (err) { toast.error('Erro ao processar arquivo: ' + err.message) }
     finally { setImporting(false) }
   }
 
   const downloadLeadsTemplate = () => {
-    const header = 'nome_empresa,cidade,estado,nome_contato,cargo,telefone,email'
-    const example = 'Acme Ltda,São Paulo,SP,João Silva,Diretor,(11) 9 9999-8888,joao@acme.com'
-    const csv = [header, example].join('\n')
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['nome_empresa', 'cidade', 'estado', 'nome_contato', 'cargo', 'telefone', 'email'],
+      ['Acme Ltda', 'São Paulo', 'SP', 'João Silva', 'Diretor', '(11) 9 9999-8888', 'joao@acme.com'],
+    ])
+    ws['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 5 }, { wch: 20 }, { wch: 15 }, { wch: 18 }, { wch: 25 }]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Leads')
+    XLSX.writeFile(wb, 'modelo_importacao_leads.xlsx')
+  }
+
+  const downloadLeadsTemplateCsv = () => {
+    const csv = 'nome_empresa,cidade,estado,nome_contato,cargo,telefone,email\nAcme Ltda,São Paulo,SP,João Silva,Diretor,(11) 9 9999-8888,joao@acme.com'
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
-    a.download = 'modelo_importacao_leads.csv'
-    a.click()
+    a.href = url; a.download = 'modelo_importacao_leads.csv'; a.click()
     URL.revokeObjectURL(url)
   }
 
   const downloadContactsTemplate = () => {
-    const header = 'nome_empresa,col2,col3,nome_contato,cargo,telefone,email'
-    const example = 'Acme Ltda,,,João Silva,Diretor,(11) 9 9999-8888,joao@acme.com'
-    const csv = [header, example].join('\n')
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['nome_empresa', '', '', 'nome_contato', 'cargo', 'telefone', 'email'],
+      ['Acme Ltda', '', '', 'João Silva', 'Diretor', '(11) 9 9999-8888', 'joao@acme.com'],
+    ])
+    ws['!cols'] = [{ wch: 25 }, { wch: 5 }, { wch: 5 }, { wch: 20 }, { wch: 15 }, { wch: 18 }, { wch: 25 }]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Contatos')
+    XLSX.writeFile(wb, 'modelo_importacao_contatos.xlsx')
+  }
+
+  const downloadContactsTemplateCsv = () => {
+    const csv = 'nome_empresa,col2,col3,nome_contato,cargo,telefone,email\nAcme Ltda,,,João Silva,Diretor,(11) 9 9999-8888,joao@acme.com'
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
-    a.download = 'modelo_importacao_contatos.csv'
-    a.click()
+    a.href = url; a.download = 'modelo_importacao_contatos.csv'; a.click()
     URL.revokeObjectURL(url)
   }
 
@@ -1269,84 +1286,131 @@ function LeadsModal({ companyId, onClose }) {
     e.target.value = ''
     setImporting(true)
     try {
-      const text = await file.text()
-      const rows = parseCSV(text)
+      const rows = await parseSpreadsheetFile(file)
       if (rows.length === 0) { toast.error('Nenhuma linha encontrada no arquivo'); return }
-      // Build leads map for name matching
-      const { data: allLeads } = await supabase.from('crm_leads').select('id, nome_empresa').eq('company_id', companyId)
-      const leadsMap = {}
-      ;(allLeads || []).forEach(l => { leadsMap[l.nome_empresa.toLowerCase().trim()] = l.id })
-      let inserted = 0, errors = 0
-      for (const row of rows) {
-        const [nomeEmpresa = '', , , nomeContato = '', cargo = '', telefone = '', email = ''] = row
-        if (!nomeContato.trim()) continue
-        const leadId = nomeEmpresa.trim() ? (leadsMap[nomeEmpresa.trim().toLowerCase()] || null) : null
-        const { error } = await supabase.from('crm_contacts').insert([{
-          nome: nomeContato.trim(), cargo: cargo.trim() || null,
-          telefone: telefone.trim() || null, email: email.trim() || null,
-          lead_id: leadId, company_id: companyId, created_by: user?.id
-        }])
-        if (error) errors++; else inserted++
-      }
-      const msg = `${inserted} contato${inserted !== 1 ? 's' : ''} importado${inserted !== 1 ? 's' : ''}` +
-        (errors ? ` (${errors} erro${errors !== 1 ? 's' : ''})` : '')
-      toast.success(msg)
-      if (contactsOpen) {
-        const { data } = await supabase.from('crm_contacts').select('*').eq('company_id', companyId).order('nome')
-        setContacts((data || []).map(c => ({
-          ...c,
-          crm_leads: leads.find(l => l.id === c.lead_id) ? { nome_empresa: leads.find(l => l.id === c.lead_id).nome_empresa } : null
-        })))
-      }
+      const preview = rows
+        .filter(row => row[3]?.trim())
+        .map(([nomeEmpresa = '', , , nomeContato = '', cargo = '', telefone = '', email = '']) => ({
+          nomeEmpresa: nomeEmpresa.trim(), nomeContato: nomeContato.trim(),
+          cargo: cargo.trim(), telefone: telefone.trim(), email: email.trim()
+        }))
+      if (preview.length === 0) { toast.error('Nenhum contato válido encontrado'); return }
+      setImportPreview({ type: 'contacts', rows: preview })
     } catch (err) { toast.error('Erro ao processar arquivo: ' + err.message) }
     finally { setImporting(false) }
   }
 
+  const confirmImport = async () => {
+    if (!importPreview) return
+    setImporting(true)
+    try {
+      if (importPreview.type === 'leads') {
+        let leadsInserted = 0, contactsInserted = 0, errors = 0
+        for (const r of importPreview.rows) {
+          const { data: leadData, error: leadError } = await supabase
+            .from('crm_leads')
+            .insert([{ nome_empresa: r.nomeEmpresa, cidade: r.cidade || null, estado: r.estado || null, company_id: companyId, created_by: user?.id }])
+            .select('id').single()
+          if (leadError) { errors++; continue }
+          leadsInserted++
+          if (r.nomeContato) {
+            const { error: ce } = await supabase.from('crm_contacts').insert([{
+              nome: r.nomeContato, cargo: r.cargo || null,
+              telefone: r.telefone || null, email: r.email || null,
+              lead_id: leadData.id, company_id: companyId, created_by: user?.id
+            }])
+            if (!ce) contactsInserted++
+          }
+        }
+        const msg = `${leadsInserted} lead${leadsInserted !== 1 ? 's' : ''} importado${leadsInserted !== 1 ? 's' : ''}` +
+          (contactsInserted ? `, ${contactsInserted} contato${contactsInserted !== 1 ? 's' : ''}` : '') +
+          (errors ? ` (${errors} erro${errors !== 1 ? 's' : ''})` : '')
+        toast.success(msg)
+        loadLeads()
+      } else {
+        const { data: allLeads } = await supabase.from('crm_leads').select('id, nome_empresa').eq('company_id', companyId)
+        const leadsMap = {}
+        ;(allLeads || []).forEach(l => { leadsMap[l.nome_empresa.toLowerCase().trim()] = l.id })
+        let inserted = 0, errors = 0
+        for (const r of importPreview.rows) {
+          const leadId = r.nomeEmpresa ? (leadsMap[r.nomeEmpresa.toLowerCase()] || null) : null
+          const { error } = await supabase.from('crm_contacts').insert([{
+            nome: r.nomeContato, cargo: r.cargo || null,
+            telefone: r.telefone || null, email: r.email || null,
+            lead_id: leadId, company_id: companyId, created_by: user?.id
+          }])
+          if (error) errors++; else inserted++
+        }
+        const msg = `${inserted} contato${inserted !== 1 ? 's' : ''} importado${inserted !== 1 ? 's' : ''}` +
+          (errors ? ` (${errors} erro${errors !== 1 ? 's' : ''})` : '')
+        toast.success(msg)
+        if (contactsOpen) {
+          const { data } = await supabase.from('crm_contacts').select('*').eq('company_id', companyId).order('nome')
+          setContacts((data || []).map(c => ({
+            ...c,
+            crm_leads: leads.find(l => l.id === c.lead_id) ? { nome_empresa: leads.find(l => l.id === c.lead_id).nome_empresa } : null
+          })))
+        }
+      }
+      setImportPreview(null)
+    } catch (err) { toast.error('Erro ao importar: ' + err.message) }
+    finally { setImporting(false) }
+  }
+
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
-          <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-[#EBA500]" /> Leads / Empresas
-          </h2>
-          <div className="flex items-center gap-2">
-            {/* hidden file inputs */}
-            <input ref={importLeadsCsvRef} type="file" accept=".csv" className="hidden" onChange={handleImportLeadsCSV} />
-            <input ref={importContactsCsvRef} type="file" accept=".csv" className="hidden" onChange={handleImportContactsCSV} />
+        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-[#EBA500]" /> Leads / Empresas
+            </h2>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
+          </div>
+          {/* hidden file inputs */}
+          <input ref={importLeadsCsvRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleImportLeadsCSV} />
+          <input ref={importContactsCsvRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleImportContactsCSV} />
+          <div className="flex flex-wrap items-center gap-2">
             {contactsOpen ? (
               <>
-                <button onClick={() => importContactsCsvRef.current?.click()} disabled={importing} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60" title="Importar contatos de planilha CSV">
-                  <FileSpreadsheet className="h-3.5 w-3.5" /> Importar CSV
+                <button onClick={() => importContactsCsvRef.current?.click()} disabled={importing} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60" title="Importar contatos de planilha CSV ou Excel">
+                  <FileSpreadsheet className="h-3.5 w-3.5" /> Importar planilha
                 </button>
-                <button onClick={downloadContactsTemplate} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors" title="Baixar modelo CSV de contatos">
-                  <Download className="h-3.5 w-3.5" /> Modelo CSV
+                <button onClick={downloadContactsTemplate} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors" title="Baixar modelo Excel de contatos">
+                  <Download className="h-3.5 w-3.5" /> Modelo .xlsx
                 </button>
-                <button onClick={openNewContact} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors">
+                <button onClick={downloadContactsTemplateCsv} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors" title="Baixar modelo CSV de contatos">
+                  <Download className="h-3.5 w-3.5" /> Modelo .csv
+                </button>
+                <button onClick={openNewContact} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors">
                   <Plus className="h-3.5 w-3.5" /> Novo Contato
                 </button>
-                <button onClick={toggleContacts} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
-                  <ChevronDown className="h-3.5 w-3.5" /> Ocultar
+                <button onClick={toggleContacts} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                  <ChevronDown className="h-3.5 w-3.5" /> Ocultar Contatos
                 </button>
               </>
             ) : (
               <>
-                <button onClick={() => importLeadsCsvRef.current?.click()} disabled={importing} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60" title="Importar empresas de planilha CSV">
-                  <FileSpreadsheet className="h-3.5 w-3.5" /> Importar CSV
+                <button onClick={() => importLeadsCsvRef.current?.click()} disabled={importing} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60" title="Importar leads de planilha CSV ou Excel">
+                  <FileSpreadsheet className="h-3.5 w-3.5" /> Importar planilha
                 </button>
-                <button onClick={downloadLeadsTemplate} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors" title="Baixar modelo CSV de leads">
-                  <Download className="h-3.5 w-3.5" /> Modelo CSV
+                <button onClick={downloadLeadsTemplate} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors" title="Baixar modelo Excel de leads">
+                  <Download className="h-3.5 w-3.5" /> Modelo .xlsx
                 </button>
-                <button onClick={toggleContacts} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors">
-                  <Users className="h-3.5 w-3.5" /> Contatos
+                <button onClick={downloadLeadsTemplateCsv} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors" title="Baixar modelo CSV de leads">
+                  <Download className="h-3.5 w-3.5" /> Modelo .csv
                 </button>
-                <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+                <button onClick={toggleContacts} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors">
+                  <Users className="h-3.5 w-3.5" /> Ver Contatos
+                </button>
+                <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
                   <Plus className="h-3.5 w-3.5" /> Novo Lead
                 </button>
               </>
             )}
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
           </div>
         </div>
 
@@ -1545,6 +1609,96 @@ function LeadsModal({ companyId, onClose }) {
         </div>
       </div>
     </div>
+
+    {/* ── Import Preview Modal ── */}
+    {importPreview && (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div>
+              <h3 className="text-base font-bold text-gray-900">
+                Confirmar importação de {importPreview.type === 'leads' ? 'leads' : 'contatos'}
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {importPreview.rows.length} {importPreview.type === 'leads'
+                  ? `lead${importPreview.rows.length !== 1 ? 's' : ''}`
+                  : `contato${importPreview.rows.length !== 1 ? 's' : ''}`
+                } encontrado{importPreview.rows.length !== 1 ? 's' : ''}. Revise antes de confirmar.
+              </p>
+            </div>
+            <button onClick={() => setImportPreview(null)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-auto px-6 py-4">
+            {importPreview.type === 'leads' ? (
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Empresa</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Cidade</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">UF</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Contato</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Cargo</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Telefone</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">E-mail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importPreview.rows.map((r, i) => (
+                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                      <td className="px-3 py-2 border border-gray-100 font-medium text-gray-800">{r.nomeEmpresa}</td>
+                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.cidade || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.estado || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.nomeContato || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.cargo || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.telefone || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.email || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Empresa (lead)</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Contato</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Cargo</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Telefone</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">E-mail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importPreview.rows.map((r, i) => (
+                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.nomeEmpresa || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 font-medium text-gray-800">{r.nomeContato}</td>
+                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.cargo || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.telefone || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.email || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
+            <button onClick={() => setImportPreview(null)} className="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+              Cancelar
+            </button>
+            <button onClick={confirmImport} disabled={importing} className="px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 flex items-center gap-2">
+              {importing
+                ? <span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />
+                : <Upload className="h-3.5 w-3.5" />
+              }
+              Confirmar importação
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 
@@ -1866,6 +2020,7 @@ export default function CRMPage() {
 
   const [cardModal, setCardModal] = useState(null)   // null | { card?: Card, columnId: string }
   const [columnModal, setColumnModal] = useState(null) // null | column object
+  const boardScrollRef = useRef(null)
 
   const [activeCard, setActiveCard] = useState(null)
   const [activeColumn, setActiveColumn] = useState(null)
@@ -2471,7 +2626,24 @@ export default function CRMPage() {
           onDragOver={onDragOver}
           onDragEnd={onDragEnd}
         >
-          <div className="flex-1 overflow-x-auto overflow-y-hidden">
+          <div className="relative flex-1 overflow-hidden">
+            {/* Left scroll arrow */}
+            <button
+              onClick={() => boardScrollRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white shadow-md border border-gray-200 rounded-full text-gray-500 hover:text-[#EBA500] transition-all opacity-70 hover:opacity-100"
+              title="Rolar para esquerda"
+            >
+              <ChevronRight className="h-4 w-4 rotate-180" />
+            </button>
+            {/* Right scroll arrow */}
+            <button
+              onClick={() => boardScrollRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white shadow-md border border-gray-200 rounded-full text-gray-500 hover:text-[#EBA500] transition-all opacity-70 hover:opacity-100"
+              title="Rolar para direita"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <div ref={boardScrollRef} className="flex-1 overflow-x-auto overflow-y-hidden h-full kanban-scroll">
             <div className="flex gap-4 p-4 h-full">
               <SortableContext items={colIds} strategy={horizontalListSortingStrategy}>
                 {columns.map(col => (
@@ -2495,6 +2667,7 @@ export default function CRMPage() {
               >
                 <Plus className="h-5 w-5" /> Adicionar coluna
               </button>
+            </div>
             </div>
           </div>
 

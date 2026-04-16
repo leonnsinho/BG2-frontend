@@ -89,6 +89,29 @@
   animation: fade-in 0.2s ease-out;
 }
 
+/* ── Kanban board horizontal scrollbar ─────────────────────────────────── */
+.kanban-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #EBA500 #f1f1f1;
+}
+.kanban-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+.kanban-scroll::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 99px;
+  margin: 0 12px;
+}
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #EBA500, #f5c842);
+  border-radius: 99px;
+  border: 2px solid #f3f4f6;
+}
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #d49500, #EBA500);
+}
+/* ─────────────────────────────────────────────────────────────────────── */
+
 @layer base {
   * {
     border-color: rgb(209 213 219);
