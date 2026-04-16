@@ -1081,10 +1081,13 @@ function LeadsModal({ companyId, onClose }) {
       setContactsLoading(true)
       const { data } = await supabase
         .from('crm_contacts')
-        .select('*, crm_leads(nome_empresa)')
+        .select('*')
         .eq('company_id', companyId)
         .order('nome')
-      setContacts(data || [])
+      setContacts((data || []).map(c => ({
+        ...c,
+        crm_leads: leads.find(l => l.id === c.lead_id) ? { nome_empresa: leads.find(l => l.id === c.lead_id).nome_empresa } : null
+      })))
       setContactsLoading(false)
     }
     setContactsOpen(o => !o)
@@ -1142,21 +1145,29 @@ function LeadsModal({ companyId, onClose }) {
   }
 
   const openNewContact = () => { setContactForm(EMPTY_C); setEditingContact(null); setShowContactForm(true) }
-  const openEditContact = (c) => { setContactForm({ ...c, lead_id: c.lead_id || '' }); setEditingContact(c); setShowContactForm(true) }
+  const openEditContact = (c) => { 
+    const { crm_leads, ...rest } = c
+    setContactForm({ ...rest, lead_id: rest.lead_id || '' })
+    setEditingContact(c)
+    setShowContactForm(true)
+  }
 
   const saveContact = async () => {
     if (!contactForm.nome?.trim()) { toast.error('Nome obrigatório'); return }
     setSavingContact(true)
     try {
-      const payload = { ...contactForm, lead_id: contactForm.lead_id || null, company_id: companyId, updated_at: new Date().toISOString() }
+      const { crm_leads: _ignored, _key, ...cleanForm } = contactForm
+      const payload = { ...cleanForm, lead_id: cleanForm.lead_id || null, company_id: companyId, updated_at: new Date().toISOString() }
+      console.log('[saveContact] payload enviado:', payload)
       if (editingContact) {
         const { error } = await supabase.from('crm_contacts').update(payload).eq('id', editingContact.id)
-        if (error) throw error
-        setContacts(p => p.map(c => c.id === editingContact.id ? { ...c, ...payload, crm_leads: leads.find(l => l.id === payload.lead_id) || c.crm_leads } : c))
+        if (error) { console.error('[saveContact] update error:', error); throw error }
+        setContacts(p => p.map(c => c.id === editingContact.id ? { ...c, ...payload, crm_leads: leads.find(l => l.id === payload.lead_id) ? { nome_empresa: leads.find(l => l.id === payload.lead_id).nome_empresa } : null } : c))
       } else {
-        const { data, error } = await supabase.from('crm_contacts').insert([{ ...payload, created_by: user?.id }]).select('*, crm_leads(nome_empresa)').single()
-        if (error) throw error
-        setContacts(p => [...p, data])
+        const { data, error } = await supabase.from('crm_contacts').insert([{ ...payload, created_by: user?.id }]).select('*').single()
+        if (error) { console.error('[saveContact] insert error:', error); throw error }
+        const lead = leads.find(l => l.id === data.lead_id)
+        setContacts(p => [...p, { ...data, crm_leads: lead ? { nome_empresa: lead.nome_empresa } : null }])
       }
       toast.success(editingContact ? 'Contato atualizado!' : 'Contato cadastrado!')
       setShowContactForm(false)
@@ -1226,6 +1237,32 @@ function LeadsModal({ companyId, onClose }) {
     finally { setImporting(false) }
   }
 
+  const downloadLeadsTemplate = () => {
+    const header = 'nome_empresa,cidade,estado,nome_contato,cargo,telefone,email'
+    const example = 'Acme Ltda,São Paulo,SP,João Silva,Diretor,(11) 9 9999-8888,joao@acme.com'
+    const csv = [header, example].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'modelo_importacao_leads.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const downloadContactsTemplate = () => {
+    const header = 'nome_empresa,col2,col3,nome_contato,cargo,telefone,email'
+    const example = 'Acme Ltda,,,João Silva,Diretor,(11) 9 9999-8888,joao@acme.com'
+    const csv = [header, example].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'modelo_importacao_contatos.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const handleImportContactsCSV = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -1255,8 +1292,11 @@ function LeadsModal({ companyId, onClose }) {
         (errors ? ` (${errors} erro${errors !== 1 ? 's' : ''})` : '')
       toast.success(msg)
       if (contactsOpen) {
-        const { data } = await supabase.from('crm_contacts').select('*, crm_leads(nome_empresa)').eq('company_id', companyId).order('nome')
-        setContacts(data || [])
+        const { data } = await supabase.from('crm_contacts').select('*').eq('company_id', companyId).order('nome')
+        setContacts((data || []).map(c => ({
+          ...c,
+          crm_leads: leads.find(l => l.id === c.lead_id) ? { nome_empresa: leads.find(l => l.id === c.lead_id).nome_empresa } : null
+        })))
       }
     } catch (err) { toast.error('Erro ao processar arquivo: ' + err.message) }
     finally { setImporting(false) }
@@ -1280,6 +1320,9 @@ function LeadsModal({ companyId, onClose }) {
                 <button onClick={() => importContactsCsvRef.current?.click()} disabled={importing} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60" title="Importar contatos de planilha CSV">
                   <FileSpreadsheet className="h-3.5 w-3.5" /> Importar CSV
                 </button>
+                <button onClick={downloadContactsTemplate} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors" title="Baixar modelo CSV de contatos">
+                  <Download className="h-3.5 w-3.5" /> Modelo CSV
+                </button>
                 <button onClick={openNewContact} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors">
                   <Plus className="h-3.5 w-3.5" /> Novo Contato
                 </button>
@@ -1291,6 +1334,9 @@ function LeadsModal({ companyId, onClose }) {
               <>
                 <button onClick={() => importLeadsCsvRef.current?.click()} disabled={importing} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60" title="Importar empresas de planilha CSV">
                   <FileSpreadsheet className="h-3.5 w-3.5" /> Importar CSV
+                </button>
+                <button onClick={downloadLeadsTemplate} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors" title="Baixar modelo CSV de leads">
+                  <Download className="h-3.5 w-3.5" /> Modelo CSV
                 </button>
                 <button onClick={toggleContacts} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors">
                   <Users className="h-3.5 w-3.5" /> Contatos
@@ -1653,29 +1699,42 @@ function ContactsModal({ companyId, onClose }) {
   const loadAll = async () => {
     setLoading(true)
     const [{ data: c }, { data: l }] = await Promise.all([
-      supabase.from('crm_contacts').select('*, crm_leads(nome_empresa)').eq('company_id', companyId).order('nome'),
+      supabase.from('crm_contacts').select('*').eq('company_id', companyId).order('nome'),
       supabase.from('crm_leads').select('id, nome_empresa').eq('company_id', companyId).order('nome_empresa')
     ])
-    setContacts(c || [])
-    setLeads(l || [])
+    const leadsArr = l || []
+    setLeads(leadsArr)
+    setContacts((c || []).map(contact => ({
+      ...contact,
+      crm_leads: leadsArr.find(lead => lead.id === contact.lead_id)
+        ? { nome_empresa: leadsArr.find(lead => lead.id === contact.lead_id).nome_empresa }
+        : null
+    })))
     setLoading(false)
   }
 
   const openNew = () => { setForm(EMPTY); setEditing(null); setShowForm(true) }
-  const openEdit = (c) => { setForm({ ...c, lead_id: c.lead_id || '' }); setEditing(c); setShowForm(true) }
+  const openEdit = (c) => { 
+    const { crm_leads, ...rest } = c
+    setForm({ ...rest, lead_id: rest.lead_id || '' })
+    setEditing(c)
+    setShowForm(true)
+  }
 
   const handleSave = async () => {
     if (!form.nome?.trim()) { toast.error('Nome do contato obrigatório'); return }
     setSaving(true)
     try {
-      const payload = { ...form, lead_id: form.lead_id || null, company_id: companyId, updated_at: new Date().toISOString() }
+      const { crm_leads: _ignored, ...cleanForm } = form
+      const payload = { ...cleanForm, lead_id: cleanForm.lead_id || null, company_id: companyId, updated_at: new Date().toISOString() }
+      console.log('[ContactsModal handleSave] payload:', payload)
       if (editing) {
         const { error } = await supabase.from('crm_contacts').update(payload).eq('id', editing.id)
-        if (error) throw error
+        if (error) { console.error('[ContactsModal handleSave] update error:', error); throw error }
       } else {
         payload.created_by = user?.id
         const { error } = await supabase.from('crm_contacts').insert([payload])
-        if (error) throw error
+        if (error) { console.error('[ContactsModal handleSave] insert error:', error); throw error }
       }
       toast.success(editing ? 'Contato atualizado!' : 'Contato cadastrado!')
       setShowForm(false)
