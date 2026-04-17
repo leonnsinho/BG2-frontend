@@ -212,8 +212,12 @@ export default function CRMLeadDetailPage() {
           {editingLead ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Cidade / Estado</label>
-                <input className={INP} value={leadForm.cidade_estado || ''} onChange={e => setLeadForm(p => ({ ...p, cidade_estado: e.target.value }))} placeholder="São Paulo / SP" />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cidade</label>
+                <input className={INP} value={leadForm.cidade || ''} onChange={e => setLeadForm(p => ({ ...p, cidade: e.target.value }))} placeholder="São Paulo" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Estado</label>
+                <input className={INP} value={leadForm.estado || ''} onChange={e => setLeadForm(p => ({ ...p, estado: e.target.value }))} placeholder="SP" maxLength={2} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label>
@@ -237,7 +241,8 @@ export default function CRMLeadDetailPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <InfoItem icon={<MapPin className="h-4 w-4 text-gray-400" />} label="Localização" value={lead.cidade_estado} />
+              <InfoItem icon={<MapPin className="h-4 w-4 text-gray-400" />} label="Cidade" value={lead.cidade} />
+              <InfoItem icon={<MapPin className="h-4 w-4 text-gray-400" />} label="Estado" value={lead.estado} />
               <InfoItem icon={<Tag className="h-4 w-4 text-gray-400" />} label="Segmento" value={lead.segmento} />
               <InfoItem icon={<Briefcase className="h-4 w-4 text-gray-400" />} label="Origem" value={lead.origem_lead} />
               <InfoItem

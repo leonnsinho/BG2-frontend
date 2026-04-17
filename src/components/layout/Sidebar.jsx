@@ -99,12 +99,12 @@ const ROUTE_TO_TOOL_SLUG = {
   '/dfc': 'dfc-complete',
   '/dfc/entradas': 'dfc-entradas',
   '/dfc/saidas': 'dfc-saidas',
-  // Módulo Performance — uma única permissão controla todo o bloco
-  '/indicators': 'modulo-performance',
-  '/indicators/manage': 'modulo-performance',
-  '/reports/execucao-estrategica': 'modulo-performance',
-  '/reports/produtividade-usuario': 'modulo-performance',
-  '/reports/evolucao-kpis': 'modulo-performance',
+  // Módulo Performance — pai controla o bloco; sub-slugs controlam cada seção
+  '/indicators': 'management-indicators',
+  '/indicators/manage': 'management-indicators',
+  '/reports/execucao-estrategica': 'performance-reports',
+  '/reports/produtividade-usuario': 'performance-reports',
+  '/reports/evolucao-kpis': 'performance-reports',
   // Políticas de Gestão — pai controla o bloco, sub-slugs controlam cada jornada
   '/operational-policies': 'politicas-gestao',
   '/operational-policies?journey=estrategica': 'politicas-estrategica',

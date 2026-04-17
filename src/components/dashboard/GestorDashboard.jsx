@@ -124,7 +124,7 @@ const GestorDashboard = () => {
           .eq('company_id', companyId)
 
         if (!usersError) {
-          const totalAtivos = userCompanies?.filter(uc => uc.is_active).length || 0
+          const totalAtivos = userCompanies?.filter(uc => uc.is_active && uc.user_id !== profile.id).length || 0
           setUsuariosAtivos(totalAtivos)
 
           // Buscar tarefas da empresa

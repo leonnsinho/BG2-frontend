@@ -58,6 +58,12 @@ const POLITICAS_CHILDREN_SLUGS = [
   'politicas-operacional',
 ]
 
+// Slugs dos sub-módulos de Performance (renderizados aninhados dentro do card pai)
+const PERFORMANCE_CHILDREN_SLUGS = [
+  'management-indicators',
+  'performance-reports',
+]
+
 export default function ToolManagementModal({ user, onClose, companyId }) {
   const [tools, setTools] = useState([])
   const [loading, setLoading] = useState(true)
@@ -299,8 +305,8 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
   const hasPendingChanges = Object.keys(pendingChanges).length > 0
 
   // dfc-entradas/saidas são sub-ferramentas do dfc-complete
-  // management-indicators está subsumed pelo modulo-performance
-  const HIDDEN_SLUGS = ['dfc-entradas', 'dfc-saidas', 'management-indicators', ...POLITICAS_CHILDREN_SLUGS]
+  // management-indicators e performance-reports são filhos de modulo-performance
+  const HIDDEN_SLUGS = ['dfc-entradas', 'dfc-saidas', ...PERFORMANCE_CHILDREN_SLUGS, ...POLITICAS_CHILDREN_SLUGS]
   const flatTools = tools
     .map(getEffectiveTool)
     .filter(t => !HIDDEN_SLUGS.includes(t.tool_slug))
@@ -364,9 +370,11 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
                   const status = getPermissionStatus(tool)
                   const StatusIcon = status.icon
 
-                  // Sub-módulos aninhados (ex: filhos de Políticas de Gestão)
+                  // Sub-módulos aninhados (ex: filhos de Políticas de Gestão ou Módulo Performance)
                   const childTools = tool.tool_slug === 'politicas-gestao'
                     ? tools.map(getEffectiveTool).filter(t => POLITICAS_CHILDREN_SLUGS.includes(t.tool_slug))
+                    : tool.tool_slug === 'modulo-performance'
+                    ? tools.map(getEffectiveTool).filter(t => PERFORMANCE_CHILDREN_SLUGS.includes(t.tool_slug))
                     : []
 
                   return (

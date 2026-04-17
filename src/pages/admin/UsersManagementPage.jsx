@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
@@ -140,6 +140,38 @@ export default function UsersManagementPage() {
   // Estados para gerenciamento de ferramentas
   const [showToolModal, setShowToolModal] = useState(false)
   const [selectedUserForTools, setSelectedUserForTools] = useState(null)
+
+  // Refs para scroll espelhado na tabela de usuários
+  const tableScrollRef = useRef(null)
+  const topScrollRef = useRef(null)
+  const tableRef = useRef(null)
+  const [tableScrollWidth, setTableScrollWidth] = useState(0)
+  const isSyncingScroll = useRef(false)
+
+  useEffect(() => {
+    const measure = () => {
+      if (tableRef.current) setTableScrollWidth(tableRef.current.offsetWidth)
+    }
+    measure()
+    if (!tableRef.current) return
+    const ro = new ResizeObserver(measure)
+    ro.observe(tableRef.current)
+    return () => ro.disconnect()
+  }, [])
+
+  const handleTopScroll = useCallback(() => {
+    if (isSyncingScroll.current) return
+    isSyncingScroll.current = true
+    if (tableScrollRef.current) tableScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft
+    isSyncingScroll.current = false
+  }, [])
+
+  const handleTableScroll = useCallback(() => {
+    if (isSyncingScroll.current) return
+    isSyncingScroll.current = true
+    if (topScrollRef.current) topScrollRef.current.scrollLeft = tableScrollRef.current.scrollLeft
+    isSyncingScroll.current = false
+  }, [])
 
   // Estados para tags
   const [tags, setTags] = useState([])
@@ -1378,8 +1410,18 @@ export default function UsersManagementPage() {
             )}
           </div>
           
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <table className="min-w-full divide-y divide-gray-100">
+          {/* Scroll espelho no topo */}
+          <div
+            className="overflow-x-auto -mx-4 sm:mx-0"
+            style={{ height: 16 }}
+            ref={topScrollRef}
+            onScroll={handleTopScroll}
+          >
+            <div style={{ width: tableScrollWidth, height: 1 }} />
+          </div>
+
+          <div className="overflow-x-auto -mx-4 sm:mx-0" ref={tableScrollRef} onScroll={handleTableScroll}>
+            <table className="min-w-full divide-y divide-gray-100" ref={tableRef}>
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
                 <tr>
                   <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-center text-xs font-semibold text-[#373435] uppercase tracking-wider w-20">
