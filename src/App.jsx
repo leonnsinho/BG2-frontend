@@ -15,6 +15,7 @@ import AssignedGoalsPage from './pages/AssignedGoalsPage'
 import { PlanejamentoEstrategicoPage } from './pages/PlanejamentoEstrategicoPage'
 import ConvitesSimples from './pages/ConvitesSimples'
 import AcceptInviteNova from './pages/AcceptInviteNova'
+import AcceptInvitePage from './pages/AcceptInvitePage'
 import CompleteSignupPage from './pages/CompleteSignupPage'
 import { SystemTestPage } from './pages/SystemTestPage'
 import MatrizBossaPage from './pages/MatrizBossaPage'
@@ -152,7 +153,7 @@ function AppRoutes() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/accept-invite" element={<AcceptInviteNova />} />
+      <Route path="/accept-invite" element={<AcceptInvitePage />} />
       <Route path="/complete-signup" element={<CompleteSignupPage />} />
       
       {/* Rotas protegidas com Layout/Sidebar persistente */}
@@ -269,7 +270,7 @@ function AppRoutes() {
       {/* Página de aceitar convite (pública) */}
       <Route 
         path="/accept-invite" 
-        element={<AcceptInviteNova />} 
+        element={<AcceptInvitePage />} 
       />
       
       {/* Rotas das Jornadas de Negócio */}

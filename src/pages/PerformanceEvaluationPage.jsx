@@ -718,26 +718,97 @@ export default function PerformanceEvaluationPage() {
         </div>
       </div>
 
-      {/* Nine Box Matrix - DESTAQUE */}
+      {/* Nine Box Matrix + Stats Side Panel */}
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-3 sm:p-4 border border-gray-200">
+        <div className="flex gap-4 items-start">
+
+          {/* ── Left: Stats Column ── */}
+          <div className="hidden lg:flex flex-col gap-3 w-52 shrink-0">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide px-1">Visão Geral</h3>
+
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
+              <div className="flex items-center gap-2">
+                <Users className="h-6 w-6 text-blue-600 shrink-0" />
+                <div>
+                  <p className="text-[11px] text-blue-600 font-medium leading-tight">Total de Usuários</p>
+                  <p className="text-xl font-bold text-blue-900">{stats.total}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">
+              <div className="flex items-center gap-2">
+                <FileText className="h-6 w-6 text-green-600 shrink-0" />
+                <div>
+                  <p className="text-[11px] text-green-600 font-medium leading-tight">Avaliados</p>
+                  <p className="text-xl font-bold text-green-900">{stats.evaluated}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-3 border border-yellow-200">
+              <div className="flex items-center gap-2">
+                <Award className="h-6 w-6 text-yellow-600 shrink-0" />
+                <div>
+                  <p className="text-[11px] text-yellow-600 font-medium leading-tight">Estrelas</p>
+                  <p className="text-xl font-bold text-yellow-900">{stats.stars}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-6 w-6 text-red-600 shrink-0" />
+                <div>
+                  <p className="text-[11px] text-red-600 font-medium leading-tight">Em Risco</p>
+                  <p className="text-xl font-bold text-red-900">{stats.risks}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 border border-orange-200">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-6 w-6 text-orange-500 shrink-0" />
+                <div>
+                  <p className="text-[11px] text-orange-600 font-medium leading-tight">Não Avaliados</p>
+                  <p className="text-xl font-bold text-orange-900">{stats.total - stats.evaluated}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-2 p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+              <p className="text-[11px] font-semibold text-gray-500 mb-2">Cobertura</p>
+              <div className="w-full bg-gray-100 rounded-full h-2 mb-1">
+                <div
+                  className="h-2 rounded-full bg-gradient-to-r from-green-400 to-green-600 transition-all"
+                  style={{ width: stats.total > 0 ? `${Math.round(stats.evaluated / stats.total * 100)}%` : '0%' }}
+                />
+              </div>
+              <p className="text-xs font-bold text-gray-700 text-right">
+                {stats.total > 0 ? Math.round(stats.evaluated / stats.total * 100) : 0}%
+              </p>
+            </div>
+          </div>
+
+          {/* ── Right: Nine Box Matrix ── */}
+          <div className="flex-1 bg-white rounded-2xl sm:rounded-3xl shadow-xl p-3 sm:p-4 border border-gray-200">
           {/* Container com scroll horizontal no mobile */}
           <div className="overflow-x-auto -mx-3 sm:mx-0">
-            <div className="min-w-[700px] px-3 sm:px-0">
+            <div className="min-w-[520px] px-3 sm:px-0">
               <div className="grid grid-cols-4 gap-0">
                 {/* Label lateral esquerdo - Alinhamento Cultural */}
-                <div className="col-span-1 flex flex-col justify-center items-center pr-2 sm:pr-3">
+                <div className="col-span-1 flex flex-col justify-center items-center pr-2">
                   <div className="transform -rotate-90 whitespace-nowrap">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 bg-purple-50 rounded-xl border border-purple-200">
-                      <TrendingUp className="h-4 w-4 text-purple-600" />
-                      <span className="text-xs sm:text-sm font-bold text-gray-700">ALINHAMENTO CULTURAL</span>
+                    <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-purple-50 rounded-xl border border-purple-200">
+                      <TrendingUp className="h-3 w-3 text-purple-600" />
+                      <span className="text-[10px] sm:text-xs font-bold text-gray-700">ALINHAMENTO CULTURAL</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Matriz 3x3 */}
                 <div className="col-span-3">
-                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
               {/* Linha superior - Alto Alinhamento Cultural */}
               {[1, 2, 3].map(perf => {
                 const key = `${perf}-3`
@@ -748,24 +819,24 @@ export default function PerformanceEvaluationPage() {
                 return (
                   <div
                     key={key}
-                    className="min-h-[140px] rounded-xl sm:rounded-2xl border-2 p-2 sm:p-3 transition-all hover:shadow-lg cursor-pointer"
+                    className="h-[160px] sm:h-[185px] rounded-xl border-2 p-2 transition-all hover:shadow-lg cursor-pointer"
                     style={{
                       borderColor: classInfo.color,
                       backgroundColor: `${classInfo.color}10`
                     }}
                   >
                     <div className="flex flex-col h-full">
-                      <div className="mb-1 sm:mb-2">
-                        <h3 className="font-bold text-xs sm:text-sm" style={{ color: classInfo.color }}>
+                      <div className="mb-1 shrink-0">
+                        <h3 className="font-bold text-[10px] sm:text-xs leading-tight" style={{ color: classInfo.color }}>
                           {classInfo.label}
                         </h3>
-                        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Alto Alinhamento</p>
-                        <p className="text-[10px] sm:text-xs text-gray-600">
+                        <p className="text-[9px] sm:text-[10px] text-gray-600 mt-0.5">Alto Alinhamento</p>
+                        <p className="text-[9px] sm:text-[10px] text-gray-600">
                           {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desemp.
                         </p>
                       </div>
                       
-                      <div className="flex-1 overflow-y-auto space-y-1 sm:space-y-2">
+                      <div className="flex-1 overflow-y-auto space-y-1 sm:space-y-2 nine-box-scroll pr-0.5">
                         {usersInBox.map(u => (
                           <div
                             key={u.id}
@@ -809,24 +880,24 @@ export default function PerformanceEvaluationPage() {
                 return (
                   <div
                     key={key}
-                    className="min-h-[140px] rounded-xl sm:rounded-2xl border-2 p-2 sm:p-3 transition-all hover:shadow-lg cursor-pointer"
+                    className="h-[160px] sm:h-[185px] rounded-xl border-2 p-2 transition-all hover:shadow-lg cursor-pointer"
                     style={{
                       borderColor: classInfo.color,
                       backgroundColor: `${classInfo.color}10`
                     }}
                   >
                     <div className="flex flex-col h-full">
-                      <div className="mb-1 sm:mb-2">
-                        <h3 className="font-bold text-xs sm:text-sm" style={{ color: classInfo.color }}>
+                      <div className="mb-1 shrink-0">
+                        <h3 className="font-bold text-[10px] sm:text-xs leading-tight" style={{ color: classInfo.color }}>
                           {classInfo.label}
                         </h3>
-                        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Médio Alinhamento</p>
-                        <p className="text-[10px] sm:text-xs text-gray-600">
+                        <p className="text-[9px] sm:text-[10px] text-gray-600 mt-0.5">Médio Alinhamento</p>
+                        <p className="text-[9px] sm:text-[10px] text-gray-600">
                           {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desemp.
                         </p>
                       </div>
                       
-                      <div className="flex-1 overflow-y-auto space-y-1 sm:space-y-2">
+                      <div className="flex-1 overflow-y-auto space-y-1 sm:space-y-2 nine-box-scroll pr-0.5">
                         {usersInBox.map(u => (
                           <div
                             key={u.id}
@@ -870,24 +941,24 @@ export default function PerformanceEvaluationPage() {
                 return (
                   <div
                     key={key}
-                    className="min-h-[140px] rounded-xl sm:rounded-2xl border-2 p-2 sm:p-3 transition-all hover:shadow-lg cursor-pointer"
+                    className="h-[160px] sm:h-[185px] rounded-xl border-2 p-2 transition-all hover:shadow-lg cursor-pointer"
                     style={{
                       borderColor: classInfo.color,
                       backgroundColor: `${classInfo.color}10`
                     }}
                   >
                     <div className="flex flex-col h-full">
-                      <div className="mb-1 sm:mb-2">
-                        <h3 className="font-bold text-xs sm:text-sm" style={{ color: classInfo.color }}>
+                      <div className="mb-1 shrink-0">
+                        <h3 className="font-bold text-[10px] sm:text-xs leading-tight" style={{ color: classInfo.color }}>
                           {classInfo.label}
                         </h3>
-                        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Baixo Alinhamento</p>
-                        <p className="text-[10px] sm:text-xs text-gray-600">
+                        <p className="text-[9px] sm:text-[10px] text-gray-600 mt-0.5">Baixo Alinhamento</p>
+                        <p className="text-[9px] sm:text-[10px] text-gray-600">
                           {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desemp.
                         </p>
                       </div>
                       
-                      <div className="flex-1 overflow-y-auto space-y-1 sm:space-y-2">
+                      <div className="flex-1 overflow-y-auto space-y-1 sm:space-y-2 nine-box-scroll pr-0.5">
                         {usersInBox.map(u => (
                           <div
                             key={u.id}
@@ -922,17 +993,19 @@ export default function PerformanceEvaluationPage() {
               })}
             </div>
                 {/* Label inferior - Desempenho Técnico */}
-                <div className="mt-2 sm:mt-3 text-center">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 bg-blue-50 rounded-xl border border-blue-200">
-                    <ChevronRight className="h-4 w-4 text-blue-600" />
-                    <span className="text-xs sm:text-sm font-bold text-gray-700">DESEMPENHO TÉCNICO</span>
+                <div className="mt-2 text-center">
+                  <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded-xl border border-blue-200">
+                    <ChevronRight className="h-3 w-3 text-blue-600" />
+                    <span className="text-[10px] sm:text-xs font-bold text-gray-700">DESEMPENHO TÉCNICO</span>
                   </div>
                 </div>
                 </div>
           </div>
           </div>
         </div>
+          </div>
         </div>
+      </div>
 
         {/* Filtros e Estatísticas - Abaixo da Matriz */}
         <div className="mt-6 bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-200">
@@ -1008,44 +1081,41 @@ export default function PerformanceEvaluationPage() {
             )}
           </div>
 
-          {/* Estatísticas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4 border border-blue-200">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Users className="h-7 w-7 sm:h-8 sm:w-8 text-blue-600" />
+          {/* Estatísticas - apenas mobile (no desktop ficam na coluna esquerda) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:hidden gap-3 mb-6">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
+              <div className="flex items-center gap-2">
+                <Users className="h-6 w-6 text-blue-600 shrink-0" />
                 <div>
-                  <p className="text-sm text-blue-600 font-medium">Total de Usuários</p>
-                  <p className="text-2xl font-bold text-blue-900">{stats.total}</p>
+                  <p className="text-[11px] text-blue-600 font-medium">Total</p>
+                  <p className="text-xl font-bold text-blue-900">{stats.total}</p>
                 </div>
               </div>
             </div>
-
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 sm:p-4 border border-green-200">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <FileText className="h-7 w-7 sm:h-8 sm:w-8 text-green-600" />
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">
+              <div className="flex items-center gap-2">
+                <FileText className="h-6 w-6 text-green-600 shrink-0" />
                 <div>
-                  <p className="text-xs sm:text-sm text-green-600 font-medium">Avaliados</p>
-                  <p className="text-xl sm:text-2xl font-bold text-green-900">{stats.evaluated}</p>
+                  <p className="text-[11px] text-green-600 font-medium">Avaliados</p>
+                  <p className="text-xl font-bold text-green-900">{stats.evaluated}</p>
                 </div>
               </div>
             </div>
-
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-3 sm:p-4 border border-yellow-200">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Award className="h-7 w-7 sm:h-8 sm:w-8 text-yellow-600" />
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-3 border border-yellow-200">
+              <div className="flex items-center gap-2">
+                <Award className="h-6 w-6 text-yellow-600 shrink-0" />
                 <div>
-                  <p className="text-xs sm:text-sm text-yellow-600 font-medium">Estrelas</p>
-                  <p className="text-xl sm:text-2xl font-bold text-yellow-900">{stats.stars}</p>
+                  <p className="text-[11px] text-yellow-600 font-medium">Estrelas</p>
+                  <p className="text-xl font-bold text-yellow-900">{stats.stars}</p>
                 </div>
               </div>
             </div>
-
-            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 sm:p-4 border border-red-200">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <AlertCircle className="h-7 w-7 sm:h-8 sm:w-8 text-red-600" />
+            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-6 w-6 text-red-600 shrink-0" />
                 <div>
-                  <p className="text-xs sm:text-sm text-red-600 font-medium">Em Risco</p>
-                  <p className="text-xl sm:text-2xl font-bold text-red-900">{stats.risks}</p>
+                  <p className="text-[11px] text-red-600 font-medium">Em Risco</p>
+                  <p className="text-xl font-bold text-red-900">{stats.risks}</p>
                 </div>
               </div>
             </div>
@@ -1085,7 +1155,6 @@ export default function PerformanceEvaluationPage() {
               ))}
           </div>
         </div>
-      </div>
 
       {/* Modal de Avaliação */}
       {showEvaluationModal && selectedUser && (

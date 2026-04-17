@@ -44,6 +44,8 @@ export default function IndicatorsPage() {
   const [activeTab, setActiveTab] = useState('Operacional')
   const [companies, setCompanies] = useState([])
   const [editingCell, setEditingCell] = useState(null)
+  const [users, setUsers] = useState([])
+  const [responsibleFilter, setResponsibleFilter] = useState('all')
 
   const journeys = ['Estratégia', 'Financeira', 'Receita', 'Pessoas & Cultura', 'Operacional']
   const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
@@ -56,8 +58,32 @@ export default function IndicatorsPage() {
   useEffect(() => {
     if (selectedCompany) {
       loadData()
+      loadUsers()
+      setResponsibleFilter('all')
     }
   }, [selectedCompany, selectedYear])
+
+  const loadUsers = async () => {
+    try {
+      const { data: companyUsers, error: cuError } = await supabase
+        .from('user_companies')
+        .select('user_id')
+        .eq('company_id', selectedCompany)
+        .eq('is_active', true)
+      if (cuError) throw cuError
+      const userIds = companyUsers.map(cu => cu.user_id)
+      if (userIds.length === 0) { setUsers([]); return }
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds)
+        .order('full_name')
+      if (error) throw error
+      setUsers(data || [])
+    } catch (err) {
+      console.error('Erro ao carregar usuários:', err)
+    }
+  }
 
   const loadCompanies = async () => {
     try {
@@ -235,7 +261,14 @@ export default function IndicatorsPage() {
     }
   }
 
-  const filteredIndicators = indicators.filter(ind => ind.journey === activeTab)
+  const filteredIndicators = indicators.filter(ind => {
+    if (ind.journey !== activeTab) return false
+    if (responsibleFilter !== 'all' && responsibleFilter !== 'unassigned') {
+      return ind.responsible_user_id === responsibleFilter
+    }
+    if (responsibleFilter === 'unassigned') return !ind.responsible_user_id
+    return true
+  })
 
   // Estatísticas
   const stats = {
@@ -298,6 +331,21 @@ export default function IndicatorsPage() {
                 ))}
               </select>
             </div>
+
+            {/* Filtro por responsável */}
+            {users.length > 0 && (
+              <select
+                value={responsibleFilter}
+                onChange={(e) => setResponsibleFilter(e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Todos os responsáveis</option>
+                <option value="unassigned">Sem responsável</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{u.full_name}</option>
+                ))}
+              </select>
+            )}
 
             <div className="relative flex items-center gap-1 bg-white border border-gray-300 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
               <button

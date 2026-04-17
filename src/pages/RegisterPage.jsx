@@ -19,7 +19,7 @@ export function RegisterPage() {
   console.log('👤 Usuário logado:', user)
   
   const [formData, setFormData] = useState({
-    email: '',
+    email: searchParams.get('email') || '',
     password: '',
     confirmPassword: '',
     fullName: '',

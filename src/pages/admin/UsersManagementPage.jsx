@@ -32,7 +32,10 @@ import {
   X,
   Wrench,
   Tag,
-  Plus
+  Plus,
+  Clock,
+  RefreshCw,
+  Send
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
 import ToolManagementModal from '../../components/admin/ToolManagementModal'
@@ -145,6 +148,11 @@ export default function UsersManagementPage() {
   const [selectedUserForTags, setSelectedUserForTags] = useState(null)
   const [tagModalAnimating, setTagModalAnimating] = useState(false)
 
+  // Convites pendentes
+  const [pendingInvites, setPendingInvites] = useState([])
+  const [loadingInvites, setLoadingInvites] = useState(false)
+  const [cancellingInvite, setCancellingInvite] = useState(null)
+
   // Ícones das jornadas
   const journeyIcons = {
     'estrategica': GraduationCap,
@@ -176,6 +184,7 @@ export default function UsersManagementPage() {
     if (profile) {
       loadUsers()
       loadCompanies()
+      loadPendingInvites()
       
       // Sincronizar companyFilter com a URL quando mudar
       const companyFromUrl = searchParams.get('company') || searchParams.get('companyId')
@@ -1057,6 +1066,82 @@ export default function UsersManagementPage() {
   }
 
   // Criar novo usuário
+  const loadPendingInvites = async () => {
+    try {
+      setLoadingInvites(true)
+      let query = supabase
+        .from('invites')
+        .select(`
+          id, email, role, status, created_at, expires_at, token,
+          companies ( id, name )
+        `)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+
+      // company_admin: apenas convites da sua empresa
+      if (isCompanyAdmin() && !isSuperAdmin()) {
+        const company = getCurrentUserCompany()
+        if (company?.id) query = query.eq('company_id', company.id)
+      } else if (companyFilter !== 'all') {
+        query = query.eq('company_id', companyFilter)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      setPendingInvites(data || [])
+    } catch (err) {
+      console.error('Erro ao carregar convites pendentes:', err)
+    } finally {
+      setLoadingInvites(false)
+    }
+  }
+
+  const cancelPendingInvite = async (inviteId, email) => {
+    if (!window.confirm(`Cancelar convite para ${email}?`)) return
+    try {
+      setCancellingInvite(inviteId)
+      const { error } = await supabase
+        .from('invites')
+        .delete()
+        .eq('id', inviteId)
+      if (error) throw error
+      toast.success(`Convite para ${email} cancelado`)
+      await loadPendingInvites()
+    } catch (err) {
+      toast.error('Erro ao cancelar convite: ' + err.message)
+    } finally {
+      setCancellingInvite(null)
+    }
+  }
+
+  const resendPendingInvite = async (invite) => {
+    try {
+      setCancellingInvite(invite.id)
+      const res = await fetch('/.netlify/functions/send-invite-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: invite.email,
+          company_name: invite.companies?.name || 'BG2 Partimap',
+          role: invite.role,
+          token: invite.token,
+          invited_by_name: profile?.full_name || 'Administrador',
+          invited_by_email: profile?.email || '',
+        })
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || `HTTP ${res.status}`)
+      }
+      toast.success(`Email reenviado para ${invite.email}`)
+    } catch (err) {
+      toast.error('Erro ao reenviar: ' + err.message)
+    } finally {
+      setCancellingInvite(null)
+    }
+  }
+
   const handleCreateUser = async (e) => {
     e.preventDefault()
     
@@ -1065,44 +1150,74 @@ export default function UsersManagementPage() {
       return
     }
 
+    // Determinar empresa para vincular o convite
+    let companyId = null
+    let companyName = null
+
+    if (isCompanyAdmin() && !isSuperAdmin()) {
+      const adminCompany = getCurrentUserCompany()
+      if (!adminCompany?.id) {
+        toast.error('Não foi possível identificar sua empresa. Tente novamente.')
+        return
+      }
+      companyId = adminCompany.id
+      companyName = adminCompany.name
+    } else if (companyFilter !== 'all') {
+      const company = companies.find(c => c.id === companyFilter)
+      companyId = companyFilter
+      companyName = company?.name || 'BG2 Partimap'
+    }
+
+    if (!companyId) {
+      toast.error('Selecione uma empresa no filtro antes de convidar um usuário')
+      return
+    }
+
     setCreatingUser(true)
     
     try {
-      console.log('🚀 Criando novo usuário:', newUserEmail)
-      
-      // Gerar senha temporária segura
-      const tempPassword = 'temp' + Math.random().toString(36).slice(-8) + '123!'
-      
-      // Criar usuário no Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email: newUserEmail,
-        password: tempPassword,
-        options: {
-          data: {
-            role: 'user', // Role padrão
-            needs_completion: true, // Marca que precisa completar cadastro
-            created_via: 'admin_panel',
-            created_at: new Date().toISOString()
-          },
-          emailRedirectTo: `${window.location.origin}/complete-signup`
-        }
+      console.log('🚀 Criando convite para:', newUserEmail)
+
+      // 1. Criar convite no banco (gera token)
+      const { data: inviteData, error: inviteError } = await supabase.rpc('create_invite', {
+        p_email: newUserEmail,
+        p_company_id: companyId,
+        p_role: 'user'
       })
 
-      if (error) {
-        console.error('❌ Erro ao criar usuário:', error)
-        throw error
-      }
+      if (inviteError) throw inviteError
+      if (!inviteData?.success) throw new Error(inviteData?.error || 'Erro ao criar convite')
 
-      console.log('✅ Usuário criado:', data)
-      
-      toast.success(`✅ Convite enviado para ${newUserEmail}! O usuário receberá um email para completar o cadastro.`)
+      console.log('✅ Convite criado, token:', inviteData.token)
+
+      // 2. Enviar email via Netlify Function (Resend)
+      const emailRes = await fetch('/.netlify/functions/send-invite-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newUserEmail,
+          company_name: companyName,
+          role: 'user',
+          token: inviteData.token,
+          invited_by_name: profile?.full_name || 'Administrador',
+          invited_by_email: profile?.email || '',
+        })
+      })
+
+      if (!emailRes.ok) {
+        const emailErr = await emailRes.json().catch(() => ({}))
+        console.warn('⚠️ Convite criado mas email falhou:', emailErr)
+        toast.success(`✅ Convite criado para ${newUserEmail}, mas o email pode não ter chegado.`)
+      } else {
+        toast.success(`✅ Convite enviado para ${newUserEmail}! Email chegará em instantes.`)
+      }
       
       // Limpar e fechar modal
       setNewUserEmail('')
       setIsCreateUserModalOpen(false)
       
-      // Recarregar lista de usuários
-      await loadUsers()
+      // Recarregar lista de usuários e convites
+      await Promise.all([loadUsers(), loadPendingInvites()])
       
     } catch (error) {
       console.error('❌ Erro:', error)
@@ -1175,7 +1290,7 @@ export default function UsersManagementPage() {
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-[#EBA500] text-white rounded-lg hover:bg-[#d49400] transition-colors min-h-[44px] sm:min-h-0 touch-manipulation"
           >
             <UserPlus className="h-5 w-5" />
-            <span>Criar Usuário</span>
+            <span>Convidar Usuário</span>
           </button>
         </div>
 
@@ -1457,6 +1572,75 @@ export default function UsersManagementPage() {
           )}
         </div>
 
+        {/* Convites Pendentes */}
+        {pendingInvites.length > 0 && (
+          <div className="mt-6 bg-white shadow-sm border border-orange-200 rounded-2xl sm:rounded-3xl overflow-hidden">
+            <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b border-orange-100 bg-orange-50 flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-semibold text-orange-800 flex items-center gap-2">
+                <Clock className="h-5 w-5 text-orange-500" />
+                Convites Pendentes ({pendingInvites.length})
+              </h2>
+              <button
+                onClick={loadPendingInvites}
+                disabled={loadingInvites}
+                className="p-1.5 rounded-lg hover:bg-orange-100 transition-colors text-orange-600"
+                title="Atualizar"
+              >
+                <RefreshCw className={`h-4 w-4 ${loadingInvites ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {pendingInvites.map(invite => {
+                const expiresAt = new Date(invite.expires_at)
+                const expiresInDays = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24))
+                return (
+                  <div key={invite.id} className="px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                        <Mail className="h-4 w-4 text-orange-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{invite.email}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {invite.companies?.name && (
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                              <Building2 className="h-3 w-3" />{invite.companies.name}
+                            </span>
+                          )}
+                          <span className="text-xs text-orange-600 font-medium flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Expira em {expiresInDays} dia{expiresInDays !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => resendPendingInvite(invite)}
+                        disabled={cancellingInvite === invite.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors disabled:opacity-50"
+                        title="Reenviar email"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        Reenviar
+                      </button>
+                      <button
+                        onClick={() => cancelPendingInvite(invite.id, invite.email)}
+                        disabled={cancellingInvite === invite.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors disabled:opacity-50"
+                        title="Cancelar convite"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Modal de Visualização */}
         {isViewModalOpen && selectedUser && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -1589,10 +1773,13 @@ export default function UsersManagementPage() {
                     <strong>Como funciona:</strong>
                   </p>
                   <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
-                    <li>Usuário receberá email de confirmação</li>
-                    <li>Ao clicar, será direcionado para completar cadastro</li>
-                    <li>Preencherá nome e senha</li>
-                    <li>Será criado com role "Usuário" (sem empresa)</li>
+                    <li>Usuário receberá email de convite via Resend</li>
+                    <li>Ao clicar, será direcionado para criar sua senha</li>
+                    {isCompanyAdmin() && !isSuperAdmin() && getCurrentUserCompany() ? (
+                      <li className="font-semibold">Já será vinculado a <strong>{getCurrentUserCompany()?.name}</strong></li>
+                    ) : (
+                      <li>Será vinculado à empresa selecionada no filtro</li>
+                    )}
                   </ul>
                 </div>
 

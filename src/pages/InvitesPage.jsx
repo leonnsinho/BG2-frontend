@@ -123,10 +123,27 @@ export default function InvitesPage() {
       if (data.success) {
         toast.success(`Convite criado para ${inviteForm.email}!`)
         
-        // Enviar email de convite
+        // Enviar email de convite via edge function (Resend)
         try {
-          await sendInviteEmailService(data)
-          toast.success('📧 Email enviado com sucesso!')
+          const company = companies.find(c => c.id === selectedCompany)
+          const emailRes = await fetch('/.netlify/functions/send-invite-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: inviteForm.email,
+              company_name: company?.name || 'BG2 Partimap',
+              role: inviteForm.role,
+              token: data.token,
+              invited_by_name: profile?.full_name || 'Administrador',
+              invited_by_email: profile?.email || user?.email || '',
+              message: inviteForm.message || null,
+            })
+          })
+          if (!emailRes.ok) {
+            const emailErr = await emailRes.json().catch(() => ({}))
+            throw new Error(emailErr.error || `HTTP ${emailRes.status}`)
+          }
+          toast.success('📧 Email enviado via Resend!')
         } catch (emailError) {
           console.error('Erro ao enviar email:', emailError)
           toast.error(`⚠️ Convite criado, mas email não foi enviado: ${emailError.message}`)

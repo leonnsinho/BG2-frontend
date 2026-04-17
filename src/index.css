@@ -89,7 +89,26 @@
   animation: fade-in 0.2s ease-out;
 }
 
-/* ── Kanban board horizontal scrollbar ─────────────────────────────────── */
+/* ── Nine Box matrix cell scrollbar ────────────────────────────────────── */
+.nine-box-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.18) transparent;
+}
+.nine-box-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.nine-box-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 99px;
+}
+.nine-box-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
+  border-radius: 99px;
+}
+.nine-box-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.32);
+}
+/* ─────────────────────────────────────────────────────────────────────── */
 .kanban-scroll {
   scrollbar-width: thin;
   scrollbar-color: #EBA500 #f1f1f1;

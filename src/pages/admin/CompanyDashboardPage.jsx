@@ -687,6 +687,21 @@ const CompanyDashboardPage = () => {
                 </div>
                 {/* Botões de ação */}
                 <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    onClick={() => navigateToModule('/indicators', selectedCompany.id)}
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 active:scale-95 transition-all text-xs font-semibold border border-yellow-200"
+                    title="Indicadores de Gestão"
+                  >
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    Indicadores
+                  </button>
+                  <button
+                    onClick={() => navigateToModule('/indicators', selectedCompany.id)}
+                    className="sm:hidden p-2 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 active:scale-95 transition-all"
+                    title="Indicadores de Gestão"
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                  </button>
                   <button onClick={handleViewDetails} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 active:scale-95 transition-all" title="Ver Detalhes">
                     <Eye className="h-4 w-4" />
                   </button>

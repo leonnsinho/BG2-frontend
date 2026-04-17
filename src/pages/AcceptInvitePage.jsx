@@ -36,6 +36,15 @@ const AcceptInvitePage = () => {
     }
   }, [token])
 
+  // Auto-aceitar quando usuário logar com o email correto
+  useEffect(() => {
+    if (user && invite && !loading && !accepting && !success && !error) {
+      if (user.email === invite.email) {
+        acceptInvite()
+      }
+    }
+  }, [user, invite])
+
   const loadInviteDetails = async () => {
     try {
       setLoading(true)
@@ -101,15 +110,10 @@ const AcceptInvitePage = () => {
       if (data.success) {
         setSuccess(true)
         
-        // Aguardar um pouco e redirecionar para dashboard
+        // Forçar reload completo para o AuthContext re-buscar empresa vinculada
         setTimeout(() => {
-          navigate('/dashboard', {
-            state: {
-              message: `Bem-vindo à ${invite.company_name}! Convite aceito com sucesso.`,
-              type: 'success'
-            }
-          })
-        }, 2000)
+          window.location.href = '/dashboard'
+        }, 1500)
       } else {
         setError(data.error || 'Erro ao aceitar convite')
       }
@@ -268,16 +272,36 @@ const AcceptInvitePage = () => {
         {/* Verificação de Login */}
         {!user ? (
           <div className="space-y-4">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-sm text-yellow-800">
-                <strong>Faça login primeiro:</strong> Para aceitar este convite, 
-                você precisa fazer login com o email <strong>{invite.email}</strong>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm font-semibold text-blue-900 mb-1">
+                Para aceitar este convite você precisa de uma conta com o email:
+              </p>
+              <p className="text-sm font-mono bg-white border border-blue-200 rounded px-2 py-1 text-blue-800 mb-3">
+                {invite.email}
+              </p>
+              <p className="text-sm text-blue-700">
+                Se ainda não tem conta, crie uma agora — é rápido. Após confirmar seu email, volte neste link para aceitar o convite.
               </p>
             </div>
-            
+
             <Button
-              onClick={() => navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              onClick={() => navigate(`/register?email=${encodeURIComponent(invite.email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+              className="w-full bg-[#EBA500] hover:bg-[#D89500] text-white"
+            >
+              <UserCheck className="w-4 h-4 mr-2" />
+              Criar conta com este email
+            </Button>
+
+            <div className="relative flex items-center gap-3">
+              <div className="flex-1 border-t border-gray-200" />
+              <span className="text-xs text-gray-400">já tenho conta</span>
+              <div className="flex-1 border-t border-gray-200" />
+            </div>
+
+            <Button
+              onClick={() => navigate(`/login?email=${encodeURIComponent(invite.email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+              variant="outline"
+              className="w-full"
             >
               <LogIn className="w-4 h-4 mr-2" />
               Fazer Login

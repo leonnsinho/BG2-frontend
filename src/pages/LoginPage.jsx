@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useLogin } from '../hooks/useAuth'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
@@ -10,8 +10,9 @@ import ParticlesBackground from '../components/ui/ParticlesBackground'
 
 export function LoginPage() {
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const [formData, setFormData] = useState({
-    email: '',
+    email: searchParams.get('email') || '',
     password: ''
   })
   const [showPassword, setShowPassword] = useState(false)
@@ -101,7 +102,8 @@ export function LoginPage() {
   // Redirecionar se já estiver logado
   useEffect(() => {
     if (user) {
-      window.location.href = '/dashboard'
+      const redirect = searchParams.get('redirect')
+      window.location.href = redirect || '/dashboard'
     }
   }, [user])
 
@@ -144,7 +146,7 @@ export function LoginPage() {
         console.error('Erro ao atualizar histórico de login', e)
       }
 
-      window.location.href = '/dashboard'
+      window.location.href = searchParams.get('redirect') || '/dashboard'
     }
   }
 
