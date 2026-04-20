@@ -65,6 +65,13 @@ const fmtMoney = (v) => {
 // Generic component: shows a list of existing items + button to create new inline
 function ImportOrCreatePicker({ title, Icon, colorClass, items, selected, onSelect, onCreateClick, renderItem, renderSelected, placeholder }) {
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const filtered = search.trim()
+    ? items.filter(item => renderItem(item).toLowerCase().includes(search.toLowerCase()))
+    : items
+
+  const handleClose = () => { setOpen(false); setSearch('') }
 
   if (selected) {
     return (
@@ -83,7 +90,7 @@ function ImportOrCreatePicker({ title, Icon, colorClass, items, selected, onSele
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => setOpen(o => !o)}
+          onClick={() => { setOpen(o => !o); setSearch('') }}
           className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl border-2 border-dashed text-sm transition-all ${open ? 'border-[#EBA500] bg-amber-50/40' : 'border-gray-200 hover:border-gray-300 text-gray-500'}`}
         >
           <Import className="h-4 w-4 shrink-0" />
@@ -100,18 +107,35 @@ function ImportOrCreatePicker({ title, Icon, colorClass, items, selected, onSele
         </button>
       </div>
       {open && (
-        <div className="absolute top-full mt-1 left-0 right-0 z-10 bg-white border border-gray-200 rounded-xl shadow-lg max-h-44 overflow-y-auto">
-          {items.length === 0 ? (
-            <p className="text-xs text-gray-400 px-3 py-3">Nenhum {title.toLowerCase()} cadastrado.</p>
-          ) : (
-            items.map(item => (
-              <button key={item.id} type="button" onClick={() => { onSelect(item); setOpen(false) }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors">
-                <Icon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                <span className="text-xs text-gray-700 truncate">{renderItem(item)}</span>
-              </button>
-            ))
-          )}
+        <div className="absolute top-full mt-1 left-0 right-0 z-10 bg-white border border-gray-200 rounded-xl shadow-lg flex flex-col max-h-56">
+          <div className="px-3 pt-2 pb-1 border-b border-gray-100">
+            <div className="flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+              <Search className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+              <input
+                autoFocus
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder={`Pesquisar ${title.toLowerCase()}...`}
+                className="flex-1 text-xs bg-transparent outline-none text-gray-700 placeholder-gray-400"
+                onClick={e => e.stopPropagation()}
+              />
+              {search && <button type="button" onClick={() => setSearch('')}><X className="h-3 w-3 text-gray-400 hover:text-gray-600" /></button>}
+            </div>
+          </div>
+          <div className="overflow-y-auto flex-1">
+            {filtered.length === 0 ? (
+              <p className="text-xs text-gray-400 px-3 py-3">{search ? `Nenhum resultado para "${search}".` : `Nenhum ${title.toLowerCase()} cadastrado.`}</p>
+            ) : (
+              filtered.map(item => (
+                <button key={item.id} type="button" onClick={() => { onSelect(item); handleClose() }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors">
+                  <Icon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                  <span className="text-xs text-gray-700 truncate">{renderItem(item)}</span>
+                </button>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -1845,7 +1869,7 @@ function ProductsModal({ companyId, onClose }) {
   return (
     <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
         <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
@@ -1921,6 +1945,7 @@ function ProductsModal({ companyId, onClose }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 truncate">{p.nome}</p>
+                    {p.descricao && <p className="text-xs text-gray-500 truncate">{p.descricao}</p>}
                     <p className="text-xs text-gray-400 truncate">{p.valor ? fmtMoney(p.valor) + (p.unidade ? ' · ' + p.unidade : '') : 'Sem valor definido'}</p>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
