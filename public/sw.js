@@ -1,6 +1,6 @@
 // Service Worker para PWA
-const CACHE_NAME = 'bg2-v7' // Incrementar para forçar atualização
-const APP_VERSION = '4.0.0.1' // Incrementar quando houver updates - IMPORTANTE: Mudar isso dispara atualização!
+const CACHE_NAME = 'bg2-v8' // Incrementar para forçar atualização
+const APP_VERSION = '4.0.0.2' // Incrementar quando houver updates - IMPORTANTE: Mudar isso dispara atualização!
 const urlsToCache = [
   '/',
   '/index.html',
@@ -105,20 +105,35 @@ self.addEventListener('message', (event) => {
   }
 })
 
+// Hosts que nunca devem ser interceptados (APIs externas)
+const PASSTHROUGH_HOSTS = [
+  'supabase.co',
+  'supabase.in',
+  'amazonaws.com',
+  'googleapis.com',
+  'resend.com',
+]
+
 // Interceptar requisições - Estratégia Network First com fallback para cache
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
-  
+
   // Ignora requisições que não são HTTP/HTTPS (extensões do Chrome, etc)
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return
   }
-  
+
+  // Nunca interceptar chamadas de API externas (Supabase, AWS, etc.)
+  // Deixar o browser tratar diretamente para evitar erros de Response
+  if (PASSTHROUGH_HOSTS.some(host => url.hostname.includes(host))) {
+    return
+  }
+
   // Sempre buscar do servidor para recursos críticos
   if (NEVER_CACHE.some(path => url.pathname.endsWith(path))) {
     event.respondWith(
       fetch(event.request)
-        .catch(() => caches.match(event.request))
+        .catch(() => caches.match(event.request).then(r => r || new Response('', { status: 503 })))
     )
     return
   }
@@ -127,14 +142,8 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Verifica se a resposta é válida
+        // Verifica se a resposta é válida para cachear (somente same-origin)
         if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response
-        }
-
-        // Ignora URLs que não são HTTP/HTTPS (como chrome-extension://)
-        const requestUrl = new URL(event.request.url)
-        if (requestUrl.protocol !== 'http:' && requestUrl.protocol !== 'https:') {
           return response
         }
 
@@ -148,9 +157,24 @@ self.addEventListener('fetch', (event) => {
 
         return response
       })
-      .catch(() => {
+      .catch(async () => {
         // Se falhar na rede, tenta cache
-        return caches.match(event.request)
+        // IMPORTANTE: caches.match pode retornar undefined — nunca passar undefined para respondWith
+        const cached = await caches.match(event.request)
+        if (cached) return cached
+
+        // Para navegação SPA, retornar index.html do cache como fallback
+        if (event.request.mode === 'navigate') {
+          const indexCache = await caches.match('/index.html')
+          if (indexCache) return indexCache
+        }
+
+        // Fallback final: resposta de erro válida
+        return new Response('Network error - content unavailable offline', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'text/plain' }
+        })
       })
   )
 })

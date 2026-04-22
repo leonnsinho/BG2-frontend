@@ -40,6 +40,9 @@ import AllProcessesPage from './pages/AllProcessesPage'
 import OperationalPoliciesPage from './pages/OperationalPoliciesPage'
 import CRMPage from './pages/CRMPage'
 import CRMLeadDetailPage from './pages/CRMLeadDetailPage'
+import CRMContactsPage from './pages/CRMContactsPage'
+import CRMProductsPage from './pages/CRMProductsPage'
+import CRMLeadsPage from './pages/CRMLeadsPage'
 import TasksInProgressNew from './pages/TasksInProgressNew'
 import TasksPage from './pages/TasksPage'
 import ActiveUsersPage from './pages/ActiveUsersPage'
@@ -391,6 +394,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole={['company_admin', 'user']} requiredToolSlug="crm">
             <CRMLeadDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/crm/contatos" 
+        element={
+          <ProtectedRoute requiredRole={['company_admin', 'user']} requiredToolSlug="crm">
+            <CRMContactsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/crm/produtos" 
+        element={
+          <ProtectedRoute requiredRole={['company_admin', 'user']} requiredToolSlug="crm">
+            <CRMProductsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/crm/leads" 
+        element={
+          <ProtectedRoute requiredRole={['company_admin', 'user']} requiredToolSlug="crm">
+            <CRMLeadsPage />
           </ProtectedRoute>
         }
       />
