@@ -18,7 +18,7 @@ import {
   Building2,
   ArrowLeft
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 import ConfirmModal from '../components/ui/ConfirmModal'
 
 // Estilos de animação para modais

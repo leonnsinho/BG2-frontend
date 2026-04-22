@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../services/supabase'
-import { toast } from 'react-hot-toast'
+import { toast } from '@/lib/toast'
 import {
   X,
   Wrench,

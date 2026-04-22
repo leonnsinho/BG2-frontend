@@ -29,7 +29,7 @@ import {
   ArrowDown,
   ArrowUpDown
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 import ConfirmModal from '../components/ui/ConfirmModal'
 
 function DFCPage() {

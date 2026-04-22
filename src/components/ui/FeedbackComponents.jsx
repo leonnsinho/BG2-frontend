@@ -1,4 +1,5 @@
 import React from 'react'
+import toast from '@/lib/toast'
 import { Loader2, CheckCircle, AlertCircle, Info, X } from 'lucide-react'
 
 // Componente de loading avançado

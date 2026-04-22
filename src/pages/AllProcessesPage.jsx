@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { 
@@ -97,7 +98,7 @@ export default function AllProcessesPage() {
 
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
-      alert('Erro ao carregar dados: ' + error.message)
+      toast.alert('Erro ao carregar dados: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -115,13 +116,13 @@ export default function AllProcessesPage() {
 
       if (error) throw error
 
-      alert('Processo deletado com sucesso!')
+      toast.alert('Processo deletado com sucesso!')
       setShowDeleteModal(false)
       setSelectedProcess(null)
       loadData() // Recarregar lista
     } catch (error) {
       console.error('Erro ao deletar processo:', error)
-      alert('Erro ao deletar processo: ' + error.message)
+      toast.alert('Erro ao deletar processo: ' + error.message)
     } finally {
       setDeleting(false)
     }
@@ -143,7 +144,7 @@ export default function AllProcessesPage() {
 
   const handleSaveEdit = async () => {
     if (!editData.name.trim()) {
-      alert('Nome do processo é obrigatório')
+      toast.alert('Nome do processo é obrigatório')
       return
     }
 
@@ -164,13 +165,13 @@ export default function AllProcessesPage() {
 
       if (error) throw error
 
-      alert('Processo atualizado com sucesso!')
+      toast.alert('Processo atualizado com sucesso!')
       setShowEditModal(false)
       setSelectedProcess(null)
       loadData() // Recarregar lista
     } catch (error) {
       console.error('Erro ao salvar edição:', error)
-      alert('Erro ao salvar edição: ' + error.message)
+      toast.alert('Erro ao salvar edição: ' + error.message)
     } finally {
       setUpdating(false)
     }

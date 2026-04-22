@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
+import confirmDialog from '@/lib/confirm'
 import { useAuth } from '../contexts/AuthContext'
 import { useTasks } from '../hooks/useTasks'
 import { Navigate } from 'react-router-dom'
@@ -212,19 +214,19 @@ export default function TasksPage() {
       await loadData()
     } catch (error) {
       console.error('Erro ao atualizar status:', error)
-      alert('Erro ao atualizar status da tarefa')
+      toast.alert('Erro ao atualizar status da tarefa')
     }
   }
 
   const handleDeleteTask = async (taskId) => {
-    if (!confirm('Tem certeza que deseja deletar esta tarefa?')) return
+    if (!await confirmDialog('Tem certeza que deseja deletar esta tarefa?', { danger: true })) return
     
     try {
       await deleteTask(taskId)
       await loadData()
     } catch (error) {
       console.error('Erro ao deletar tarefa:', error)
-      alert('Erro ao deletar tarefa')
+      toast.alert('Erro ao deletar tarefa')
     }
   }
 

@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../services/supabase'
 import SuperAdminBanner from '../components/SuperAdminBanner'
 import { businessModelService } from '../services/businessModelService'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 import {
   DndContext,
   closestCenter,

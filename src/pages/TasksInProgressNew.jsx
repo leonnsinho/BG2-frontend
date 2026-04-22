@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import confirmDialog from '@/lib/confirm'
 import { supabase } from '../services/supabase'
 import { 
   CheckSquare, 
@@ -266,7 +267,7 @@ function TasksInProgressNew() {
   }
 
   const deleteTask = async (taskId) => {
-    if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return
+    if (!await confirmDialog('Tem certeza que deseja excluir esta tarefa?', { danger: true })) return
 
     try {
       const { error } = await supabase

@@ -36,7 +36,7 @@ import {
   Check,
   CreditCard
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 const COMPANY_TYPES = {
   'micro': { label: 'Micro Empresa', color: 'green' },

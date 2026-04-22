@@ -9,7 +9,7 @@ import {
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import SuperAdminBanner from '../components/SuperAdminBanner'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 const INP = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/40 focus:border-[#EBA500] bg-white'
 const SEL = INP + ' cursor-pointer'

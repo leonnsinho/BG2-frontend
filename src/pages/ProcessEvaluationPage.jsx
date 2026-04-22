@@ -18,7 +18,7 @@ import {
   Settings,
   MessageSquare
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 // Configuração da escala de avaliação
 const EVALUATION_SCALE = [

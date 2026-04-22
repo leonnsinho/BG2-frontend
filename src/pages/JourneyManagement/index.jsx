@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
@@ -201,7 +202,7 @@ const JourneyManagementOverview = () => {
 
   const handleJourneyClick = (journey) => {
     if (!selectedCompany) {
-      alert('Por favor, selecione uma empresa primeiro.')
+      toast.alert('Por favor, selecione uma empresa primeiro.')
       return
     }
 

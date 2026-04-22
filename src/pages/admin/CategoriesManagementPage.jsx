@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
+import confirmDialog from '@/lib/confirm'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { 
@@ -74,7 +76,7 @@ export default function CategoriesManagementPage() {
       console.log('📂 Categorias carregadas:', categoriesWithCount.length)
     } catch (error) {
       console.error('Erro ao carregar categorias:', error)
-      alert('Erro ao carregar categorias: ' + error.message)
+      toast.alert('Erro ao carregar categorias: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -84,7 +86,7 @@ export default function CategoriesManagementPage() {
     e.preventDefault()
     
     if (!formData.name.trim()) {
-      alert('Nome da categoria é obrigatório')
+      toast.alert('Nome da categoria é obrigatório')
       return
     }
 
@@ -99,7 +101,7 @@ export default function CategoriesManagementPage() {
         is_active: true
       })
 
-      alert('✅ Categoria criada com sucesso!')
+      toast.alert('✅ Categoria criada com sucesso!')
       setShowCreateModal(false)
       resetForm()
       loadCategories()
@@ -107,9 +109,9 @@ export default function CategoriesManagementPage() {
       console.error('Erro ao criar categoria:', error)
       
       if (error.message.includes('duplicate key')) {
-        alert('❌ Já existe uma categoria com este nome!')
+        toast.alert('❌ Já existe uma categoria com este nome!')
       } else {
-        alert('❌ Erro ao criar categoria: ' + error.message)
+        toast.alert('❌ Erro ao criar categoria: ' + error.message)
       }
     } finally {
       setSubmitting(false)
@@ -120,7 +122,7 @@ export default function CategoriesManagementPage() {
     e.preventDefault()
     
     if (!formData.name.trim()) {
-      alert('Nome da categoria é obrigatório')
+      toast.alert('Nome da categoria é obrigatório')
       return
     }
 
@@ -134,7 +136,7 @@ export default function CategoriesManagementPage() {
         order_position: parseInt(formData.order_position) || 0
       })
 
-      alert('✅ Categoria atualizada com sucesso!\n\n💡 Todos os processos agora mostram o novo nome automaticamente.')
+      toast.alert('✅ Categoria atualizada com sucesso!\n\n💡 Todos os processos agora mostram o novo nome automaticamente.')
       setShowEditModal(false)
       setSelectedCategory(null)
       resetForm()
@@ -143,9 +145,9 @@ export default function CategoriesManagementPage() {
       console.error('Erro ao editar categoria:', error)
       
       if (error.message.includes('duplicate key')) {
-        alert('❌ Já existe uma categoria com este nome!')
+        toast.alert('❌ Já existe uma categoria com este nome!')
       } else {
-        alert('❌ Erro ao editar categoria: ' + error.message)
+        toast.alert('❌ Erro ao editar categoria: ' + error.message)
       }
     } finally {
       setSubmitting(false)
@@ -156,7 +158,7 @@ export default function CategoriesManagementPage() {
     const newStatus = !category.is_active
     const action = newStatus ? 'ativar' : 'desativar'
     
-    if (!confirm(`Tem certeza que deseja ${action} a categoria "${category.name}"?${
+    if (!await confirmDialog(`Tem certeza que deseja ${action} a categoria "${category.name}"?${
       !newStatus && category.processes_count > 0 
         ? `\n\n⚠️ Esta categoria está sendo usada por ${category.processes_count} processo(s).`
         : ''
@@ -171,11 +173,11 @@ export default function CategoriesManagementPage() {
         is_active: newStatus
       })
 
-      alert(`✅ Categoria ${newStatus ? 'ativada' : 'desativada'} com sucesso!`)
+      toast.alert(`✅ Categoria ${newStatus ? 'ativada' : 'desativada'} com sucesso!`)
       loadCategories()
     } catch (error) {
       console.error('Erro ao alterar status:', error)
-      alert('❌ Erro ao alterar status: ' + error.message)
+      toast.alert('❌ Erro ao alterar status: ' + error.message)
     } finally {
       setSubmitting(false)
     }
@@ -185,7 +187,7 @@ export default function CategoriesManagementPage() {
     if (!selectedCategory) return
 
     if (selectedCategory.processes_count > 0) {
-      alert(`❌ Não é possível deletar esta categoria!\n\n` +
+      toast.alert(`❌ Não é possível deletar esta categoria!\n\n` +
             `Ela está sendo usada por ${selectedCategory.processes_count} processo(s).\n\n` +
             `💡 Você pode desativá-la ao invés de deletar.`)
       return
@@ -200,13 +202,13 @@ export default function CategoriesManagementPage() {
 
       if (error) throw error
 
-      alert('✅ Categoria deletada com sucesso!')
+      toast.alert('✅ Categoria deletada com sucesso!')
       setShowDeleteModal(false)
       setSelectedCategory(null)
       loadCategories()
     } catch (error) {
       console.error('Erro ao deletar categoria:', error)
-      alert('❌ Erro ao deletar categoria: ' + error.message)
+      toast.alert('❌ Erro ao deletar categoria: ' + error.message)
     } finally {
       setSubmitting(false)
     }
@@ -228,7 +230,7 @@ export default function CategoriesManagementPage() {
       loadCategories()
     } catch (error) {
       console.error('Erro ao mover categoria:', error)
-      alert('❌ Erro ao mover categoria')
+      toast.alert('❌ Erro ao mover categoria')
     } finally {
       setSubmitting(false)
     }
@@ -250,7 +252,7 @@ export default function CategoriesManagementPage() {
       loadCategories()
     } catch (error) {
       console.error('Erro ao mover categoria:', error)
-      alert('❌ Erro ao mover categoria')
+      toast.alert('❌ Erro ao mover categoria')
     } finally {
       setSubmitting(false)
     }

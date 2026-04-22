@@ -8,7 +8,7 @@ import {
   CreditCard, Users, MapPin, Hash, Upload, Image as ImageIcon,
   Building2, Check, Wallet
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const STEPS = [

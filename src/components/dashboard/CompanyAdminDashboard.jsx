@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
 import { useNavigate, Link } from 'react-router-dom'
 import { useToolPermissions } from '../../hooks/useToolPermissions'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 import { 
   Users, 
   Target, 

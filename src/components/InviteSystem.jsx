@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
+import confirmDialog from '@/lib/confirm'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { sendInviteEmail as sendInviteEmailService, getEmailConfig } from '../services/emailService'
@@ -180,7 +182,7 @@ export function InviteSystem() {
   }
 
   const cancelInvite = async (inviteId) => {
-    if (!confirm('Tem certeza que deseja cancelar este convite?')) return
+    if (!await confirmDialog('Tem certeza que deseja cancelar este convite?')) return
 
     try {
       const { error } = await supabase

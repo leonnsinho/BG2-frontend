@@ -1,4 +1,5 @@
 import React, { useRef } from 'react'
+import toast from '@/lib/toast'
 import { Paperclip, X, Upload, FileText, Image, File } from 'lucide-react'
 import { useFileUpload } from '../../hooks/useFileUpload'
 
@@ -17,7 +18,7 @@ const FileUploadArea = ({
     
     // Verificar limite de arquivos
     if (selectedFiles.length + files.length > maxFiles) {
-      alert(`Máximo de ${maxFiles} arquivos permitidos`)
+      toast.alert(`Máximo de ${maxFiles} arquivos permitidos`)
       return
     }
 
@@ -26,7 +27,7 @@ const FileUploadArea = ({
     const oversizedFiles = files.filter(file => file.size > maxSize)
     
     if (oversizedFiles.length > 0) {
-      alert('Alguns arquivos excedem o limite de 10MB')
+      toast.alert('Alguns arquivos excedem o limite de 10MB')
       return
     }
 
@@ -53,7 +54,7 @@ const FileUploadArea = ({
     
     // Verificar limite de arquivos
     if (selectedFiles.length + files.length > maxFiles) {
-      alert(`Máximo de ${maxFiles} arquivos permitidos`)
+      toast.alert(`Máximo de ${maxFiles} arquivos permitidos`)
       return
     }
 
@@ -62,7 +63,7 @@ const FileUploadArea = ({
     const oversizedFiles = files.filter(file => file.size > maxSize)
     
     if (oversizedFiles.length > 0) {
-      alert('Alguns arquivos excedem o limite de 10MB')
+      toast.alert('Alguns arquivos excedem o limite de 10MB')
       return
     }
 

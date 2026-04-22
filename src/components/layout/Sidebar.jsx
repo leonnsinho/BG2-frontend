@@ -1,4 +1,5 @@
 import React from 'react'
+import toast from '@/lib/toast'
 import { useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
@@ -607,7 +608,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     const promptToUse = deferredPrompt || globalDeferredPrompt
 
     if (!promptToUse) {
-      alert('Seu navegador não permitiu a instalação automática. Tente pelo menu do navegador (três pontos > Instalar App).')
+      toast.alert('Seu navegador não permitiu a instalação automática. Tente pelo menu do navegador (três pontos > Instalar App).')
       return
     }
 

@@ -25,7 +25,7 @@ import {
   Image as ImageIcon,
   X
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 export default function CreateCompanyPage() {
   const navigate = useNavigate()

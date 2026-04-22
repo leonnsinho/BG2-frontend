@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 export default function AcceptInvitePage() {
   const [searchParams] = useSearchParams()

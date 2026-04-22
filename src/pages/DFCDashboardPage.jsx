@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
+import confirmDialog from '@/lib/confirm'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import SuperAdminBanner from '../components/SuperAdminBanner'
@@ -65,6 +66,7 @@ export default function DFCDashboardPage() {
   const [categoriasMap, setCategoriasMap] = useState({})
   const [showHistoricoModal, setShowHistoricoModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState(null)
   const [exportYear, setExportYear] = useState(new Date().getFullYear())
   const [exportFormat, setExportFormat] = useState('excel')
   const [historicoRelatorios, setHistoricoRelatorios] = useState([])
@@ -2435,26 +2437,64 @@ export default function DFCDashboardPage() {
               </div>
             </div>
             
-            <div className="h-80">
+            <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <RechartPie>
                   <Pie
                     data={categoryData}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
+                    innerRadius={40}
+                    outerRadius={90}
                     dataKey="value"
+                    paddingAngle={2}
+                    onClick={(data) => setSelectedCategory(data.name)}
+                    style={{ cursor: 'pointer' }}
                   >
                     {categoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null
+                      const { name, value } = payload[0]
+                      const total = categoryData.reduce((s, d) => s + d.value, 0)
+                      const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0
+                      return (
+                        <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-3 py-2 text-sm">
+                          <p className="font-semibold text-gray-800 mb-0.5">{name}</p>
+                          <p className="text-gray-600">{formatCurrency(value)}</p>
+                          <p className="text-gray-400 text-xs">{pct}% do total</p>
+                        </div>
+                      )
+                    }}
+                  />
                 </RechartPie>
               </ResponsiveContainer>
+            </div>
+
+            {/* Legenda customizada */}
+            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+              {categoryData.map((entry, index) => {
+                const total = categoryData.reduce((s, d) => s + d.value, 0)
+                const pct = total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 min-w-0 cursor-pointer rounded-lg px-1.5 py-0.5 hover:bg-gray-100 transition-colors"
+                    onClick={() => setSelectedCategory(entry.name)}
+                    title={`Ver despesas: ${entry.name}`}
+                  >
+                    <span
+                      className="flex-shrink-0 w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                    <span className="text-xs text-gray-600 truncate flex-1">{entry.name}</span>
+                    <span className="text-xs font-semibold text-gray-700 flex-shrink-0">{pct}%</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
@@ -2626,7 +2666,7 @@ export default function DFCDashboardPage() {
                           </button>
                           <button
                             onClick={async () => {
-                              if (confirm('Deseja realmente excluir este relatório do histórico?')) {
+                              if (await confirmDialog('Deseja realmente excluir este relatório do histórico?', { danger: true })) {
                                 const { error } = await supabase
                                   .from('dfc_relatorios_historico')
                                   .delete()
@@ -2840,6 +2880,91 @@ export default function DFCDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Despesas por Categoria */}
+      {selectedCategory && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-purple-100 rounded-xl flex-shrink-0">
+                  <PieChart className="h-5 w-5 text-purple-600" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-gray-900 truncate">{selectedCategory}</h2>
+                  <p className="text-sm text-gray-500">Despesas da categoria</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 ml-3"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Lista */}
+            <div className="overflow-y-auto flex-1 p-5">
+              {(() => {
+                const items = saidasData
+                  .filter(s => {
+                    const nome = s.categoria ? (categoriasMap[s.categoria] || 'Categoria Desconhecida') : 'Sem Categoria'
+                    return nome === selectedCategory
+                  })
+                  .sort((a, b) => (b.vencimento || '').localeCompare(a.vencimento || ''))
+
+                if (items.length === 0) {
+                  return (
+                    <div className="text-center py-12 text-gray-500">
+                      <TrendingDown className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p>Nenhuma despesa encontrada para este período.</p>
+                    </div>
+                  )
+                }
+
+                const total = items.reduce((s, i) => s + (i.valor || 0), 0)
+
+                return (
+                  <>
+                    <div className="space-y-2">
+                      {items.map((item, idx) => (
+                        <div
+                          key={item.id || idx}
+                          className="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-800 truncate">
+                              {item.descricao || '—'}
+                            </p>
+                            {item.vencimento && (
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {new Date(item.vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
+                                {item.parcela_numero ? ` · Parcela ${item.parcela_numero}` : ''}
+                              </p>
+                            )}
+                          </div>
+                          <span className="text-sm font-semibold text-red-600 flex-shrink-0">
+                            {formatCurrency(item.valor || 0)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Total */}
+                    <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+                      <span className="text-sm font-semibold text-gray-700">{items.length} despesa{items.length !== 1 ? 's' : ''}</span>
+                      <span className="text-base font-bold text-red-600">{formatCurrency(total)}</span>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
+

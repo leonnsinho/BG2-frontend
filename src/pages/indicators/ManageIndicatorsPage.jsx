@@ -8,7 +8,7 @@ import {
   MoreVertical, Filter, ChevronLeft, ChevronRight,
   CheckCircle2, XCircle, Target, ChevronDown, User, Zap, Building2, ArrowLeft
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 import IndicatorModal from '../../components/indicators/IndicatorModal'
 import ConfirmModal from '../../components/ui/ConfirmModal'
 

@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import ConfirmDialogMount from './components/common/ConfirmDialogMount'
 import { AuthProvider } from './contexts/AuthContext'
 import { UserProvider } from './contexts/UserContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -671,6 +672,7 @@ function App() {
               }}
             />
             <UpdateNotification />
+            <ConfirmDialogMount />
           </div>
         </Router>
       </UserProvider>

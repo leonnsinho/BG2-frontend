@@ -16,7 +16,7 @@ import {
   ChevronRight,
   GripVertical
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 export default function TaskPacksManagementPage() {
   const { profile } = useAuth()

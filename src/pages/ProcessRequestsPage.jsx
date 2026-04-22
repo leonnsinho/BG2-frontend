@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { 
@@ -186,14 +187,14 @@ export default function ProcessRequestsPage() {
         console.log('✅ Processo criado com sucesso na jornada! ID:', processId)
       }
 
-      alert(`Solicitação ${reviewData.status === 'approved' ? 'aprovada e processo criado' : 'rejeitada'} com sucesso!`)
+      toast.alert(`Solicitação ${reviewData.status === 'approved' ? 'aprovada e processo criado' : 'rejeitada'} com sucesso!`)
       setShowReviewModal(false)
       setSelectedRequest(null)
       setReviewData({ status: 'approved', admin_notes: '' })
       await loadRequests()
     } catch (error) {
       console.error('Erro ao revisar solicitação:', error)
-      alert('Erro ao revisar solicitação: ' + error.message)
+      toast.alert('Erro ao revisar solicitação: ' + error.message)
     } finally {
       setUpdating(false)
     }
@@ -252,7 +253,7 @@ export default function ProcessRequestsPage() {
 
   const handleSaveEdit = async () => {
     if (!editData.process_name.trim()) {
-      alert('Nome do processo é obrigatório')
+      toast.alert('Nome do processo é obrigatório')
       return
     }
 
@@ -280,10 +281,10 @@ export default function ProcessRequestsPage() {
       setSelectedRequest({ ...selectedRequest, ...editData })
       
       setShowEditModal(false)
-      alert('Processo atualizado com sucesso!')
+      toast.alert('Processo atualizado com sucesso!')
     } catch (error) {
       console.error('Erro ao salvar edição:', error)
-      alert('Erro ao salvar edição: ' + error.message)
+      toast.alert('Erro ao salvar edição: ' + error.message)
     } finally {
       setUpdating(false)
     }

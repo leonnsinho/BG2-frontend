@@ -24,7 +24,8 @@ import {
   X
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
+import confirmDialog from '@/lib/confirm'
 
 const COMPANY_TYPES = {
   'micro': { label: 'Micro Empresa', color: 'green' },
@@ -302,7 +303,7 @@ export default function CompaniesManagementPage() {
       closeAllModals()
     } catch (error) {
       console.error('Erro ao atualizar empresa:', error)
-      alert('Erro ao atualizar empresa')
+      toast.alert('Erro ao atualizar empresa')
     } finally {
       setUpdating(false)
     }
@@ -355,7 +356,7 @@ export default function CompaniesManagementPage() {
   }
 
   const handleDeleteCompany = async (companyId) => {
-    if (!confirm('Tem certeza que deseja excluir esta empresa? Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.')) {
+    if (!await confirmDialog('Tem certeza que deseja excluir esta empresa? Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.', { danger: true })) {
       return
     }
 
@@ -372,7 +373,7 @@ export default function CompaniesManagementPage() {
       await loadCompanies()
     } catch (error) {
       console.error('Erro ao excluir empresa:', error)
-      alert('Erro ao excluir empresa')
+      toast.alert('Erro ao excluir empresa')
     } finally {
       setUpdating(false)
     }

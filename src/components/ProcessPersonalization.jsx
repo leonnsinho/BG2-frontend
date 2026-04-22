@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { toast } from 'react-hot-toast'
+import { toast } from '@/lib/toast'
 
 // Componente para avaliar/personalizar processos individuais
 export function ProcessPersonalization({ processId, companyId, onSave }) {

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { toast } from 'react-hot-toast'
+import { toast } from '@/lib/toast'
+import confirmDialog from '@/lib/confirm'
 import SuperAdminBanner from '../../components/SuperAdminBanner'
 import { 
   Users, 
@@ -584,7 +585,7 @@ export default function UsersManagementPage() {
         .single()
 
       if (!userCompany) {
-        alert('Usuário não está vinculado a nenhuma empresa')
+        toast.alert('Usuário não está vinculado a nenhuma empresa')
         return
       }
 
@@ -611,7 +612,7 @@ export default function UsersManagementPage() {
       await loadAssignments()
     } catch (error) {
       console.error('Erro ao atribuir jornada:', error)
-      alert('Erro ao atribuir jornada: ' + error.message)
+      toast.alert('Erro ao atribuir jornada: ' + error.message)
     }
   }
 
@@ -632,7 +633,7 @@ export default function UsersManagementPage() {
       console.log('🏢 Company encontrada:', userCompany, 'Erro:', companyError)
 
       if (!userCompany) {
-        alert('Usuário não está vinculado a nenhuma empresa')
+        toast.alert('Usuário não está vinculado a nenhuma empresa')
         return
       }
 
@@ -690,14 +691,14 @@ export default function UsersManagementPage() {
       console.log('✅ Jornada removida com sucesso!')
     } catch (error) {
       console.error('❌ Erro ao remover acesso:', error)
-      alert('Erro ao remover acesso: ' + error.message)
+      toast.alert('Erro ao remover acesso: ' + error.message)
     }
   }
 
   const clearAllJourneys = async () => {
     if (!selectedUserForJourney) return
     
-    if (!confirm(`Tem certeza que deseja remover TODAS as jornadas de ${selectedUserForJourney.full_name}?`)) {
+    if (!await confirmDialog(`Tem certeza que deseja remover TODAS as jornadas de ${selectedUserForJourney.full_name}?`, { danger: true })) {
       return
     }
 
@@ -711,7 +712,7 @@ export default function UsersManagementPage() {
         .single()
 
       if (!userCompany) {
-        alert('Usuário não está vinculado a nenhuma empresa')
+        toast.alert('Usuário não está vinculado a nenhuma empresa')
         return
       }
 
@@ -739,15 +740,15 @@ export default function UsersManagementPage() {
       // Atualizar assignments globais
       await loadAssignments()
       
-      alert('Todas as jornadas foram removidas!')
+      toast.alert('Todas as jornadas foram removidas!')
     } catch (error) {
       console.error('Erro ao limpar jornadas:', error)
-      alert('Erro ao limpar jornadas: ' + error.message)
+      toast.alert('Erro ao limpar jornadas: ' + error.message)
     }
   }
 
   const handlePermanentDeleteUser = async (userId, userName) => {
-    if (!confirm(`⚠️ EXCLUIR PERMANENTEMENTE\n\nTem certeza que deseja excluir a conta de "${userName}"?\n\nTodos os dados do usuário serão removidos. Esta ação NÃO pode ser desfeita.`)) return
+    if (!await confirmDialog(`EXCLUIR PERMANENTEMENTE\n\nTem certeza que deseja excluir a conta de "${userName}"?\n\nTodos os dados do usuário serão removidos. Esta ação NÃO pode ser desfeita.`, { danger: true, title: 'Excluir conta permanentemente' })) return
     try {
       setUpdating(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -784,7 +785,7 @@ export default function UsersManagementPage() {
       const newActiveStatus = !currentUser.is_active;
       const action = newActiveStatus ? 'ativar' : 'desativar';
       
-      if (!confirm(`Tem certeza que deseja ${action} este usuário?`)) {
+      if (!await confirmDialog(`Tem certeza que deseja ${action} este usuário?`)) {
         return;
       }
       
@@ -800,10 +801,10 @@ export default function UsersManagementPage() {
       if (error) throw error;
 
       await loadUsers();
-      alert(`Usuário ${newActiveStatus ? 'ativado' : 'desativado'} com sucesso`);
+      toast.alert(`Usuário ${newActiveStatus ? 'ativado' : 'desativado'} com sucesso`);
     } catch (error) {
       console.error('Erro ao alterar status do usuário:', error);
-      alert('Erro ao alterar status do usuário');
+      toast.alert('Erro ao alterar status do usuário');
     } finally {
       setUpdating(false);
     }
@@ -916,7 +917,7 @@ export default function UsersManagementPage() {
   }
 
   const deleteTag = async (tagId) => {
-    if (!confirm('Excluir esta tag? Ela será removida de todos os usuários.')) return
+    if (!await confirmDialog('Excluir esta tag? Ela será removida de todos os usuários.', { danger: true })) return
     try {
       const { error } = await supabase.from('user_tags').delete().eq('id', tagId)
       if (error) throw error
@@ -1034,13 +1035,13 @@ export default function UsersManagementPage() {
       const currentUser = users.find(u => u.id === userId)
       const wasEdit = Boolean(currentUser?.companies?.id)
       
-      alert(wasEdit 
+      toast.alert(wasEdit 
         ? 'Empresa do usuário alterada com sucesso!' 
         : 'Usuário vinculado à empresa com sucesso!'
       )
     } catch (error) {
       console.error('Erro ao vincular usuário:', error)
-      alert('Erro ao vincular usuário à empresa: ' + error.message)
+      toast.alert('Erro ao vincular usuário à empresa: ' + error.message)
     } finally {
       setUpdating(false)
     }
@@ -1049,7 +1050,7 @@ export default function UsersManagementPage() {
   // Desvincular usuário da empresa
   const handleUnlinkFromCompany = async (userId) => {
     try {
-      if (!confirm('Tem certeza que deseja desvincular este usuário da empresa?')) {
+      if (!await confirmDialog('Tem certeza que deseja desvincular este usuário da empresa?')) {
         return
       }
 
@@ -1088,10 +1089,10 @@ export default function UsersManagementPage() {
       }
 
       await loadUsers()
-      alert('Usuário desvinculado da empresa com sucesso!')
+      toast.alert('Usuário desvinculado da empresa com sucesso!')
     } catch (error) {
       console.error('Erro ao desvincular usuário:', error)
-      alert('Erro ao desvincular usuário da empresa: ' + error.message)
+      toast.alert('Erro ao desvincular usuário da empresa: ' + error.message)
     } finally {
       setUpdating(false)
     }
@@ -1130,7 +1131,7 @@ export default function UsersManagementPage() {
   }
 
   const cancelPendingInvite = async (inviteId, email) => {
-    if (!window.confirm(`Cancelar convite para ${email}?`)) return
+    if (!await confirmDialog(`Cancelar convite para ${email}?`)) return
     try {
       setCancellingInvite(inviteId)
       const { error } = await supabase
@@ -2440,11 +2441,11 @@ function EditUserModal({ user, onClose, onSave, loading }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!fullName.trim()) {
-      alert('Por favor, preencha o nome do usuário')
+      toast.alert('Por favor, preencha o nome do usuário')
       return
     }
     if (!email.trim() || !email.includes('@')) {
-      alert('Por favor, informe um email válido')
+      toast.alert('Por favor, informe um email válido')
       return
     }
     const updates = { full_name: fullName.trim() }
@@ -2550,7 +2551,7 @@ function LinkUserModal({ user, companies, onClose, onLink, loading, currentUserP
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!selectedCompanyId) {
-      alert('Por favor, selecione uma empresa')
+      toast.alert('Por favor, selecione uma empresa')
       return
     }
     

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import confirmDialog from '@/lib/confirm'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { sendInviteEmail as sendInviteEmailService, getEmailConfig, testEmailConfiguration } from '../services/emailService'
@@ -21,7 +22,7 @@ import {
   Send,
   TestTube
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 export default function InvitesPage() {
   const { profile, user } = useAuth()
@@ -223,7 +224,7 @@ export default function InvitesPage() {
   }
 
   const cancelInvite = async (inviteId) => {
-    if (!confirm('Tem certeza que deseja cancelar este convite?')) return
+    if (!await confirmDialog('Tem certeza que deseja cancelar este convite?')) return
 
     try {
       setLoading(true)
@@ -337,7 +338,7 @@ export default function InvitesPage() {
       return
     }
     
-    if (!confirm(`Deseja limpar ${cancelledInvites.length} convite(s) do histórico? Esta ação não pode ser desfeita.`)) {
+    if (!await confirmDialog(`Deseja limpar ${cancelledInvites.length} convite(s) do histórico? Esta ação não pode ser desfeita.`)) {
       return
     }
 

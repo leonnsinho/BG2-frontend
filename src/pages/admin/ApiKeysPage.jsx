@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 import {
   Key,
   Plus,

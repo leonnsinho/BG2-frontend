@@ -15,7 +15,8 @@ import MaturityConfirmModal from '../modals/MaturityConfirmModal'
 import ConfirmModal from '../../components/ui/ConfirmModal'
 import SuperAdminBanner from '../SuperAdminBanner'
 import DraggableProcessList from './DraggableProcessList'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
+import confirmDialog from '@/lib/confirm'
 import { calculateProcessProgress } from '../../services/processMaturityService'
 import { useSearchParams } from 'react-router-dom' // 🔥 NOVO: Para ler query params
 
@@ -95,7 +96,7 @@ const SortableTaskItem = ({
       )}
 
       {/* Conteúdo da Tarefa */}
-      <div className={`p-2 sm:p-3 min-w-0 overflow-hidden ${modoSelecao ? 'pl-8' : ''}`}>
+      <div className={`p-2 sm:p-3 min-w-0 overflow-hidden ${modoSelecao ? 'pl-8 sm:pl-8' : ''}`}>
         {children}
       </div>
     </div>
@@ -152,6 +153,7 @@ const PlanejamentoEstrategico = () => {
   // 🔥 NOVO: Estados para Modal de Adicionar Ação
   const [modalTarefaAberto, setModalTarefaAberto] = useState(false)
   const [processoParaTarefa, setProcessoParaTarefa] = useState(null)
+  const [expandedTitles, setExpandedTitles] = useState({})
   const [responsavelManual, setResponsavelManual] = useState('') // Para responsáveis não cadastrados
   
   // 🔥 NOVO: Estados para Modal de Editar Ação
@@ -521,7 +523,7 @@ const PlanejamentoEstrategico = () => {
       
     } catch (error) {
       console.error('❌ Erro ao alterar status:', error)
-      alert('Erro ao alterar status da ação')
+      toast.alert('Erro ao alterar status da ação')
     }
   }
 
@@ -817,17 +819,17 @@ const PlanejamentoEstrategico = () => {
     
     // Validar IDs antes de abrir modal
     if (!processo.id) {
-      alert('❌ Erro: ID do processo não encontrado')
+      toast.alert('❌ Erro: ID do processo não encontrado')
       return
     }
     
     if (!journeyIdToUse) {
-      alert('❌ Erro: UUID da jornada não disponível. Tente selecionar a jornada novamente.')
+      toast.alert('❌ Erro: UUID da jornada não disponível. Tente selecionar a jornada novamente.')
       return
     }
     
     if (!companyId) {
-      alert('❌ Erro: ID da empresa não encontrado')
+      toast.alert('❌ Erro: ID da empresa não encontrado')
       return
     }
     
@@ -835,12 +837,12 @@ const PlanejamentoEstrategico = () => {
       setSelectedProcessForMaturity(processo)
       setMaturityModalOpen(true)
     } else {
-      alert('O processo precisa estar 100% completo para solicitar validação.')
+      toast.alert('O processo precisa estar 100% completo para solicitar validação.')
     }
   }
 
   const handleMaturityApprovalSuccess = () => {
-    alert('✅ Solicitação enviada com sucesso! O admin receberá uma notificação.')
+    toast.alert('✅ Solicitação enviada com sucesso! O admin receberá uma notificação.')
     setMaturityModalOpen(false)
     setSelectedProcessForMaturity(null)
     // Recarregar processos para atualizar status
@@ -860,7 +862,7 @@ const PlanejamentoEstrategico = () => {
     const progress = processProgressMap[processo.id]
 
     if (progress?.percentage !== 100) {
-      alert('❌ O processo precisa estar 100% completo para confirmar amadurecimento.')
+      toast.alert('❌ O processo precisa estar 100% completo para confirmar amadurecimento.')
       return
     }
 
@@ -1099,11 +1101,11 @@ const PlanejamentoEstrategico = () => {
         refetch()
       }
 
-      alert('✅ Processo amadurecido com sucesso!\n\nO processo foi marcado como amadurecido e removido da lista de processos prioritários.')
+      toast.alert('✅ Processo amadurecido com sucesso!\n\nO processo foi marcado como amadurecido e removido da lista de processos prioritários.')
 
     } catch (error) {
       console.error('❌ Erro ao confirmar amadurecimento:', error)
-      alert('❌ Erro ao confirmar amadurecimento: ' + error.message)
+      toast.alert('❌ Erro ao confirmar amadurecimento: ' + error.message)
     }
   }
 
@@ -1183,7 +1185,7 @@ const PlanejamentoEstrategico = () => {
       return
     }
 
-    if (!confirm(`Tem certeza que deseja excluir ${selecionadas.length} ação(ões)?`)) {
+    if (!await confirmDialog(`Tem certeza que deseja excluir ${selecionadas.length} ação(ões)?`, { danger: true })) {
       return
     }
 
@@ -1242,7 +1244,7 @@ const PlanejamentoEstrategico = () => {
       
       // 🔥 Validar se há pelo menos um responsável selecionado
       if (responsaveisSelecionados.length === 0) {
-        alert('⚠️ Selecione pelo menos um responsável para a tarefa')
+        toast.alert('⚠️ Selecione pelo menos um responsável para a tarefa')
         return
       }
       
@@ -1253,7 +1255,7 @@ const PlanejamentoEstrategico = () => {
       
       // 🚨 BLOQUEIO: Se for número (mock), não permitir criação de ação
       if (typeof processUUID === 'number') {
-        alert('⚠️ Esta empresa ainda não possui processos criados nesta jornada.\n\nOs processos exibidos são apenas exemplos de demonstração. Para criar ações, primeiro é necessário criar processos reais através do sistema de Gestão de Processos.')
+        toast.alert('⚠️ Esta empresa ainda não possui processos criados nesta jornada.\n\nOs processos exibidos são apenas exemplos de demonstração. Para criar ações, primeiro é necessário criar processos reais através do sistema de Gestão de Processos.')
         console.error('❌ Tentativa de criar ação em processo MOCK (ID numérico):', processUUID)
         return
       }
@@ -1268,7 +1270,7 @@ const PlanejamentoEstrategico = () => {
       
       if (processError || !processData?.journey_id) {
         console.error('❌ Erro ao buscar journey_id do processo:', processError)
-        alert('⚠️ Erro: Não foi possível identificar a jornada deste processo.\n\nEntre em contato com o administrador.')
+        toast.alert('⚠️ Erro: Não foi possível identificar a jornada deste processo.\n\nEntre em contato com o administrador.')
         return
       }
       
@@ -1319,7 +1321,7 @@ const PlanejamentoEstrategico = () => {
       
     } catch (error) {
       console.error('❌ Erro ao salvar nova ação:', error)
-      alert('Erro ao salvar ação: ' + (error.message || 'Erro desconhecido'))
+      toast.alert('Erro ao salvar ação: ' + (error.message || 'Erro desconhecido'))
     }
   }
 
@@ -2135,7 +2137,7 @@ const PlanejamentoEstrategico = () => {
                           onClick={() => {
                             // 🚨 VALIDAÇÃO: Só permitir se processo for REAL (UUID, não número mock)
                             if (typeof processo.id === 'number') {
-                              alert('⚠️ Esta empresa ainda não possui processos criados nesta jornada.\n\nOs processos exibidos são apenas exemplos de demonstração. Para criar ações, primeiro é necessário criar processos reais através do sistema de Gestão de Processos.')
+                              toast.alert('⚠️ Esta empresa ainda não possui processos criados nesta jornada.\n\nOs processos exibidos são apenas exemplos de demonstração. Para criar ações, primeiro é necessário criar processos reais através do sistema de Gestão de Processos.')
                               return
                             }
                             // ✅ processo.id JÁ É UUID na tabela processes
@@ -2559,7 +2561,22 @@ const PlanejamentoEstrategico = () => {
                         /* Modo de Visualização Elegante */
                         <div className="space-y-2">
                           <div className="flex items-start justify-between">
-                            <p className="text-xs text-[#373435] font-medium flex-1 leading-relaxed break-words overflow-wrap-anywhere pr-2" style={{wordBreak: 'break-word', overflowWrap: 'anywhere'}}>{tarefa.texto}</p>
+                            <div className="flex-1 pr-2">
+                              <p className="text-xs text-[#373435] font-medium leading-relaxed break-words" style={{wordBreak: 'break-word', overflowWrap: 'anywhere'}}>
+                                {expandedTitles[tarefa.id] || tarefa.texto.length <= 120
+                                  ? tarefa.texto
+                                  : tarefa.texto.slice(0, 120) + '…'
+                                }
+                              </p>
+                              {tarefa.texto.length > 120 && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setExpandedTitles(prev => ({ ...prev, [tarefa.id]: !prev[tarefa.id] })) }}
+                                  className="text-[10px] text-[#EBA500] font-semibold hover:underline mt-0.5"
+                                >
+                                  {expandedTitles[tarefa.id] ? 'Ver menos' : 'Ver tudo'}
+                                </button>
+                              )}
+                            </div>
                           </div>
                           
                           {/* 🔥 NOVO: Múltiplos Responsáveis com Indicador de Conclusão */}
@@ -3094,7 +3111,7 @@ const PlanejamentoEstrategico = () => {
       {modalDeleteAberto && tarefaParaDeletar && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-slideUp"
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-slideUp max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -3111,12 +3128,27 @@ const PlanejamentoEstrategico = () => {
             </div>
 
             {/* Body */}
-            <div className="p-4 sm:p-6">
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1">
               <p className="text-gray-700 mb-3 sm:mb-4 text-sm sm:text-base">
                 Tem certeza que deseja excluir a tarefa:
               </p>
               <div className="bg-gray-50 border-l-4 border-red-500 p-3 sm:p-4 rounded-r-lg">
-                <p className="font-semibold text-[#373435] text-sm sm:text-base break-words">{tarefaParaDeletar.texto}</p>
+                <div className="overflow-y-auto max-h-40">
+                  <p className="font-semibold text-[#373435] text-sm sm:text-base break-words">
+                    {expandedTitles[`delete-${tarefaParaDeletar.id}`] || tarefaParaDeletar.texto.length <= 120
+                      ? tarefaParaDeletar.texto
+                      : tarefaParaDeletar.texto.slice(0, 120) + '…'
+                    }
+                  </p>
+                </div>
+                {tarefaParaDeletar.texto.length > 120 && (
+                  <button
+                    onClick={() => setExpandedTitles(prev => ({ ...prev, [`delete-${tarefaParaDeletar.id}`]: !prev[`delete-${tarefaParaDeletar.id}`] }))}
+                    className="text-[10px] text-red-500 font-semibold hover:underline mt-1"
+                  >
+                    {expandedTitles[`delete-${tarefaParaDeletar.id}`] ? 'Ver menos' : 'Ver tudo'}
+                  </button>
+                )}
                 {processoParaDeletar && (
                   <p className="text-xs sm:text-sm text-gray-500 mt-1 truncate">
                     Processo: {processoParaDeletar.nome}
@@ -3126,7 +3158,7 @@ const PlanejamentoEstrategico = () => {
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 rounded-b-2xl">
+            <div className="bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 rounded-b-2xl flex-shrink-0">
               <button
                 onClick={() => {
                   setModalDeleteAberto(false)

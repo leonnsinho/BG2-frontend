@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useSearchParams } from 'react-router-dom'
@@ -276,7 +277,7 @@ export default function PerformanceEvaluationPage() {
       setShowHistoryModal(true)
     } catch (error) {
       console.error('Erro ao carregar histórico:', error)
-      alert('Erro ao carregar histórico de avaliações')
+      toast.alert('Erro ao carregar histórico de avaliações')
     }
   }
 
@@ -344,10 +345,10 @@ export default function PerformanceEvaluationPage() {
       // Fechar modal e recarregar dados
       setShowEvaluationModal(false)
       await loadData()
-      alert('✅ Avaliação salva com sucesso!')
+      toast.alert('✅ Avaliação salva com sucesso!')
     } catch (error) {
       console.error('Erro ao salvar avaliação:', error)
-      alert('❌ Erro ao salvar avaliação: ' + error.message)
+      toast.alert('❌ Erro ao salvar avaliação: ' + error.message)
     } finally {
       setSaving(false)
     }
@@ -384,10 +385,10 @@ export default function PerformanceEvaluationPage() {
           }
 
           await loadData()
-          alert('✅ Avaliação excluída com sucesso!')
+          toast.alert('✅ Avaliação excluída com sucesso!')
         } catch (error) {
           console.error('Erro ao excluir avaliação:', error)
-          alert('❌ Erro ao excluir avaliação. Tente novamente.')
+          toast.alert('❌ Erro ao excluir avaliação. Tente novamente.')
         }
       }
     })
@@ -417,10 +418,10 @@ export default function PerformanceEvaluationPage() {
 
           setShowHistoryModal(false)
           await loadData()
-          alert('✅ Usuário removido da Nine Box com sucesso!')
+          toast.alert('✅ Usuário removido da Nine Box com sucesso!')
         } catch (error) {
           console.error('Erro ao remover usuário:', error)
-          alert('❌ Erro ao remover usuário. Tente novamente.')
+          toast.alert('❌ Erro ao remover usuário. Tente novamente.')
         }
       }
     })
@@ -643,7 +644,7 @@ export default function PerformanceEvaluationPage() {
       win.document.close()
     } catch (error) {
       console.error('Erro ao exportar PDF:', error)
-      alert('Erro ao exportar PDF. Tente novamente.')
+      toast.alert('Erro ao exportar PDF. Tente novamente.')
     } finally {
       setExporting(false)
     }

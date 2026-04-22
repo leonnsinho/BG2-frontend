@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/useAuth'
 import { supabase } from '../services/supabase'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 import { 
   User, 
   Mail, 

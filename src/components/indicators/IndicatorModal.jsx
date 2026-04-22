@@ -3,7 +3,7 @@ import { supabase } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import { X, TrendingUp, Target, DollarSign, User, FileText, Zap, Building2 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 // Extrai o número puro de uma meta salva (remove R$, %, etc.)
 function rawMetaNumber(val) {

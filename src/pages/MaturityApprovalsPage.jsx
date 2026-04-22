@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   CheckCircle, 
@@ -96,10 +97,10 @@ const MaturityApprovalsPage = () => {
       // Disparar evento para atualizar o badge no sidebar
       window.dispatchEvent(new CustomEvent('maturity-approval-changed'))
       
-      alert('✅ Processo amadurecido com sucesso!')
+      toast.alert('✅ Processo amadurecido com sucesso!')
     } catch (error) {
       console.error('Erro ao aprovar:', error)
-      alert('❌ Erro ao aprovar: ' + error.message)
+      toast.alert('❌ Erro ao aprovar: ' + error.message)
     } finally {
       setActionLoading(null)
     }
@@ -107,7 +108,7 @@ const MaturityApprovalsPage = () => {
 
   const handleReject = async () => {
     if (!selectedRequest || !rejectionReason.trim()) {
-      alert('Por favor, informe o motivo da rejeição')
+      toast.alert('Por favor, informe o motivo da rejeição')
       return
     }
 
@@ -125,10 +126,10 @@ const MaturityApprovalsPage = () => {
       // Disparar evento para atualizar o badge no sidebar
       window.dispatchEvent(new CustomEvent('maturity-approval-changed'))
       
-      alert('Solicitação rejeitada')
+      toast.alert('Solicitação rejeitada')
     } catch (error) {
       console.error('Erro ao rejeitar:', error)
-      alert('❌ Erro ao rejeitar: ' + error.message)
+      toast.alert('❌ Erro ao rejeitar: ' + error.message)
     } finally {
       setActionLoading(null)
     }

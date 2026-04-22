@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
@@ -429,7 +430,7 @@ const JourneyDetail = () => {
       if (error) throw error
 
       console.log('✅ Solicitação enviada:', data)
-      alert('Solicitação enviada com sucesso! O Super Admin será notificado.')
+      toast.alert('Solicitação enviada com sucesso! O Super Admin será notificado.')
       setShowRequestProcessModal(false)
     } catch (error) {
       console.error('Erro ao enviar solicitação:', error)
@@ -453,10 +454,10 @@ const JourneyDetail = () => {
       setProcesses(prev => prev.filter(p => p.id !== processId))
       setShowDeleteConfirm(null)
       
-      alert('Processo desativado com sucesso!')
+      toast.alert('Processo desativado com sucesso!')
     } catch (error) {
       console.error('Erro ao desativar processo:', error)
-      alert('Erro ao desativar processo: ' + error.message)
+      toast.alert('Erro ao desativar processo: ' + error.message)
     }
   }
 
@@ -488,10 +489,10 @@ const JourneyDetail = () => {
         ? `\n- ${data.evaluations_deleted} avaliações deletadas\n- ${data.history_deleted} registros de histórico deletados`
         : ''
       
-      alert(`Processo apagado permanentemente com sucesso!${deletedInfo}`)
+      toast.alert(`Processo apagado permanentemente com sucesso!${deletedInfo}`)
     } catch (error) {
       console.error('Erro ao apagar processo:', error)
-      alert('Erro ao apagar processo: ' + error.message)
+      toast.alert('Erro ao apagar processo: ' + error.message)
     }
   }
 
@@ -521,10 +522,10 @@ const JourneyDetail = () => {
       
       setShowToggleConfirm(null)
       
-      alert(`Processo ${newStatus ? 'ativado' : 'desativado'} com sucesso!`)
+      toast.alert(`Processo ${newStatus ? 'ativado' : 'desativado'} com sucesso!`)
     } catch (error) {
       console.error('Erro ao alterar status do processo:', error)
-      alert('Erro ao alterar status do processo: ' + error.message)
+      toast.alert('Erro ao alterar status do processo: ' + error.message)
     }
   }
 

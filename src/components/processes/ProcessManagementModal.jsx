@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { X, Plus, Save, AlertCircle } from 'lucide-react'
 import { supabase } from '../../services/supabase'
+import toast from '@/lib/toast'
 
 const ProcessManagementModal = ({ 
   isOpen, 
@@ -129,9 +130,6 @@ const ProcessManagementModal = ({
       newErrors.description = 'Descrição é obrigatória'
     }
 
-    if (!formData.category.trim()) {
-      newErrors.category = 'Categoria é obrigatória'
-    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -161,6 +159,7 @@ const ProcessManagementModal = ({
 
         console.log('✅ Processo atualizado:', data)
         onProcessSaved?.(data, 'updated')
+        toast.success('Processo atualizado com sucesso!')
 
       } else {
         // Criando novo processo
@@ -189,13 +188,14 @@ const ProcessManagementModal = ({
 
         console.log('✅ Processo criado:', data)
         onProcessSaved?.(data, 'created')
+        toast.success(`Processo "${data.name}" criado com sucesso!`)
       }
 
       onClose()
 
     } catch (error) {
       console.error('❌ Erro ao salvar processo:', error)
-      alert('Erro ao salvar processo: ' + error.message)
+      toast.error('Erro ao salvar processo: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -287,7 +287,7 @@ const ProcessManagementModal = ({
             {/* Categoria */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categoria *
+                Categoria
               </label>
               {availableCategories.length > 0 ? (
                 <select

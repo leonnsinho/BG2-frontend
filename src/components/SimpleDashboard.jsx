@@ -1,4 +1,5 @@
 import React from 'react'
+import toast from '@/lib/toast'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../services/supabase'
 
@@ -12,7 +13,7 @@ export function SimpleDashboard() {
       window.location.href = '/login'
     } catch (error) {
       console.error('Erro no logout:', error)
-      alert('Erro ao fazer logout: ' + error.message)
+      toast.alert('Erro ao fazer logout: ' + error.message)
     }
   }
 

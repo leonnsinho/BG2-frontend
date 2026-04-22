@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
+import confirmDialog from '@/lib/confirm'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Layout } from '../components/layout/Layout'
@@ -133,12 +135,12 @@ const TasksInProgress = () => {
       closeEditModal()
     } catch (error) {
       console.error('Erro ao salvar tarefa:', error)
-      alert('Erro ao salvar tarefa')
+      toast.alert('Erro ao salvar tarefa')
     }
   }
 
   const deleteTask = async (taskId) => {
-    if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return
+    if (!await confirmDialog('Tem certeza que deseja excluir esta tarefa?', { danger: true })) return
 
     try {
       const { error } = await supabase
@@ -151,7 +153,7 @@ const TasksInProgress = () => {
       await loadTasks()
     } catch (error) {
       console.error('Erro ao excluir tarefa:', error)
-      alert('Erro ao excluir tarefa')
+      toast.alert('Erro ao excluir tarefa')
     }
   }
 

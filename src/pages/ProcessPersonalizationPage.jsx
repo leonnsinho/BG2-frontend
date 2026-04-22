@@ -4,7 +4,7 @@ import { Layout } from '../components/layout/Layout'
 import { ProcessPersonalization } from '../components/ProcessPersonalization'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { toast } from 'react-hot-toast'
+import { toast } from '@/lib/toast'
 
 export default function ProcessPersonalizationPage() {
   const { processId } = useParams()

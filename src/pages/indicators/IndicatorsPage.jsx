@@ -8,7 +8,7 @@ import {
   TrendingUp, TrendingDown, Minus, ChevronDown, DollarSign,
   Calendar, ChevronLeft, ChevronRight
 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 import SuperAdminBanner from '../../components/SuperAdminBanner'
 
 // Extrai o número puro de qualquer valor salvo (remove R$, %, etc.)

@@ -27,7 +27,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 const CompanyMaturityProgressPageNew = () => {
   const { profile } = useAuth()

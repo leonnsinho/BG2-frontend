@@ -31,7 +31,7 @@ import { useAuth } from '../contexts/AuthContext'
 import SuperAdminBanner from '../components/SuperAdminBanner'
 import EmojiIconPicker from '../components/EmojiIconPicker'
 import { renderIcon } from '../utils/iconRenderer'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 // ─── constants ────────────────────────────────────────────────────────────────
 const ORIGENS = ['Indicação', 'Inbound', 'Outbound', 'Site/Blog', 'Redes Sociais', 'Evento', 'Parceiro', 'Outro']

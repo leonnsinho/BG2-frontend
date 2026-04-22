@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
 import { X, User, Calendar, MessageCircle, Send, Edit3, Check, Clock, AlertCircle, Paperclip } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useTasks } from '../../hooks/useTasks'
@@ -125,7 +126,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
             uploadedAttachments.push(fileInfo)
           } catch (error) {
             console.error('Erro ao fazer upload do arquivo:', file.name, error)
-            alert(`Erro ao enviar arquivo: ${file.name}`)
+            toast.alert(`Erro ao enviar arquivo: ${file.name}`)
             return
           }
         }
@@ -139,7 +140,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
       setShowFileUpload(false)
     } catch (error) {
       console.error('Erro ao adicionar comentário:', error)
-      alert('Erro ao adicionar comentário')
+      toast.alert('Erro ao adicionar comentário')
     } finally {
       setIsAddingComment(false)
     }

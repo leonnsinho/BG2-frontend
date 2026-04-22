@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import toast from '@/lib/toast'
+import confirmDialog from '@/lib/confirm'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import SuperAdminBanner from '../components/SuperAdminBanner'
@@ -202,7 +204,7 @@ export default function OperationalPoliciesPage() {
       console.log('✅ Descrição salva com sucesso')
     } catch (error) {
       console.error('❌ Erro ao salvar descrição:', error)
-      alert('Erro ao salvar descrição')
+      toast.alert('Erro ao salvar descrição')
     }
   }
 
@@ -243,7 +245,7 @@ export default function OperationalPoliciesPage() {
       }
     } catch (error) {
       console.error('Erro ao carregar jornadas:', error)
-      alert('Erro ao carregar jornadas: ' + error.message)
+      toast.alert('Erro ao carregar jornadas: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -283,7 +285,7 @@ export default function OperationalPoliciesPage() {
       setBlocks(organizedBlocks)
     } catch (error) {
       console.error('Erro ao carregar blocos:', error)
-      alert('Erro ao carregar blocos: ' + error.message)
+      toast.alert('Erro ao carregar blocos: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -292,7 +294,7 @@ export default function OperationalPoliciesPage() {
   // CRUD de Blocos
   const handleSaveBlock = async () => {
     if (!blockForm.name.trim() || !userCompanyId || !selectedJourney) {
-      alert('Nome do bloco é obrigatório')
+      toast.alert('Nome do bloco é obrigatório')
       return
     }
 
@@ -332,14 +334,14 @@ export default function OperationalPoliciesPage() {
       loadBlocks()
     } catch (error) {
       console.error('Erro ao salvar bloco:', error)
-      alert('Erro ao salvar bloco: ' + error.message)
+      toast.alert('Erro ao salvar bloco: ' + error.message)
     } finally {
       setSaving(false)
     }
   }
 
   const handleDeleteBlock = async (blockId) => {
-    if (!confirm('Tem certeza que deseja deletar este bloco? Todos os sub-blocos e conteúdos serão removidos.')) {
+    if (!await confirmDialog('Tem certeza que deseja deletar este bloco? Todos os sub-blocos e conteúdos serão removidos.', { danger: true })) {
       return
     }
 
@@ -354,14 +356,14 @@ export default function OperationalPoliciesPage() {
       loadBlocks()
     } catch (error) {
       console.error('Erro ao deletar bloco:', error)
-      alert('Erro ao deletar bloco: ' + error.message)
+      toast.alert('Erro ao deletar bloco: ' + error.message)
     }
   }
 
   // CRUD de Sub-blocos
   const handleSaveSubblock = async () => {
     if (!subblockForm.name.trim() || !selectedBlock) {
-      alert('Nome do sub-bloco é obrigatório')
+      toast.alert('Nome do sub-bloco é obrigatório')
       return
     }
 
@@ -424,9 +426,9 @@ export default function OperationalPoliciesPage() {
       
       // Mensagem de erro mais específica
       if (error.code === '23505') {
-        alert('Já existe um sub-bloco com este nome neste bloco. Por favor, escolha outro nome.')
+        toast.alert('Já existe um sub-bloco com este nome neste bloco. Por favor, escolha outro nome.')
       } else {
-        alert('Erro ao salvar sub-bloco: ' + error.message)
+        toast.alert('Erro ao salvar sub-bloco: ' + error.message)
       }
     } finally {
       setSaving(false)
@@ -434,7 +436,7 @@ export default function OperationalPoliciesPage() {
   }
 
   const handleDeleteSubblock = async (subblockId) => {
-    if (!confirm('Tem certeza que deseja deletar este sub-bloco? Todo o conteúdo será removido.')) {
+    if (!await confirmDialog('Tem certeza que deseja deletar este sub-bloco? Todo o conteúdo será removido.', { danger: true })) {
       return
     }
 
@@ -483,14 +485,14 @@ export default function OperationalPoliciesPage() {
       }
     } catch (error) {
       console.error('Erro ao deletar sub-bloco:', error)
-      alert('Erro ao deletar sub-bloco: ' + error.message)
+      toast.alert('Erro ao deletar sub-bloco: ' + error.message)
     }
   }
 
   // 🔥 NOVO: CRUD de Sub-Sub-blocos (3º nível)
   const handleSaveSubSubblock = async () => {
     if (!subSubblockForm.name.trim() || !selectedParentSubblock) {
-      alert('Nome do sub-bloco é obrigatório')
+      toast.alert('Nome do sub-bloco é obrigatório')
       return
     }
 
@@ -582,14 +584,14 @@ export default function OperationalPoliciesPage() {
       }
     } catch (error) {
       console.error('Erro ao salvar sub-sub-bloco:', error)
-      alert('Erro ao salvar sub-sub-bloco: ' + error.message)
+      toast.alert('Erro ao salvar sub-sub-bloco: ' + error.message)
     } finally {
       setSaving(false)
     }
   }
 
   const handleDeleteSubSubblock = async (subSubblockId) => {
-    if (!confirm('Tem certeza que deseja deletar este sub-bloco? Todo o conteúdo será removido.')) {
+    if (!await confirmDialog('Tem certeza que deseja deletar este sub-bloco? Todo o conteúdo será removido.', { danger: true })) {
       return
     }
 
@@ -645,14 +647,14 @@ export default function OperationalPoliciesPage() {
       }
     } catch (error) {
       console.error('Erro ao deletar sub-sub-bloco:', error)
-      alert('Erro ao deletar sub-sub-bloco: ' + error.message)
+      toast.alert('Erro ao deletar sub-sub-bloco: ' + error.message)
     }
   }
 
   // CRUD de Conteúdo
   const handleSaveContent = async () => {
     if (!selectedSubblock) {
-      alert('Por favor, selecione um sub-bloco para adicionar conteúdo.')
+      toast.alert('Por favor, selecione um sub-bloco para adicionar conteúdo.')
       return
     }
 
@@ -700,14 +702,14 @@ export default function OperationalPoliciesPage() {
       }
     } catch (error) {
       console.error('Erro ao salvar conteúdo:', error)
-      alert('Erro ao salvar conteúdo: ' + error.message)
+      toast.alert('Erro ao salvar conteúdo: ' + error.message)
     } finally {
       setSaving(false)
     }
   }
 
   const handleDeleteContent = async (contentId) => {
-    if (!confirm('Tem certeza que deseja deletar este conteúdo?')) {
+    if (!await confirmDialog('Tem certeza que deseja deletar este conteúdo?', { danger: true })) {
       return
     }
 
@@ -732,7 +734,7 @@ export default function OperationalPoliciesPage() {
       }
     } catch (error) {
       console.error('Erro ao deletar conteúdo:', error)
-      alert('Erro ao deletar conteúdo: ' + error.message)
+      toast.alert('Erro ao deletar conteúdo: ' + error.message)
     }
   }
 
@@ -743,12 +745,12 @@ export default function OperationalPoliciesPage() {
     console.log('📋 selectedSubblock:', selectedSubblock)
     
     if (!uploadFiles || uploadFiles.length === 0) {
-      alert('Selecione pelo menos um arquivo')
+      toast.alert('Selecione pelo menos um arquivo')
       return
     }
     
     if (!selectedSubblock) {
-      alert('Por favor, selecione um sub-bloco para adicionar anexos.')
+      toast.alert('Por favor, selecione um sub-bloco para adicionar anexos.')
       return
     }
 
@@ -806,9 +808,9 @@ export default function OperationalPoliciesPage() {
 
       // Mostrar resultado
       if (uploadedCount > 0 && failedCount === 0) {
-        alert(`✅ ${uploadedCount} arquivo(s) enviado(s) com sucesso!`)
+        toast.alert(`✅ ${uploadedCount} arquivo(s) enviado(s) com sucesso!`)
       } else if (uploadedCount > 0 && failedCount > 0) {
-        alert(`⚠️ ${uploadedCount} arquivo(s) enviado(s), ${failedCount} falharam.`)
+        toast.alert(`⚠️ ${uploadedCount} arquivo(s) enviado(s), ${failedCount} falharam.`)
       } else {
         throw new Error('Falha ao enviar todos os arquivos')
       }
@@ -823,14 +825,14 @@ export default function OperationalPoliciesPage() {
       await refreshActiveTab()
     } catch (error) {
       console.error('Erro ao fazer upload:', error)
-      alert('Erro ao fazer upload: ' + error.message)
+      toast.alert('Erro ao fazer upload: ' + error.message)
     } finally {
       setUploading(false)
     }
   }
 
   const handleDeleteAttachment = async (attachment) => {
-    if (!confirm('Tem certeza que deseja deletar este anexo?')) {
+    if (!await confirmDialog('Tem certeza que deseja deletar este anexo?', { danger: true })) {
       return
     }
 
@@ -861,7 +863,7 @@ export default function OperationalPoliciesPage() {
       }
     } catch (error) {
       console.error('Erro ao deletar anexo:', error)
-      alert('Erro ao deletar anexo: ' + error.message)
+      toast.alert('Erro ao deletar anexo: ' + error.message)
     }
   }
 
@@ -1147,7 +1149,7 @@ export default function OperationalPoliciesPage() {
     if (url) {
       window.open(url, '_blank')
     } else {
-      alert('Erro ao gerar link de visualização')
+      toast.alert('Erro ao gerar link de visualização')
     }
   }
 
@@ -1162,7 +1164,7 @@ export default function OperationalPoliciesPage() {
       a.click()
       document.body.removeChild(a)
     } else {
-      alert('Erro ao gerar link de download')
+      toast.alert('Erro ao gerar link de download')
     }
   }
 
@@ -1235,7 +1237,7 @@ export default function OperationalPoliciesPage() {
     console.log('🔥 openAllSubblocksInTabs - Iniciando', block)
     
     if (!block.policy_subblocks || block.policy_subblocks.length === 0) {
-      alert('Este bloco não possui sub-blocos')
+      toast.alert('Este bloco não possui sub-blocos')
       return
     }
 
@@ -1338,7 +1340,7 @@ export default function OperationalPoliciesPage() {
 
     if (error) {
       console.error('Erro ao carregar subbloco:', error)
-      alert('Erro ao abrir subbloco')
+      toast.alert('Erro ao abrir subbloco')
       return
     }
 
@@ -1570,7 +1572,7 @@ export default function OperationalPoliciesPage() {
                       showSuccessToast('Texto atualizado com sucesso!')
                     } catch (error) {
                       console.error('Erro ao salvar:', error)
-                      alert('Erro ao salvar: ' + error.message)
+                      toast.alert('Erro ao salvar: ' + error.message)
                     } finally {
                       setSaving(false)
                     }
@@ -1684,7 +1686,7 @@ export default function OperationalPoliciesPage() {
                       showSuccessToast('Lista atualizada com sucesso!')
                     } catch (error) {
                       console.error('Erro ao salvar:', error)
-                      alert('Erro ao salvar: ' + error.message)
+                      toast.alert('Erro ao salvar: ' + error.message)
                     } finally {
                       setSaving(false)
                     }
@@ -1783,7 +1785,7 @@ export default function OperationalPoliciesPage() {
                       showSuccessToast('Título atualizado com sucesso!')
                     } catch (error) {
                       console.error('Erro ao salvar:', error)
-                      alert('Erro ao salvar: ' + error.message)
+                      toast.alert('Erro ao salvar: ' + error.message)
                     } finally {
                       setSaving(false)
                     }
@@ -1959,7 +1961,7 @@ export default function OperationalPoliciesPage() {
                       showSuccessToast('Tabela atualizada com sucesso!')
                     } catch (error) {
                       console.error('Erro ao salvar tabela:', error)
-                      alert('Erro ao salvar tabela: ' + error.message)
+                      toast.alert('Erro ao salvar tabela: ' + error.message)
                     } finally {
                       setSaving(false)
                     }

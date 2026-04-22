@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { createRequire } from 'module'
+import path from 'path'
 
 const require = createRequire(import.meta.url)
 
@@ -35,6 +36,11 @@ function netlifyFunctionsDevPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), netlifyFunctionsDevPlugin()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
+  },
   envDir: './',
   envPrefix: 'VITE_',
   build: {

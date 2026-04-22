@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import toast from '@/lib/toast'
 import { Download, Eye, FileText, Image, File, ExternalLink } from 'lucide-react'
 import { useFileUpload } from '../../hooks/useFileUpload'
 
@@ -35,7 +36,7 @@ const AttachmentList = ({ attachments = [] }) => {
       
     } catch (error) {
       console.error('Erro ao baixar arquivo:', error)
-      alert('Erro ao baixar arquivo')
+      toast.alert('Erro ao baixar arquivo')
     } finally {
       setLoadingUrl(prev => ({ ...prev, [attachment.path]: false }))
     }
@@ -54,7 +55,7 @@ const AttachmentList = ({ attachments = [] }) => {
       
     } catch (error) {
       console.error('Erro ao visualizar arquivo:', error)
-      alert('Erro ao visualizar arquivo')
+      toast.alert('Erro ao visualizar arquivo')
     } finally {
       setLoadingUrl(prev => ({ ...prev, [attachment.path]: false }))
     }

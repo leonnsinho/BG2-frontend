@@ -16,7 +16,7 @@ import {
   ArrowRight
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 const MatrizBossaPage = () => {
   const { profile } = useAuth()

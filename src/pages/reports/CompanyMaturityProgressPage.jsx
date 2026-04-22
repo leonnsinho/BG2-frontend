@@ -41,7 +41,7 @@ import {
   Area,
   AreaChart
 } from 'recharts'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 const CompanyMaturityProgressPage = () => {
   const { profile } = useAuth()

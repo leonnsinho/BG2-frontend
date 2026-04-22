@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
+import toast from '@/lib/toast'
+import confirmDialog from '@/lib/confirm'
 import { X, FileText, CheckSquare, Paperclip, Plus, Save, Trash2, Edit2, Download, ExternalLink, GripVertical, Bold, Italic, Link as LinkIcon, List, Heading, Upload, Loader2, Eye } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { renderIcon } from '../utils/iconRenderer'
@@ -217,7 +219,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
 
     if (error) {
       console.error('❌ Erro ao criar checklist:', error)
-      alert(`Erro ao criar checklist: ${error.message}`)
+      toast.alert(`Erro ao criar checklist: ${error.message}`)
       setSaving(false)
       return
     }
@@ -232,7 +234,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
   }
 
   const handleDeleteChecklist = async (checklistId) => {
-    if (!confirm('Deseja realmente deletar esta checklist?')) return
+    if (!await confirmDialog('Deseja realmente deletar esta checklist?')) return
 
     setSaving(true)
     const { error } = await supabase
@@ -393,11 +395,11 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
 
     // Mostrar resultado
     if (uploadedCount > 0 && failedCount === 0) {
-      alert(`✅ ${uploadedCount} arquivo(s) enviado(s) com sucesso!`)
+      toast.alert(`✅ ${uploadedCount} arquivo(s) enviado(s) com sucesso!`)
     } else if (uploadedCount > 0 && failedCount > 0) {
-      alert(`⚠️ ${uploadedCount} arquivo(s) enviado(s), ${failedCount} falharam.`)
+      toast.alert(`⚠️ ${uploadedCount} arquivo(s) enviado(s), ${failedCount} falharam.`)
     } else if (failedCount > 0) {
-      alert(`❌ Falha ao enviar todos os arquivos`)
+      toast.alert(`❌ Falha ao enviar todos os arquivos`)
       return
     }
 
@@ -416,7 +418,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
       
       if (!filePath) {
         console.error('❌ Caminho do arquivo não encontrado')
-        alert('Erro: caminho do arquivo não encontrado')
+        toast.alert('Erro: caminho do arquivo não encontrado')
         return
       }
 
@@ -426,7 +428,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
 
       if (error) {
         console.error('❌ Erro ao baixar arquivo:', error)
-        alert('Erro ao baixar arquivo')
+        toast.alert('Erro ao baixar arquivo')
         return
       }
 
@@ -441,7 +443,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
       window.URL.revokeObjectURL(url)
     } catch (err) {
       console.error('❌ Erro ao baixar:', err)
-      alert('Erro ao baixar arquivo')
+      toast.alert('Erro ao baixar arquivo')
     }
   }
 
@@ -452,7 +454,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
       
       if (!filePath) {
         console.error('❌ Caminho do arquivo não encontrado')
-        alert('Erro: caminho do arquivo não encontrado')
+        toast.alert('Erro: caminho do arquivo não encontrado')
         return
       }
 
@@ -463,7 +465,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
 
       if (error) {
         console.error('❌ Erro ao gerar URL:', error)
-        alert('Erro ao visualizar arquivo')
+        toast.alert('Erro ao visualizar arquivo')
         return
       }
 
@@ -486,7 +488,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
       }
     } catch (err) {
       console.error('❌ Erro ao visualizar:', err)
-      alert('Erro ao visualizar arquivo')
+      toast.alert('Erro ao visualizar arquivo')
     }
   }
 
@@ -532,11 +534,11 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
     setSelectedAttachments([])
     
     if (successCount > 0 && failCount === 0) {
-      alert(`✅ ${successCount} arquivo(s) baixado(s) com sucesso!`)
+      toast.alert(`✅ ${successCount} arquivo(s) baixado(s) com sucesso!`)
     } else if (successCount > 0 && failCount > 0) {
-      alert(`⚠️ ${successCount} arquivo(s) baixado(s), ${failCount} falharam.`)
+      toast.alert(`⚠️ ${successCount} arquivo(s) baixado(s), ${failCount} falharam.`)
     } else {
-      alert('❌ Falha ao baixar arquivos')
+      toast.alert('❌ Falha ao baixar arquivos')
     }
   }
 
@@ -590,11 +592,11 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
         setSaving(false)
 
         if (successCount > 0 && failCount === 0) {
-          alert(`✅ ${successCount} anexo(s) excluído(s) com sucesso!`)
+          toast.alert(`✅ ${successCount} anexo(s) excluído(s) com sucesso!`)
         } else if (successCount > 0 && failCount > 0) {
-          alert(`⚠️ ${successCount} anexo(s) excluído(s), ${failCount} falharam.`)
+          toast.alert(`⚠️ ${successCount} anexo(s) excluído(s), ${failCount} falharam.`)
         } else {
-          alert('❌ Falha ao excluir anexos')
+          toast.alert('❌ Falha ao excluir anexos')
         }
       }
     })
@@ -625,7 +627,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
   }
 
   const handleDeleteAttachment = async (attachmentId, filePath) => {
-    if (!confirm('Deseja realmente deletar este anexo?')) return
+    if (!await confirmDialog('Deseja realmente deletar este anexo?')) return
 
     setSaving(true)
 

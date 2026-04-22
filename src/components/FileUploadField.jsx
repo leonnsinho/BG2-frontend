@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Upload, X, Download, File, AlertCircle, CheckCircle } from 'lucide-react'
 import ProcessEvaluationFileService from '../services/ProcessEvaluationFileService'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 const FileUploadField = ({ 
   companyId, 

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import toast from 'react-hot-toast'
+import toast from '@/lib/toast'
 
 const ORIGENS = ['Indicação', 'Inbound', 'Outbound', 'Site/Blog', 'Redes Sociais', 'Evento', 'Parceiro', 'Outro']
 const INP = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/40 focus:border-[#EBA500] bg-white'
