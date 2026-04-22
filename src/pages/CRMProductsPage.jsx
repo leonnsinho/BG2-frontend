@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, Package, Plus, Edit2, Trash2,
   Save, X, Download, Upload, FileSpreadsheet, Search
@@ -21,9 +21,12 @@ const fmtMoney = (v) => {
 
 export default function CRMProductsPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user, profile } = useAuth()
 
-  const companyId = profile?.user_companies?.find(uc => uc.is_active)?.company_id
+  const adminCompanyId = searchParams.get('from') === 'admin' ? searchParams.get('companyId') : null
+  const companyId = adminCompanyId || profile?.user_companies?.find(uc => uc.is_active)?.company_id
+  const adminSuffix = adminCompanyId ? `?from=admin&companyId=${adminCompanyId}` : ''
 
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -38,7 +41,10 @@ export default function CRMProductsPage() {
   const [importPreview, setImportPreview] = useState(null)
   const importRef = useRef(null)
 
-  useEffect(() => { if (companyId) loadProducts() }, [companyId])
+  useEffect(() => {
+    if (companyId) loadProducts()
+    else setLoading(false)
+  }, [companyId])
 
   const loadProducts = async () => {
     setLoading(true)
@@ -181,7 +187,7 @@ export default function CRMProductsPage() {
 
         {/* ── Breadcrumb ── */}
         <button
-          onClick={() => navigate('/crm')}
+          onClick={() => navigate('/crm' + adminSuffix)}
           className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" /> Voltar ao CRM

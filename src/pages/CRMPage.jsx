@@ -2250,6 +2250,7 @@ export default function CRMPage() {
   // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (companyId) loadBoards()
+    else setBoardsLoading(false)
   }, [companyId])
 
   // Auto-abrir board se navegamos de outra página com state.boardId
@@ -2605,19 +2606,19 @@ export default function CRMPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => navigate('/crm/leads')}
+            onClick={() => navigate('/crm/leads' + (adminCompanyId ? `?from=admin&companyId=${adminCompanyId}` : ''))}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors"
           >
             <Building2 className="h-4 w-4" /> Leads
           </button>
           <button
-            onClick={() => navigate('/crm/contatos')}
+            onClick={() => navigate('/crm/contatos' + (adminCompanyId ? `?from=admin&companyId=${adminCompanyId}` : ''))}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors"
           >
             <Users className="h-4 w-4" /> Contatos
           </button>
           <button
-            onClick={() => navigate('/crm/produtos')}
+            onClick={() => navigate('/crm/produtos' + (adminCompanyId ? `?from=admin&companyId=${adminCompanyId}` : ''))}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors"
           >
             <Package className="h-4 w-4" /> Produtos

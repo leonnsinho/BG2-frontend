@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, Users, Building2, Plus, Edit2, Trash2,
   Save, X, Download, Upload, FileSpreadsheet, Search
@@ -17,9 +17,12 @@ const EMPTY = { nome: '', cargo: '', email: '', telefone: '', lead_id: '', obser
 
 export default function CRMContactsPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user, profile } = useAuth()
 
-  const companyId = profile?.user_companies?.find(uc => uc.is_active)?.company_id
+  const adminCompanyId = searchParams.get('from') === 'admin' ? searchParams.get('companyId') : null
+  const companyId = adminCompanyId || profile?.user_companies?.find(uc => uc.is_active)?.company_id
+  const adminSuffix = adminCompanyId ? `?from=admin&companyId=${adminCompanyId}` : ''
 
   const [contacts, setContacts] = useState([])
   const [leads, setLeads] = useState([])
@@ -35,7 +38,10 @@ export default function CRMContactsPage() {
   const [importPreview, setImportPreview] = useState(null)
   const importRef = useRef(null)
 
-  useEffect(() => { if (companyId) loadAll() }, [companyId])
+  useEffect(() => {
+    if (companyId) loadAll()
+    else setLoading(false)
+  }, [companyId])
 
   const loadAll = async () => {
     setLoading(true)
@@ -186,7 +192,7 @@ export default function CRMContactsPage() {
         {/* ── Breadcrumb / back ── */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => navigate('/crm')}
+            onClick={() => navigate('/crm' + adminSuffix)}
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" /> Voltar ao CRM
@@ -224,7 +230,7 @@ export default function CRMContactsPage() {
                   <Download className="h-3.5 w-3.5" /> Modelo .csv
                 </button>
                 <button
-                  onClick={() => navigate('/crm/leads')}
+                  onClick={() => navigate('/crm/leads' + adminSuffix)}
                   className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-colors"
                 >
                   <Building2 className="h-3.5 w-3.5" /> Ver Leads

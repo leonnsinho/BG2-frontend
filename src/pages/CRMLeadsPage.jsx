@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, Building2, Users, Plus, Edit2, Trash2,
   Save, X, Download, Upload, FileSpreadsheet, Search,
@@ -25,9 +25,12 @@ const EMPTY = { nome_empresa: '', cidade: '', estado: '', segmento: '', origem_l
 
 export default function CRMLeadsPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user, profile } = useAuth()
 
-  const companyId = profile?.user_companies?.find(uc => uc.is_active)?.company_id
+  const adminCompanyId = searchParams.get('from') === 'admin' ? searchParams.get('companyId') : null
+  const companyId = adminCompanyId || profile?.user_companies?.find(uc => uc.is_active)?.company_id
+  const adminSuffix = adminCompanyId ? `?from=admin&companyId=${adminCompanyId}` : ''
 
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
@@ -43,7 +46,10 @@ export default function CRMLeadsPage() {
   const [importPreview, setImportPreview] = useState(null) // { type: 'leads', rows: [] }
   const importRef = useRef(null)
 
-  useEffect(() => { if (companyId) loadLeads() }, [companyId])
+  useEffect(() => {
+    if (companyId) loadLeads()
+    else setLoading(false)
+  }, [companyId])
 
   const loadLeads = async () => {
     setLoading(true)
@@ -229,7 +235,7 @@ export default function CRMLeadsPage() {
 
         {/* ── Breadcrumb ── */}
         <button
-          onClick={() => navigate('/crm')}
+          onClick={() => navigate('/crm' + adminSuffix)}
           className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" /> Voltar ao CRM
@@ -266,7 +272,7 @@ export default function CRMLeadsPage() {
                   <Download className="h-3.5 w-3.5" /> Modelo .csv
                 </button>
                 <button
-                  onClick={() => navigate('/crm/contatos')}
+                  onClick={() => navigate('/crm/contatos' + adminSuffix)}
                   className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors"
                 >
                   <Users className="h-3.5 w-3.5" /> Ver Contatos
@@ -409,7 +415,7 @@ export default function CRMLeadsPage() {
                   <div
                     key={l.id}
                     className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl hover:bg-gray-50 group transition-colors cursor-pointer"
-                    onClick={() => navigate(`/crm/lead/${l.id}`)}
+                    onClick={() => navigate(`/crm/lead/${l.id}` + adminSuffix)}
                   >
                     <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 text-sm font-bold text-blue-600">
                       {l.nome_empresa.charAt(0).toUpperCase()}
