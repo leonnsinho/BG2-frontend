@@ -63,12 +63,14 @@ const fmtMoney = (v) => {
 
 // ─── ImportOrCreatePicker ─────────────────────────────────────────────────────
 // Generic component: shows a list of existing items + button to create new inline
-function ImportOrCreatePicker({ title, Icon, colorClass, items, selected, onSelect, onCreateClick, renderItem, renderSelected, placeholder }) {
+function ImportOrCreatePicker({ title, Icon, colorClass, items, selected, onSelect, onCreateClick, renderItem, renderSelected, placeholder, filterItem }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
 
+  const getSearchText = (item) => (filterItem ? filterItem(item) : renderItem(item))
+
   const filtered = search.trim()
-    ? items.filter(item => renderItem(item).toLowerCase().includes(search.toLowerCase()))
+    ? items.filter(item => getSearchText(item).toLowerCase().includes(search.toLowerCase()))
     : items
 
   const handleClose = () => { setOpen(false); setSearch('') }
@@ -728,6 +730,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
               onSelect={p => { if (p) addLineItem(p) }}
               onCreateClick={() => openCreate('product')}
               renderItem={p => p.nome + (p.valor ? ` · ${fmtMoney(p.valor)}` : '')}
+              filterItem={p => [p.nome, p.descricao, p.valor ? fmtMoney(p.valor) : ''].filter(Boolean).join(' ')}
               renderSelected={() => null}
               placeholder="Adicionar produto..."
             />
