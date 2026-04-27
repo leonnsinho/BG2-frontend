@@ -1,7 +1,10 @@
 // Netlify Function para enviar emails de convite via Resend
 // Chamada via: /.netlify/functions/send-invite-email
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_Gq4BvqGq_AiiLjKBnxcuX4P5nuTMzjzRC'
+const RESEND_API_KEY = process.env.RESEND_API_KEY
+if (!RESEND_API_KEY) {
+  console.error('❌ RESEND_API_KEY não configurada nas variáveis de ambiente do Netlify')
+}
 const FROM_EMAIL = 'BG2 <contato@bg2plan.com.br>'
 const APP_URL = process.env.APP_URL || 'https://bg2plan.com.br'
 
@@ -118,6 +121,10 @@ exports.handler = async (event) => {
   // Só aceita POST
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
+  }
+
+  if (!RESEND_API_KEY) {
+    return { statusCode: 500, body: JSON.stringify({ error: 'Serviço de email não configurado. Configure RESEND_API_KEY nas variáveis de ambiente do Netlify.' }) }
   }
 
   try {
