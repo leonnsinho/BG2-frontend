@@ -2110,15 +2110,15 @@ export default function DFCDashboardPage() {
         {/* Pagamentos Futuros - A Receber e A Pagar */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* A Receber (Entradas Futuras) */}
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 shadow-lg border-2 border-green-300">
+          <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-900/10 rounded-2xl p-6 shadow-lg border-2 border-green-300 dark:border-green-700">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-green-500 rounded-xl shadow-md">
                   <TrendingUp className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-green-900">A Receber</h3>
-                  <p className="text-xs text-green-700">Parcelas não recebidas</p>
+                  <h3 className="text-lg font-bold text-green-900 dark:text-green-300">A Receber</h3>
+                  <p className="text-xs text-green-700 dark:text-green-400">Parcelas não recebidas</p>
                 </div>
               </div>
               
@@ -2126,7 +2126,7 @@ export default function DFCDashboardPage() {
               <select
                 value={futurePaymentsPeriod}
                 onChange={(e) => setFuturePaymentsPeriod(e.target.value)}
-                className="px-3 py-2 bg-white border-2 border-green-300 rounded-lg text-sm font-semibold text-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer hover:bg-green-50 transition-all"
+                className="px-3 py-2 bg-white dark:bg-gray-700 border-2 border-green-300 dark:border-green-700 rounded-lg text-sm font-semibold text-green-800 dark:text-green-300 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer hover:bg-green-50 dark:hover:bg-gray-600 transition-all dark:[color-scheme:dark]"
               >
                 <option value="30">Próximos 30 dias</option>
                 <option value="60">Próximos 60 dias</option>
@@ -2183,15 +2183,15 @@ export default function DFCDashboardPage() {
           </div>
 
           {/* A Pagar (Saídas Futuras) */}
-          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-6 shadow-lg border-2 border-red-300">
+          <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-900/10 rounded-2xl p-6 shadow-lg border-2 border-red-300 dark:border-red-700">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-red-500 rounded-xl shadow-md">
                   <TrendingDown className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-red-900">A Pagar</h3>
-                  <p className="text-xs text-red-700">Parcelas não pagas</p>
+                  <h3 className="text-lg font-bold text-red-900 dark:text-red-300">A Pagar</h3>
+                  <p className="text-xs text-red-700 dark:text-red-400">Parcelas não pagas</p>
                 </div>
               </div>
               
@@ -2199,7 +2199,7 @@ export default function DFCDashboardPage() {
               <select
                 value={futurePaymentsPeriod}
                 onChange={(e) => setFuturePaymentsPeriod(e.target.value)}
-                className="px-3 py-2 bg-white border-2 border-red-300 rounded-lg text-sm font-semibold text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer hover:bg-red-50 transition-all"
+                className="px-3 py-2 bg-white dark:bg-gray-700 border-2 border-red-300 dark:border-red-700 rounded-lg text-sm font-semibold text-red-800 dark:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer hover:bg-red-50 dark:hover:bg-gray-600 transition-all dark:[color-scheme:dark]"
               >
                 <option value="30">Próximos 30 dias</option>
                 <option value="60">Próximos 60 dias</option>
@@ -2270,15 +2270,15 @@ export default function DFCDashboardPage() {
           {/* Grid de valores */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 dark:divide-gray-700">
             {/* Saldo Inicial */}
-            <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100/50">
+            <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-900/10">
               <div className="flex items-start justify-between mb-2">
-                <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Saldo Inicial</p>
-                <div className="p-2 bg-blue-200/50 rounded-lg">
-                  <TrendingUp className="h-4 w-4 text-blue-700" />
+                <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wide">Saldo Inicial</p>
+                <div className="p-2 bg-blue-200/50 dark:bg-blue-800/50 rounded-lg">
+                  <TrendingUp className="h-4 w-4 text-blue-700 dark:text-blue-400" />
                 </div>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-blue-900 mb-1">{formatCurrency(stats.saldoInicial)}</h3>
-              <p className="text-xs text-blue-600">Até {formatDateBR(getPeriodoDatas().inicio)}</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-blue-900 dark:text-blue-200 mb-1">{formatCurrency(stats.saldoInicial)}</h3>
+              <p className="text-xs text-blue-600 dark:text-blue-400">Até {formatDateBR(getPeriodoDatas().inicio)}</p>
             </div>
 
             {/* Entradas e Saídas */}
@@ -2317,22 +2317,22 @@ export default function DFCDashboardPage() {
             </div>
 
             {/* Saldo Final */}
-            <div className={`p-6 ${stats.saldoFinal >= 0 ? 'bg-gradient-to-br from-green-50 to-green-100/50' : 'bg-gradient-to-br from-red-50 to-red-100/50'}`}>
+            <div className={`p-6 ${stats.saldoFinal >= 0 ? 'bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/30 dark:to-green-900/10' : 'bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/30 dark:to-red-900/10'}`}>
               <div className="flex items-start justify-between mb-2">
-                <p className={`text-xs font-semibold uppercase tracking-wide ${stats.saldoFinal >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${stats.saldoFinal >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
                   Saldo Final
                 </p>
-                <div className={`p-2 rounded-lg ${stats.saldoFinal >= 0 ? 'bg-green-200/50' : 'bg-red-200/50'}`}>
-                  <DollarSign className={`h-5 w-5 ${stats.saldoFinal >= 0 ? 'text-green-700' : 'text-red-700'}`} />
+                <div className={`p-2 rounded-lg ${stats.saldoFinal >= 0 ? 'bg-green-200/50 dark:bg-green-800/50' : 'bg-red-200/50 dark:bg-red-800/50'}`}>
+                  <DollarSign className={`h-5 w-5 ${stats.saldoFinal >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`} />
                 </div>
               </div>
-              <h2 className={`text-3xl sm:text-4xl font-bold mb-1 ${stats.saldoFinal >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+              <h2 className={`text-3xl sm:text-4xl font-bold mb-1 ${stats.saldoFinal >= 0 ? 'text-green-900 dark:text-green-200' : 'text-red-900 dark:text-red-200'}`}>
                 {formatCurrency(stats.saldoFinal)}
               </h2>
-              <p className={`text-xs mb-3 ${stats.saldoFinal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`text-xs mb-3 ${stats.saldoFinal >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 Acumulado total
               </p>
-              <div className={`text-xs px-3 py-2 rounded-lg ${stats.saldoFinal >= 0 ? 'bg-green-200/50 text-green-800' : 'bg-red-200/50 text-red-800'}`}>
+              <div className={`text-xs px-3 py-2 rounded-lg ${stats.saldoFinal >= 0 ? 'bg-green-200/50 dark:bg-green-800/40 text-green-800 dark:text-green-300' : 'bg-red-200/50 dark:bg-red-800/40 text-red-800 dark:text-red-300'}`}>
                 <strong>Mês atual:</strong> {formatCurrency(stats.saldoMes)}
               </div>
             </div>

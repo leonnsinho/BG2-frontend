@@ -246,14 +246,14 @@ export default function IndicatorsPage() {
       // Retornar cores baseadas na porcentagem e polaridade
       const isNegative = indicator.polarity === 'negative'
       if (!isNegative) {
-        if (percentage >= 100) return 'bg-green-100 border-green-300'
-        if (percentage >= 80)  return 'bg-yellow-100 border-yellow-300'
-        return 'bg-red-100 border-red-300'
+        if (percentage >= 100) return 'bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
+        if (percentage >= 80)  return 'bg-yellow-100 dark:bg-yellow-900/40 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-300'
+        return 'bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
       } else {
         // Negativo: meta é teto — abaixo da meta é bom
-        if (percentage <= 100) return 'bg-green-100 border-green-300'
-        if (percentage <= 120) return 'bg-yellow-100 border-yellow-300'
-        return 'bg-red-100 border-red-300'
+        if (percentage <= 100) return 'bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
+        if (percentage <= 120) return 'bg-yellow-100 dark:bg-yellow-900/40 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-300'
+        return 'bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
       }
     } catch (error) {
       console.error('Erro ao calcular status:', error)
@@ -507,15 +507,15 @@ export default function IndicatorsPage() {
                                     }
                                   }}
                                   autoFocus
-                                  className="w-full px-3 py-2 text-sm border-2 border-yellow-500 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-center shadow-md"
+                                  className="w-full px-3 py-2 text-sm border-2 border-yellow-500 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-center shadow-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                 />
                               ) : (
                                 <div
                                   onClick={() => handleCellClick(indicator.id, month)}
-                                  className={`text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer px-3 py-2 rounded-lg min-h-[36px] flex items-center justify-center transition-all ${
+                                  className={`text-sm font-medium cursor-pointer px-3 py-2 rounded-lg min-h-[36px] flex items-center justify-center transition-all ${
                                     bgColor 
                                       ? `${bgColor} hover:opacity-80` 
-                                      : 'border border-transparent hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:border-yellow-200 dark:hover:border-yellow-700'
+                                      : 'text-gray-900 dark:text-gray-100 border border-transparent hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:border-yellow-200 dark:hover:border-yellow-700'
                                   }`}
                                 >
                                   {formatValue(companyData?.[month], indicator.type) || '-'}

@@ -115,7 +115,7 @@ function SortableCard({ card, sectionId, onEdit, onDelete, isEditing, onStartEdi
           onChange={(e) => setText(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className="w-full resize-none border-none outline-none bg-transparent text-sm leading-relaxed"
+          className="w-full resize-none border-none outline-none bg-transparent text-sm leading-relaxed text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
           rows={3}
           placeholder="Digite aqui..."
         />
@@ -132,7 +132,7 @@ function SortableCard({ card, sectionId, onEdit, onDelete, isEditing, onStartEdi
           
           <p
             onClick={onStartEdit}
-            className="text-sm leading-relaxed cursor-pointer whitespace-pre-wrap break-words flex-1 min-w-0"
+            className="text-sm leading-relaxed cursor-pointer whitespace-pre-wrap break-words flex-1 min-w-0 text-gray-800 dark:text-gray-200"
             style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
           >
             {card.text}

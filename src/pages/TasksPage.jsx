@@ -439,7 +439,7 @@ export default function TasksPage() {
                   key={task.id}
                   className={`rounded-xl sm:rounded-2xl shadow-sm border-2 transition-all hover:shadow-md ${
                     overdue && task.status !== 'completed'
-                      ? 'bg-red-50 border-red-300'
+                      ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
                       : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
                   }`}
                 >
@@ -491,7 +491,7 @@ export default function TasksPage() {
                           {task.due_date && (
                             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${
                               overdue && task.status !== 'completed' 
-                                ? 'bg-red-100 text-red-700 border-2 border-red-300 font-semibold' 
+                              ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-2 border-red-300 dark:border-red-700 font-semibold' 
                                 : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
                             }`}>
                               <Calendar className="h-4 w-4" />
@@ -582,7 +582,7 @@ export default function TasksPage() {
                   key={task.id}
                   className={`rounded-2xl shadow-sm border-2 transition-all hover:shadow-lg hover:scale-[1.02] ${
                     overdue && task.status !== 'completed'
-                      ? 'bg-red-50 border-red-300'
+                      ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
                       : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
                   }`}
                 >
@@ -646,7 +646,7 @@ export default function TasksPage() {
                       {task.due_date && (
                         <div className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg ${
                           overdue && task.status !== 'completed'
-                            ? 'bg-red-100 text-red-700 border-2 border-red-300 font-bold animate-pulse' 
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-2 border-red-300 dark:border-red-700 font-bold animate-pulse' 
                             : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
                         }`}>
                           <Calendar className="h-4 w-4" />

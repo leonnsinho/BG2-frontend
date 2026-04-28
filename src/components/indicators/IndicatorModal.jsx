@@ -304,7 +304,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
               <select
                 value={formData.journey}
                 onChange={(e) => handleChange('journey', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-gradient-to-r from-purple-50 to-white dark:from-gray-700 dark:to-gray-700 dark:text-white focus:from-white focus:to-white dark:focus:from-gray-700 dark:focus:to-gray-700 font-medium appearance-none cursor-pointer"
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-purple-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-medium appearance-none cursor-pointer dark:[color-scheme:dark]"
                 required
               >
                 {journeys.map(journey => (
@@ -321,7 +321,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
               <select
                 value={formData.type}
                 onChange={(e) => handleChange('type', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gradient-to-r from-blue-50 to-white dark:from-gray-700 dark:to-gray-700 dark:text-white focus:from-white focus:to-white dark:focus:from-gray-700 dark:focus:to-gray-700 font-medium appearance-none cursor-pointer"
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-blue-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-medium appearance-none cursor-pointer dark:[color-scheme:dark]"
                 required
               >
                 {types.map(type => (
@@ -379,7 +379,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
             <select
               value={formData.responsible_user_id}
               onChange={(e) => handleChange('responsible_user_id', e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all bg-yellow-50 dark:bg-gray-700 dark:text-white focus:bg-white dark:focus:bg-gray-700 font-medium appearance-none cursor-pointer"
+              className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all bg-yellow-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-medium appearance-none cursor-pointer dark:[color-scheme:dark]"
               disabled={loadingUsers || !formData.company_id}
             >
               <option value="">
