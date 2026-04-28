@@ -257,12 +257,12 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:bg-none dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Minhas Ações</h1>
-          <p className="text-sm sm:text-base text-gray-600">Gerencie suas ações e acompanhe o progresso</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Minhas Ações</h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Gerencie suas ações e acompanhe o progresso</p>
         </div>
 
         {/* Estatísticas */}
@@ -271,7 +271,7 @@ export default function TasksPage() {
           <div className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border-2 transition-all ${
             stats.overdue > 0
               ? 'bg-red-50 border-red-400 shadow-red-100'
-              : 'bg-white border-gray-100'
+              : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
           }`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex-1 min-w-0">
@@ -285,23 +285,23 @@ export default function TasksPage() {
           </div>
 
           {/* 2. Pendentes */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-500 mb-1 truncate">Pendentes</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-700">{stats.pending}</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1 truncate">Pendentes</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-200">{stats.pending}</p>
               </div>
-              <div className="p-1.5 rounded-lg bg-gray-100 flex-shrink-0">
+              <div className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0">
                 <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
               </div>
             </div>
           </div>
 
           {/* 3. Em Andamento */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-blue-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-blue-100 dark:border-blue-900/40">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-500 mb-1 truncate">Em Andamento</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1 truncate">Em Andamento</p>
                 <p className="text-xl sm:text-2xl font-bold text-blue-600">{stats.inProgress}</p>
               </div>
               <div className="p-1.5 rounded-lg bg-blue-100 flex-shrink-0">
@@ -311,10 +311,10 @@ export default function TasksPage() {
           </div>
 
           {/* 4. Concluídas */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-green-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-green-100 dark:border-green-900/40">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-500 mb-1 truncate">Concluídas</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1 truncate">Concluídas</p>
                 <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.completed}</p>
               </div>
               <div className="p-1.5 rounded-lg bg-green-100 flex-shrink-0">
@@ -324,13 +324,13 @@ export default function TasksPage() {
           </div>
 
           {/* 5. Total */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-500 mb-1 truncate">Total</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1 truncate">Total</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
               </div>
-              <div className="p-1.5 rounded-lg bg-gray-100 flex-shrink-0">
+              <div className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0">
                 <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
               </div>
             </div>
@@ -338,18 +338,18 @@ export default function TasksPage() {
         </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 lg:p-6 mb-4 sm:mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-5 lg:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Filtros</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Filtros</h3>
             
             {/* Toggle View Mode */}
-            <div className="flex items-center gap-1 sm:gap-2 bg-gray-100 rounded-lg p-1 w-full sm:w-auto">
+            <div className="flex items-center gap-1 sm:gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 w-full sm:w-auto">
               <button
                 onClick={() => setViewMode('list')}
                 className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 rounded-md transition-all flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] touch-manipulation ${
                   viewMode === 'list' 
-                    ? 'bg-white text-[#EBA500] shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-gray-600 text-[#EBA500] shadow-sm' 
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <List className="h-4 w-4" />
@@ -359,8 +359,8 @@ export default function TasksPage() {
                 onClick={() => setViewMode('grid')}
                 className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 rounded-md transition-all flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] touch-manipulation ${
                   viewMode === 'grid' 
-                    ? 'bg-white text-[#EBA500] shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-gray-600 text-[#EBA500] shadow-sm' 
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <Grid3x3 className="h-4 w-4" />
@@ -378,7 +378,7 @@ export default function TasksPage() {
                 placeholder="Buscar tarefas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 min-h-[44px] text-sm sm:text-base rounded-xl border border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors touch-manipulation"
+                className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 min-h-[44px] text-sm sm:text-base rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 focus:outline-none focus:border-[#EBA500] transition-colors touch-manipulation"
               />
             </div>
 
@@ -386,7 +386,7 @@ export default function TasksPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 sm:px-4 py-2.5 sm:py-3 min-h-[44px] text-sm sm:text-base rounded-xl border border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white touch-manipulation"
+              className="px-3 sm:px-4 py-2.5 sm:py-3 min-h-[44px] text-sm sm:text-base rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:border-[#EBA500] transition-colors bg-white touch-manipulation"
             >
               <option value="all">Todos os Status</option>
               <option value="pending">Pendente</option>
@@ -399,7 +399,7 @@ export default function TasksPage() {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="px-3 sm:px-4 py-2.5 sm:py-3 min-h-[44px] text-sm sm:text-base rounded-xl border border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white touch-manipulation"
+              className="px-3 sm:px-4 py-2.5 sm:py-3 min-h-[44px] text-sm sm:text-base rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:border-[#EBA500] transition-colors bg-white touch-manipulation"
             >
               <option value="all">Todas as Prioridades</option>
               <option value="1">Crítica</option>
@@ -415,12 +415,12 @@ export default function TasksPage() {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EBA500] mx-auto"></div>
-            <p className="text-gray-600 mt-4">Carregando tarefas...</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-4">Carregando tarefas...</p>
           </div>
         ) : filteredTasks.length === 0 ? (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 lg:p-12 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sm:p-8 lg:p-12 text-center">
             <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
-            <p className="text-gray-600 text-base sm:text-lg">Nenhuma tarefa encontrada</p>
+            <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg">Nenhuma tarefa encontrada</p>
             <p className="text-gray-400 text-xs sm:text-sm mt-2">
               {searchQuery || statusFilter !== 'all' || priorityFilter !== 'all'
                 ? 'Tente ajustar os filtros'
@@ -440,14 +440,14 @@ export default function TasksPage() {
                   className={`rounded-xl sm:rounded-2xl shadow-sm border-2 transition-all hover:shadow-md ${
                     overdue && task.status !== 'completed'
                       ? 'bg-red-50 border-red-300'
-                      : 'bg-white border-gray-100'
+                      : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
                   }`}
                 >
                   <div className="p-4 sm:p-5 lg:p-6">
                     <div className="flex flex-col lg:flex-row items-start justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
                       <div className="flex-1 min-w-0 w-full">
                         <div className="flex items-start sm:items-center gap-2 sm:gap-3 mb-2 flex-wrap">
-                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words flex-1 min-w-0">{task.title}</h3>
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white break-words flex-1 min-w-0">{task.title}</h3>
                           {overdue && task.status !== 'completed' && (
                             <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 bg-red-100 text-red-600 text-[10px] sm:text-xs font-bold rounded-lg border-2 border-red-300 animate-pulse flex-shrink-0">
                               <AlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -456,19 +456,19 @@ export default function TasksPage() {
                           )}
                         </div>
                         {task.description && (
-                          <p className="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-3 break-words">{task.description}</p>
+                          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3 break-words">{task.description}</p>
                         )}
                         
                         {/* Informações adicionais */}
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                           {task.creator?.name && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-700/40">
                               <UserCircle className="h-3.5 w-3.5" />
                               <span className="text-xs font-medium">Criado por: {task.creator.name}</span>
                             </div>
                           )}
                           {task.journey?.name && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 text-purple-700 rounded-lg border border-purple-200">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg border border-purple-200 dark:border-purple-700/40">
                               <MapPin className="h-3.5 w-3.5" />
                               <span className="text-xs font-medium">{task.journey.name}</span>
                             </div>
@@ -492,7 +492,7 @@ export default function TasksPage() {
                             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${
                               overdue && task.status !== 'completed' 
                                 ? 'bg-red-100 text-red-700 border-2 border-red-300 font-semibold' 
-                                : 'bg-gray-50 text-gray-700 border border-gray-200'
+                                : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
                             }`}>
                               <Calendar className="h-4 w-4" />
                               <span className="text-sm">{formatDate(task.due_date)}</span>
@@ -537,7 +537,7 @@ export default function TasksPage() {
                             )
                           } else {
                             return (
-                              <div className="flex-1 sm:flex-none px-4 py-2 min-h-[44px] bg-green-50 text-green-700 border border-green-200 rounded-lg font-semibold flex items-center justify-center gap-2">
+                              <div className="flex-1 sm:flex-none px-4 py-2 min-h-[44px] bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700/40 rounded-lg font-semibold flex items-center justify-center gap-2">
                                 <CheckCircle2 className="h-4 w-4" />
                                 <span className="text-sm">Concluída</span>
                               </div>
@@ -558,7 +558,7 @@ export default function TasksPage() {
                         {/* Lixeira: ícone ghost */}
                         <button
                           onClick={() => handleDeleteTask(task.id)}
-                          className="p-2.5 min-h-[44px] min-w-[44px] text-gray-400 hover:text-red-600 hover:bg-red-50 active:scale-95 rounded-lg transition-all flex items-center justify-center touch-manipulation"
+                          className="p-2.5 min-h-[44px] min-w-[44px] text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 active:scale-95 rounded-lg transition-all flex items-center justify-center touch-manipulation"
                           title="Excluir ação"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -583,7 +583,7 @@ export default function TasksPage() {
                   className={`rounded-2xl shadow-sm border-2 transition-all hover:shadow-lg hover:scale-[1.02] ${
                     overdue && task.status !== 'completed'
                       ? 'bg-red-50 border-red-300'
-                      : 'bg-white border-gray-100'
+                      : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
                   }`}
                 >
                   <div className="p-5">
@@ -602,13 +602,13 @@ export default function TasksPage() {
                     </div>
 
                     {/* Título */}
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem]">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 min-h-[3.5rem]">
                       {task.title}
                     </h3>
 
                     {/* Descrição */}
                     {task.description && (
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3 min-h-[3.75rem]">
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3 min-h-[3.75rem]">
                         {task.description}
                       </p>
                     )}
@@ -616,13 +616,13 @@ export default function TasksPage() {
                     {/* Informações adicionais */}
                     <div className="space-y-1.5 mb-3">
                       {task.creator?.name && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-700/40">
                           <UserCircle className="h-3.5 w-3.5 flex-shrink-0" />
                           <span className="text-xs font-medium truncate">Criado por: {task.creator.name}</span>
                         </div>
                       )}
                       {task.journey?.name && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-50 text-purple-700 rounded-lg border border-purple-200">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg border border-purple-200 dark:border-purple-700/40">
                           <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
                           <span className="text-xs font-medium truncate">{task.journey.name}</span>
                         </div>
@@ -647,7 +647,7 @@ export default function TasksPage() {
                         <div className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg ${
                           overdue && task.status !== 'completed'
                             ? 'bg-red-100 text-red-700 border-2 border-red-300 font-bold animate-pulse' 
-                            : 'bg-gray-50 text-gray-700 border border-gray-200'
+                            : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
                         }`}>
                           <Calendar className="h-4 w-4" />
                           <span className="text-sm font-medium">{formatDate(task.due_date)}</span>
@@ -659,7 +659,7 @@ export default function TasksPage() {
                     </div>
 
                     {/* Ações */}
-                    <div className="flex flex-col gap-2 pt-4 border-t border-gray-100">
+                    <div className="flex flex-col gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                       {/* Primário: Concluir / Começar */}
                       {task.status === 'pending' && (
                         <button

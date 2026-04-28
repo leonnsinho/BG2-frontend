@@ -248,11 +248,11 @@ const GestorDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
         
         {/* Cabeçalho do Gestor */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow duration-300">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
             <div className="flex-1 min-w-0 w-full">
               <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
@@ -271,7 +271,7 @@ const GestorDashboard = () => {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] tracking-tight truncate">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] dark:text-white tracking-tight truncate">
                     {getGreeting()}, {profile?.full_name?.split(' ')[0] || 'Gestor'}!
                   </h1>
                   {companyName && (
@@ -295,7 +295,7 @@ const GestorDashboard = () => {
                   )}
                 </div>
               </div>
-              <p className="text-sm sm:text-base lg:text-lg text-gray-600">
+              <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300">
                 Gerencie sua equipe e acompanhe o progresso das tarefas
               </p>
             </div>
@@ -303,7 +303,7 @@ const GestorDashboard = () => {
               <select 
                 value={filtroTarefas}
                 onChange={(e) => setFiltroTarefas(e.target.value)}
-                className="border border-gray-300 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-white hover:bg-gray-50 transition-colors"
+                className="border border-gray-300 dark:border-gray-600 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               >
                 <option value="semana">Esta Semana</option>
                 <option value="mes">Este Mês</option>
@@ -315,7 +315,7 @@ const GestorDashboard = () => {
         {/* Cards de Métricas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
           {/* Usuários Ativos */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all hover:-translate-y-1">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="p-2 sm:p-2.5 lg:p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
                 <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
@@ -324,13 +324,13 @@ const GestorDashboard = () => {
                 <TrendingUp className="h-4 w-4" />
               </div>
             </div>
-            <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Usuários Ativos</h3>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{usuariosAtivos}</p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">Na sua empresa</p>
+            <h3 className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm font-medium mb-1">Usuários Ativos</h3>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{usuariosAtivos}</p>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Na sua empresa</p>
           </div>
 
           {/* Tarefas em Processo */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all hover:-translate-y-1">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="p-2 sm:p-2.5 lg:p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
                 <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
@@ -339,13 +339,13 @@ const GestorDashboard = () => {
                 <Clock className="h-4 w-4" />
               </div>
             </div>
-            <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Em Andamento</h3>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{tarefasEmProcesso}</p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">Tarefas ativas</p>
+            <h3 className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm font-medium mb-1">Em Andamento</h3>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{tarefasEmProcesso}</p>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Tarefas ativas</p>
           </div>
 
           {/* Tarefas Concluídas */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all hover:-translate-y-1">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="p-2 sm:p-2.5 lg:p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
                 <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
@@ -354,9 +354,9 @@ const GestorDashboard = () => {
                 <CheckCircle2 className="h-4 w-4" />
               </div>
             </div>
-            <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Concluídas</h3>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{tarefasConcluidas}</p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">{filtroTarefas === 'semana' ? 'Esta semana' : 'Este mês'}</p>
+            <h3 className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm font-medium mb-1">Concluídas</h3>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{tarefasConcluidas}</p>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">{filtroTarefas === 'semana' ? 'Esta semana' : 'Este mês'}</p>
           </div>
         </div>
 
@@ -364,14 +364,14 @@ const GestorDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
           
           {/* Progresso Semanal */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-2 sm:gap-3 mb-2">
               <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg flex-shrink-0">
                 <TrendingUp className="h-4 w-4 sm:h-5 sm:h-5 text-purple-600" />
               </div>
               <div className="flex-1">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Progresso Semanal</h2>
-                <p className="text-xs sm:text-sm text-gray-600 mt-0.5">Tarefas concluídas por dia nos últimos 7 dias</p>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Progresso Semanal</h2>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-0.5">Tarefas concluídas por dia nos últimos 7 dias</p>
               </div>
             </div>
             <div className="space-y-4 mt-4 sm:mt-6">
@@ -386,21 +386,21 @@ const GestorDashboard = () => {
               ) : (
                 stats.progressoSemanal.map((dia, index) => (
                   <div key={index} className="flex items-center gap-3">
-                    <span className="w-24 text-sm font-medium text-gray-700">{dia.nome}</span>
+                    <span className="w-24 text-sm font-medium text-gray-700 dark:text-gray-300">{dia.nome}</span>
                     <div className="flex-1">
-                      <div className="bg-gray-100 rounded-full h-2.5">
+                      <div className="bg-gray-100 dark:bg-gray-700 rounded-full h-2.5">
                         <div 
                           className="bg-gradient-to-r from-[#EBA500] to-[#d99500] h-2.5 rounded-full transition-all duration-500"
                           style={{ width: `${dia.porcentagem}%` }}
                         />
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           {dia.tarefas} {dia.tarefas === 1 ? 'tarefa' : 'tarefas'} concluída{dia.tarefas === 1 ? '' : 's'}
                         </span>
                       </div>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900 w-12 text-right">{dia.porcentagem}%</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white w-12 text-right">{dia.porcentagem}%</span>
                   </div>
                 ))
               )}
@@ -408,12 +408,12 @@ const GestorDashboard = () => {
           </div>
 
           {/* Estatísticas Detalhadas */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
               <div className="p-1.5 sm:p-2 bg-[#EBA500]/10 rounded-lg flex-shrink-0">
                 <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-[#EBA500]" />
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Estatísticas Rápidas</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Estatísticas Rápidas</h2>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {loading ? (
@@ -422,21 +422,21 @@ const GestorDashboard = () => {
                 </div>
               ) : (
                 <>
-                  <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                  <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl">
                     <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-1">{stats.taxaConclusao}%</div>
-                    <div className="text-xs sm:text-sm font-medium text-gray-700">Taxa de Conclusão</div>
+                    <div className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Taxa de Conclusão</div>
                   </div>
-                  <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                  <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl">
                     <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-1">{stats.tarefasHoje}</div>
-                    <div className="text-xs sm:text-sm font-medium text-gray-700">Tarefas Hoje</div>
+                    <div className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Tarefas Hoje</div>
                   </div>
-                  <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-[#EBA500]/10 to-[#EBA500]/20 rounded-xl">
+                  <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-[#EBA500]/10 to-[#EBA500]/20 dark:from-[#EBA500]/20 dark:to-[#EBA500]/10 rounded-xl">
                     <div className="text-2xl sm:text-3xl font-bold text-[#EBA500] mb-1">{stats.mediaDiaria}</div>
-                    <div className="text-xs sm:text-sm font-medium text-gray-700">Média Diária</div>
+                    <div className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Média Diária</div>
                   </div>
-                  <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+                  <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl">
                     <div className="text-2xl sm:text-3xl font-bold text-purple-600 mb-1">{stats.ativosHoje}</div>
-                    <div className="text-xs sm:text-sm font-medium text-gray-700">Ativos Hoje</div>
+                    <div className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Ativos Hoje</div>
                   </div>
                 </>
               )}

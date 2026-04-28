@@ -56,6 +56,13 @@ const ESTADOS_BR = [
 ]
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
+const toDatetimeLocal = (iso) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 const fmtMoney = (v) => {
   if (!v && v !== 0) return ''
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
@@ -145,14 +152,23 @@ function ImportOrCreatePicker({ title, Icon, colorClass, items, selected, onSele
 }
 
 // ─── CardModal ────────────────────────────────────────────────────────────────
-function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDeleted }) {
+function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDeleted, boardTags = [], onTagCreated }) {
   const { user } = useAuth()
-  const [form, setForm] = useState(card ? { ...card } : { ...EMPTY_CARD, column_id: columnId })
+  const [form, setForm] = useState(() => {
+    if (card) return { ...card, status_updated_at: card.status_updated_at || card.updated_at || new Date().toISOString() }
+    return { ...EMPTY_CARD, column_id: columnId, status_updated_at: new Date().toISOString() }
+  })
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [attachments, setAttachments] = useState([])
   const [uploading, setUploading] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // tags
+  const [allTags, setAllTags] = useState(boardTags)
+  const [selectedTagIds, setSelectedTagIds] = useState(new Set())
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagColor, setNewTagColor] = useState('#6366f1')
+  const [showTagCreate, setShowTagCreate] = useState(false)
   const fileRef = useRef()
   const isNew = !card?.id
 
@@ -180,6 +196,10 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   const [selectedContact, setSelectedContact] = useState(null)
   const [lineItems, setLineItems] = useState([]) // { lineId, dbId, product_id, product, nome_produto, valor_unitario, quantidade, desconto_percentual, valor_linha }
 
+  // expand/collapse fields under importers
+  const [expandLead, setExpandLead] = useState(!card?.lead_id)
+  const [expandContact, setExpandContact] = useState(!card?.contact_id)
+
   // create-inline sub-modal
   const [createMode, setCreateMode] = useState(null) // 'lead' | 'product' | 'contact'
   const [createForm, setCreateForm] = useState({})
@@ -190,8 +210,38 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     if (card?.id) {
       loadAttachments(card.id)
       loadLineItems(card.id)
+      loadCardTags(card.id)
     }
   }, [])
+
+  const loadCardTags = async (cardId) => {
+    const { data } = await supabase.from('crm_card_tags').select('tag_id').eq('card_id', cardId)
+    setSelectedTagIds(new Set(data?.map(r => r.tag_id) || []))
+  }
+
+  const toggleTag = (tagId) => {
+    setSelectedTagIds(prev => {
+      const next = new Set(prev)
+      if (next.has(tagId)) next.delete(tagId)
+      else next.add(tagId)
+      return next
+    })
+  }
+
+  const handleCreateTag = async () => {
+    if (!newTagName.trim()) return
+    const { data, error } = await supabase
+      .from('crm_tags')
+      .insert([{ company_id: companyId, name: newTagName.trim(), color: newTagColor }])
+      .select().single()
+    if (error) { toast.error('Erro ao criar tag'); return }
+    const sorted = [...allTags, data].sort((a, b) => a.name.localeCompare(b.name))
+    setAllTags(sorted)
+    setSelectedTagIds(prev => new Set([...prev, data.id]))
+    setNewTagName('')
+    setShowTagCreate(false)
+    onTagCreated?.(data)
+  }
 
   const loadEntities = async () => {
     const [{ data: ls }, { data: ps }, { data: cs }] = await Promise.all([
@@ -225,8 +275,10 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         segmento: lead.segmento || p.segmento,
         origem_lead: lead.origem_lead || p.origem_lead,
       }))
+      setExpandLead(false)
     } else {
       setForm(p => ({ ...p, lead_id: null }))
+      setExpandLead(true)
     }
   }
 
@@ -294,15 +346,17 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         email_contato: contact.email || p.email_contato,
         telefone_contato: contact.telefone || p.telefone_contato,
       }))
+      setExpandContact(false)
     } else {
       setForm(p => ({ ...p, contact_id: null }))
+      setExpandContact(true)
     }
   }
 
   // Inline create helpers
   const openCreate = (mode) => {
     setCreateForm(
-      mode === 'lead' ? { nome_empresa: '', cidade: '', estado: '', segmento: '', origem_lead: '' } :
+      mode === 'lead' ? { nome_empresa: '', cnpj: '', cidade: '', estado: '', segmento: '', origem_lead: '' } :
       mode === 'product' ? { nome: '', valor: '', unidade: '', descricao: '' } :
       { nome: '', cargo: '', email: '', telefone: '', lead_id: selectedLead?.id || '' }
     )
@@ -375,6 +429,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         observacoes: observations.length > 0 ? JSON.stringify(observations) : null,
         valor_oportunidade: valorOp,
         status: form.status || 'ativo',
+        status_updated_at: form.status_updated_at || new Date().toISOString(),
         lead_id: form.lead_id || null,
         contact_id: form.contact_id || null,
         updated_at: new Date().toISOString(),
@@ -409,7 +464,13 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         if (liErr) throw liErr
       }
       toast.success(isNew ? 'Card criado!' : 'Card atualizado!')
-      onSaved(saved, isNew)
+      // Sync tags
+      await supabase.from('crm_card_tags').delete().eq('card_id', saved.id)
+      if (selectedTagIds.size > 0) {
+        await supabase.from('crm_card_tags').insert([...selectedTagIds].map(tagId => ({ card_id: saved.id, tag_id: tagId })))
+      }
+      const savedTagObjects = allTags.filter(t => selectedTagIds.has(t.id))
+      onSaved(saved, isNew, savedTagObjects)
     } catch (e) {
       toast.error('Erro ao salvar: ' + e.message)
     } finally {
@@ -476,23 +537,24 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   if (createMode) {
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && setCreateMode(null)}>
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
           <div className="flex items-center gap-2 mb-5">
-            <button onClick={() => setCreateMode(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
-            <h3 className="text-sm font-bold text-gray-800">
+            <button onClick={() => setCreateMode(null)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white">
               {createMode === 'lead' ? 'Criar novo Lead' : createMode === 'product' ? 'Criar novo Produto' : 'Criar novo Contato'}
             </h3>
           </div>
 
           {createMode === 'lead' && (
             <div className="space-y-3">
-              <div><label className="block text-xs font-medium text-gray-600 mb-1">Nome da Empresa *</label><input className={INP} value={createForm.nome_empresa} onChange={e => setCreateForm(p=>({...p,nome_empresa:e.target.value}))} placeholder="Acme Corp" /></div>
+              <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome da Empresa *</label><input className={INP} value={createForm.nome_empresa} onChange={e => setCreateForm(p=>({...p,nome_empresa:e.target.value}))} placeholder="Acme Corp" /></div>
+              <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">CNPJ <span className="text-gray-400 font-normal">(opcional)</span></label><input className={INP} value={createForm.cnpj} onChange={e => setCreateForm(p=>({...p,cnpj:e.target.value}))} placeholder="00.000.000/0000-00" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-xs font-medium text-gray-600 mb-1">Cidade</label><input className={INP} value={createForm.cidade} onChange={e => setCreateForm(p=>({...p,cidade:e.target.value}))} placeholder="São Paulo" /></div>
-                <div><label className="block text-xs font-medium text-gray-600 mb-1">Estado</label><select className={SEL} value={createForm.estado} onChange={e => setCreateForm(p=>({...p,estado:e.target.value}))}><option value="">Selecione...</option>{ESTADOS_BR.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
-                <div><label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label><input className={INP} value={createForm.segmento} onChange={e => setCreateForm(p=>({...p,segmento:e.target.value}))} placeholder="Tecnologia" /></div>
+                <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cidade</label><input className={INP} value={createForm.cidade} onChange={e => setCreateForm(p=>({...p,cidade:e.target.value}))} placeholder="São Paulo" /></div>
+                <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Estado</label><select className={SEL} value={createForm.estado} onChange={e => setCreateForm(p=>({...p,estado:e.target.value}))}><option value="">Selecione...</option>{ESTADOS_BR.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+                <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Segmento</label><input className={INP} value={createForm.segmento} onChange={e => setCreateForm(p=>({...p,segmento:e.target.value}))} placeholder="Tecnologia" /></div>
               </div>
-              <div><label className="block text-xs font-medium text-gray-600 mb-1">Origem</label>
+              <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Origem</label>
                 <select className={SEL} value={createForm.origem_lead} onChange={e => setCreateForm(p=>({...p,origem_lead:e.target.value}))}>
                   <option value="">Selecione...</option>{ORIGENS.map(o=><option key={o} value={o}>{o}</option>)}
                 </select>
@@ -502,33 +564,33 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
 
           {createMode === 'product' && (
             <div className="space-y-3">
-              <div><label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label><input className={INP} value={createForm.nome} onChange={e => setCreateForm(p=>({...p,nome:e.target.value}))} placeholder="Ex: Consultoria" /></div>
-              <div><label className="block text-xs font-medium text-gray-600 mb-1">Descrição</label><textarea className={INP+' resize-none'} rows={2} value={createForm.descricao} onChange={e => setCreateForm(p=>({...p,descricao:e.target.value}))} /></div>
+              <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome *</label><input className={INP} value={createForm.nome} onChange={e => setCreateForm(p=>({...p,nome:e.target.value}))} placeholder="Ex: Consultoria" /></div>
+              <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Descrição</label><textarea className={INP+' resize-none'} rows={2} value={createForm.descricao} onChange={e => setCreateForm(p=>({...p,descricao:e.target.value}))} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-xs font-medium text-gray-600 mb-1">Valor (R$)</label><input type="number" className={INP} value={createForm.valor} onChange={e => setCreateForm(p=>({...p,valor:e.target.value}))} placeholder="0,00" /></div>
-                <div><label className="block text-xs font-medium text-gray-600 mb-1">Unidade</label><input className={INP} value={createForm.unidade} onChange={e => setCreateForm(p=>({...p,unidade:e.target.value}))} placeholder="por mês" /></div>
+                <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor (R$)</label><input type="number" className={INP} value={createForm.valor} onChange={e => setCreateForm(p=>({...p,valor:e.target.value}))} placeholder="0,00" /></div>
+                <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Unidade</label><input className={INP} value={createForm.unidade} onChange={e => setCreateForm(p=>({...p,unidade:e.target.value}))} placeholder="por mês" /></div>
               </div>
             </div>
           )}
 
           {createMode === 'contact' && (
             <div className="space-y-3">
-              <div><label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label><input className={INP} value={createForm.nome} onChange={e => setCreateForm(p=>({...p,nome:e.target.value}))} placeholder="João Silva" /></div>
+              <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome *</label><input className={INP} value={createForm.nome} onChange={e => setCreateForm(p=>({...p,nome:e.target.value}))} placeholder="João Silva" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-xs font-medium text-gray-600 mb-1">Cargo</label><input className={INP} value={createForm.cargo} onChange={e => setCreateForm(p=>({...p,cargo:e.target.value}))} placeholder="Diretor" /></div>
-                <div><label className="block text-xs font-medium text-gray-600 mb-1">Empresa</label>
+                <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cargo</label><input className={INP} value={createForm.cargo} onChange={e => setCreateForm(p=>({...p,cargo:e.target.value}))} placeholder="Diretor" /></div>
+                <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Empresa</label>
                   <select className={SEL} value={createForm.lead_id} onChange={e => setCreateForm(p=>({...p,lead_id:e.target.value}))}>
                     <option value="">Sem vínculo</option>{leads.map(l=><option key={l.id} value={l.id}>{l.nome_empresa}</option>)}
                   </select>
                 </div>
-                <div><label className="block text-xs font-medium text-gray-600 mb-1">E-mail</label><input type="email" className={INP} value={createForm.email} onChange={e => setCreateForm(p=>({...p,email:e.target.value}))} placeholder="joao@..." /></div>
-                <div><label className="block text-xs font-medium text-gray-600 mb-1">Telefone</label><input type="tel" className={INP} value={createForm.telefone} onChange={e => setCreateForm(p=>({...p,telefone:e.target.value}))} placeholder="(11) 99..." /></div>
+                <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">E-mail</label><input type="email" className={INP} value={createForm.email} onChange={e => setCreateForm(p=>({...p,email:e.target.value}))} placeholder="joao@..." /></div>
+                <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Telefone</label><input type="tel" className={INP} value={createForm.telefone} onChange={e => setCreateForm(p=>({...p,telefone:e.target.value}))} placeholder="(11) 99..." /></div>
               </div>
             </div>
           )}
 
           <div className="flex justify-end gap-2 mt-5">
-            <button onClick={() => setCreateMode(null)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+            <button onClick={() => setCreateMode(null)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
             <button onClick={handleInlineCreate} disabled={createSaving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
               {createSaving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Criar e vincular
             </button>
@@ -540,10 +602,10 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 className="text-base font-bold text-gray-800 dark:text-white flex items-center gap-2">
             <Kanban className="h-4 w-4 text-[#EBA500]" />
             {isNew ? 'Novo Card' : 'Editar Card'}
           </h2>
@@ -554,7 +616,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                 <Trash2 className="h-4 w-4" />
               </button>
             )}
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors">
               <X className="h-5 w-5 text-gray-500" />
             </button>
           </div>
@@ -566,7 +628,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
           {/* Coluna (mover card) */}
           {!isNew && (
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Coluna</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Coluna</label>
               <select value={form.column_id} onChange={e => setForm(p => ({ ...p, column_id: e.target.value }))} className={SEL}>
                 {columns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -574,21 +636,87 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
           )}
 
           {/* Status */}
-          <div className="flex items-center gap-3">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-16 shrink-0">Status</label>
-            <div className="flex gap-2">
-              {STATUS_OPTIONS.map(s => (
-                <button key={s.value} onClick={() => setForm(p => ({ ...p, status: s.value }))}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border-2 transition-all ${form.status === s.value ? s.color + ' border-current' : 'bg-gray-50 text-gray-400 border-transparent hover:border-gray-200'}`}>
-                  {s.label}
-                </button>
-              ))}
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide w-16 shrink-0">Status</label>
+              <div className="flex gap-2">
+                {STATUS_OPTIONS.map(s => (
+                  <button key={s.value} onClick={() => setForm(p => ({ ...p, status: s.value, status_updated_at: new Date().toISOString() }))}
+                    className={`px-3 py-1 rounded-full text-xs font-medium border-2 transition-all ${form.status === s.value ? s.color + ' border-current' : 'bg-gray-50 text-gray-400 border-transparent hover:border-gray-200'}`}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-xs text-gray-400 w-16 shrink-0">Data/hora</label>
+              <input
+                type="datetime-local"
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all bg-white"
+                value={toDatetimeLocal(form.status_updated_at)}
+                onChange={e => setForm(p => ({ ...p, status_updated_at: e.target.value ? new Date(e.target.value).toISOString() : p.status_updated_at }))}
+              />
             </div>
           </div>
 
+          {/* Tags */}
+          <section>
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <Tag className="h-3.5 w-3.5" /> Tags
+            </h4>
+            {allTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {allTags.map(tag => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleTag(tag.id)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border-2 transition-all"
+                    style={{
+                      backgroundColor: selectedTagIds.has(tag.id) ? tag.color + '25' : tag.color + '10',
+                      color: tag.color,
+                      borderColor: selectedTagIds.has(tag.id) ? tag.color : 'transparent',
+                    }}
+                  >
+                    {selectedTagIds.has(tag.id) && <Check className="h-2.5 w-2.5" />}
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {showTagCreate ? (
+              <div className="flex items-center gap-2 mt-1">
+                <input
+                  autoFocus
+                  className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs flex-1 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500]"
+                  value={newTagName}
+                  onChange={e => setNewTagName(e.target.value)}
+                  placeholder="Nome da tag..."
+                  onKeyDown={e => { if (e.key === 'Enter') handleCreateTag(); if (e.key === 'Escape') setShowTagCreate(false) }}
+                />
+                <input
+                  type="color"
+                  value={newTagColor}
+                  onChange={e => setNewTagColor(e.target.value)}
+                  className="h-8 w-10 rounded-lg border border-gray-200 cursor-pointer p-0.5 shrink-0"
+                />
+                <button type="button" onClick={handleCreateTag} className="px-3 py-1.5 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+                  Criar
+                </button>
+                <button type="button" onClick={() => setShowTagCreate(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl">
+                  <X className="h-3.5 w-3.5 text-gray-400" />
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => setShowTagCreate(true)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#EBA500] transition-colors mt-1">
+                <Plus className="h-3.5 w-3.5" /> Nova tag
+              </button>
+            )}
+          </section>
+
           {/* LEAD */}
           <section>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
               <Building2 className="h-3.5 w-3.5" /> Lead / Empresa
             </h4>
             <ImportOrCreatePicker
@@ -603,26 +731,35 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
               renderSelected={l => <><span className="font-semibold">{l.nome_empresa}</span>{l.segmento && <span className="text-xs text-gray-400 ml-1">· {l.segmento}</span>}</>}
               placeholder="Importar lead existente..."
             />
-            {/* Editable fields — prefilled from lead but editable */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nome da Empresa</label>
-                <input className={INP} value={form.nome_empresa} onChange={e => setForm(p => ({...p, nome_empresa: e.target.value}))} placeholder="Acme Corp" />
+            {/* Editable fields — toggle */}
+            <button
+              type="button"
+              onClick={() => setExpandLead(v => !v)}
+              className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#EBA500] transition-colors"
+            >
+              <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expandLead ? 'rotate-180' : ''}`} />
+              {expandLead ? 'Ocultar campos' : 'Editar dados manualmente'}
+            </button>
+            {expandLead && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome da Empresa</label>
+                  <input className={INP} value={form.nome_empresa} onChange={e => setForm(p => ({...p, nome_empresa: e.target.value}))} placeholder="Acme Corp" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cidade / Estado</label>
+                  <input className={INP} value={form.cidade_estado} onChange={e => setForm(p => ({...p, cidade_estado: e.target.value}))} placeholder="São Paulo / SP" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Segmento</label>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Cidade / Estado</label>
-                <input className={INP} value={form.cidade_estado} onChange={e => setForm(p => ({...p, cidade_estado: e.target.value}))} placeholder="São Paulo / SP" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label>
-                <input className={INP} value={form.segmento} onChange={e => setForm(p => ({...p, segmento: e.target.value}))} placeholder="Tecnologia, Saúde..." />
-              </div>
-            </div>
+            )}
           </section>
 
           {/* CONTATO */}
           <section>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
               <User className="h-3.5 w-3.5" /> Contato
             </h4>
             <ImportOrCreatePicker
@@ -634,32 +771,44 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
               onSelect={pickContact}
               onCreateClick={() => openCreate('contact')}
               renderItem={c => c.nome + (c.cargo ? ` · ${c.cargo}` : '') + (c.crm_leads?.nome_empresa ? ` (${c.crm_leads.nome_empresa})` : '')}
+              filterItem={c => [c.nome, c.cargo, c.email, c.telefone, c.crm_leads?.nome_empresa].filter(Boolean).join(' ')}
               renderSelected={c => <><span className="font-semibold">{c.nome}</span>{c.cargo && <span className="text-xs text-gray-400 ml-1">· {c.cargo}</span>}</>}
               placeholder={selectedLead ? `Contatos de ${selectedLead.nome_empresa}...` : 'Importar contato existente...'}
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nome do Contato</label>
-                <input className={INP} value={form.nome_contato} onChange={e => setForm(p => ({...p, nome_contato: e.target.value}))} placeholder="João Silva" />
+            {/* Editable fields — toggle */}
+            <button
+              type="button"
+              onClick={() => setExpandContact(v => !v)}
+              className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#EBA500] transition-colors"
+            >
+              <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expandContact ? 'rotate-180' : ''}`} />
+              {expandContact ? 'Ocultar campos' : 'Editar dados manualmente'}
+            </button>
+            {expandContact && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome do Contato</label>
+                  <input className={INP} value={form.nome_contato} onChange={e => setForm(p => ({...p, nome_contato: e.target.value}))} placeholder="João Silva" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cargo</label>
+                  <input className={INP} value={form.cargo_contato} onChange={e => setForm(p => ({...p, cargo_contato: e.target.value}))} placeholder="Diretor Comercial" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">E-mail</label>
+                  <input type="email" className={INP} value={form.email_contato} onChange={e => setForm(p => ({...p, email_contato: e.target.value}))} placeholder="joao@empresa.com" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Telefone</label>
+                  <input type="tel" className={INP} value={form.telefone_contato} onChange={e => setForm(p => ({...p, telefone_contato: e.target.value}))} placeholder="(11) 99999-9999" />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Cargo</label>
-                <input className={INP} value={form.cargo_contato} onChange={e => setForm(p => ({...p, cargo_contato: e.target.value}))} placeholder="Diretor Comercial" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">E-mail</label>
-                <input type="email" className={INP} value={form.email_contato} onChange={e => setForm(p => ({...p, email_contato: e.target.value}))} placeholder="joao@empresa.com" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Telefone</label>
-                <input type="tel" className={INP} value={form.telefone_contato} onChange={e => setForm(p => ({...p, telefone_contato: e.target.value}))} placeholder="(11) 99999-9999" />
-              </div>
-            </div>
+            )}
           </section>
 
           {/* PRODUTO / OPORTUNIDADE */}
           <section>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
               <DollarSign className="h-3.5 w-3.5" /> Oportunidade / Produtos
             </h4>
 
@@ -667,12 +816,12 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
             {lineItems.length > 0 && (
               <div className="space-y-2 mb-3">
                 {lineItems.map(li => (
-                  <div key={li.lineId} className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100">
+                  <div key={li.lineId} className="p-3 bg-emerald-50/60 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/40">
                     {/* Header */}
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <Package className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                        <span className="text-xs font-semibold text-gray-800 truncate">{li.nome_produto || '—'}</span>
+                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{li.nome_produto || '—'}</span>
                         {li.valor_unitario !== '' && li.valor_unitario !== null && (
                           <span className="text-[10px] text-gray-400 shrink-0"> · {fmtMoney(li.valor_unitario)}/un.</span>
                         )}
@@ -685,32 +834,32 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                     {/* Fields */}
                     <div className="grid grid-cols-4 gap-2">
                       <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-1">Qtd.</label>
+                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1">Qtd.</label>
                         <input type="number" min="1" step="1"
-                          className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 focus:border-emerald-400 focus:outline-none bg-white"
+                          className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-emerald-400 focus:outline-none bg-white"
                           value={li.quantidade}
                           onChange={e => updateLineItem(li.lineId, 'quantidade', Math.max(1, parseInt(e.target.value) || 1))}
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-1">Desconto %</label>
+                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1">Desconto %</label>
                         <input type="number" min="0" max="100" step="0.01" placeholder="0"
-                          className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 focus:border-emerald-400 focus:outline-none bg-white"
+                          className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-emerald-400 focus:outline-none bg-white"
                           value={li.desconto_percentual}
                           onChange={e => updateLineItem(li.lineId, 'desconto_percentual', e.target.value)}
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-1">Valor (R$)</label>
+                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1">Valor (R$)</label>
                         <input type="number" min="0" step="0.01" placeholder="0,00"
-                          className="w-full text-xs px-2 py-1.5 rounded-lg border border-emerald-200 focus:border-emerald-400 focus:outline-none bg-white font-semibold text-emerald-700"
+                          className="w-full text-xs px-2 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-700 dark:bg-gray-700 dark:text-emerald-300 focus:border-emerald-400 focus:outline-none bg-white font-semibold text-emerald-700"
                           value={li.valor_unitario}
                           onChange={e => updateLineItem(li.lineId, 'valor_unitario', e.target.value)}
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-1">Total do Item</label>
-                        <div className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-100 bg-gray-50 font-semibold text-gray-700 select-none">
+                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1">Total do Item</label>
+                        <div className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-100 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 font-semibold text-gray-700 dark:text-gray-300 select-none">
                           {fmtMoney(parseFloat(li.valor_linha) || 0)}
                         </div>
                       </div>
@@ -737,7 +886,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Origem do Lead</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Origem do Lead</label>
                 <select className={SEL} value={form.origem_lead} onChange={e => setForm(p => ({...p, origem_lead: e.target.value}))}>
                   <option value="">Selecione...</option>
                   {ORIGENS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -748,7 +897,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                   {lineItems.length > 0 ? 'Total dos Produtos' : 'Valor da Oportunidade (R$)'}
                 </label>
                 {lineItems.length > 0 ? (
-                  <div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-bold text-emerald-700">
+                  <div className="px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/50 rounded-xl text-sm font-bold text-emerald-700 dark:text-emerald-400">
                     {fmtMoney(lineItems.reduce((s, li) => s + (parseFloat(li.valor_linha) || 0), 0))}
                   </div>
                 ) : (
@@ -761,15 +910,15 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
 
           {/* Observações */}
           <section>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">
               <MessageSquare className="h-3.5 w-3.5" /> Histórico / Observações
             </h4>
             {observations.length > 0 && (
               <div className="space-y-2 mb-3">
                 {observations.map(obs => (
-                  <div key={obs.id} className="flex gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <div key={obs.id} className="flex gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-700 whitespace-pre-wrap break-words">{obs.text}</p>
+                      <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">{obs.text}</p>
                       <p className="text-[10px] text-gray-400 mt-1">
                         {new Date(obs.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
@@ -805,15 +954,15 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
 
           {/* Anexos */}
           <section>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">
               <Paperclip className="h-3.5 w-3.5" /> Anexos
             </h4>
             {isNew && <p className="text-xs text-gray-400 mb-2">Salve o card primeiro para adicionar anexos.</p>}
             <div className="space-y-2">
               {attachments.map(att => (
-                <div key={att.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-xl border border-gray-100">
+                <div key={att.id} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600">
                   <Paperclip className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                  <span className="text-xs text-gray-700 flex-1 truncate">{att.file_name}</span>
+                  <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate">{att.file_name}</span>
                   <span className="text-xs text-gray-400">{att.file_size ? (att.file_size / 1024).toFixed(0) + ' KB' : ''}</span>
                   <button onClick={() => handleDownload(att)} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
                     <Download className="h-3.5 w-3.5 text-gray-500" />
@@ -835,8 +984,8 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2 rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2 rounded-b-2xl">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
             Cancelar
           </button>
           <button onClick={handleSave} disabled={loading}
@@ -858,7 +1007,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
 }
 
 // ─── KanbanCard (draggable) ───────────────────────────────────────────────
-function KanbanCard({ card, onEdit, isDragOverlay = false }) {
+function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [] }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id, data: { type: 'card', card } })
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -869,14 +1018,21 @@ function KanbanCard({ card, onEdit, isDragOverlay = false }) {
 
   if (isDragOverlay) {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 shadow-2xl p-3 rotate-1 scale-105 cursor-grabbing">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-2xl p-3 rotate-1 scale-105 cursor-grabbing">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
-            {card.nome_empresa && <p className="text-xs font-bold text-gray-800 truncate">{card.nome_empresa}</p>}
-            {card.nome_contato && <p className="text-xs text-gray-500 truncate">{card.nome_contato}{card.cargo_contato ? ` · ${card.cargo_contato}` : ''}</p>}
+            {card.nome_empresa && <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{card.nome_empresa}</p>}
+            {card.nome_contato && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{card.nome_contato}{card.cargo_contato ? ` · ${card.cargo_contato}` : ''}</p>}
           </div>
           <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.label}</span>
         </div>
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-1.5">
+            {tags.slice(0, 4).map(tag => (
+              <span key={tag.id} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: tag.color + '25', color: tag.color }}>{tag.name}</span>
+            ))}
+          </div>
+        )}
         {card.valor_oportunidade && <p className="text-xs font-semibold text-emerald-600">{fmtMoney(card.valor_oportunidade)}</p>}
       </div>
     )
@@ -889,12 +1045,12 @@ function KanbanCard({ card, onEdit, isDragOverlay = false }) {
       {...attributes}
       {...listeners}
       onClick={() => onEdit(card)}
-      className={`bg-white rounded-xl border border-gray-100 shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-[#EBA500]/30 transition-all select-none ${isDragging ? 'opacity-30' : ''}`}
+      className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-[#EBA500]/30 transition-all select-none ${isDragging ? 'opacity-30' : ''}`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
-          {card.nome_empresa && <p className="text-xs font-bold text-gray-800 truncate">{card.nome_empresa}</p>}
-          {card.nome_contato && <p className="text-xs text-gray-500 truncate">{card.nome_contato}{card.cargo_contato ? ` · ${card.cargo_contato}` : ''}</p>}
+          {card.nome_empresa && <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{card.nome_empresa}</p>}
+          {card.nome_contato && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{card.nome_contato}{card.cargo_contato ? ` · ${card.cargo_contato}` : ''}</p>}
         </div>
         <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.label}</span>
       </div>
@@ -902,6 +1058,13 @@ function KanbanCard({ card, onEdit, isDragOverlay = false }) {
         <div className="flex flex-wrap gap-1 mb-1.5">
           {card.segmento && <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded-full">{card.segmento}</span>}
           {card.cidade_estado && <span className="text-[10px] bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{card.cidade_estado}</span>}
+        </div>
+      )}
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-1.5">
+          {tags.map(tag => (
+            <span key={tag.id} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: tag.color + '25', color: tag.color }}>{tag.name}</span>
+          ))}
         </div>
       )}
       {card.valor_oportunidade && (
@@ -915,7 +1078,7 @@ function KanbanCard({ card, onEdit, isDragOverlay = false }) {
 }
 
 // ─── KanbanColumn ─────────────────────────────────────────────────────────────
-function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDeleteColumn, activeCardId }) {
+function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDeleteColumn, activeCardId, cardTagsMap = {} }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id, data: { type: 'column', columnId: column.id } })
   const { attributes, listeners, setNodeRef: setColRef, transform, transition, isDragging } = useSortable({
     id: `col-${column.id}`, data: { type: 'column', column },
@@ -931,7 +1094,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
   return (
     <div ref={setColRef} style={style} className="flex flex-col w-72 shrink-0 group/col h-full">
       {/* Column card wrapper */}
-      <div className={`flex flex-col min-h-0 h-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden transition-shadow ${isDragging ? 'shadow-xl' : 'hover:shadow-md'}`}>
+<div className={`flex flex-col min-h-0 h-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-shadow ${isDragging ? 'shadow-xl' : 'hover:shadow-md'}`}>
 
         {/* Colored top stripe */}
         <div className="h-1 w-full shrink-0" style={{ background: column.color }} />
@@ -943,8 +1106,12 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
           </div>
           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: column.color }} />
           <div className="flex-1 min-w-0">
-            <span className="text-sm font-bold text-gray-700 break-words block">{column.name}</span>
-            {totalValue > 0 && <span className="text-[10px] text-emerald-600 font-medium">{fmtMoney(totalValue)}</span>}
+            <span className="text-sm font-bold text-gray-700 dark:text-gray-200 break-words block">{column.name}</span>
+            {totalValue > 0 && (
+              <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700">
+                {fmtMoney(totalValue)}
+              </span>
+            )}
           </div>
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: column.color + '20', color: column.color }}>{cards.length}</span>
           <div className="flex items-center gap-0.5 opacity-0 group-hover/col:opacity-100 transition-all">
@@ -958,7 +1125,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
         </div>
 
         {/* Divider */}
-        <div className="mx-3 border-t border-gray-100" />
+        <div className="mx-3 border-t border-gray-100 dark:border-gray-700" />
 
         {/* Cards drop area */}
         <div ref={setNodeRef}
@@ -968,7 +1135,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
           <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
             <div className="space-y-2">
               {cards.map(card => (
-                <KanbanCard key={card.id} card={card} onEdit={onEditCard} />
+                <KanbanCard key={card.id} card={card} onEdit={onEditCard} tags={cardTagsMap[card.id] || []} />
               ))}
             </div>
           </SortableContext>
@@ -1003,19 +1170,19 @@ function ColumnModal({ column, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xs p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-bold text-gray-800">{column?.id ? 'Editar Coluna' : 'Nova Coluna'}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X className="h-4 w-4 text-gray-400" /></button>
+          <h2 className="text-sm font-bold text-gray-800 dark:text-white">{column?.id ? 'Editar Coluna' : 'Nova Coluna'}</h2>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><X className="h-4 w-4 text-gray-400" /></button>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
-            <input autoFocus className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500]"
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome *</label>
+            <input autoFocus className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500]"
               value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Prospecção, Proposta..." onKeyDown={e => e.key === 'Enter' && handleSave()} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-2">Cor</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Cor</label>
             <input
               type="color"
               value={color}
@@ -1025,7 +1192,7 @@ function ColumnModal({ column, onClose, onSaved }) {
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">
-          <button onClick={onClose} className="px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+          <button onClick={onClose} className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
           <button onClick={handleSave} disabled={saving}
             className="px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60">
             Salvar
@@ -1040,20 +1207,20 @@ function ColumnModal({ column, onClose, onSaved }) {
 function ConfirmModal({ title, message, confirmLabel = 'Excluir', onConfirm, onCancel }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
         <div className="flex items-start gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-50 shrink-0">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/30 shrink-0">
             <Trash2 className="h-5 w-5 text-red-500" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-gray-800">{title}</h3>
-            <p className="text-xs text-gray-500 mt-1 leading-relaxed">{message}</p>
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white">{title}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{message}</p>
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-1">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
             Cancelar
           </button>
@@ -1070,8 +1237,8 @@ function ConfirmModal({ title, message, confirmLabel = 'Excluir', onConfirm, onC
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
-const INP = 'w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all'
-const SEL = INP + ' bg-white'
+const INP = 'w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all'
+const SEL = INP + ' bg-white dark:bg-gray-700'
 
 // ─── LeadsModal ───────────────────────────────────────────────────────────────
 function LeadsModal({ companyId, onClose, onOpenContacts }) {
@@ -1084,7 +1251,7 @@ function LeadsModal({ companyId, onClose, onOpenContacts }) {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
-  const EMPTY = { nome_empresa: '', cidade: '', estado: '', segmento: '', origem_lead: '', website: '', observacoes: '' }
+  const EMPTY = { nome_empresa: '', cnpj: '', cidade: '', estado: '', segmento: '', origem_lead: '', website: '', observacoes: '' }
   const [form, setForm] = useState(EMPTY)
 
   // contacts (expandable panel)
@@ -1393,15 +1560,15 @@ function LeadsModal({ companyId, onClose, onOpenContacts }) {
   return (
     <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100">
+        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+            <h2 className="text-base font-bold text-gray-800 dark:text-white flex items-center gap-2">
               <Building2 className="h-4 w-4 text-[#EBA500]" /> Leads / Empresas
             </h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
           </div>
           {/* hidden file inputs */}
           <input ref={importLeadsCsvRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleImportLeadsCSV} />
@@ -1434,43 +1601,47 @@ function LeadsModal({ companyId, onClose, onOpenContacts }) {
             ) : showForm ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
-                  <h3 className="text-sm font-bold text-gray-700">{editing ? 'Editar Lead' : 'Novo Lead'}</h3>
+                  <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
+                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">{editing ? 'Editar Lead' : 'Novo Lead'}</h3>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome da Empresa *</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome da Empresa *</label>
                   <input className={INP} value={form.nome_empresa} onChange={e => setForm(p => ({...p, nome_empresa: e.target.value}))} placeholder="Acme Corp" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">CNPJ <span className="text-gray-400 font-normal">(opcional)</span></label>
+                  <input className={INP} value={form.cnpj || ''} onChange={e => setForm(p => ({...p, cnpj: e.target.value}))} placeholder="00.000.000/0000-00" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Cidade</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cidade</label>
                     <input className={INP} value={form.cidade || ''} onChange={e => setForm(p => ({...p, cidade: e.target.value}))} placeholder="São Paulo" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Estado</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Estado</label>
                     <select className={SEL} value={form.estado || ''} onChange={e => setForm(p => ({...p, estado: e.target.value}))}>
                       <option value="">Selecione...</option>
                       {ESTADOS_BR.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Segmento</label>
                     <input className={INP} value={form.segmento} onChange={e => setForm(p => ({...p, segmento: e.target.value}))} placeholder="Tecnologia, Saúde..." />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Origem</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Origem</label>
                     <select className={SEL} value={form.origem_lead} onChange={e => setForm(p => ({...p, origem_lead: e.target.value}))}>
                       <option value="">Selecione...</option>
                       {ORIGENS.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Website</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Website</label>
                     <input className={INP} value={form.website} onChange={e => setForm(p => ({...p, website: e.target.value}))} placeholder="https://..." />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Observações</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Observações</label>
                   <textarea className={INP + ' resize-none'} rows={3} value={form.observacoes} onChange={e => setForm(p => ({...p, observacoes: e.target.value}))} placeholder="Notas sobre este lead..." />
                 </div>
 
@@ -1484,7 +1655,7 @@ function LeadsModal({ companyId, onClose, onOpenContacts }) {
                   </div>
                   <div className="space-y-2">
                     {newContacts.map((c, idx) => (
-                      <div key={c._key} className="relative p-3 bg-purple-50 border border-purple-100 rounded-xl">
+                      <div key={c._key} className="relative p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-700/40 rounded-xl">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-semibold text-purple-600">Contato {idx + 1}</span>
                           {newContacts.length > 1 && (
@@ -1507,7 +1678,7 @@ function LeadsModal({ companyId, onClose, onOpenContacts }) {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+                  <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
                   <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
                     {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Salvar
                   </button>
@@ -1522,16 +1693,16 @@ function LeadsModal({ companyId, onClose, onOpenContacts }) {
             ) : (
               <div className="space-y-2">
                 {leads.map(l => (
-                  <div key={l.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 group cursor-pointer" onClick={() => { onClose(); navigate(`/crm/lead/${l.id}`) }}>
+                  <div key={l.id} className="flex items-center gap-3 p-3 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 group cursor-pointer" onClick={() => { onClose(); navigate(`/crm/lead/${l.id}`) }}>
                     <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
                       <Building2 className="h-4 w-4 text-blue-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{l.nome_empresa}</p>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">{l.nome_empresa}</p>
                       <p className="text-xs text-gray-400 truncate">{[l.segmento, l.cidade, l.estado].filter(Boolean).join(' · ') || 'Sem detalhes'}</p>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={(e) => { e.stopPropagation(); openEdit(l) }} className="p-1.5 hover:bg-gray-200 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); openEdit(l) }} className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(l.id) }} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
                     </div>
                   </div>
@@ -1547,10 +1718,10 @@ function LeadsModal({ companyId, onClose, onOpenContacts }) {
     {/* ── Import Preview Modal ── */}
     {importPreview && (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
             <div>
-              <h3 className="text-base font-bold text-gray-900">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">
                 Confirmar importação de {importPreview.type === 'leads' ? 'leads' : 'contatos'}
               </h3>
               <p className="text-xs text-gray-500 mt-0.5">
@@ -1560,7 +1731,7 @@ function LeadsModal({ companyId, onClose, onOpenContacts }) {
                 } encontrado{importPreview.rows.length !== 1 ? 's' : ''}. Revise antes de confirmar.
               </p>
             </div>
-            <button onClick={() => setImportPreview(null)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600">
+            <button onClick={() => setImportPreview(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-400 hover:text-gray-600">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -1568,26 +1739,26 @@ function LeadsModal({ companyId, onClose, onOpenContacts }) {
             {importPreview.type === 'leads' ? (
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Empresa</th>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Cidade</th>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">UF</th>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Contato</th>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Cargo</th>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Telefone</th>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">E-mail</th>
+                  <tr className="bg-gray-50 dark:bg-gray-700">
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Empresa</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Cidade</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">UF</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Contato</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Cargo</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Telefone</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">E-mail</th>
                   </tr>
                 </thead>
                 <tbody>
                   {importPreview.rows.map((r, i) => (
-                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                      <td className="px-3 py-2 border border-gray-100 font-medium text-gray-800">{r.nomeEmpresa}</td>
-                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.cidade || '—'}</td>
-                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.estado || '—'}</td>
-                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.nomeContato || '—'}</td>
-                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.cargo || '—'}</td>
-                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.telefone || '—'}</td>
-                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.email || '—'}</td>
+                    <tr key={i} className={i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-700/50'}>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 font-medium text-gray-800 dark:text-gray-100">{r.nomeEmpresa}</td>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.cidade || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.estado || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.nomeContato || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.cargo || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.telefone || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.email || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1595,30 +1766,30 @@ function LeadsModal({ companyId, onClose, onOpenContacts }) {
             ) : (
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Empresa (lead)</th>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Contato</th>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Cargo</th>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Telefone</th>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">E-mail</th>
+                  <tr className="bg-gray-50 dark:bg-gray-700">
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Empresa (lead)</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Contato</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Cargo</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Telefone</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">E-mail</th>
                   </tr>
                 </thead>
                 <tbody>
                   {importPreview.rows.map((r, i) => (
-                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.nomeEmpresa || '—'}</td>
-                      <td className="px-3 py-2 border border-gray-100 font-medium text-gray-800">{r.nomeContato}</td>
-                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.cargo || '—'}</td>
-                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.telefone || '—'}</td>
-                      <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.email || '—'}</td>
+                    <tr key={i} className={i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-700/50'}>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.nomeEmpresa || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 font-medium text-gray-800 dark:text-gray-100">{r.nomeContato}</td>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.cargo || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.telefone || '—'}</td>
+                      <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.email || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
           </div>
-          <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
-            <button onClick={() => setImportPreview(null)} className="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+          <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-700">
+            <button onClick={() => setImportPreview(null)} className="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors">
               Cancelar
             </button>
             <button onClick={confirmImport} disabled={importing} className="px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 flex items-center gap-2">
@@ -1773,13 +1944,13 @@ function ProductsModal({ companyId, onClose }) {
   return (
     <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
-        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
+        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+            <h2 className="text-base font-bold text-gray-800 dark:text-white flex items-center gap-2">
               <Package className="h-4 w-4 text-[#EBA500]" /> Produtos / Serviços
             </h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
           </div>
           <input ref={importRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleImportFile} />
           {!showForm && (
@@ -1806,29 +1977,29 @@ function ProductsModal({ companyId, onClose }) {
           ) : showForm ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
-                <h3 className="text-sm font-bold text-gray-700">{editing ? 'Editar Produto' : 'Novo Produto'}</h3>
+                <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">{editing ? 'Editar Produto' : 'Novo Produto'}</h3>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome *</label>
                 <input className={INP} value={form.nome} onChange={e => setForm(p => ({...p, nome: e.target.value}))} placeholder="Ex: Consultoria Mensal" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Descrição</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Descrição</label>
                 <textarea className={INP + ' resize-none'} rows={2} value={form.descricao} onChange={e => setForm(p => ({...p, descricao: e.target.value}))} placeholder="Detalhes do produto ou serviço..." />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Valor (R$)</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor (R$)</label>
                   <input type="number" min="0" step="0.01" className={INP} value={form.valor} onChange={e => setForm(p => ({...p, valor: e.target.value}))} placeholder="0,00" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Unidade</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Unidade</label>
                   <input className={INP} value={form.unidade} onChange={e => setForm(p => ({...p, unidade: e.target.value}))} placeholder="por mês, por licença..." />
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+                <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
                 <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
                   {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Salvar
                 </button>
@@ -1843,17 +2014,17 @@ function ProductsModal({ companyId, onClose }) {
           ) : (
             <div className="space-y-2">
               {products.map(p => (
-                <div key={p.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 group">
+                <div key={p.id} className="flex items-center gap-3 p-3 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 group">
                   <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
                     <Package className="h-4 w-4 text-emerald-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{p.nome}</p>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">{p.nome}</p>
                     {p.descricao && <p className="text-xs text-gray-500 truncate">{p.descricao}</p>}
                     <p className="text-xs text-gray-400 truncate">{p.valor ? fmtMoney(p.valor) + (p.unidade ? ' · ' + p.unidade : '') : 'Sem valor definido'}</p>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => openEdit(p)} className="p-1.5 hover:bg-gray-200 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
+                    <button onClick={() => openEdit(p)} className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
                     <button onClick={() => handleDelete(p.id)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
                   </div>
                 </div>
@@ -1867,42 +2038,42 @@ function ProductsModal({ companyId, onClose }) {
     {/* ── Import Preview Modal ── */}
     {importPreview && (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
             <div>
-              <h3 className="text-base font-bold text-gray-900">Confirmar importação de produtos</h3>
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">Confirmar importação de produtos</h3>
               <p className="text-xs text-gray-500 mt-0.5">
                 {importPreview.rows.length} produto{importPreview.rows.length !== 1 ? 's' : ''} encontrado{importPreview.rows.length !== 1 ? 's' : ''}. Revise antes de confirmar.
               </p>
             </div>
-            <button onClick={() => setImportPreview(null)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600">
+            <button onClick={() => setImportPreview(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-400 hover:text-gray-600">
               <X className="h-4 w-4" />
             </button>
           </div>
           <div className="flex-1 overflow-auto px-6 py-4">
             <table className="w-full text-xs border-collapse">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Nome</th>
-                  <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Descrição</th>
-                  <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Valor</th>
-                  <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Unidade</th>
+                <tr className="bg-gray-50 dark:bg-gray-700">
+                  <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Nome</th>
+                  <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Descrição</th>
+                  <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Valor</th>
+                  <th className="text-left px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">Unidade</th>
                 </tr>
               </thead>
               <tbody>
                 {importPreview.rows.map((r, i) => (
-                  <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                    <td className="px-3 py-2 border border-gray-100 font-medium text-gray-800">{r.nome}</td>
-                    <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.descricao || '—'}</td>
-                    <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.valor ? fmtMoney(parseFloat(r.valor.replace(',', '.')) || 0) : '—'}</td>
-                    <td className="px-3 py-2 border border-gray-100 text-gray-600">{r.unidade || '—'}</td>
+                  <tr key={i} className={i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-700/50'}>
+                    <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 font-medium text-gray-800 dark:text-gray-100">{r.nome}</td>
+                    <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.descricao || '—'}</td>
+                    <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.valor ? fmtMoney(parseFloat(r.valor.replace(',', '.')) || 0) : '—'}</td>
+                    <td className="px-3 py-2 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">{r.unidade || '—'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
-            <button onClick={() => setImportPreview(null)} className="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+          <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-700">
+            <button onClick={() => setImportPreview(null)} className="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors">
               Cancelar
             </button>
             <button onClick={confirmImportProducts} disabled={importing} className="px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 flex items-center gap-2">
@@ -2056,13 +2227,13 @@ function ContactsModal({ companyId, onClose, onOpenLeads }) {
   return (
     <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
-        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
+        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+            <h2 className="text-base font-bold text-gray-800 dark:text-white flex items-center gap-2">
               <Users className="h-4 w-4 text-[#EBA500]" /> Contatos
             </h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"><X className="h-5 w-5 text-gray-500" /></button>
           </div>
           <input ref={importRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleImportFile} />
           {!showForm && (
@@ -2094,40 +2265,40 @@ function ContactsModal({ companyId, onClose, onOpenLeads }) {
           ) : showForm ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
-                <h3 className="text-sm font-bold text-gray-700">{editing ? 'Editar Contato' : 'Novo Contato'}</h3>
+                <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">{editing ? 'Editar Contato' : 'Novo Contato'}</h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome *</label>
                   <input className={INP} value={form.nome} onChange={e => setForm(p => ({...p, nome: e.target.value}))} placeholder="João Silva" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Cargo</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cargo</label>
                   <input className={INP} value={form.cargo} onChange={e => setForm(p => ({...p, cargo: e.target.value}))} placeholder="Diretor Comercial" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Empresa (Lead)</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Empresa (Lead)</label>
                   <select className={SEL} value={form.lead_id} onChange={e => setForm(p => ({...p, lead_id: e.target.value}))}>
                     <option value="">Sem vínculo</option>
                     {leads.map(l => <option key={l.id} value={l.id}>{l.nome_empresa}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">E-mail</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">E-mail</label>
                   <input type="email" className={INP} value={form.email} onChange={e => setForm(p => ({...p, email: e.target.value}))} placeholder="joao@empresa.com" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Telefone</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Telefone</label>
                   <input type="tel" className={INP} value={form.telefone} onChange={e => setForm(p => ({...p, telefone: e.target.value}))} placeholder="(11) 99999-9999" />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Observações</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Observações</label>
                   <textarea className={INP + ' resize-none'} rows={2} value={form.observacoes} onChange={e => setForm(p => ({...p, observacoes: e.target.value}))} placeholder="Notas sobre este contato..." />
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+                <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
                 <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
                   {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Salvar
                 </button>
@@ -2142,19 +2313,19 @@ function ContactsModal({ companyId, onClose, onOpenLeads }) {
           ) : (
             <div className="space-y-2">
               {contacts.map(c => (
-                <div key={c.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 group">
+                <div key={c.id} className="flex items-center gap-3 p-3 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 group">
                   <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center shrink-0 text-sm font-bold text-purple-600">
                     {c.nome.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{c.nome}{c.cargo ? <span className="font-normal text-gray-500"> · {c.cargo}</span> : ''}</p>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">{c.nome}{c.cargo ? <span className="font-normal text-gray-500"> · {c.cargo}</span> : ''}</p>
                     <p className="text-xs text-gray-400 truncate">
                       {[c.crm_leads?.nome_empresa, c.email, c.telefone].filter(Boolean).join(' · ') || 'Sem detalhes'}
                     </p>
                     {c.observacoes && <p className="text-xs text-gray-400 truncate mt-0.5 italic">{c.observacoes}</p>}
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-gray-200 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
+                    <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
                     <button onClick={() => handleDelete(c.id)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
                   </div>
                 </div>
@@ -2238,6 +2409,11 @@ export default function CRMPage() {
   const [activeCard, setActiveCard] = useState(null)
   const [activeColumn, setActiveColumn] = useState(null)
   const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState([])          // [] = todos
+  const [filterPeriod, setFilterPeriod] = useState({ from: '', to: '' }) // filtro por status_updated_at
+  const [filterTags, setFilterTags] = useState([])              // tag IDs selecionadas
+  const [boardTags, setBoardTags] = useState([])                // todas as tags da empresa
+  const [cardTagsMap, setCardTagsMap] = useState({})            // { cardId: Tag[] }
   const [confirmDialog, setConfirmDialog] = useState(null) // { title, message, onConfirm }
 
   const [searchParams] = useSearchParams()
@@ -2285,6 +2461,11 @@ export default function CRMPage() {
   const openBoard = async (board) => {
     setSelectedBoard(board)
     setSearch('')
+    setFilterStatus([])
+    setFilterPeriod({ from: '', to: '' })
+    setFilterTags([])
+    setBoardTags([])
+    setCardTagsMap({})
     setLoading(true)
     setColumns([])
     setCards({})
@@ -2308,6 +2489,21 @@ export default function CRMPage() {
         if (cardRes.error) throw cardRes.error
         cardData = cardRes.data || []
       }
+      // Carrega tags em paralelo com o agrupamento
+      const [tagsRes, ctRes] = await Promise.all([
+        supabase.from('crm_tags').select('*').eq('company_id', companyId).order('name'),
+        cardData.length > 0
+          ? supabase.from('crm_card_tags').select('card_id, tag_id, crm_tags(*)').in('card_id', cardData.map(c => c.id))
+          : Promise.resolve({ data: [] }),
+      ])
+      setBoardTags(tagsRes.data || [])
+      const ctMap = {}
+      ;(ctRes.data || []).forEach(ct => {
+        if (!ctMap[ct.card_id]) ctMap[ct.card_id] = []
+        ctMap[ct.card_id].push(ct.crm_tags)
+      })
+      setCardTagsMap(ctMap)
+
       const grouped = {}
       cols.forEach(c => { grouped[c.id] = [] })
       cardData.forEach(card => {
@@ -2327,6 +2523,11 @@ export default function CRMPage() {
     setColumns([])
     setCards({})
     setSearch('')
+    setFilterStatus([])
+    setFilterPeriod({ from: '', to: '' })
+    setFilterTags([])
+    setBoardTags([])
+    setCardTagsMap({})
     setEditingTitle(false)
   }
 
@@ -2424,7 +2625,7 @@ export default function CRMPage() {
   }
 
   // ── Card CRUD ──────────────────────────────────────────────────────────────
-  const handleCardSaved = (saved, isNew) => {
+  const handleCardSaved = (saved, isNew, savedTags = []) => {
     setCards(prev => {
       const updated = { ...prev }
       // Remove from old column if moved
@@ -2439,6 +2640,7 @@ export default function CRMPage() {
         : [...(updated[col] || []), saved]
       return updated
     })
+    setCardTagsMap(prev => ({ ...prev, [saved.id]: savedTags }))
     setCardModal(null)
   }
 
@@ -2566,17 +2768,40 @@ export default function CRMPage() {
 
   // ── Filtered view ─────────────────────────────────────────────────────────
   const filteredCards = useCallback((colId) => {
-    const list = cards[colId] || []
-    if (!search.trim()) return list
-    const q = search.toLowerCase()
-    return list.filter(c =>
-      (c.nome_empresa || '').toLowerCase().includes(q) ||
-      (c.nome_contato || '').toLowerCase().includes(q) ||
-      (c.segmento || '').toLowerCase().includes(q) ||
-      (c.cidade || '').toLowerCase().includes(q) ||
-      (c.estado || '').toLowerCase().includes(q)
-    )
-  }, [cards, search])
+    let list = cards[colId] || []
+    // texto livre
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(c =>
+        (c.nome_empresa || '').toLowerCase().includes(q) ||
+        (c.nome_contato || '').toLowerCase().includes(q) ||
+        (c.segmento || '').toLowerCase().includes(q) ||
+        (c.cidade || '').toLowerCase().includes(q) ||
+        (c.estado || '').toLowerCase().includes(q)
+      )
+    }
+    // status
+    if (filterStatus.length > 0) {
+      list = list.filter(c => filterStatus.includes(c.status || 'ativo'))
+    }
+    // período (usa status_updated_at; fallback updated_at)
+    if (filterPeriod.from || filterPeriod.to) {
+      list = list.filter(c => {
+        const d = new Date(c.status_updated_at || c.updated_at)
+        if (filterPeriod.from && d < new Date(filterPeriod.from)) return false
+        if (filterPeriod.to  && d > new Date(filterPeriod.to + 'T23:59:59')) return false
+        return true
+      })
+    }
+    // tags (AND: card precisa ter todas as tags selecionadas)
+    if (filterTags.length > 0) {
+      list = list.filter(c => {
+        const cTags = (cardTagsMap[c.id] || []).map(t => t.id)
+        return filterTags.every(tid => cTags.includes(tid))
+      })
+    }
+    return list
+  }, [cards, search, filterStatus, filterPeriod, filterTags, cardTagsMap])
 
   const colIds = columns.map(c => `col-${c.id}`)
   const totalCards = Object.values(cards).flat().length
@@ -2593,7 +2818,7 @@ export default function CRMPage() {
 
   // ── Boards list view ───────────────────────────────────────────────────────
   if (!selectedBoard) return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       <SuperAdminBanner />
       <div className="p-6">
       {/* Header */}
@@ -2603,7 +2828,7 @@ export default function CRMPage() {
             <Kanban className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-800">CRM</h1>
+            <h1 className="text-xl font-bold text-gray-800 dark:text-white">CRM</h1>
             <p className="text-xs text-gray-400">{boards.length} pipeline{boards.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
@@ -2642,7 +2867,7 @@ export default function CRMPage() {
             <LayoutGrid className="h-8 w-8 text-blue-300" />
           </div>
           <div>
-            <p className="text-lg font-semibold text-gray-700">Nenhum pipeline criado</p>
+            <p className="text-lg font-semibold text-gray-700 dark:text-gray-200">Nenhum pipeline criado</p>
             <p className="text-sm text-gray-400 mt-1">Crie seu primeiro pipeline de vendas para organizar seus leads</p>
           </div>
           <button
@@ -2655,7 +2880,7 @@ export default function CRMPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {boards.map(board => (
-            <div key={board.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all group flex flex-col">
+            <div key={board.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all group flex flex-col">
               <div className="p-5 flex-1">
                 <div className="flex items-start justify-between gap-2 mb-4">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-sm text-lg">
@@ -2669,7 +2894,7 @@ export default function CRMPage() {
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-                <h3 className="font-semibold text-gray-800 text-base leading-snug">{board.title}</h3>
+                <h3 className="font-semibold text-gray-800 dark:text-white text-base leading-snug">{board.title}</h3>
                 <p className="text-xs text-gray-400 mt-1">
                   Criado em {new Date(board.created_at).toLocaleDateString('pt-BR')}
                 </p>
@@ -2690,16 +2915,16 @@ export default function CRMPage() {
       {/* Modal: Novo Pipeline */}
       {newBoardModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Novo Pipeline</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Novo Pipeline</h2>
 
             {/* Seletor de ícone */}
             <div className="mb-4">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ícone</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Ícone</label>
               <button
                 type="button"
                 onClick={() => setShowIconPicker(true)}
-                className="w-14 h-14 rounded-2xl border-2 border-gray-200 hover:border-[#EBA500] flex items-center justify-center text-2xl transition-colors"
+                className="w-14 h-14 rounded-2xl border-2 border-gray-200 dark:border-gray-600 hover:border-[#EBA500] flex items-center justify-center text-2xl transition-colors"
                 title="Escolher ícone"
               >
                 {renderIcon(newBoardIcon || '🎯', 'h-8 w-8 text-gray-700')}
@@ -2708,7 +2933,7 @@ export default function CRMPage() {
 
             <input
               autoFocus
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] mb-4"
+              className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] mb-4"
               placeholder="Ex: Vendas B2B, Prospecção 2026..."
               value={newBoardTitle}
               onChange={e => setNewBoardTitle(e.target.value)}
@@ -2717,7 +2942,7 @@ export default function CRMPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setNewBoardModal(false)}
-                className="flex-1 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50"
+                className="flex-1 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Cancelar
               </button>
@@ -2758,15 +2983,15 @@ export default function CRMPage() {
 
   // ── Board detail view ──────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-white">
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-white dark:bg-gray-900">
       <SuperAdminBanner />
       {/* Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-200/60 bg-white/80 backdrop-blur-sm shrink-0">
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200/60 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 mr-auto">
             <button
               onClick={backToList}
-              className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               title="Voltar para pipelines"
             >
               <ArrowLeft className="h-4 w-4 text-gray-600" />
@@ -2777,7 +3002,7 @@ export default function CRMPage() {
             <div>
               {editingTitle ? (
                 <input
-                  className="text-lg font-bold text-gray-800 bg-transparent border-b-2 border-[#EBA500] outline-none w-full min-w-[160px] max-w-xs"
+                  className="text-lg font-bold text-gray-800 dark:text-white bg-transparent border-b-2 border-[#EBA500] outline-none w-full min-w-[160px] max-w-xs dark:placeholder-gray-400"
                   value={titleDraft}
                   onChange={e => setTitleDraft(e.target.value)}
                   onBlur={handleSaveTitle}
@@ -2787,7 +3012,7 @@ export default function CRMPage() {
                 />
               ) : (
                 <h1
-                  className="text-lg font-bold cursor-pointer transition-colors group flex items-center gap-1.5 text-gray-800 hover:text-[#EBA500]"
+                  className="text-lg font-bold cursor-pointer transition-colors group flex items-center gap-1.5 text-gray-800 dark:text-white hover:text-[#EBA500]"
                   onClick={() => { setTitleDraft(selectedBoard?.title || ''); setEditingTitle(true) }}
                   title="Clique para editar o título"
                 >
@@ -2803,7 +3028,7 @@ export default function CRMPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
             <input
-              className="pl-8 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] w-48"
+              className="pl-8 pr-3 py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] w-48"
               placeholder="Buscar lead..."
               value={search} onChange={e => setSearch(e.target.value)}
             />
@@ -2815,6 +3040,93 @@ export default function CRMPage() {
           >
             <Plus className="h-4 w-4" /> Nova Coluna
           </button>
+        </div>
+
+        {/* ── Filtros ── */}
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex-wrap">
+          {/* Status */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide shrink-0">Status</span>
+            <div className="flex gap-1.5">
+              {STATUS_OPTIONS.map(s => (
+                <button
+                  key={s.value}
+                  onClick={() => setFilterStatus(p => p.includes(s.value) ? p.filter(x => x !== s.value) : [...p, s.value])}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                    filterStatus.includes(s.value) ? s.color + ' border-current' : 'bg-gray-50 text-gray-400 border-transparent hover:border-gray-200'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Período */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide shrink-0">Período</span>
+            <input
+              type="date"
+              className="px-2.5 py-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
+              value={filterPeriod.from}
+              onChange={e => setFilterPeriod(p => ({ ...p, from: e.target.value }))}
+            />
+            <span className="text-xs text-gray-400 dark:text-gray-500">até</span>
+            <input
+              type="date"
+              className="px-2.5 py-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
+              value={filterPeriod.to}
+              onChange={e => setFilterPeriod(p => ({ ...p, to: e.target.value }))}
+            />
+          </div>
+
+          {/* Tags */}
+          {boardTags.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide shrink-0">Tags</span>
+              <div className="flex flex-wrap gap-1.5">
+                {boardTags.map(tag => (
+                  <div key={tag.id} className="relative group/tag">
+                    <button
+                      onClick={() => setFilterTags(p => p.includes(tag.id) ? p.filter(x => x !== tag.id) : [...p, tag.id])}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border-2 transition-all pr-5"
+                      style={{
+                        backgroundColor: filterTags.includes(tag.id) ? tag.color + '25' : tag.color + '12',
+                        color: tag.color,
+                        borderColor: filterTags.includes(tag.id) ? tag.color : 'transparent',
+                      }}
+                    >
+                      {filterTags.includes(tag.id) && <Check className="h-2.5 w-2.5" />}
+                      {tag.name}
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        await supabase.from('crm_tags').delete().eq('id', tag.id)
+                        setBoardTags(p => p.filter(t => t.id !== tag.id))
+                        setFilterTags(p => p.filter(id => id !== tag.id))
+                      }}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover/tag:opacity-100 transition-opacity p-0.5 rounded-full hover:bg-black/10"
+                      style={{ color: tag.color }}
+                      title="Excluir tag"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Limpar */}
+          {(filterStatus.length > 0 || filterPeriod.from || filterPeriod.to || filterTags.length > 0) && (
+            <button
+              onClick={() => { setFilterStatus([]); setFilterPeriod({ from: '', to: '' }); setFilterTags([]) }}
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <X className="h-3.5 w-3.5" /> Limpar filtros
+            </button>
+          )}
         </div>
       </div>
 
@@ -2829,7 +3141,7 @@ export default function CRMPage() {
             <Kanban className="h-8 w-8 text-blue-300" />
           </div>
           <div>
-            <p className="text-lg font-semibold text-gray-700">Seu pipeline está vazio</p>
+            <p className="text-lg font-semibold text-gray-700 dark:text-gray-200">Seu pipeline está vazio</p>
             <p className="text-sm text-gray-400 mt-1">Comece criando colunas para organizar seus leads</p>
           </div>
           <button onClick={() => setColumnModal({})}
@@ -2849,7 +3161,7 @@ export default function CRMPage() {
             {/* Left scroll arrow */}
             <button
               onClick={() => boardScrollRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white shadow-md border border-gray-200 rounded-full text-gray-500 hover:text-[#EBA500] transition-all opacity-70 hover:opacity-100"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-md border border-gray-200 dark:border-gray-600 rounded-full text-gray-500 hover:text-[#EBA500] transition-all opacity-70 hover:opacity-100"
               title="Rolar para esquerda"
             >
               <ChevronRight className="h-4 w-4 rotate-180" />
@@ -2857,7 +3169,7 @@ export default function CRMPage() {
             {/* Right scroll arrow */}
             <button
               onClick={() => boardScrollRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white shadow-md border border-gray-200 rounded-full text-gray-500 hover:text-[#EBA500] transition-all opacity-70 hover:opacity-100"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-md border border-gray-200 dark:border-gray-600 rounded-full text-gray-500 hover:text-[#EBA500] transition-all opacity-70 hover:opacity-100"
               title="Rolar para direita"
             >
               <ChevronRight className="h-4 w-4" />
@@ -2870,6 +3182,7 @@ export default function CRMPage() {
                     key={col.id}
                     column={col}
                     cards={filteredCards(col.id)}
+                    cardTagsMap={cardTagsMap}
                     onAddCard={(colId) => setCardModal({ columnId: colId })}
                     onEditCard={(card) => setCardModal({ card, columnId: card.column_id })}
                     onEditColumn={(col) => setColumnModal(col)}
@@ -2891,7 +3204,7 @@ export default function CRMPage() {
           </div>
 
           <DragOverlay>
-            {activeCard && <KanbanCard card={activeCard} onEdit={() => {}} isDragOverlay />}
+            {activeCard && <KanbanCard card={activeCard} onEdit={() => {}} isDragOverlay tags={cardTagsMap[activeCard.id] || []} />}
             {activeColumn && (
               <div className="w-72 bg-white rounded-2xl border-2 border-[#EBA500]/50 shadow-2xl p-3 opacity-90">
                 <div className="flex items-center gap-2">
@@ -2918,6 +3231,8 @@ export default function CRMPage() {
           columnId={cardModal.columnId}
           companyId={companyId}
           columns={columns}
+          boardTags={boardTags}
+          onTagCreated={(tag) => setBoardTags(p => [...p, tag].sort((a, b) => a.name.localeCompare(b.name)))}
           onClose={() => setCardModal(null)}
           onSaved={handleCardSaved}
           onDeleted={handleCardDeleted}

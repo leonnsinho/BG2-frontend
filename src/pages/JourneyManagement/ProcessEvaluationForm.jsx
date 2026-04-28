@@ -267,10 +267,10 @@ const ProcessEvaluationForm = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando processo...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando processo...</p>
         </div>
       </div>
     )
@@ -278,12 +278,12 @@ const ProcessEvaluationForm = () => {
 
   if (!process) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen dark:bg-gray-900">
         <div className="text-center">
-          <h1 className="text-xl font-semibold text-gray-900">Processo não encontrado</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Processo não encontrado</h1>
           <button
             onClick={() => navigate(-1)}
-            className="mt-4 text-primary-600 hover:text-primary-800"
+            className="mt-4 text-primary-600 hover:text-primary-800 dark:text-[#EBA500]"
           >
             Voltar
           </button>
@@ -293,9 +293,9 @@ const ProcessEvaluationForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-900 dark:to-gray-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200/50 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200/50 dark:border-gray-700 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-4 sm:py-6 lg:py-8">
             <div className="flex items-center space-x-3 sm:space-x-4">
@@ -311,10 +311,10 @@ const ProcessEvaluationForm = () => {
               </div>
               
               <div className="flex-1 min-w-0">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#373435] truncate">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#373435] dark:text-white truncate">
                   {evaluation ? 'Editar Avaliação' : 'Avaliar Processo'}
                 </h1>
-                <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600 truncate">
+                <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 truncate">
                   {journey ? journey.shortName : 'Jornada'}/{process.name}
                 </p>
               </div>
@@ -325,14 +325,14 @@ const ProcessEvaluationForm = () => {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Detalhes do Processo - Colapsável */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50 mb-4 sm:mb-6 lg:mb-8 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50 dark:border-gray-700 mb-4 sm:mb-6 lg:mb-8 overflow-hidden">
           <button
             onClick={() => setDetailsExpanded(!detailsExpanded)}
-            className="w-full p-4 sm:p-5 lg:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors min-h-[60px] touch-manipulation"
+            className="w-full p-4 sm:p-5 lg:p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors min-h-[60px] touch-manipulation"
           >
             <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
               <Target className="h-4 w-4 sm:h-5 sm:w-5 text-[#EBA500] flex-shrink-0" />
-              <h3 className="text-base sm:text-lg font-semibold text-[#373435] truncate">{process.name}</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-[#373435] dark:text-white truncate">{process.name}</h3>
             </div>
             <div className={`transition-transform duration-300 flex-shrink-0 ml-2 ${detailsExpanded ? 'rotate-180' : ''}`}>
               <ChevronDown className="h-5 w-5 text-gray-400" />
@@ -344,32 +344,32 @@ const ProcessEvaluationForm = () => {
               detailsExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
-            <div className="px-4 sm:px-5 lg:px-6 pb-4 sm:pb-5 lg:pb-6 border-t border-gray-100">
+            <div className="px-4 sm:px-5 lg:px-6 pb-4 sm:pb-5 lg:pb-6 border-t border-gray-100 dark:border-gray-700">
               {process.description && (
                 <div className="mt-4">
-                  <dt className="text-sm font-medium text-gray-500 mb-2">Descrição</dt>
-                  <dd className="text-sm text-[#373435] leading-relaxed">{process.description}</dd>
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Descrição</dt>
+                  <dd className="text-sm text-[#373435] dark:text-white leading-relaxed">{process.description}</dd>
                 </div>
               )}
               
               {/* Detalhes técnicos - apenas para Super Admin */}
               {profile?.role === 'super_admin' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-100 dark:border-gray-700">
                   <div>
-                    <dt className="text-sm font-medium text-gray-500 mb-2">Código</dt>
-                    <dd className="text-sm text-[#373435] px-3 py-1 bg-gradient-to-r from-[#373435]/10 to-[#373435]/5 rounded-2xl inline-block border border-[#373435]/20">{process.code}</dd>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Código</dt>
+                    <dd className="text-sm text-[#373435] dark:text-white px-3 py-1 bg-gradient-to-r from-[#373435]/10 to-[#373435]/5 dark:from-gray-600 dark:to-gray-700 rounded-2xl inline-block border border-[#373435]/20 dark:border-gray-500">{process.code}</dd>
                   </div>
                   
                   {process.category && (
                     <div>
-                      <dt className="text-sm font-medium text-gray-500 mb-2">Categoria</dt>
-                      <dd className="text-sm text-[#373435] px-3 py-1 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 rounded-2xl inline-block border border-[#EBA500]/20">{process.category}</dd>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Categoria</dt>
+                      <dd className="text-sm text-[#373435] dark:text-white px-3 py-1 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 rounded-2xl inline-block border border-[#EBA500]/20">{process.category}</dd>
                     </div>
                   )}
                   
                   <div>
-                    <dt className="text-sm font-medium text-gray-500 mb-2">Peso</dt>
-                    <dd className="text-sm text-[#373435]">
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Peso</dt>
+                    <dd className="text-sm text-[#373435] dark:text-white">
                       <span className="inline-flex items-center space-x-1">
                         <span className="w-2 h-2 bg-[#EBA500] rounded-full"></span>
                         <span>{process.weight}</span>
@@ -383,15 +383,15 @@ const ProcessEvaluationForm = () => {
         </div>
 
         {/* Formulário de Avaliação */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50 p-4 sm:p-6 lg:p-8">
-              <h3 className="text-base sm:text-lg font-semibold text-[#373435] mb-6 sm:mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-4 sm:p-6 lg:p-8">
+              <h3 className="text-base sm:text-lg font-semibold text-[#373435] dark:text-white mb-6 sm:mb-8">
                 Avaliação do Processo
               </h3>
               
               <form className="space-y-6 sm:space-y-8">
                 {/* Tem/não tem processo */}
                 <div>
-                  <label className="block text-sm font-semibold text-[#373435] mb-3">
+                  <label className="block text-sm font-semibold text-[#373435] dark:text-gray-300 mb-3">
                     A empresa tem/usa este processo?
                   </label>
                   <div className="flex items-center gap-4 sm:gap-6">
@@ -404,7 +404,7 @@ const ProcessEvaluationForm = () => {
                         onChange={() => handleInputChange('has_process', true)}
                         className="form-radio h-5 w-5 text-[#EBA500] focus:ring-[#EBA500]/30 border-gray-300 cursor-pointer touch-manipulation"
                       />
-                      <span className="ml-2 sm:ml-3 text-sm sm:text-base text-[#373435]">Tem</span>
+                      <span className="ml-2 sm:ml-3 text-sm sm:text-base text-[#373435] dark:text-white">Tem</span>
                     </label>
                     <label className="inline-flex items-center cursor-pointer">
                       <input
@@ -415,14 +415,14 @@ const ProcessEvaluationForm = () => {
                         onChange={() => handleInputChange('has_process', false)}
                         className="form-radio h-5 w-5 text-[#EBA500] focus:ring-[#EBA500]/30 border-gray-300 cursor-pointer touch-manipulation"
                       />
-                      <span className="ml-2 sm:ml-3 text-sm sm:text-base text-[#373435]">Não tem</span>
+                      <span className="ml-2 sm:ml-3 text-sm sm:text-base text-[#373435] dark:text-white">Não tem</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Observações */}
                 <div>
-                  <label className="block text-sm font-semibold text-[#373435] mb-3">
+                  <label className="block text-sm font-semibold text-[#373435] dark:text-gray-300 mb-3">
                     Observações Adicionais
                   </label>
                   <textarea
@@ -430,19 +430,19 @@ const ProcessEvaluationForm = () => {
                     value={formData.observations}
                     onChange={(e) => handleInputChange('observations', e.target.value)}
                     placeholder="Observações sobre o processo na empresa..."
-                    className="block w-full border border-gray-200 rounded-2xl px-3 sm:px-4 py-2 sm:py-3 min-h-[80px] focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] text-sm sm:text-base transition-all duration-200 resize-none touch-manipulation"
+                    className="block w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-2xl px-3 sm:px-4 py-2 sm:py-3 min-h-[80px] focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] text-sm sm:text-base transition-all duration-200 resize-none touch-manipulation"
                   />
                 </div>
 
                 {/* Seção de Priorização */}
                 <div>
-                  <h4 className="text-base sm:text-lg font-semibold text-[#373435] mb-4 sm:mb-6">
+                  <h4 className="text-base sm:text-lg font-semibold text-[#373435] dark:text-white mb-4 sm:mb-6">
                     Avaliação de Prioridade
                   </h4>
                   
                   {formData.has_process === true && (
-                    <div className="bg-green-50 p-4 rounded-2xl border border-green-200 mb-6">
-                      <p className="text-green-800 text-sm">
+                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-2xl border border-green-200 dark:border-green-700/40 mb-6">
+                      <p className="text-green-800 dark:text-green-300 text-sm">
                         ✅ Como a empresa já tem este processo amadurecido, não entra no cálculo de prioridade.
                       </p>
                     </div>
@@ -451,7 +451,7 @@ const ProcessEvaluationForm = () => {
                   <div className={`grid grid-cols-1 gap-6 sm:gap-8 ${formData.has_process === true ? 'opacity-50 pointer-events-none' : ''}`}>
                     {/* Importância para o Negócio */}
                     <div>
-                      <label className="block text-sm font-semibold text-[#373435] mb-3 sm:mb-4">
+                      <label className="block text-sm font-semibold text-[#373435] dark:text-gray-300 mb-3 sm:mb-4">
                         Importância para o Negócio
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
@@ -469,10 +469,10 @@ const ProcessEvaluationForm = () => {
                             disabled={formData.has_process === true}
                             className={`flex flex-col items-center p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 min-h-[80px] sm:min-h-[90px] justify-center touch-manipulation ${
                               formData.business_importance === option.value && formData.has_process !== true
-                                ? 'border-indigo-500 bg-gradient-to-r from-indigo-50 to-indigo-100/50 shadow-md'
+                                ? 'border-indigo-500 bg-gradient-to-r from-indigo-50 to-indigo-100/50 shadow-md dark:from-indigo-900/20 dark:to-indigo-800/10'
                                 : formData.has_process === true
-                                ? 'border-gray-200 bg-gray-100 cursor-not-allowed'
-                                : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
+                                ? 'border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+                                : 'border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-gray-50 dark:hover:bg-gray-700'
                             }`}
                           >
                             <span className={`text-lg sm:text-xl font-bold mb-1 sm:mb-2 ${
@@ -480,12 +480,12 @@ const ProcessEvaluationForm = () => {
                                 ? 'text-indigo-600' 
                                 : formData.has_process === true 
                                 ? 'text-gray-400' 
-                                : 'text-gray-600'
+                                : 'text-gray-600 dark:text-gray-300'
                             }`}>
                               {option.value}
                             </span>
                             <span className={`text-xs text-center leading-tight px-1 ${
-                              formData.has_process === false ? 'text-gray-400' : 'text-gray-600'
+                              formData.has_process === false ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'
                             }`}>
                               {option.label}
                             </span>
@@ -496,7 +496,7 @@ const ProcessEvaluationForm = () => {
 
                     {/* Urgência para Implementação */}
                     <div>
-                      <label className="block text-sm font-semibold text-[#373435] mb-3 sm:mb-4">
+                      <label className="block text-sm font-semibold text-[#373435] dark:text-gray-300 mb-3 sm:mb-4">
                         Urgência para Implementação
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
@@ -514,10 +514,10 @@ const ProcessEvaluationForm = () => {
                             disabled={formData.has_process === true}
                             className={`flex flex-col items-center p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 min-h-[80px] sm:min-h-[90px] justify-center touch-manipulation ${
                               formData.implementation_urgency === option.value && formData.has_process !== true
-                                ? 'border-orange-500 bg-gradient-to-r from-orange-50 to-orange-100/50 shadow-md'
+                                ? 'border-orange-500 bg-gradient-to-r from-orange-50 to-orange-100/50 shadow-md dark:from-orange-900/20 dark:to-orange-800/10'
                                 : formData.has_process === true
-                                ? 'border-gray-200 bg-gray-100 cursor-not-allowed'
-                                : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                                ? 'border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+                                : 'border-gray-200 dark:border-gray-600 hover:border-orange-300 dark:hover:border-orange-500 hover:bg-gray-50 dark:hover:bg-gray-700'
                             }`}
                           >
                             <span className={`text-lg sm:text-xl font-bold mb-1 sm:mb-2 ${
@@ -525,12 +525,12 @@ const ProcessEvaluationForm = () => {
                                 ? 'text-orange-600' 
                                 : formData.has_process === true 
                                 ? 'text-gray-400' 
-                                : 'text-gray-600'
+                                : 'text-gray-600 dark:text-gray-300'
                             }`}>
                               {option.value}
                             </span>
                             <span className={`text-xs text-center leading-tight px-1 ${
-                              formData.has_process === false ? 'text-gray-400' : 'text-gray-600'
+                              formData.has_process === false ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'
                             }`}>
                               {option.label}
                             </span>
@@ -541,7 +541,7 @@ const ProcessEvaluationForm = () => {
 
                     {/* Dificuldade para implementar */}
                     <div>
-                      <label className="block text-sm font-semibold text-[#373435] mb-3 sm:mb-4">
+                      <label className="block text-sm font-semibold text-[#373435] dark:text-gray-300 mb-3 sm:mb-4">
                         Dificuldade para implementar
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
@@ -559,10 +559,10 @@ const ProcessEvaluationForm = () => {
                             disabled={formData.has_process === true}
                             className={`flex flex-col items-center p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 min-h-[80px] sm:min-h-[90px] justify-center touch-manipulation ${
                               formData.implementation_ease === option.value && formData.has_process !== true
-                                ? 'border-green-500 bg-gradient-to-r from-green-50 to-green-100/50 shadow-md'
+                                ? 'border-green-500 bg-gradient-to-r from-green-50 to-green-100/50 shadow-md dark:from-green-900/20 dark:to-green-800/10'
                                 : formData.has_process === true
-                                ? 'border-gray-200 bg-gray-100 cursor-not-allowed'
-                                : 'border-gray-200 hover:border-green-300 hover:bg-gray-50'
+                                ? 'border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+                                : 'border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-500 hover:bg-gray-50 dark:hover:bg-gray-700'
                             }`}
                           >
                             <span className={`text-lg sm:text-xl font-bold mb-1 sm:mb-2 ${
@@ -570,12 +570,12 @@ const ProcessEvaluationForm = () => {
                                 ? 'text-green-600' 
                                 : formData.has_process === true 
                                 ? 'text-gray-400' 
-                                : 'text-gray-600'
+                                : 'text-gray-600 dark:text-gray-300'
                             }`}>
                               {option.value}
                             </span>
                             <span className={`text-xs text-center leading-tight px-1 ${
-                              formData.has_process === false ? 'text-gray-400' : 'text-gray-600'
+                              formData.has_process === false ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'
                             }`}>
                               {option.label}
                             </span>
@@ -586,9 +586,9 @@ const ProcessEvaluationForm = () => {
                   </div>
 
                   {/* Preview das Seleções */}
-                  <div className="mt-6 sm:mt-8 p-4 sm:p-5 lg:p-6 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl sm:rounded-2xl border border-gray-200">
+                  <div className="mt-6 sm:mt-8 p-4 sm:p-5 lg:p-6 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700 dark:to-gray-700/50 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-600">
                     <div className="flex items-center justify-center mb-4 sm:mb-6">
-                      <h5 className="text-sm sm:text-base font-semibold text-[#373435]">
+                      <h5 className="text-sm sm:text-base font-semibold text-[#373435] dark:text-white">
                         Resumo da Avaliação de Prioridade
                       </h5>
                     </div>
@@ -605,7 +605,7 @@ const ProcessEvaluationForm = () => {
                       <>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                           {/* Importância */}
-                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-indigo-100/30 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between">
+                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-indigo-200 dark:border-indigo-700/40 bg-gradient-to-br from-indigo-50 to-indigo-100/30 dark:from-indigo-900/20 dark:to-indigo-800/10 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between">
                             <div className="text-[10px] sm:text-xs text-indigo-600 font-semibold mb-1 sm:mb-2 uppercase tracking-wide">
                               Importância
                             </div>
@@ -620,7 +620,7 @@ const ProcessEvaluationForm = () => {
                           </div>
                           
                           {/* Urgência */}
-                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100/30 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between">
+                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-orange-200 dark:border-orange-700/40 bg-gradient-to-br from-orange-50 to-orange-100/30 dark:from-orange-900/20 dark:to-orange-800/10 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between">
                             <div className="text-[10px] sm:text-xs text-orange-600 font-semibold mb-1 sm:mb-2 uppercase tracking-wide">
                               Urgência
                             </div>
@@ -635,7 +635,7 @@ const ProcessEvaluationForm = () => {
                           </div>
                           
                           {/* Dificuldade */}
-                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-green-100/30 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between">
+                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-green-200 dark:border-green-700/40 bg-gradient-to-br from-green-50 to-green-100/30 dark:from-green-900/20 dark:to-green-800/10 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between">
                             <div className="text-[10px] sm:text-xs text-green-600 font-semibold mb-1 sm:mb-2 uppercase tracking-wide">
                               Dificuldade
                             </div>
@@ -650,7 +650,7 @@ const ProcessEvaluationForm = () => {
                           </div>
                           
                           {/* Priorização */}
-                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/30 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between col-span-2 lg:col-span-1">
+                          <div className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-blue-200 dark:border-blue-700/40 bg-gradient-to-br from-blue-50 to-blue-100/30 dark:from-blue-900/20 dark:to-blue-800/10 min-h-[90px] sm:min-h-[100px] flex flex-col justify-between col-span-2 lg:col-span-1">
                             <div className="text-[10px] sm:text-xs text-blue-600 font-semibold mb-1 sm:mb-2 uppercase tracking-wide">
                               Nota Final
                             </div>
@@ -671,8 +671,8 @@ const ProcessEvaluationForm = () => {
                         </div>
                         
                         {/* Fórmula */}
-                        <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-white/50 rounded-lg sm:rounded-xl border border-gray-200/50">
-                          <div className="text-[10px] sm:text-xs text-gray-600 text-center font-medium">
+                        <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-white/50 dark:bg-gray-600/50 rounded-lg sm:rounded-xl border border-gray-200/50 dark:border-gray-500/50">
+                          <div className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 text-center font-medium">
                             Fórmula: (Importância × Urgência) ÷ Dificuldade
                           </div>
                         </div>
@@ -683,11 +683,11 @@ const ProcessEvaluationForm = () => {
                 </div>
 
                 {/* Botões de Ação */}
-                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-6 sm:pt-8 border-t border-gray-100">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-6 sm:pt-8 border-t border-gray-100 dark:border-gray-700">
                   <button
                     type="button"
                     onClick={() => navigate(-1)}
-                    className="w-full sm:w-auto px-6 py-3 min-h-[44px] text-sm font-medium text-[#373435] bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 transition-all duration-200 touch-manipulation"
+                    className="w-full sm:w-auto px-6 py-3 min-h-[44px] text-sm font-medium text-[#373435] dark:text-white bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 transition-all duration-200 touch-manipulation"
                   >
                     Cancelar
                   </button>

@@ -185,14 +185,14 @@ const TrendCard = memo(({ title, value, trend, trendValue, icon: Icon, color = '
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl p-6 border border-gray-200 animate-pulse">
-        <div className="h-16 bg-gray-200 rounded"></div>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 animate-pulse">
+        <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-200 group">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg transition-all duration-200 group">
       <div className="flex items-start justify-between mb-4">
         <div className={`w-12 h-12 rounded-xl ${colorClasses[color]} flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
           <Icon className="h-6 w-6 text-white" />
@@ -203,8 +203,8 @@ const TrendCard = memo(({ title, value, trend, trendValue, icon: Icon, color = '
         </div>
       </div>
       <div className="mb-1">
-        <div className="text-3xl font-bold text-[#373435] mb-1">{value}</div>
-        <div className="text-sm text-gray-600">{title}</div>
+        <div className="text-3xl font-bold text-[#373435] dark:text-white mb-1">{value}</div>
+        <div className="text-sm text-gray-600 dark:text-gray-300">{title}</div>
       </div>
     </div>
   )
@@ -217,9 +217,9 @@ const WeeklyAreaChart = memo(({ data, dataKey, color = '#3B82F6', title }) => {
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white px-4 py-2 rounded-lg shadow-lg border border-gray-200">
-          <p className="text-sm font-semibold text-gray-900">{payload[0].payload.day}</p>
-          <p className="text-sm text-gray-600">{title}: <span className="font-bold" style={{ color }}>{payload[0].value}</span></p>
+        <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">{payload[0].payload.day}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">{title}: <span className="font-bold" style={{ color }}>{payload[0].value}</span></p>
         </div>
       )
     }
@@ -338,12 +338,12 @@ const SuperAdminStatCard = memo(({ stat, loading }) => {
     ring: 'ring-[#EBA500]/20',
     progress: 'stroke-[#EBA500]',
     icon: 'text-white',
-    value: 'text-[#373435]'
+    value: 'text-[#373435] dark:text-white'
   }
   
   return (
     <div className="group">
-      <div className="flex flex-col items-center p-6 bg-white rounded-2xl border border-neutral-100 hover:border-neutral-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+      <div className="flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-2xl border border-neutral-100 dark:border-gray-700 hover:border-neutral-200 dark:hover:border-gray-600 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
         
         {/* Círculo Principal com Animação */}
         <div className="relative mb-4">
@@ -401,7 +401,7 @@ const SuperAdminStatCard = memo(({ stat, loading }) => {
               <div className={`text-2xl font-bold ${colors.value} group-hover:scale-105 transition-transform duration-300`}>
                 {stat.value}
               </div>
-              <div className="text-sm font-medium text-neutral-600 px-2">
+              <div className="text-sm font-medium text-neutral-600 dark:text-gray-300 px-2">
                 {stat.name}
               </div>
             </>
@@ -482,7 +482,7 @@ const SystemMetricItem = memo(({ metric }) => {
       <div className={`inline-flex items-center justify-center w-20 h-20 rounded-3xl ${getStatusColor(metric.status)} mb-4 shadow-lg`}>
         <span className="text-xl font-black">{metric.value}</span>
       </div>
-      <div className="text-sm font-bold text-[#373435]">{metric.label}</div>
+      <div className="text-sm font-bold text-[#373435] dark:text-white">{metric.label}</div>
     </div>
   )
 })
@@ -533,7 +533,7 @@ const ApiConnectionItem = memo(({ connection }) => {
         <div className="flex items-center space-x-3">
           <div className="text-lg">{getServiceIcon(connection.service)}</div>
           <div>
-            <div className="font-semibold text-[#373435] text-sm">{connection.name}</div>
+            <div className="font-semibold text-[#373435] dark:text-white text-sm">{connection.name}</div>
             <div className="flex items-center space-x-2 mt-1">
               <div className={`w-2 h-2 ${statusConfig.color} rounded-full`}></div>
               <span className={`text-xs font-medium ${statusConfig.textColor}`}>
@@ -667,15 +667,15 @@ const DashboardPage = memo(() => {
     ]
 
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white dark:bg-gray-900">
         <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
           
           {/* Saudação personalizada */}
           <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] mb-2">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] dark:text-white mb-2">
               {getGreeting()}, {profile?.full_name || user?.email?.split('@')[0] || 'Admin'}!
             </h1>
-            <p className="text-sm sm:text-base lg:text-lg text-neutral-600">
+            <p className="text-sm sm:text-base lg:text-lg text-neutral-600 dark:text-gray-300">
               Bem-vindo ao painel administrativo do sistema
             </p>
           </div>
@@ -706,8 +706,8 @@ const DashboardPage = memo(() => {
             {/* 🔥 NOVO: Cards de KPIs Principais com Comparativos */}
             <div className="mb-8 sm:mb-10 lg:mb-12">
               <div className="mb-4 sm:mb-6">
-                <h3 className="text-xl sm:text-2xl font-bold text-[#373435] mb-1 sm:mb-2">Visão Geral do Sistema</h3>
-                <p className="text-xs sm:text-sm text-[#373435]/60">Principais indicadores em tempo real</p>
+                <h3 className="text-xl sm:text-2xl font-bold text-[#373435] dark:text-white mb-1 sm:mb-2">Visão Geral do Sistema</h3>
+                <p className="text-xs sm:text-sm text-[#373435]/60 dark:text-gray-400">Principais indicadores em tempo real</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
@@ -744,18 +744,18 @@ const DashboardPage = memo(() => {
             {/* 🔥 NOVO: Progresso Semanal com Gráficos Visuais */}
             <div className="mb-8 sm:mb-10 lg:mb-12">
               <div className="mb-4 sm:mb-6">
-                <h3 className="text-xl sm:text-2xl font-bold text-[#373435] mb-1 sm:mb-2">Progresso Semanal</h3>
-                <p className="text-xs sm:text-sm text-[#373435]/60">Evolução detalhada dos últimos 7 dias com comparativos</p>
+                <h3 className="text-xl sm:text-2xl font-bold text-[#373435] dark:text-white mb-1 sm:mb-2">Progresso Semanal</h3>
+                <p className="text-xs sm:text-sm text-[#373435]/60 dark:text-gray-400">Evolução detalhada dos últimos 7 dias com comparativos</p>
               </div>
 
               {/* Grid de Gráficos */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
                 {/* Gráfico de Logins */}
-                <div className="bg-white border-2 border-blue-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                <div className="bg-white dark:bg-gray-800 border-2 border-blue-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
                     <div>
-                      <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-0.5 sm:mb-1">Logins Diários</h4>
-                      <p className="text-xs sm:text-sm text-gray-600">Total da semana: {metrics.loginsWeek.current || 0}</p>
+                      <h4 className="text-base sm:text-lg font-bold text-[#373435] dark:text-white mb-0.5 sm:mb-1">Logins Diários</h4>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Total da semana: {metrics.loginsWeek.current || 0}</p>
                     </div>
                     <div className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm ${
                       weeklyComparison?.logins?.trend === 'up' ? 'bg-green-50' :
@@ -785,11 +785,11 @@ const DashboardPage = memo(() => {
                 </div>
 
                 {/* Gráfico de Novos Usuários */}
-                <div className="bg-white border-2 border-green-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                <div className="bg-white dark:bg-gray-800 border-2 border-green-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
                     <div>
-                      <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-0.5 sm:mb-1">Novos Usuários</h4>
-                      <p className="text-xs sm:text-sm text-gray-600">Total da semana: {metrics.newAccounts.current || 0}</p>
+                      <h4 className="text-base sm:text-lg font-bold text-[#373435] dark:text-white mb-0.5 sm:mb-1">Novos Usuários</h4>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Total da semana: {metrics.newAccounts.current || 0}</p>
                     </div>
                     <div className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm ${
                       weeklyComparison?.newAccounts?.trend === 'up' ? 'bg-green-50' :
@@ -819,11 +819,11 @@ const DashboardPage = memo(() => {
                 </div>
 
                 {/* Gráfico de Tarefas */}
-                <div className="bg-white border-2 border-[#EBA500]/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                <div className="bg-white dark:bg-gray-800 border-2 border-[#EBA500]/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
                     <div>
-                      <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-0.5 sm:mb-1">Tarefas Criadas</h4>
-                      <p className="text-xs sm:text-sm text-gray-600">Total da semana: {metrics.newTasks.current || 0}</p>
+                      <h4 className="text-base sm:text-lg font-bold text-[#373435] dark:text-white mb-0.5 sm:mb-1">Tarefas Criadas</h4>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Total da semana: {metrics.newTasks.current || 0}</p>
                     </div>
                     <div className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm ${
                       weeklyComparison?.tasks?.trend === 'up' ? 'bg-green-50' :
@@ -853,11 +853,11 @@ const DashboardPage = memo(() => {
                 </div>
 
                 {/* Gráfico de Empresas */}
-                <div className="bg-white border-2 border-purple-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                <div className="bg-white dark:bg-gray-800 border-2 border-purple-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
                     <div>
-                      <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-0.5 sm:mb-1">Empresas Cadastradas</h4>
-                      <p className="text-xs sm:text-sm text-gray-600">Total da semana: {metrics.newCompanies.current || 0}</p>
+                      <h4 className="text-base sm:text-lg font-bold text-[#373435] dark:text-white mb-0.5 sm:mb-1">Empresas Cadastradas</h4>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Total da semana: {metrics.newCompanies.current || 0}</p>
                     </div>
                     <div className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm ${
                       weeklyComparison?.newCompanies?.trend === 'up' ? 'bg-green-50' :
@@ -888,8 +888,8 @@ const DashboardPage = memo(() => {
               </div>
 
               {/* Progress Bars Resumidas */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 border-2 border-gray-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h4 className="text-base sm:text-lg font-bold text-[#373435] mb-3 sm:mb-4 flex items-center gap-2">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 border-2 border-gray-200 dark:border-gray-600 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                <h4 className="text-base sm:text-lg font-bold text-[#373435] dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
                   <Target className="h-4 w-4 sm:h-5 sm:w-5 text-[#EBA500]" />
                   Metas da Semana
                 </h4>
@@ -929,8 +929,8 @@ const DashboardPage = memo(() => {
             {/* Ações Principais - Destaque */}
             <div className="mb-8 sm:mb-10 lg:mb-12">
               <div className="mb-4 sm:mb-6 lg:mb-8">
-                <h3 className="text-xl sm:text-2xl font-bold text-[#373435] mb-1 sm:mb-2">Ações Principais</h3>
-                <p className="text-xs sm:text-sm text-neutral-600">Funcionalidades essenciais do sistema</p>
+                <h3 className="text-xl sm:text-2xl font-bold text-[#373435] dark:text-white mb-1 sm:mb-2">Ações Principais</h3>
+                <p className="text-xs sm:text-sm text-neutral-600 dark:text-gray-300">Funcionalidades essenciais do sistema</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
@@ -941,15 +941,15 @@ const DashboardPage = memo(() => {
             </div>
 
             {/* Status do Sistema com Destaque BG2 */}
-            <div className="bg-white border border-[#EBA500]/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-lg ring-1 ring-[#EBA500]/5">
+            <div className="bg-white dark:bg-gray-800 border border-[#EBA500]/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-lg ring-1 ring-[#EBA500]/5">
               <div className="mb-6 sm:mb-8">
                 <div className="flex items-center space-x-3 sm:space-x-4">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#EBA500] rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
                     <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#373435] mb-0.5 sm:mb-1">Status do Sistema</h3>
-                    <p className="text-xs sm:text-sm text-neutral-600">Monitoramento em tempo real</p>
+                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#373435] dark:text-white mb-0.5 sm:mb-1">Status do Sistema</h3>
+                    <p className="text-xs sm:text-sm text-neutral-600 dark:text-gray-300">Monitoramento em tempo real</p>
                   </div>
                 </div>
               </div>
@@ -961,8 +961,8 @@ const DashboardPage = memo(() => {
                     <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                   </div>
                   <div>
-                    <h4 className="text-base sm:text-lg font-bold text-[#373435]">Conexões APIs</h4>
-                    <p className="text-xs sm:text-sm text-neutral-500">Status dos serviços externos</p>
+                    <h4 className="text-base sm:text-lg font-bold text-[#373435] dark:text-white">Conexões APIs</h4>
+                    <p className="text-xs sm:text-sm text-neutral-500 dark:text-gray-400">Status dos serviços externos</p>
                   </div>
                 </div>
                 
@@ -974,13 +974,13 @@ const DashboardPage = memo(() => {
               </div>
               
               {/* Status Global com Personalidade */}
-              <div className="pt-6 sm:pt-8 border-t border-neutral-100">
+              <div className="pt-6 sm:pt-8 border-t border-neutral-100 dark:border-gray-700">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                   <div className="flex items-center space-x-3 sm:space-x-4">
                     <div className="w-4 h-4 bg-success-500 rounded-full animate-pulse shadow-lg shadow-success-200 flex-shrink-0"></div>
                     <div>
-                      <span className="text-base sm:text-lg font-bold text-[#373435] block">Sistema Operacional</span>
-                      <p className="text-xs sm:text-sm text-neutral-500">Todos os serviços funcionando perfeitamente</p>
+                      <span className="text-base sm:text-lg font-bold text-[#373435] dark:text-white block">Sistema Operacional</span>
+                      <p className="text-xs sm:text-sm text-neutral-500 dark:text-gray-400">Todos os serviços funcionando perfeitamente</p>
                     </div>
                   </div>
                   <div className="text-left sm:text-right">

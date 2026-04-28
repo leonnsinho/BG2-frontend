@@ -1392,16 +1392,16 @@ function DFCEntradasPage() {
                 const qs = p.toString()
                 return qs ? `/dfc?${qs}` : '/dfc'
               })()}
-              className="p-2 hover:bg-gray-100 rounded-xl transition-all group"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all group"
               title="Voltar ao DFC"
             >
               <ArrowLeft className="h-5 w-5 text-gray-600 group-hover:text-[#EBA500] transition-colors" />
             </Link>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#373435] dark:text-white">
                 DFC - Entradas Financeiras
               </h1>
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                 Demonstrativo de Fluxo de Caixa - Registro de Entradas
               </p>
             </div>
@@ -1410,13 +1410,13 @@ function DFCEntradasPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={exportToCSV}
-              className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 transition-all font-medium"
+              className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-all font-medium"
             >
               <Download className="h-4 w-4" />
               <span>Exportar CSV</span>
             </button>
 
-            <label className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 transition-all font-medium cursor-pointer">
+            <label className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-all font-medium cursor-pointer">
               <Upload className="h-4 w-4" />
               <span>Importar</span>
               <input type="file" accept=".csv,.xml,.ofx,.ofc" className="hidden" onChange={handleImportFile} />
@@ -1435,31 +1435,31 @@ function DFCEntradasPage() {
 
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total de Entradas</p>
-              <p className="text-2xl font-bold text-[#373435] mt-1">{filteredEntradas.length}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total de Entradas</p>
+              <p className="text-2xl font-bold text-[#373435] dark:text-white mt-1">{filteredEntradas.length}</p>
             </div>
             <FileText className="h-8 w-8 text-gray-400" />
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Valor Total</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Valor Total</p>
               <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(totais.total)}</p>
             </div>
             <TrendingUp className="h-8 w-8 text-green-400" />
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Categorias</p>
-              <p className="text-2xl font-bold text-[#373435] mt-1">{Object.keys(totais.porCategoria).length}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Categorias</p>
+              <p className="text-2xl font-bold text-[#373435] dark:text-white mt-1">{Object.keys(totais.porCategoria).length}</p>
             </div>
             <Filter className="h-8 w-8 text-gray-400" />
           </div>
@@ -1467,7 +1467,7 @@ function DFCEntradasPage() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white border border-gray-200/50 rounded-2xl p-4 sm:p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700 rounded-2xl p-4 sm:p-6 mb-6">
         <div className="space-y-6">
           {/* Filtros principais */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1478,7 +1478,7 @@ function DFCEntradasPage() {
                 placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
               />
             </div>
 
@@ -1487,7 +1487,7 @@ function DFCEntradasPage() {
               <select
                 value={companyFilter}
                 onChange={(e) => setCompanyFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-gray-200"
               >
                 <option value="all">Todas as empresas</option>
                 {companies.map(company => (
@@ -1506,7 +1506,7 @@ function DFCEntradasPage() {
             <select
               value={categoriaFilter}
               onChange={(e) => setCategoriaFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-gray-200"
             >
               <option value="all">Todas as categorias</option>
               {categorias.map(cat => (
@@ -1514,7 +1514,7 @@ function DFCEntradasPage() {
               ))}
             </select>
 
-            <div className="border-2 border-gray-200 rounded-2xl p-2 bg-gray-50/50">
+            <div className="border-2 border-gray-200 dark:border-gray-600 rounded-2xl p-2 bg-gray-50/50 dark:bg-gray-700/50">
               <div className="flex gap-2">
                 <select
                   value={mesFilter === 'all' ? '' : (mesFilter ? mesFilter.split('-')[1] : '')}
@@ -1526,7 +1526,7 @@ function DFCEntradasPage() {
                       setMesFilter(`${ano}-${e.target.value}`)
                     }
                   }}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white transition-all"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-gray-200 transition-all"
                 >
                   <option value="">Mês</option>
                   <option value="01">Janeiro</option>
@@ -1553,7 +1553,7 @@ function DFCEntradasPage() {
                       setMesFilter(`${e.target.value}-${mes}`)
                     }
                   }}
-                  className="w-24 px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white transition-all"
+                  className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-gray-200 transition-all"
                 >
                   <option value="">Ano</option>
                   {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
@@ -1565,26 +1565,26 @@ function DFCEntradasPage() {
           </div>
 
           {/* Filtro de Período Personalizado */}
-          <div className="border-t border-gray-200 pt-6">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
             <div className="space-y-2">
-                <label className="text-xs sm:text-sm font-medium text-gray-700">Período Personalizado</label>
+                <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Período Personalizado</label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="flex-1">
-                    <label className="text-xs text-gray-600">Data Início</label>
+                    <label className="text-xs text-gray-600 dark:text-gray-400">Data Início</label>
                     <input
                       type="date"
                       value={dataInicio}
                       onChange={(e) => setDataInicio(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="text-xs text-gray-600">Data Fim</label>
+                    <label className="text-xs text-gray-600 dark:text-gray-400">Data Fim</label>
                     <input
                       type="date"
                       value={dataFim}
                       onChange={(e) => setDataFim(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     />
                   </div>
                 </div>
@@ -1605,9 +1605,9 @@ function DFCEntradasPage() {
       </div>
 
       {/* Tabela */}
-      <div className="bg-white border border-gray-200/50 rounded-2xl sm:rounded-3xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg sm:text-xl font-semibold text-[#373435] flex items-center">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700 rounded-2xl sm:rounded-3xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#373435] dark:text-white flex items-center">
             <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 mr-3 text-green-500" />
             Entradas Registradas ({filteredEntradas.length})
           </h2>
@@ -1625,48 +1625,48 @@ function DFCEntradasPage() {
           onScroll={() => { if (topBarRef.current) topBarRef.current.scrollLeft = tableWrapRef.current.scrollLeft }}
           className="overflow-x-auto"
         >
-          <table className="min-w-full divide-y divide-gray-100">
-            <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
+          <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700 dark:to-gray-700/80">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                   Empresa
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                   Categoria
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                   Item
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                   Descrição
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                   <button className="inline-flex items-center gap-1 hover:text-[#ae2a2a] transition-colors" onClick={() => { if (sortCol === 'valor') setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortCol('valor'); setSortDir('asc') } }}>
                     Valor
                     {sortCol === 'valor' ? (sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
                   </button>
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                   Mês
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                   <button className="inline-flex items-center gap-1 hover:text-[#ae2a2a] transition-colors" onClick={() => { if (sortCol === 'vencimento') setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortCol('vencimento'); setSortDir('asc') } }}>
                     Vencimento
                     {sortCol === 'vencimento' ? (sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
                   </button>
                 </th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                <th className="px-6 py-4 text-right text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                   Ações
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-50">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-50 dark:divide-gray-700">
               {filteredEntradas.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="px-6 py-12 text-center">
                     <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma entrada encontrada</h3>
-                    <p className="text-gray-600">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Nenhuma entrada encontrada</h3>
+                    <p className="text-gray-600 dark:text-gray-400">
                       {searchTerm || companyFilter !== 'all' || categoriaFilter !== 'all' || mesFilter !== 'all' || (dataInicio && dataFim)
                         ? 'Tente ajustar os filtros de busca ou período'
                         : 'Registre a primeira entrada clicando em "Nova Entrada"'}
@@ -1675,9 +1675,9 @@ function DFCEntradasPage() {
                 </tr>
               ) : (
                 filteredEntradas.map((entrada) => (
-                  <tr key={entrada.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={entrada.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-900">
+                      <div className="flex items-center text-sm text-gray-900 dark:text-gray-200">
                         {companyAvatars[entrada.company_id] ? (
                           <img 
                             src={companyAvatars[entrada.company_id]} 
@@ -1695,15 +1695,15 @@ function DFCEntradasPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {categorias.find(c => c.id === entrada.categoria)?.nome || '-'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-gray-900">{entrada.dfc_itens?.nome || '-'}</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{entrada.dfc_itens?.nome || '-'}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600">{entrada.descricao}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{entrada.descricao}</span>
                       {entrada.is_parcelado && (
                         <div className="mt-1">
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
@@ -1721,13 +1721,13 @@ function DFCEntradasPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-600">
+                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                         <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
                         {formatMonth(entrada.mes)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">{formatDate(entrada.vencimento)}</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{formatDate(entrada.vencimento)}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
@@ -1778,7 +1778,7 @@ function DFCEntradasPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={closeModal}>
           <div 
-            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+            className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -1809,7 +1809,7 @@ function DFCEntradasPage() {
               <div className="space-y-4">
                 {/* Empresa */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Empresa *
                   </label>
                   
@@ -1836,7 +1836,7 @@ function DFCEntradasPage() {
                             setShowCompanyDropdown(true)
                           }}
                         placeholder="Buscar empresa..."
-                        className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                        className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                         required
                       />
                       {formData.company_id && !showCompanyDropdown && (
@@ -1867,9 +1867,9 @@ function DFCEntradasPage() {
                     
                     {/* Dropdown de empresas */}
                     {showCompanyDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-auto">
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg max-h-60 overflow-auto">
                         {filteredCompanies.length === 0 ? (
-                          <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                          <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-center">
                             Nenhuma empresa encontrada
                           </div>
                         ) : (
@@ -1882,8 +1882,8 @@ function DFCEntradasPage() {
                                 setShowCompanyDropdown(false)
                                 setCompanySearch('')
                               }}
-                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                                formData.company_id === company.id ? 'bg-[#EBA500]/10 text-[#EBA500] font-medium' : 'text-gray-900'
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                                formData.company_id === company.id ? 'bg-[#EBA500]/10 text-[#EBA500] font-medium' : 'text-gray-900 dark:text-gray-200'
                               }`}
                             >
                               <div className="flex items-center space-x-2">
@@ -1914,13 +1914,13 @@ function DFCEntradasPage() {
 
                 {/* Categoria */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Categoria *
                   </label>
                   <select
                     value={formData.categoria}
                     onChange={(e) => setFormData({ ...formData, categoria: e.target.value, item_id: '' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-gray-200"
                     required
                   >
                     <option value="">Selecione uma categoria</option>
@@ -1932,13 +1932,13 @@ function DFCEntradasPage() {
 
                 {/* Item */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Item *
                   </label>
                   <select
                     value={formData.item_id}
                     onChange={(e) => setFormData({ ...formData, item_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-gray-200"
                     required
                     disabled={!formData.categoria}
                   >
@@ -1951,13 +1951,13 @@ function DFCEntradasPage() {
 
                 {/* Descrição */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Descrição *
                   </label>
                   <textarea
                     value={formData.descricao}
                     onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                     rows="3"
                     placeholder="Descreva a saída..."
                     required
@@ -1966,7 +1966,7 @@ function DFCEntradasPage() {
 
                 {/* Valor e Moeda */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Valor ({getMoedaAtual().symbol}) *
                   </label>
                   <div className="flex gap-2">
@@ -1975,7 +1975,7 @@ function DFCEntradasPage() {
                       <select
                         value={formData.moeda}
                         onChange={(e) => setFormData({ ...formData, moeda: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white appearance-none cursor-pointer pr-8"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-gray-200 appearance-none cursor-pointer pr-8"
                       >
                         {moedas.map(moeda => (
                           <option key={moeda.code} value={moeda.code}>
@@ -1995,13 +1995,13 @@ function DFCEntradasPage() {
                         min="0"
                         value={formData.valor}
                         onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white"
                         placeholder={`${getMoedaAtual().symbol} 0,00`}
                         required
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Moeda: {getMoedaAtual().name}
                   </p>
                 </div>
@@ -2009,10 +2009,10 @@ function DFCEntradasPage() {
                 {/* Mês e Vencimento */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Mês de Referência *
                     </label>
-                    <div className="border-2 border-gray-200 rounded-xl p-2 bg-gray-50/50">
+                    <div className="border-2 border-gray-200 dark:border-gray-600 rounded-xl p-2 bg-gray-50/50 dark:bg-gray-700/50">
                       <div className="flex gap-2">
                         <select
                           value={formData.mes ? formData.mes.split('-')[1] : ''}
@@ -2020,7 +2020,7 @@ function DFCEntradasPage() {
                             const ano = formData.mes ? formData.mes.split('-')[0] : new Date().getFullYear()
                             setFormData({ ...formData, mes: `${ano}-${e.target.value}` })
                           }}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white"
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-gray-200"
                           required
                         >
                           <option value="">Mês</option>
@@ -2044,7 +2044,7 @@ function DFCEntradasPage() {
                             const mes = formData.mes ? formData.mes.split('-')[1] : '01'
                             setFormData({ ...formData, mes: `${e.target.value}-${mes}` })
                           }}
-                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white"
+                          className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-gray-200"
                           required
                         >
                           <option value="">Ano</option>
@@ -2057,14 +2057,14 @@ function DFCEntradasPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Vencimento *
                     </label>
                     <input
                       type="date"
                       value={formData.vencimento}
                       onChange={(e) => setFormData({ ...formData, vencimento: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white"
                       required
                     />
                   </div>
@@ -2072,7 +2072,7 @@ function DFCEntradasPage() {
 
                 {/* Sistema de Parcelamento - Apenas ao criar novo lançamento */}
                 {!editingId && (
-                  <div className="border border-gray-200 rounded-xl p-4 bg-blue-50/30">
+                  <div className="border border-gray-200 dark:border-gray-600 rounded-xl p-4 bg-blue-50/30 dark:bg-blue-900/10">
                     <div className="flex items-center justify-between mb-3">
                       <label className="flex items-center space-x-2 cursor-pointer">
                         <input
@@ -2088,7 +2088,7 @@ function DFCEntradasPage() {
                           }}
                           className="w-4 h-4 text-[#EBA500] border-gray-300 rounded focus:ring-[#EBA500]"
                         />
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
                           Lançamento Parcelado
                         </span>
                       </label>
@@ -2097,7 +2097,7 @@ function DFCEntradasPage() {
                     {isParcelado && (
                       <>
                         <div className="mb-3">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Número de Parcelas
                           </label>
                           <input
@@ -2106,18 +2106,18 @@ function DFCEntradasPage() {
                             max="120"
                             value={numeroParcelas}
                             onChange={(e) => setNumeroParcelas(parseInt(e.target.value) || 2)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white"
                             placeholder="Ex: 10"
                           />
-                          <p className="mt-1 text-xs text-gray-500">
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                             Valor por parcela: {formData.valor ? formatCurrency(parseFloat(formData.valor) / numeroParcelas, formData.moeda) : `${getMoedaAtual().symbol} 0,00`}
                           </p>
                         </div>
 
                         {/* Preview das Parcelas */}
                         {formData.valor && formData.vencimento && formData.mes && numeroParcelas >= 2 && (
-                          <div className="bg-white border border-blue-200 rounded-lg p-3 max-h-64 overflow-y-auto">
-                            <p className="text-xs font-semibold text-gray-700 mb-2">
+                          <div className="bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 rounded-lg p-3 max-h-64 overflow-y-auto">
+                            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                               Preview das {numeroParcelas} parcelas (clique na data para editar):
                             </p>
                             <div className="space-y-1.5">
@@ -2129,8 +2129,8 @@ function DFCEntradasPage() {
                                 const vencimentoParcela = parcelasDatas[i] || formData.vencimento
 
                                 return (
-                                  <div key={i} className="flex items-center justify-between text-xs py-1.5 px-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
-                                    <span className="text-gray-900 font-medium">
+                                  <div key={i} className="flex items-center justify-between text-xs py-1.5 px-2 bg-gray-50 dark:bg-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                                    <span className="text-gray-900 dark:text-white font-medium">
                                       Parcela {i + 1}/{numeroParcelas}
                                     </span>
                                     <div className="flex items-center space-x-3 text-gray-600">
@@ -2222,20 +2222,20 @@ function DFCEntradasPage() {
                 )}
 
                 {/* Upload de Documentos */}
-                <div className="border-t border-gray-200 pt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     Documentos (Notas Fiscais, Comprovantes, etc.)
                   </label>
                   
                   {/* Área de Upload */}
                   <div className="mb-4">
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#EBA500] hover:bg-[#EBA500]/5 transition-all">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-[#EBA500] hover:bg-[#EBA500]/5 transition-all">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600 mb-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                           <span className="font-semibold text-[#EBA500]">Clique para selecionar</span> ou arraste arquivos
                         </p>
-                        <p className="text-xs text-gray-500">PDF, PNG, JPG até 10MB</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">PDF, PNG, JPG até 10MB</p>
                       </div>
                       <input
                         type="file"
@@ -2250,15 +2250,15 @@ function DFCEntradasPage() {
                   {/* Lista de Arquivos Selecionados */}
                   {uploadedFiles.length > 0 && (
                     <div className="mb-4">
-                      <p className="text-xs font-semibold text-gray-700 mb-2">Arquivos a enviar ({uploadedFiles.length})</p>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Arquivos a enviar ({uploadedFiles.length})</p>
                       <div className="space-y-2">
                         {uploadedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div key={index} className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
                             <div className="flex items-center space-x-2 flex-1 min-w-0">
                               <Paperclip className="h-4 w-4 text-blue-600 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm text-gray-900 truncate">{file.name}</p>
-                                <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                                <p className="text-sm text-gray-900 dark:text-white truncate">{file.name}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{formatFileSize(file.size)}</p>
                               </div>
                             </div>
                             <button
@@ -2277,15 +2277,15 @@ function DFCEntradasPage() {
                   {/* Documentos Existentes (ao editar) */}
                   {documentos.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-gray-700 mb-2">Documentos anexados ({documentos.length})</p>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Documentos anexados ({documentos.length})</p>
                       <div className="space-y-2">
                         {documentos.map((doc) => (
-                          <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded-lg">
+                          <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
                             <div className="flex items-center space-x-2 flex-1 min-w-0">
                               <File className="h-4 w-4 text-gray-600 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm text-gray-900 truncate">{doc.nome_original}</p>
-                                <p className="text-xs text-gray-500">{formatFileSize(doc.tamanho)}</p>
+                                <p className="text-sm text-gray-900 dark:text-white truncate">{doc.nome_original}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{formatFileSize(doc.tamanho)}</p>
                               </div>
                             </div>
                             <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
@@ -2316,11 +2316,11 @@ function DFCEntradasPage() {
             </form>
 
             {/* Footer */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50 flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-medium"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all font-medium"
               >
                 Cancelar
               </button>
@@ -2339,7 +2339,7 @@ function DFCEntradasPage() {
       {/* Modal de Confirmação de Exclusão */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
             {/* Header */}
             <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
@@ -2363,10 +2363,10 @@ function DFCEntradasPage() {
                   <Trash2 className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-gray-900 font-medium mb-2">
+                  <p className="text-gray-900 dark:text-white font-medium mb-2">
                     Tem certeza que deseja excluir esta entrada?
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Esta ação não pode ser desfeita. A entrada será removida permanentemente do sistema.
                   </p>
                 </div>
@@ -2374,11 +2374,11 @@ function DFCEntradasPage() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-end space-x-3">
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-b-2xl flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={cancelDelete}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-medium"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all font-medium"
               >
                 Cancelar
               </button>
@@ -2398,7 +2398,7 @@ function DFCEntradasPage() {
       {showDocumentosModal && selectedEntradaDocumentos && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closeDocumentosModal}>
           <div 
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -2429,22 +2429,22 @@ function DFCEntradasPage() {
               {documentos.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600">Nenhum documento anexado</p>
+                  <p className="text-gray-600 dark:text-gray-400">Nenhum documento anexado</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {documentos.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all">
+                    <div key={doc.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all">
                       <div className="flex items-center space-x-3 flex-1 min-w-0">
                         <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
                           <File className="h-6 w-6 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{doc.nome_original}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{doc.nome_original}</p>
                           <div className="flex items-center space-x-2 mt-1">
-                            <p className="text-xs text-gray-500">{formatFileSize(doc.tamanho)}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{formatFileSize(doc.tamanho)}</p>
                             <span className="text-gray-300">•</span>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {new Date(doc.created_at).toLocaleDateString('pt-BR')}
                             </p>
                           </div>
@@ -2477,8 +2477,8 @@ function DFCEntradasPage() {
               )}
             </div>
 
-            {/* Footer */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+            {/* Footer (documents modal) */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50">
               <button
                 onClick={closeDocumentosModal}
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium"
@@ -2494,7 +2494,7 @@ function DFCEntradasPage() {
       {showParcelasModal && selectedEntradaParcelas && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={closeParcelasModal}>
           <div 
-            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden"
+            className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -2521,18 +2521,18 @@ function DFCEntradasPage() {
             </div>
 
             {/* Resumo */}
-            <div className="bg-blue-50 border-b border-blue-100 px-6 py-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800 px-6 py-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Valor Total</p>
-                  <p className="text-lg font-bold text-gray-900">{formatCurrency(selectedEntradaParcelas.valor, selectedEntradaParcelas.moeda)}</p>
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Valor Total</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(selectedEntradaParcelas.valor, selectedEntradaParcelas.moeda)}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Número de Parcelas</p>
-                  <p className="text-lg font-bold text-gray-900">{selectedEntradaParcelas.numero_parcelas}x</p>
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Número de Parcelas</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{selectedEntradaParcelas.numero_parcelas}x</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Valor por Parcela</p>
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Valor por Parcela</p>
                   <p className="text-lg font-bold text-green-600">
                     {formatCurrency(selectedEntradaParcelas.valor / selectedEntradaParcelas.numero_parcelas, selectedEntradaParcelas.moeda)}
                   </p>
@@ -2545,7 +2545,7 @@ function DFCEntradasPage() {
               {parcelas.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600">Nenhuma parcela encontrada</p>
+                  <p className="text-gray-600 dark:text-gray-400">Nenhuma parcela encontrada</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -2560,10 +2560,10 @@ function DFCEntradasPage() {
                         key={parcela.id} 
                         className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
                           vencida 
-                            ? 'bg-red-50 border-red-200' 
+                            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700' 
                             : proximoVencimento 
-                            ? 'bg-yellow-50 border-yellow-300 shadow-md' 
-                            : 'bg-gray-50 border-gray-200 hover:border-blue-300'
+                            ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 shadow-md' 
+                            : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-blue-300'
                         }`}
                       >
                         <div className="flex items-center space-x-4 flex-1">
@@ -2592,7 +2592,7 @@ function DFCEntradasPage() {
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center space-x-4 text-xs text-gray-600">
+                            <div className="flex items-center space-x-4 text-xs text-gray-600 dark:text-gray-400">
                               <div className="flex items-center">
                                 <Calendar className="h-3.5 w-3.5 mr-1" />
                                 <span>Ref: {formatMonth(parcela.mes)}</span>
@@ -2624,7 +2624,7 @@ function DFCEntradasPage() {
                               placeholder="0.00"
                             />
                           ) : (
-                            <p className="text-lg font-bold text-gray-900">{formatCurrency(parcela.valor, parcela.moeda)}</p>
+                            <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(parcela.valor, parcela.moeda)}</p>
                           )}
                           {editingParcelaId === parcela.id ? (
                             <div className="flex space-x-1">
@@ -2660,8 +2660,8 @@ function DFCEntradasPage() {
               )}
             </div>
 
-            {/* Footer */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+            {/* Footer (parcelas modal) */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50">
               <button
                 onClick={closeParcelasModal}
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium"

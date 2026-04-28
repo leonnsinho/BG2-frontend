@@ -109,7 +109,7 @@ const QuickAppsCard = () => {
                 <div className="w-1 h-1 bg-white rounded-sm"></div>
               </div>
             </div>
-            <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#373435] to-[#5a5556] bg-clip-text text-transparent">
+            <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#373435] to-[#5a5556] dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
               Biblioteca de Ferramentas
             </h2>
           </div>
@@ -167,8 +167,8 @@ const QuickAppsCard = () => {
                 {/* Nome do App */}
                 <span className={`mt-2 text-[10px] sm:text-xs font-semibold text-center leading-tight transition-all duration-300 ${
                   isDisabled 
-                    ? 'text-gray-400' 
-                    : 'text-[#373435] group-hover:text-[#EBA500] group-hover:scale-105'
+                    ? 'text-gray-400 dark:text-gray-500' 
+                    : 'text-[#373435] dark:text-gray-200 group-hover:text-[#EBA500] group-hover:scale-105'
                 }`}>
                   {app.name}
                 </span>
@@ -547,12 +547,12 @@ export default function CompanyAdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
         
         {/* Header com Saudação */}
         <div className="mb-6 sm:mb-8 lg:mb-10">
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow duration-300">
             <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
               <div className="flex-1 min-w-0 w-full">
                 <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
@@ -571,11 +571,11 @@ export default function CompanyAdminDashboard() {
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] tracking-tight truncate">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] dark:text-white tracking-tight truncate">
                       Olá, {profile?.full_name?.split(' ')[0] || 'Administrador'}!
                     </h1>
                     {companyName && (
-                      <div className="flex items-center gap-2 mt-1 text-gray-600">
+                      <div className="flex items-center gap-2 mt-1 text-gray-600 dark:text-gray-300">
                         {companyLogo ? (
                           <img 
                             src={companyLogo} 
@@ -588,14 +588,14 @@ export default function CompanyAdminDashboard() {
                         ) : (
                           <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-[#EBA500] flex-shrink-0" />
                         )}
-                        <p className="text-sm sm:text-base lg:text-lg font-medium truncate">
+                        <p className="text-sm sm:text-base lg:text-lg font-medium truncate text-gray-900 dark:text-gray-100">
                           Administrando: {companyName}
                         </p>
                       </div>
                     )}
                   </div>
                 </div>
-                <p className="text-sm sm:text-base lg:text-lg text-gray-600">
+                <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300">
                   Acompanhe as métricas e o progresso da sua empresa
                 </p>
               </div>
@@ -642,7 +642,7 @@ export default function CompanyAdminDashboard() {
         {/* Cards de Estatísticas Principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-6 mb-6 sm:mb-8">
           {/* Total de Usuários */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all hover:-translate-y-1">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="p-2 sm:p-2.5 lg:p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
                 <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
@@ -652,12 +652,12 @@ export default function CompanyAdminDashboard() {
                 <span>{stats.activeUsers} ativos</span>
               </div>
             </div>
-            <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Total de Usuários</h3>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
+            <h3 className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm font-medium mb-1">Total de Usuários</h3>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{stats.totalUsers}</p>
           </div>
 
           {/* Total de Tarefas */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all hover:-translate-y-1">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="p-2 sm:p-2.5 lg:p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
                 <Target className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
@@ -667,8 +667,8 @@ export default function CompanyAdminDashboard() {
                 <span>{Math.round((stats.completedTasks / stats.totalTasks) * 100) || 0}%</span>
               </div>
             </div>
-            <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Total de Tarefas</h3>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalTasks}</p>
+            <h3 className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm font-medium mb-1">Total de Tarefas</h3>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{stats.totalTasks}</p>
           </div>
         </div>
 
@@ -676,27 +676,27 @@ export default function CompanyAdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
           
           {/* Status das Tarefas */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
               <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
                 <Target className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Status das Tarefas</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Status das Tarefas</h2>
             </div>
 
             <div className="space-y-3 sm:space-y-4">
               {/* Pendentes */}
-              <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg sm:rounded-xl hover:bg-gray-100 transition-colors">
+              <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg sm:rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                 <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <div className="p-1.5 sm:p-2 bg-gray-200 rounded-lg flex-shrink-0">
-                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
+                  <div className="p-1.5 sm:p-2 bg-gray-200 dark:bg-gray-600 rounded-lg flex-shrink-0">
+                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600 dark:text-gray-300" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 text-sm sm:text-base">Pendentes</p>
-                    <p className="text-xs sm:text-sm text-gray-600 truncate">Aguardando início</p>
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Pendentes</p>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Aguardando início</p>
                   </div>
                 </div>
-                <span className="text-xl sm:text-2xl font-bold text-gray-900 flex-shrink-0">{stats.pendingTasks}</span>
+                <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex-shrink-0">{stats.pendingTasks}</span>
               </div>
 
               {/* Em Andamento */}
@@ -746,12 +746,12 @@ export default function CompanyAdminDashboard() {
           </div>
 
           {/* Atividades Recentes */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
               <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg flex-shrink-0">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Atividades Recentes</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Atividades Recentes</h2>
             </div>
 
             <div className="space-y-3">
@@ -778,12 +778,12 @@ export default function CompanyAdminDashboard() {
                 recentActivities.map((activity) => {
                   const StatusIcon = getStatusIcon(activity.status)
                   return (
-                    <div key={activity.id} className="flex items-start gap-2 sm:gap-3 p-3 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl hover:bg-gray-100 transition-colors">
+                    <div key={activity.id} className="flex items-start gap-2 sm:gap-3 p-3 sm:p-3 bg-gray-50 dark:bg-gray-700 rounded-lg sm:rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                       <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${getStatusColor(activity.status)}`}>
                         <StatusIcon className="h-3 w-3 sm:h-4 sm:w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate text-sm sm:text-base">{activity.title}</p>
+                        <p className="font-semibold text-gray-900 dark:text-white truncate text-sm sm:text-base">{activity.title}</p>
                         <div className="flex items-center gap-1.5 sm:gap-2 mt-1 flex-wrap">
                           <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium ${getStatusColor(activity.status)}`}>
                             {getStatusLabel(activity.status)}
@@ -802,24 +802,24 @@ export default function CompanyAdminDashboard() {
         </div>
 
         {/* Métricas de Performance */}
-        <div className="mt-4 sm:mt-5 lg:mt-6 bg-gradient-to-br from-[#EBA500]/10 to-[#d99500]/10 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 border border-[#EBA500]/20">
+        <div className="mt-4 sm:mt-5 lg:mt-6 bg-gradient-to-br from-[#EBA500]/10 to-[#d99500]/10 dark:from-[#EBA500]/5 dark:to-[#d99500]/5 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 border border-[#EBA500]/20">
           <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
             <div className="p-1.5 sm:p-2 bg-[#EBA500] rounded-lg flex-shrink-0">
               <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Métricas de Performance</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Métricas de Performance</h2>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-            <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs sm:text-sm font-medium text-gray-600">Taxa de Conclusão</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300">Taxa de Conclusão</span>
                 <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
               </div>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                 {Math.round((stats.completedTasks / stats.totalTasks) * 100) || 0}%
               </p>
-              <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+              <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div 
                   className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${Math.round((stats.completedTasks / stats.totalTasks) * 100) || 0}%` }}
@@ -827,15 +827,15 @@ export default function CompanyAdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs sm:text-sm font-medium text-gray-600">Usuários Ativos</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300">Usuários Ativos</span>
                 <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500 flex-shrink-0" />
               </div>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                 {Math.round((stats.activeUsers / stats.totalUsers) * 100) || 0}%
               </p>
-              <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+              <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div 
                   className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${Math.round((stats.activeUsers / stats.totalUsers) * 100) || 0}%` }}

@@ -156,11 +156,6 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/journey-management/overview'
       },
       {
-        name: 'Criar Empresa',
-        icon: Building2,
-        href: '/companies/new'
-      },
-      {
         name: 'Avaliação de Desempenho',
         icon: Grid3x3,
         href: '/performance-evaluation'
@@ -320,7 +315,19 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
           }
         ]
       },
-      // 7) Administração
+      // 7) Ferramentas
+      {
+        name: 'Ferramentas',
+        icon: Grid3x3,
+        href: '/crm',
+        children: [
+          { name: 'CRM', href: '/crm', image: '/crm.png', gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadowColor: 'rgba(59, 130, 246, 0.4)' },
+          { name: 'Fluxo de Caixa', href: '/dfc', image: '/fluxo de caixa.png', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', shadowColor: 'rgba(16, 185, 129, 0.4)' },
+          { name: 'Avaliação de Desempenho', href: '/performance-evaluation', image: '/avaliação de desempenho.png', gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)', shadowColor: 'rgba(168, 85, 247, 0.4)' },
+          { name: 'Indicadores de Gestão', href: '/indicators', image: '/indicadores de gestão.png', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', shadowColor: 'rgba(245, 158, 11, 0.4)' }
+        ]
+      },
+      // 8) Administração
       {
         name: 'Administração',
         icon: Shield,
@@ -618,11 +625,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
           name: 'Dashboard',
           icon: Home,
           href: '/'
-        },
-        {
-          name: 'Metas Atribuídas',
-          icon: Target,
-          href: '/goals/assigned'
         }
       ]
     }
@@ -1175,7 +1177,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                             className="group flex items-center px-3 py-2 text-sm font-medium rounded-md cursor-not-allowed opacity-50 text-left"
                             title="Em breve"
                           >
-                            <span className="w-2 h-2 rounded-full mr-3 flex-shrink-0 bg-neutral-500"></span>
+                            {subItem.image
+                              ? <img src={subItem.image} alt={subItem.name} className="w-5 h-5 rounded mr-3 flex-shrink-0 object-cover opacity-50" />
+                              : <span className="w-2 h-2 rounded-full mr-3 flex-shrink-0 bg-neutral-500"></span>
+                            }
                             <span className="flex-1 text-left text-neutral-400">{subItem.name}</span>
                             <span className="text-[10px] font-semibold bg-neutral-600 text-neutral-300 px-1.5 py-0.5 rounded-full">Em breve</span>
                           </div>
@@ -1192,12 +1197,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                             )}
                             onClick={onClose}
                           >
-                            <span 
-                              className={cn(
-                                "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
-                                isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
-                              )}
-                            ></span>
+                            {subItem.image
+                              ? <img src={subItem.image} alt={subItem.name} className="w-5 h-5 rounded mr-3 flex-shrink-0 object-cover" />
+                              : <span className={cn("w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200", isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400")}></span>
+                            }
                             <span className="flex-1 text-left">{subItem.name}</span>
                             {/* 🔥 Badge para subitem se existir */}
                             {subItem.badge && subItem.badge > 0 && (
@@ -1372,7 +1375,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                       {item.children.map((subItem) => (
                         subItem.children ? (
                           <div key={subItem.name}>
-                            {/* Sub-item label (não clicável, é um agrupador) */}}
+                            {/* Sub-item label (não clicável, é um agrupador) */}
                             <div className="flex items-center px-4 py-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                               <span className="w-2 h-2 rounded-full mr-3 bg-neutral-500 flex-shrink-0" />
                               {subItem.name}
@@ -1401,7 +1404,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                             className="flex items-center px-4 py-2.5 text-sm font-medium cursor-not-allowed opacity-50"
                             title="Em breve"
                           >
-                            <span className="w-2 h-2 rounded-full mr-3 flex-shrink-0 bg-neutral-500" />
+                            {subItem.image
+                              ? <img src={subItem.image} alt={subItem.name} className="w-5 h-5 rounded mr-3 flex-shrink-0 object-cover opacity-50" />
+                              : <span className="w-2 h-2 rounded-full mr-3 flex-shrink-0 bg-neutral-500" />
+                            }
                             <span className="flex-1 text-neutral-400">{subItem.name}</span>
                             <span className="text-[10px] font-semibold bg-neutral-600 text-neutral-300 px-1.5 py-0.5 rounded-full">Em breve</span>
                           </div>
@@ -1421,12 +1427,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                               : "text-neutral-100"
                           )}
                         >
-                          <span 
-                            className={cn(
-                              "w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200",
-                              isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400"
-                            )}
-                          />
+                          {subItem.image
+                            ? <img src={subItem.image} alt={subItem.name} className="w-5 h-5 rounded mr-3 flex-shrink-0 object-cover" />
+                            : <span className={cn("w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-colors duration-200", isCurrentPath(subItem.href) ? "bg-background" : "bg-neutral-400")} />
+                          }
                           <span className="flex-1">{subItem.name}</span>
                           {/* 🔥 Badge no dropdown se existir */}
                           {subItem.badge && subItem.badge > 0 && (

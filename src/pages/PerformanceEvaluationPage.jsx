@@ -692,28 +692,28 @@ export default function PerformanceEvaluationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando avaliações...</p>
+          <p className="text-gray-600 dark:text-gray-400">Carregando avaliações...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       <SuperAdminBanner />
       {/* Header Simplificado */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
         <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="p-2 sm:p-3 bg-primary-500 rounded-xl sm:rounded-2xl">
               <Grid3x3 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
             <div>
-              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">Nine Box - Avaliação de Desempenho</h1>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600 mt-0.5 sm:mt-1">Gestão de talentos e alinhamento cultural da equipe</p>
+              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Nine Box - Avaliação de Desempenho</h1>
+              <p className="text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">Gestão de talentos e alinhamento cultural da equipe</p>
             </div>
           </div>
         </div>
@@ -725,7 +725,7 @@ export default function PerformanceEvaluationPage() {
 
           {/* ── Left: Stats Column ── */}
           <div className="hidden lg:flex flex-col gap-3 w-52 shrink-0">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide px-1">Visão Geral</h3>
+            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">Visão Geral</h3>
 
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
               <div className="flex items-center gap-2">
@@ -777,22 +777,22 @@ export default function PerformanceEvaluationPage() {
               </div>
             </div>
 
-            <div className="mt-2 p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
-              <p className="text-[11px] font-semibold text-gray-500 mb-2">Cobertura</p>
-              <div className="w-full bg-gray-100 rounded-full h-2 mb-1">
+            <div className="mt-2 p-3 bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-2">Cobertura</p>
+              <div className="w-full bg-gray-100 dark:bg-gray-600 rounded-full h-2 mb-1">
                 <div
                   className="h-2 rounded-full bg-gradient-to-r from-green-400 to-green-600 transition-all"
                   style={{ width: stats.total > 0 ? `${Math.round(stats.evaluated / stats.total * 100)}%` : '0%' }}
                 />
               </div>
-              <p className="text-xs font-bold text-gray-700 text-right">
+              <p className="text-xs font-bold text-gray-700 dark:text-gray-200 text-right">
                 {stats.total > 0 ? Math.round(stats.evaluated / stats.total * 100) : 0}%
               </p>
             </div>
           </div>
 
           {/* ── Right: Nine Box Matrix ── */}
-          <div className="flex-1 bg-white rounded-2xl sm:rounded-3xl shadow-xl p-3 sm:p-4 border border-gray-200">
+          <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
           {/* Container com scroll horizontal no mobile */}
           <div className="overflow-x-auto -mx-3 sm:mx-0">
             <div className="min-w-[520px] px-3 sm:px-0">
@@ -800,9 +800,9 @@ export default function PerformanceEvaluationPage() {
                 {/* Label lateral esquerdo - Alinhamento Cultural */}
                 <div className="col-span-1 flex flex-col justify-center items-center pr-2">
                   <div className="transform -rotate-90 whitespace-nowrap">
-                    <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-purple-50 rounded-xl border border-purple-200">
+                    <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
                       <TrendingUp className="h-3 w-3 text-purple-600" />
-                      <span className="text-[10px] sm:text-xs font-bold text-gray-700">ALINHAMENTO CULTURAL</span>
+                      <span className="text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-200">ALINHAMENTO CULTURAL</span>
                     </div>
                   </div>
                 </div>
@@ -831,8 +831,8 @@ export default function PerformanceEvaluationPage() {
                         <h3 className="font-bold text-[10px] sm:text-xs leading-tight" style={{ color: classInfo.color }}>
                           {classInfo.label}
                         </h3>
-                        <p className="text-[9px] sm:text-[10px] text-gray-600 mt-0.5">Alto Alinhamento</p>
-                        <p className="text-[9px] sm:text-[10px] text-gray-600">
+                        <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">Alto Alinhamento</p>
+                        <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400">
                           {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desemp.
                         </p>
                       </div>
@@ -842,12 +842,12 @@ export default function PerformanceEvaluationPage() {
                           <div
                             key={u.id}
                             onClick={() => openHistoryModal(u)}
-                            className="bg-white rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 cursor-pointer"
+                            className="bg-white dark:bg-gray-700 rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-600 cursor-pointer"
                           >
                             <div className="flex items-center justify-between gap-1 sm:gap-2">
                               <div className="flex-1 min-w-0">
-                                <p className="text-[10px] sm:text-xs font-medium text-gray-900 truncate">{u.full_name}</p>
-                                <p className="text-[9px] sm:text-xs text-gray-500 truncate">{u.company_name}</p>
+                                <p className="text-[10px] sm:text-xs font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
+                                <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">{u.company_name}</p>
                               </div>
                               <button
                                 onClick={(e) => { e.stopPropagation(); openEvaluationModal(u); }}
@@ -892,8 +892,8 @@ export default function PerformanceEvaluationPage() {
                         <h3 className="font-bold text-[10px] sm:text-xs leading-tight" style={{ color: classInfo.color }}>
                           {classInfo.label}
                         </h3>
-                        <p className="text-[9px] sm:text-[10px] text-gray-600 mt-0.5">Médio Alinhamento</p>
-                        <p className="text-[9px] sm:text-[10px] text-gray-600">
+                        <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">Médio Alinhamento</p>
+                        <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400">
                           {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desemp.
                         </p>
                       </div>
@@ -903,12 +903,12 @@ export default function PerformanceEvaluationPage() {
                           <div
                             key={u.id}
                             onClick={() => openHistoryModal(u)}
-                            className="bg-white rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 cursor-pointer"
+                            className="bg-white dark:bg-gray-700 rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-600 cursor-pointer"
                           >
                             <div className="flex items-center justify-between gap-1 sm:gap-2">
                               <div className="flex-1 min-w-0">
-                                <p className="text-[10px] sm:text-xs font-medium text-gray-900 truncate">{u.full_name}</p>
-                                <p className="text-[9px] sm:text-xs text-gray-500 truncate">{u.company_name}</p>
+                                <p className="text-[10px] sm:text-xs font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
+                                <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">{u.company_name}</p>
                               </div>
                               <button
                                 onClick={(e) => { e.stopPropagation(); openEvaluationModal(u); }}
@@ -953,8 +953,8 @@ export default function PerformanceEvaluationPage() {
                         <h3 className="font-bold text-[10px] sm:text-xs leading-tight" style={{ color: classInfo.color }}>
                           {classInfo.label}
                         </h3>
-                        <p className="text-[9px] sm:text-[10px] text-gray-600 mt-0.5">Baixo Alinhamento</p>
-                        <p className="text-[9px] sm:text-[10px] text-gray-600">
+                        <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">Baixo Alinhamento</p>
+                        <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400">
                           {perf === 1 ? 'Baixo' : perf === 2 ? 'Médio' : 'Alto'} Desemp.
                         </p>
                       </div>
@@ -964,12 +964,12 @@ export default function PerformanceEvaluationPage() {
                           <div
                             key={u.id}
                             onClick={() => openHistoryModal(u)}
-                            className="bg-white rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 cursor-pointer"
+                            className="bg-white dark:bg-gray-700 rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-600 cursor-pointer"
                           >
                             <div className="flex items-center justify-between gap-1 sm:gap-2">
                               <div className="flex-1 min-w-0">
-                                <p className="text-[10px] sm:text-xs font-medium text-gray-900 truncate">{u.full_name}</p>
-                                <p className="text-[9px] sm:text-xs text-gray-500 truncate">{u.company_name}</p>
+                                <p className="text-[10px] sm:text-xs font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
+                                <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">{u.company_name}</p>
                               </div>
                               <button
                                 onClick={(e) => { e.stopPropagation(); openEvaluationModal(u); }}
@@ -995,9 +995,9 @@ export default function PerformanceEvaluationPage() {
             </div>
                 {/* Label inferior - Desempenho Técnico */}
                 <div className="mt-2 text-center">
-                  <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded-xl border border-blue-200">
+                  <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                     <ChevronRight className="h-3 w-3 text-blue-600" />
-                    <span className="text-[10px] sm:text-xs font-bold text-gray-700">DESEMPENHO TÉCNICO</span>
+                    <span className="text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-200">DESEMPENHO TÉCNICO</span>
                   </div>
                 </div>
                 </div>
@@ -1009,8 +1009,8 @@ export default function PerformanceEvaluationPage() {
       </div>
 
         {/* Filtros e Estatísticas - Abaixo da Matriz */}
-        <div className="mt-6 bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-200">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Filtros e Estatísticas</h2>
+<div className="mt-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">Filtros e Estatísticas</h2>
           
           {/* Filtros */}
           <div className="flex flex-col gap-3 mb-6">
@@ -1023,7 +1023,7 @@ export default function PerformanceEvaluationPage() {
                   placeholder="Buscar usuário..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                 />
               </div>
 
@@ -1032,7 +1032,7 @@ export default function PerformanceEvaluationPage() {
                 <select
                   value={filterCompany}
                   onChange={(e) => setFilterCompany(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm sm:text-base"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm sm:text-base bg-white dark:bg-gray-700 dark:text-gray-200"
                 >
                   <option value="all">Todas as empresas</option>
                   {companies.map(c => (
@@ -1064,7 +1064,7 @@ export default function PerformanceEvaluationPage() {
                         prev.includes(tag.id) ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
                       )}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                        selected ? 'text-white border-transparent shadow-md' : 'bg-white border-gray-300 hover:border-gray-400'
+                        selected ? 'text-white border-transparent shadow-md' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-gray-400'
                       }`}
                       style={selected ? { backgroundColor: tag.color, borderColor: tag.color } : { color: tag.color }}
                     >
@@ -1124,8 +1124,8 @@ export default function PerformanceEvaluationPage() {
         </div>
 
         {/* Lista de usuários não avaliados */}
-        <div className="mt-6 sm:mt-8 bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-200">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="mt-6 sm:mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
             <span className="text-base sm:text-xl">Usuários Não Avaliados ({users.length - stats.evaluated})</span>
           </h2>
@@ -1144,11 +1144,11 @@ export default function PerformanceEvaluationPage() {
                 <div
                   key={u.id}
                   onClick={() => openEvaluationModal(u)}
-                  className="bg-gray-50 rounded-lg p-3 sm:p-4 hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200"
+                  className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer border border-gray-200 dark:border-gray-600"
                 >
-                  <p className="text-sm sm:text-base font-medium text-gray-900 truncate">{u.full_name}</p>
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">{u.email}</p>
-                  <p className="text-xs text-gray-500 mt-1 truncate">{u.companies?.name}</p>
+                  <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">{u.email}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 truncate">{u.companies?.name}</p>
                   <button className="mt-2 text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium">
                     Avaliar →
                   </button>
@@ -1160,7 +1160,7 @@ export default function PerformanceEvaluationPage() {
       {/* Modal de Avaliação */}
       {showEvaluationModal && selectedUser && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="relative bg-primary-500 text-white px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
               <div className="flex items-start justify-between">
@@ -1186,10 +1186,10 @@ export default function PerformanceEvaluationPage() {
             </div>
 
             {/* Form com Scroll */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800">
               {/* Data de Avaliação em Card */}
-              <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-sm border border-gray-200">
-                <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-3">
+              <div className="bg-white dark:bg-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-sm border border-gray-200 dark:border-gray-600">
+                <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">
                   <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
                   Data da Avaliação
                 </label>
@@ -1197,21 +1197,21 @@ export default function PerformanceEvaluationPage() {
                   type="date"
                   value={evaluationForm.evaluation_date}
                   onChange={(e) => setEvaluationForm({ ...evaluationForm, evaluation_date: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all font-medium"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 dark:bg-gray-600 dark:text-white border-2 border-gray-200 dark:border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all font-medium"
                   max={new Date().toISOString().split('T')[0]}
                 />
               </div>
 
               {/* Matriz de Avaliação */}
-              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-200">
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 lg:mb-5 flex items-center gap-2">
+              <div className="bg-white dark:bg-gray-700 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-200 dark:border-gray-600">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 lg:mb-5 flex items-center gap-2">
                   <Grid3x3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
                   Avaliação Nine Box
                 </h3>
 
                 {/* Desempenho Técnico */}
                 <div className="mb-4 sm:mb-6">
-                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-3 flex items-center gap-2">
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3 flex items-center gap-2">
                     <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-primary-600" />
                     Nível de Desempenho Técnico
                   </label>
@@ -1243,7 +1243,7 @@ export default function PerformanceEvaluationPage() {
 
                 {/* Alinhamento Cultural */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-3 flex items-center gap-2">
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3 flex items-center gap-2">
                     <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-primary-600" />
                     Nível de Alinhamento Cultural
                   </label>
@@ -1274,10 +1274,10 @@ export default function PerformanceEvaluationPage() {
                 </div>
 
                 {/* Classificação resultante */}
-                <div className="mt-4 sm:mt-6 p-3 sm:p-4 lg:p-5 bg-primary-50 rounded-xl sm:rounded-2xl border-2 border-primary-200 shadow-inner">
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 lg:p-5 bg-primary-50 dark:bg-primary-900/20 rounded-xl sm:rounded-2xl border-2 border-primary-200 dark:border-primary-800 shadow-inner">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs sm:text-sm font-semibold text-gray-600 mb-1">Classificação Nine Box</p>
+                      <p className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Classificação Nine Box</p>
                       <p 
                         className="text-lg sm:text-xl lg:text-2xl font-bold"
                         style={{ color: CLASSIFICATIONS[getClassification(evaluationForm.performance_level, evaluationForm.potential_level)].color }}
@@ -1301,60 +1301,60 @@ export default function PerformanceEvaluationPage() {
               {/* Campos de Texto */}
               <div className="space-y-4">
                 {/* Pontos Fortes */}
-                <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-sm border border-gray-200">
-                  <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-3">
+                <div className="bg-white dark:bg-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-sm border border-gray-200 dark:border-gray-600">
+                  <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">
                     <ThumbsUp className="h-3 w-3 sm:h-4 sm:w-4 text-primary-600" />
                     Pontos Fortes
                   </label>
                   <textarea
                     value={evaluationForm.strengths}
                     onChange={(e) => setEvaluationForm({ ...evaluationForm, strengths: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400 border-2 border-gray-200 dark:border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
                     rows={3}
                     placeholder="Ex: Excelente comunicação, proatividade, capacidade analítica..."
                   />
                 </div>
 
                 {/* Áreas de Melhoria */}
-                <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-sm border border-gray-200">
-                  <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-3">
+                <div className="bg-white dark:bg-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-sm border border-gray-200 dark:border-gray-600">
+                  <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">
                     <Target className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
                     Áreas para Desenvolvimento
                   </label>
                   <textarea
                     value={evaluationForm.areas_for_improvement}
                     onChange={(e) => setEvaluationForm({ ...evaluationForm, areas_for_improvement: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400 border-2 border-gray-200 dark:border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
                     rows={3}
                     placeholder="Ex: Gestão de tempo, delegação de tarefas, trabalho em equipe..."
                   />
                 </div>
 
                 {/* Plano de Desenvolvimento */}
-                <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-sm border border-gray-200">
-                  <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-3">
+                <div className="bg-white dark:bg-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-sm border border-gray-200 dark:border-gray-600">
+                  <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">
                     <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 text-primary-600" />
                     Plano de Desenvolvimento
                   </label>
                   <textarea
                     value={evaluationForm.development_plan}
                     onChange={(e) => setEvaluationForm({ ...evaluationForm, development_plan: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400 border-2 border-gray-200 dark:border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
                     rows={4}
                     placeholder="Ex: Treinamento em liderança até Q2, mentorias semanais, curso de Excel avançado..."
                   />
                 </div>
 
                 {/* Observações */}
-                <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-sm border border-gray-200">
-                  <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-3">
+                <div className="bg-white dark:bg-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-sm border border-gray-200 dark:border-gray-600">
+                  <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">
                     <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-primary-600" />
                     Observações Gerais
                   </label>
                   <textarea
                     value={evaluationForm.notes}
                     onChange={(e) => setEvaluationForm({ ...evaluationForm, notes: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400 border-2 border-gray-200 dark:border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
                     rows={3}
                     placeholder="Contexto adicional, situações específicas, feedback qualitativo..."
                   />
@@ -1363,7 +1363,7 @@ export default function PerformanceEvaluationPage() {
             </div>
 
             {/* Footer com Ações */}
-            <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-5 bg-white border-t border-gray-200 rounded-b-2xl sm:rounded-b-3xl">
+            <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-5 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 rounded-b-2xl sm:rounded-b-3xl">
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={saveEvaluation}
@@ -1385,7 +1385,7 @@ export default function PerformanceEvaluationPage() {
                 <button
                   onClick={() => setShowEvaluationModal(false)}
                   disabled={saving}
-                  className={`w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-all duration-200 border-2 border-gray-200 ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-bold transition-all duration-200 border-2 border-gray-200 dark:border-gray-600 ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   Cancelar
                 </button>
@@ -1398,7 +1398,7 @@ export default function PerformanceEvaluationPage() {
       {/* Modal de Histórico */}
       {showHistoryModal && selectedUser && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="relative bg-primary-500 text-white px-8 py-6">
               <div className="flex items-start justify-between">
@@ -1436,7 +1436,7 @@ export default function PerformanceEvaluationPage() {
             </div>
 
             {/* Timeline de Avaliações */}
-            <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800">
               {userHistory.length === 0 ? (
                 <div className="text-center py-12">
                   <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -1447,14 +1447,14 @@ export default function PerformanceEvaluationPage() {
                 <>
                   {/* Gráfico de Evolução */}
                   {userHistory.length > 1 && (
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-gray-200 mb-6">
+                    <div className="bg-white dark:bg-gray-700 rounded-2xl p-6 shadow-sm border-2 border-gray-200 dark:border-gray-600 mb-6">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 rounded-xl bg-primary-100">
                           <TrendingUp className="h-5 w-5 text-primary-600" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold text-gray-900">Evolução ao Longo do Tempo</h3>
-                          <p className="text-sm text-gray-600">Progressão de desempenho técnico e alinhamento cultural</p>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Evolução ao Longo do Tempo</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Progressão de desempenho técnico e alinhamento cultural</p>
                         </div>
                       </div>
                       
@@ -1521,13 +1521,13 @@ export default function PerformanceEvaluationPage() {
                       <div className="mt-4 flex items-center justify-center gap-6 text-sm">
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full bg-primary-500"></div>
-                          <span className="text-gray-700">Desempenho</span>
+                          <span className="text-gray-700 dark:text-gray-300">Desempenho</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                          <span className="text-gray-700">Potencial</span>
+                          <span className="text-gray-700 dark:text-gray-300">Potencial</span>
                         </div>
-                        <div className="flex items-center gap-4 ml-6 text-xs text-gray-500">
+                        <div className="flex items-center gap-4 ml-6 text-xs text-gray-500 dark:text-gray-400">
                           <span>1 = Baixo</span>
                           <span>2 = Médio</span>
                           <span>3 = Alto</span>
@@ -1549,8 +1549,8 @@ export default function PerformanceEvaluationPage() {
                     return (
                       <div
                         key={evaluation.id}
-                        className={`bg-white rounded-2xl p-6 shadow-sm border-2 ${
-                          isLatest ? 'border-primary-300 ring-2 ring-primary-200' : 'border-gray-200'
+                        className={`bg-white dark:bg-gray-700 rounded-2xl p-6 shadow-sm border-2 ${
+                          isLatest ? 'border-primary-300 ring-2 ring-primary-200' : 'border-gray-200 dark:border-gray-600'
                         } transition-all`}
                       >
                         {/* Cabeçalho da Avaliação */}
@@ -1560,7 +1560,7 @@ export default function PerformanceEvaluationPage() {
                               <Calendar className="h-5 w-5" style={{ color: classInfo.color }} />
                             </div>
                             <div>
-                              <p className="font-bold text-gray-900">
+                              <p className="font-bold text-gray-900 dark:text-white">
                                 {evaluationDate.toLocaleDateString('pt-BR', {
                                   day: '2-digit',
                                   month: 'long',
@@ -1595,22 +1595,22 @@ export default function PerformanceEvaluationPage() {
 
                         {/* Níveis de Desempenho e Potencial */}
                         <div className="grid grid-cols-2 gap-4 mb-4">
-                          <div className="bg-gray-50 rounded-xl p-4">
+                          <div className="bg-gray-50 dark:bg-gray-600 rounded-xl p-4">
                             <div className="flex items-center gap-2 mb-2">
                               <TrendingUp className="h-4 w-4 text-primary-600" />
-                              <span className="text-sm font-bold text-gray-700">Desempenho</span>
+                              <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Desempenho</span>
                             </div>
-                            <p className="text-2xl font-bold text-gray-900">
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
                               {evaluation.performance_level === 1 ? 'Baixo' : evaluation.performance_level === 2 ? 'Médio' : 'Alto'}
                             </p>
                           </div>
                           
-                          <div className="bg-gray-50 rounded-xl p-4">
+                          <div className="bg-gray-50 dark:bg-gray-600 rounded-xl p-4">
                             <div className="flex items-center gap-2 mb-2">
                               <TrendingUp className="h-4 w-4 text-primary-600" />
-                              <span className="text-sm font-bold text-gray-700">Potencial</span>
+                              <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Potencial</span>
                             </div>
-                            <p className="text-2xl font-bold text-gray-900">
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
                               {evaluation.potential_level === 1 ? 'Baixo' : evaluation.potential_level === 2 ? 'Médio' : 'Alto'}
                             </p>
                           </div>
@@ -1618,34 +1618,34 @@ export default function PerformanceEvaluationPage() {
 
                         {/* Detalhes */}
                         {(evaluation.strengths || evaluation.areas_for_improvement || evaluation.notes) && (
-                          <div className="space-y-3 pt-4 border-t border-gray-200">
+                          <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-600">
                             {evaluation.strengths && (
                               <div>
-                                <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-2">
+                                <p className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-2">
                                   <ThumbsUp className="h-4 w-4 text-green-600" />
                                   Pontos Fortes
                                 </p>
-                                <p className="text-sm text-gray-600">{evaluation.strengths}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{evaluation.strengths}</p>
                               </div>
                             )}
                             
                             {evaluation.areas_for_improvement && (
                               <div>
-                                <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-2">
+                                <p className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-2">
                                   <Target className="h-4 w-4 text-orange-600" />
                                   Áreas de Melhoria
                                 </p>
-                                <p className="text-sm text-gray-600">{evaluation.areas_for_improvement}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{evaluation.areas_for_improvement}</p>
                               </div>
                             )}
                             
                             {evaluation.notes && (
                               <div>
-                                <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-2">
+                                <p className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-2">
                                   <FileText className="h-4 w-4 text-blue-600" />
                                   Observações
                                 </p>
-                                <p className="text-sm text-gray-600">{evaluation.notes}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{evaluation.notes}</p>
                               </div>
                             )}
                           </div>
@@ -1659,9 +1659,9 @@ export default function PerformanceEvaluationPage() {
             </div>
 
             {/* Footer */}
-            <div className="px-8 py-5 bg-white border-t border-gray-200 rounded-b-3xl flex justify-between items-center">
+            <div className="px-8 py-5 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 rounded-b-3xl flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>{userHistory.length}</strong> avaliação(ões) registrada(s)
                 </p>
                 <button
@@ -1675,7 +1675,7 @@ export default function PerformanceEvaluationPage() {
               </div>
               <button
                 onClick={() => setShowHistoryModal(false)}
-                className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-all duration-200"
+                className="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-bold transition-all duration-200"
               >
                 Fechar
               </button>

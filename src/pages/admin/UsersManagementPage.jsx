@@ -1283,12 +1283,12 @@ export default function UsersManagementPage() {
   // Verificar permissão de acesso
   if (!isSuperAdmin() && !isCompanyAdmin()) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900">
         <div className="text-center">
-          <div className="p-8 bg-white rounded-3xl shadow-sm border border-gray-200/50">
+          <div className="p-8 bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-200/50 dark:border-gray-700">
             <Shield className="h-16 w-16 text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-[#373435] mb-2">Acesso Negado</h1>
-            <p className="text-gray-600 mb-6">
+            <h1 className="text-2xl font-bold text-[#373435] dark:text-white mb-2">Acesso Negado</h1>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
               Você não tem permissão para acessar a gestão de usuários.
             </p>
           </div>
@@ -1299,22 +1299,22 @@ export default function UsersManagementPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EBA500]"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <SuperAdminBanner />
       <div className="max-w-7xl mx-auto">
         <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] mb-2 sm:mb-3">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] dark:text-white mb-2 sm:mb-3">
               Gerenciamento de Usuários
             </h1>
-            <p className="text-gray-600 text-base sm:text-lg">
+            <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg">
               Gerencie usuários, funções e vínculos com empresas no sistema.
             </p>
           </div>
@@ -1328,7 +1328,7 @@ export default function UsersManagementPage() {
         </div>
 
         {/* Filtros */}
-        <div className="bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200/50 dark:border-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 mb-4 sm:mb-6">
           <div className={`grid grid-cols-1 sm:grid-cols-2 ${isSuperAdmin() ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3 sm:gap-4`}>
             <div className="relative sm:col-span-2 lg:col-span-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -1337,14 +1337,14 @@ export default function UsersManagementPage() {
                 placeholder="Buscar usuários..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-3 sm:py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0"
+                className="w-full pl-10 pr-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400"
               />
             </div>
             
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-3 sm:py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
+              className="px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="">Todas as funções</option>
               {Object.entries(ROLES).map(([key, role]) => (
@@ -1355,7 +1355,7 @@ export default function UsersManagementPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-3 sm:py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
+              className="px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="">Todos os status</option>
               <option value="active">Ativo</option>
@@ -1368,7 +1368,7 @@ export default function UsersManagementPage() {
               <select
                 value={companyFilter}
                 onChange={(e) => setCompanyFilter(e.target.value)}
-                className="px-3 py-3 sm:py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
+                className="px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="all">Todas as empresas</option>
                 {companies.map((company) => (
@@ -1384,7 +1384,7 @@ export default function UsersManagementPage() {
                 setStatusFilter('')
                 setCompanyFilter('all')
               }}
-              className="px-4 py-3 sm:py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
+              className="px-4 py-3 sm:py-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-[#373435] dark:text-gray-200 rounded-2xl hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
             >
               Limpar Filtros
             </button>
@@ -1392,9 +1392,9 @@ export default function UsersManagementPage() {
         </div>
 
         {/* Lista de Usuários */}
-        <div className="bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl overflow-hidden">
-          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-gray-100">
-            <h2 className="text-lg sm:text-xl font-semibold text-[#373435] flex items-center">
+        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200/50 dark:border-gray-700 rounded-2xl sm:rounded-3xl overflow-hidden">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-gray-100 dark:border-gray-700">
+            <h2 className="text-lg sm:text-xl font-semibold text-[#373435] dark:text-white flex items-center">
               <Users className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 text-[#EBA500]" />
               <span className="truncate">
                 {isSuperAdmin() 
@@ -1404,7 +1404,7 @@ export default function UsersManagementPage() {
               </span>
             </h2>
             {!isSuperAdmin() && getCurrentUserCompany() && (
-              <p className="text-xs sm:text-sm text-gray-600 mt-2 flex items-center">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2 flex items-center">
                 <Building2 className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1" />
                 <span className="truncate">{getCurrentUserCompany().name}</span>
               </p>
@@ -1423,32 +1423,32 @@ export default function UsersManagementPage() {
 
           <div className="overflow-x-auto -mx-4 sm:mx-0" ref={tableScrollRef} onScroll={handleTableScroll}>
             <table className="min-w-full divide-y divide-gray-100" ref={tableRef}>
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700 dark:to-gray-800">
                 <tr>
-                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-center text-xs font-semibold text-[#373435] uppercase tracking-wider w-20">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-center text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider w-20">
                     Ações
                   </th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                     Usuário
                   </th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                     Função
                   </th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                     Empresa
                   </th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                     Jornadas
                   </th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                     Tags
                   </th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-50">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-50 dark:divide-gray-700">
                 {filteredUsers.map((user) => {
                   // Usar o role da empresa se existir, senão usar o role global
                   const effectiveRole = user.company_role || user.role
@@ -1462,7 +1462,7 @@ export default function UsersManagementPage() {
                       className={`transition-all duration-200 ${
                         isGestor 
                           ? 'bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 hover:from-[#EBA500]/20 hover:to-[#EBA500]/10 border-l-4 border-[#EBA500]'
-                          : 'hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5'
+                          : 'hover:bg-gradient-to-r hover:from-gray-50/50 dark:hover:from-gray-700/50 hover:to-[#EBA500]/5'
                       }`}
                     >
                       {/* Coluna de Ações - Primeira coluna com botão único */}
@@ -1502,7 +1502,7 @@ export default function UsersManagementPage() {
                             </span>
                           </div>
                           <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                            <div className="text-xs sm:text-sm font-semibold text-[#373435] truncate">
+                            <div className="text-xs sm:text-sm font-semibold text-[#373435] dark:text-white truncate">
                               {user.full_name || 'Nome não informado'}
                             </div>
                             <div className="text-xs sm:text-sm text-gray-500 flex items-center truncate">
@@ -1603,7 +1603,7 @@ export default function UsersManagementPage() {
           {filteredUsers.length === 0 && (
             <div className="text-center py-8 sm:py-12 px-4">
               <Users className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm sm:text-base font-medium text-gray-900">
+              <h3 className="mt-2 text-sm sm:text-base font-medium text-gray-900 dark:text-white">
                 Nenhum usuário encontrado
               </h3>
               <p className="mt-1 text-xs sm:text-sm text-gray-500">
@@ -1617,9 +1617,9 @@ export default function UsersManagementPage() {
 
         {/* Convites Pendentes */}
         {pendingInvites.length > 0 && (
-          <div className="mt-6 bg-white shadow-sm border border-orange-200 rounded-2xl sm:rounded-3xl overflow-hidden">
-            <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b border-orange-100 bg-orange-50 flex items-center justify-between">
-              <h2 className="text-base sm:text-lg font-semibold text-orange-800 flex items-center gap-2">
+          <div className="mt-6 bg-white dark:bg-gray-800 shadow-sm border border-orange-200 dark:border-orange-800/50 rounded-2xl sm:rounded-3xl overflow-hidden">
+            <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b border-orange-100 dark:border-orange-900/40 bg-orange-50 dark:bg-orange-900/20 flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-semibold text-orange-800 dark:text-orange-300 flex items-center gap-2">
                 <Clock className="h-5 w-5 text-orange-500" />
                 Convites Pendentes ({pendingInvites.length})
               </h2>
@@ -1632,18 +1632,18 @@ export default function UsersManagementPage() {
                 <RefreshCw className={`h-4 w-4 ${loadingInvites ? 'animate-spin' : ''}`} />
               </button>
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {pendingInvites.map(invite => {
                 const expiresAt = new Date(invite.expires_at)
                 const expiresInDays = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24))
                 return (
                   <div key={invite.id} className="px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
                         <Mail className="h-4 w-4 text-orange-500" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{invite.email}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{invite.email}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           {invite.companies?.name && (
                             <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -1692,14 +1692,14 @@ export default function UsersManagementPage() {
                 <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
               </div>
 
-              <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-                <div className="bg-gradient-to-br from-[#EBA500]/5 to-white px-6 pt-6 pb-5">
+              <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div className="bg-gradient-to-br from-[#EBA500]/5 to-white dark:from-[#EBA500]/10 dark:to-gray-800 px-6 pt-6 pb-5">
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#EBA500] to-[#EBA500]/80 flex items-center justify-center shadow-lg">
                       <User className="h-8 w-8 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-[#373435]">
+                      <h3 className="text-xl font-bold text-[#373435] dark:text-white">
                         Detalhes de {selectedUser.full_name || selectedUser.email}
                       </h3>
                       <p className="text-sm text-gray-500 mt-1">Informações completas do usuário</p>
@@ -1707,28 +1707,28 @@ export default function UsersManagementPage() {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <div className="bg-white dark:bg-gray-700 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-600">
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                         <User className="h-3.5 w-3.5" />
                         Nome Completo
                       </label>
-                      <p className="text-base text-gray-900 mt-2 font-medium">{selectedUser.full_name || 'Não informado'}</p>
+                      <p className="text-base text-gray-900 dark:text-white mt-2 font-medium">{selectedUser.full_name || 'Não informado'}</p>
                     </div>
                     
-                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <div className="bg-white dark:bg-gray-700 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-600">
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                         <Mail className="h-3.5 w-3.5" />
                         Email
                       </label>
-                      <p className="text-base text-gray-900 mt-2 font-medium break-all">{selectedUser.email}</p>
+                      <p className="text-base text-gray-900 dark:text-white mt-2 font-medium break-all">{selectedUser.email}</p>
                     </div>
                     
-                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <div className="bg-white dark:bg-gray-700 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-600">
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                         <Shield className="h-3.5 w-3.5" />
                         Função
                       </label>
-                      <p className="text-base text-gray-900 mt-2 font-medium">
+                      <p className="text-base text-gray-900 dark:text-white mt-2 font-medium">
                         {getRoleInfo(selectedUser.company_role || selectedUser.role).label}
                       </p>
                       {selectedUser.company_role && selectedUser.company_role !== selectedUser.role && (
@@ -1738,12 +1738,12 @@ export default function UsersManagementPage() {
                       )}
                     </div>
                     
-                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <div className="bg-white dark:bg-gray-700 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-600">
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                         <Building2 className="h-3.5 w-3.5" />
                         Empresa
                       </label>
-                      <p className="text-base text-gray-900 mt-2 font-medium">{selectedUser.companies?.name || 'Não vinculado'}</p>
+                      <p className="text-base text-gray-900 dark:text-white mt-2 font-medium">{selectedUser.companies?.name || 'Não vinculado'}</p>
                       {selectedUser.company_role && (
                         <p className="text-xs text-gray-500 mt-1">
                           Função na empresa: {getRoleInfo(selectedUser.company_role).label}
@@ -1751,20 +1751,20 @@ export default function UsersManagementPage() {
                       )}
                     </div>
                     
-                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 md:col-span-2">
-                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <div className="bg-white dark:bg-gray-700 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-600 md:col-span-2">
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                         <Calendar className="h-3.5 w-3.5" />
                         Data de Criação
                       </label>
-                      <p className="text-base text-gray-900 mt-2 font-medium">{formatDate(selectedUser.created_at)}</p>
+                      <p className="text-base text-gray-900 dark:text-white mt-2 font-medium">{formatDate(selectedUser.created_at)}</p>
                     </div>
                   </div>
                 </div>
                 
-                <div className="bg-gray-50 px-6 py-4 flex justify-end">
+                <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex justify-end">
                   <button
                     onClick={() => setIsViewModalOpen(false)}
-                    className="px-6 py-2.5 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 text-white rounded-2xl hover:from-[#EBA500]/90 hover:to-[#EBA500] shadow-md hover:shadow-lg font-semibold transition-all duration-200"
+                    className="px-6 py-2.5 bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 text-white rounded-2xl hover:from-[#EBA500]/90 hover:to-[#EBA500] shadow-md hover:shadow-lg dark:shadow-none dark:hover:shadow-none font-semibold transition-all duration-200"
                   >
                     Fechar
                   </button>
@@ -1792,12 +1792,12 @@ export default function UsersManagementPage() {
         {/* Modal de Criar Usuário */}
         {isCreateUserModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-xl font-bold text-[#373435] mb-4">Criar Novo Usuário</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-xl font-bold text-[#373435] dark:text-white mb-4">Criar Novo Usuário</h3>
               
               <form onSubmit={handleCreateUser} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Email do Usuário
                   </label>
                   <input
@@ -1805,17 +1805,17 @@ export default function UsersManagementPage() {
                     value={newUserEmail}
                     onChange={(e) => setNewUserEmail(e.target.value)}
                     placeholder="usuario@empresa.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] dark:bg-gray-700 dark:text-white"
                     required
                     disabled={creatingUser}
                   />
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                  <p className="text-sm text-blue-800 dark:text-blue-300">
                     <strong>Como funciona:</strong>
                   </p>
-                  <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
+                  <ul className="text-sm text-blue-700 dark:text-blue-400 mt-2 space-y-1 list-disc list-inside">
                     <li>Usuário receberá email de convite via Resend</li>
                     <li>Ao clicar, será direcionado para criar sua senha</li>
                     {isCompanyAdmin() && !isSuperAdmin() && getCurrentUserCompany() ? (
@@ -1833,7 +1833,7 @@ export default function UsersManagementPage() {
                       setIsCreateUserModalOpen(false)
                       setNewUserEmail('')
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                     disabled={creatingUser}
                   >
                     Cancelar
@@ -1858,13 +1858,13 @@ export default function UsersManagementPage() {
             onClick={closeActionsModal}
           >
             <div 
-              className={`relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col transition-all duration-300 ${
+              className={`relative bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col transition-all duration-300 ${
                 actionsModalAnimating ? 'translate-y-0 sm:scale-100 opacity-100' : 'translate-y-full sm:translate-y-0 sm:scale-95 opacity-0'
               }`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header Fixo */}
-              <div className="flex-shrink-0 relative px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100">
+              <div className="flex-shrink-0 relative px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-3 sm:gap-4">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#EBA500] to-[#d49400] flex items-center justify-center shadow-lg">
                     {avatarUrls[selectedUserForActions.id] ? (
@@ -1880,7 +1880,7 @@ export default function UsersManagementPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
+                    <h3 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
                       {selectedUserForActions.full_name || 'Usuário'}
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1 truncate">
@@ -1890,7 +1890,7 @@ export default function UsersManagementPage() {
                   </div>
                   <button
                     onClick={closeActionsModal}
-                    className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl hover:bg-gray-100 transition-all"
+                    className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
                   >
                     <X className="h-5 w-5 sm:h-5 sm:w-5" />
                   </button>
@@ -1901,20 +1901,20 @@ export default function UsersManagementPage() {
               <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6">
                 {/* Info Cards */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl sm:rounded-2xl p-2 sm:p-4 border border-blue-200/50">
-                    <p className="text-[10px] sm:text-xs font-medium text-blue-600 uppercase tracking-wide mb-0.5 sm:mb-1">Função</p>
-                    <p className="text-xs sm:text-sm font-bold text-blue-900 truncate" title={getRoleInfo(selectedUserForActions.company_role || selectedUserForActions.role).label}>
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 rounded-xl sm:rounded-2xl p-2 sm:p-4 border border-blue-200/50 dark:border-blue-700/40">
+                    <p className="text-[10px] sm:text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-0.5 sm:mb-1">Função</p>
+                    <p className="text-xs sm:text-sm font-bold text-blue-900 dark:text-blue-200 truncate" title={getRoleInfo(selectedUserForActions.company_role || selectedUserForActions.role).label}>
                       {getRoleInfo(selectedUserForActions.company_role || selectedUserForActions.role).label}
                     </p>
                   </div>
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl sm:rounded-2xl p-2 sm:p-4 border border-purple-200/50">
-                    <p className="text-[10px] sm:text-xs font-medium text-purple-600 uppercase tracking-wide mb-0.5 sm:mb-1">Empresa</p>
-                    <p className="text-xs sm:text-sm font-bold text-purple-900 truncate" title={selectedUserForActions.companies?.name}>
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-900/30 dark:to-purple-800/20 rounded-xl sm:rounded-2xl p-2 sm:p-4 border border-purple-200/50 dark:border-purple-700/40">
+                    <p className="text-[10px] sm:text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-0.5 sm:mb-1">Empresa</p>
+                    <p className="text-xs sm:text-sm font-bold text-purple-900 dark:text-purple-200 truncate" title={selectedUserForActions.companies?.name}>
                       {selectedUserForActions.companies?.name || 'Sem vínculo'}
                     </p>
                   </div>
-                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl sm:rounded-2xl p-2 sm:p-4 border border-emerald-200/50">
-                    <p className="text-[10px] sm:text-xs font-medium text-emerald-600 uppercase tracking-wide mb-0.5 sm:mb-1">Status</p>
+                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/30 dark:to-emerald-800/20 rounded-xl sm:rounded-2xl p-2 sm:p-4 border border-emerald-200/50 dark:border-emerald-700/40">
+                    <p className="text-[10px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-0.5 sm:mb-1">Status</p>
                     <span className={`inline-flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm font-bold ${
                       selectedUserForActions.status === 'active' 
                         ? 'text-emerald-700'
@@ -1939,14 +1939,14 @@ export default function UsersManagementPage() {
                       setIsEditModalOpen(true)
                       closeActionsModal()
                     }}
-                    className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-50 to-blue-100/30 hover:from-blue-100 hover:to-blue-200/50 border border-blue-200/50 hover:border-blue-300 transition-all duration-200 group hover:shadow-md active:scale-[0.98]"
+                    className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-50 to-blue-100/30 dark:from-blue-900/20 dark:to-blue-800/10 hover:from-blue-100 hover:to-blue-200/50 dark:hover:from-blue-900/30 dark:hover:to-blue-800/20 border border-blue-200/50 dark:border-blue-700/30 hover:border-blue-300 dark:hover:border-blue-600/50 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none active:scale-[0.98]"
                   >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                       <Edit className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                     </div>
                     <div className="flex-1 text-left min-w-0">
-                      <p className="font-semibold text-sm sm:text-base text-gray-900">Editar Nome</p>
-                      <p className="text-xs text-gray-600 hidden sm:block">Alterar o nome de exibição</p>
+                      <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">Editar Nome</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 hidden sm:block">Alterar o nome de exibição</p>
                     </div>
                   </button>
 
@@ -1957,16 +1957,16 @@ export default function UsersManagementPage() {
                       setIsLinkModalOpen(true)
                       closeActionsModal()
                     }}
-                    className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-50 to-purple-100/30 hover:from-purple-100 hover:to-purple-200/50 border border-purple-200/50 hover:border-purple-300 transition-all duration-200 group hover:shadow-md active:scale-[0.98]"
+                    className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-50 to-purple-100/30 dark:from-purple-900/20 dark:to-purple-800/10 hover:from-purple-100 hover:to-purple-200/50 dark:hover:from-purple-900/30 dark:hover:to-purple-800/20 border border-purple-200/50 dark:border-purple-700/30 hover:border-purple-300 dark:hover:border-purple-600/50 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none active:scale-[0.98]"
                   >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                       <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                     </div>
                     <div className="flex-1 text-left min-w-0">
-                      <p className="font-semibold text-sm sm:text-base text-gray-900">
+                      <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">
                         {selectedUserForActions.companies?.name ? 'Alterar Empresa/Função' : 'Vincular à Empresa'}
                       </p>
-                      <p className="text-xs text-gray-600 hidden sm:block">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 hidden sm:block">
                         {selectedUserForActions.companies?.name ? 'Modificar vinculação' : 'Associar a empresa'}
                       </p>
                     </div>
@@ -1979,14 +1979,14 @@ export default function UsersManagementPage() {
                         openJourneyModal(selectedUserForActions)
                         closeActionsModal()
                       }}
-                      className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-50 to-emerald-100/30 hover:from-emerald-100 hover:to-emerald-200/50 border border-emerald-200/50 hover:border-emerald-300 transition-all duration-200 group hover:shadow-md active:scale-[0.98]"
+                      className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-50 to-emerald-100/30 dark:from-emerald-900/20 dark:to-emerald-800/10 hover:from-emerald-100 hover:to-emerald-200/50 dark:hover:from-emerald-900/30 dark:hover:to-emerald-800/20 border border-emerald-200/50 dark:border-emerald-700/30 hover:border-emerald-300 dark:hover:border-emerald-600/50 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none active:scale-[0.98]"
                     >
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                         <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
                       </div>
                       <div className="flex-1 text-left min-w-0">
-                        <p className="font-semibold text-sm sm:text-base text-gray-900">Gerenciar Jornadas</p>
-                        <p className="text-xs text-gray-600">{getManualAssignments(selectedUserForActions.id).length} atribuída(s)</p>
+                        <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">Gerenciar Jornadas</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{getManualAssignments(selectedUserForActions.id).length} atribuída(s)</p>
                       </div>
                     </button>
                   )}
@@ -1999,14 +1999,14 @@ export default function UsersManagementPage() {
                         setShowToolModal(true)
                         closeActionsModal()
                       }}
-                      className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-50 to-amber-100/30 hover:from-amber-100 hover:to-amber-200/50 border border-amber-200/50 hover:border-amber-300 transition-all duration-200 group hover:shadow-md active:scale-[0.98]"
+                      className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-50 to-amber-100/30 dark:from-amber-900/20 dark:to-amber-800/10 hover:from-amber-100 hover:to-amber-200/50 dark:hover:from-amber-900/30 dark:hover:to-amber-800/20 border border-amber-200/50 dark:border-amber-700/30 hover:border-amber-300 dark:hover:border-amber-600/50 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none active:scale-[0.98]"
                     >
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                         <Wrench className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
                       </div>
                       <div className="flex-1 text-left min-w-0">
-                        <p className="font-semibold text-sm sm:text-base text-gray-900">Gerenciar Ferramentas</p>
-                        <p className="text-xs text-gray-600">Controlar acesso a telas específicas</p>
+                        <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">Gerenciar Ferramentas</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Controlar acesso a telas específicas</p>
                       </div>
                     </button>
                   )}
@@ -2018,14 +2018,14 @@ export default function UsersManagementPage() {
                         openTagModal(selectedUserForActions)
                         closeActionsModal()
                       }}
-                      className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-violet-50 to-violet-100/30 hover:from-violet-100 hover:to-violet-200/50 border border-violet-200/50 hover:border-violet-300 transition-all duration-200 group hover:shadow-md active:scale-[0.98]"
+                      className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-violet-50 to-violet-100/30 dark:from-violet-900/20 dark:to-violet-800/10 hover:from-violet-100 hover:to-violet-200/50 dark:hover:from-violet-900/30 dark:hover:to-violet-800/20 border border-violet-200/50 dark:border-violet-700/30 hover:border-violet-300 dark:hover:border-violet-600/50 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none active:scale-[0.98]"
                     >
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                         <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-violet-600" />
                       </div>
                       <div className="flex-1 text-left min-w-0">
-                        <p className="font-semibold text-sm sm:text-base text-gray-900">Gerenciar Tags</p>
-                        <p className="text-xs text-gray-600">
+                        <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">Gerenciar Tags</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
                           {(userTagsMap[selectedUserForActions.id] || []).length} tag(s) atribuída(s)
                         </p>
                       </div>
@@ -2039,14 +2039,14 @@ export default function UsersManagementPage() {
                         handleUnlinkFromCompany(selectedUserForActions.id)
                         closeActionsModal()
                       }}
-                      className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-orange-100/30 hover:from-orange-100 hover:to-orange-200/50 border border-orange-200/50 hover:border-orange-300 transition-all duration-200 group hover:shadow-md"
+                      className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-orange-100/30 dark:from-orange-900/20 dark:to-orange-800/10 hover:from-orange-100 hover:to-orange-200/50 dark:hover:from-orange-900/30 dark:hover:to-orange-800/20 border border-orange-200/50 dark:border-orange-700/30 hover:border-orange-300 dark:hover:border-orange-600/50 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none"
                     >
-                      <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <div className="w-12 h-12 rounded-xl bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
                         <XCircle className="h-5 w-5 text-orange-600" />
                       </div>
                       <div className="flex-1 text-left">
-                        <p className="font-semibold text-gray-900">Desvincular da Empresa</p>
-                        <p className="text-xs text-gray-600">Remover vinculação atual</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">Desvincular da Empresa</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Remover vinculação atual</p>
                       </div>
                     </button>
                   )}
@@ -2057,13 +2057,13 @@ export default function UsersManagementPage() {
                       handleDeleteUser(selectedUserForActions.id)
                       closeActionsModal()
                     }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 group hover:shadow-md ${
+                    className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 group hover:shadow-md dark:hover:shadow-none ${
                       selectedUserForActions.is_active
-                        ? 'bg-gradient-to-r from-red-50 to-red-100/30 hover:from-red-100 hover:to-red-200/50 border border-red-200/50 hover:border-red-300'
-                        : 'bg-gradient-to-r from-green-50 to-green-100/30 hover:from-green-100 hover:to-green-200/50 border border-green-200/50 hover:border-green-300'
+                        ? 'bg-gradient-to-r from-red-50 to-red-100/30 dark:from-red-900/20 dark:to-red-800/10 hover:from-red-100 hover:to-red-200/50 dark:hover:from-red-900/30 border border-red-200/50 dark:border-red-700/30 hover:border-red-300 dark:hover:border-red-600/50'
+                        : 'bg-gradient-to-r from-green-50 to-green-100/30 dark:from-green-900/20 dark:to-green-800/10 hover:from-green-100 hover:to-green-200/50 dark:hover:from-green-900/30 border border-green-200/50 dark:border-green-700/30 hover:border-green-300 dark:hover:border-green-600/50'
                     }`}
                   >
-                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-xl bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
                       {selectedUserForActions.is_active ? (
                         <Trash2 className="h-5 w-5 text-red-600" />
                       ) : (
@@ -2071,10 +2071,10 @@ export default function UsersManagementPage() {
                       )}
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-semibold text-gray-900 dark:text-white">
                         {selectedUserForActions.is_active ? 'Desativar Usuário' : 'Ativar Usuário'}
                       </p>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
                         {selectedUserForActions.is_active ? 'Bloquear acesso ao sistema' : 'Reativar acesso'}
                       </p>
                     </div>
@@ -2085,9 +2085,9 @@ export default function UsersManagementPage() {
                       closeActionsModal()
                       handlePermanentDeleteUser(selectedUserForActions.id, selectedUserForActions.full_name)
                     }}
-                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-red-50 to-red-100/30 hover:from-red-100 hover:to-red-200/50 border-2 border-red-300 hover:border-red-400 transition-all duration-200 group hover:shadow-md"
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-red-50 to-red-100/30 dark:from-red-900/20 dark:to-red-800/10 hover:from-red-100 hover:to-red-200/50 dark:hover:from-red-900/30 border-2 border-red-300 dark:border-red-700/50 hover:border-red-400 dark:hover:border-red-600 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-xl bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
                       <Trash2 className="h-5 w-5 text-red-700" />
                     </div>
                     <div className="flex-1 text-left">
@@ -2099,10 +2099,10 @@ export default function UsersManagementPage() {
               </div>
 
               {/* Footer Fixo */}
-              <div className="flex-shrink-0 px-8 py-4 border-t border-gray-100">
+              <div className="flex-shrink-0 px-8 py-4 border-t border-gray-100 dark:border-gray-700">
                 <button
                   onClick={closeActionsModal}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-xl hover:from-gray-900 hover:to-black transition-all font-medium shadow-lg hover:shadow-xl"
+                  className="w-full px-6 py-3 bg-gradient-to-r from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-600 text-white rounded-xl hover:from-gray-900 hover:to-black dark:hover:from-gray-600 dark:hover:to-gray-500 transition-all font-medium shadow-lg hover:shadow-xl dark:shadow-none dark:hover:shadow-none"
                 >
                   Fechar
                 </button>
@@ -2131,22 +2131,22 @@ export default function UsersManagementPage() {
             onClick={closeJourneyModal}
           >
             <div 
-              className={`bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col transition-all duration-300 ${
+              className={`bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col transition-all duration-300 ${
                 modalAnimating ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
               }`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header Fixo */}
-              <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+              <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg">
                     <GraduationCap className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                       Gerenciar Jornadas
                     </h3>
-                    <p className="text-sm text-gray-600 mt-0.5">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
                       {selectedUserForJourney.full_name || selectedUserForJourney.email}
                     </p>
                   </div>
@@ -2154,7 +2154,7 @@ export default function UsersManagementPage() {
                 
                 <button
                   onClick={closeJourneyModal}
-                  className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 hover:scale-105"
+                  className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition-all duration-200 hover:scale-105"
                 >
                   <X className="w-5 h-5 text-gray-600" />
                 </button>
@@ -2173,14 +2173,14 @@ export default function UsersManagementPage() {
                         className={`rounded-2xl p-5 transition-all duration-200 ${
                           isManuallyAssignedToUser
                             ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-300 shadow-md' 
-                            : 'bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 hover:border-gray-300 hover:shadow-md'
+                            : 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-md'
                         }`}
                       >
                         <div className="flex items-start gap-4">
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
                             isManuallyAssignedToUser
-                              ? 'bg-white text-emerald-600' 
-                              : 'bg-white text-gray-600'
+                              ? 'bg-white dark:bg-gray-600 text-emerald-600' 
+                              : 'bg-white dark:bg-gray-600 text-gray-600 dark:text-gray-300'
                           }`}>
                             <Icon className="w-6 h-6" />
                           </div>
@@ -2188,7 +2188,7 @@ export default function UsersManagementPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <h4 className="font-bold text-gray-900 text-lg">
+                                <h4 className="font-bold text-gray-900 dark:text-white text-lg">
                                   {journey.name}
                                 </h4>
                               </div>
@@ -2204,7 +2204,7 @@ export default function UsersManagementPage() {
                               {isManuallyAssignedToUser ? (
                                 <button
                                   onClick={() => revokeJourneyAccess(journey.id)}
-                                  className="w-full px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] flex items-center justify-center gap-2"
+                                  className="w-full px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg dark:shadow-none dark:hover:shadow-none hover:scale-[1.02] flex items-center justify-center gap-2"
                                 >
                                   <X className="w-4 h-4" />
                                   Remover Jornada
@@ -2212,7 +2212,7 @@ export default function UsersManagementPage() {
                               ) : (
                                 <button
                                   onClick={() => assignJourney(journey.id)}
-                                  className="w-full px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] flex items-center justify-center gap-2"
+                                  className="w-full px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg dark:shadow-none dark:hover:shadow-none hover:scale-[1.02] flex items-center justify-center gap-2"
                                 >
                                   <GraduationCap className="w-4 h-4" />
                                   Atribuir Jornada
@@ -2228,7 +2228,7 @@ export default function UsersManagementPage() {
 
                 {journeys.length === 0 && (
                   <div className="text-center py-12">
-                    <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                    <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-4">
                       <GraduationCap className="w-10 h-10 text-gray-400" />
                     </div>
                     <p className="text-gray-500 font-medium">Nenhuma jornada disponível</p>
@@ -2237,18 +2237,18 @@ export default function UsersManagementPage() {
               </div>
 
               {/* Footer Fixo */}
-              <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 rounded-b-3xl">
+              <div className="px-8 py-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 rounded-b-3xl">
                 <div className="flex gap-3">
                   <button
                     onClick={clearAllJourneys}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg dark:shadow-none dark:hover:shadow-none hover:scale-[1.02] flex items-center justify-center gap-2"
                   >
                     <X className="w-4 h-4" />
                     Limpar Todas
                   </button>
                   <button
                     onClick={closeJourneyModal}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl hover:from-gray-800 hover:to-gray-900 transition-all duration-200 font-semibold shadow-md hover:shadow-lg hover:scale-[1.02]"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl hover:from-gray-800 hover:to-gray-900 transition-all duration-200 font-semibold shadow-md hover:shadow-lg dark:shadow-none dark:hover:shadow-none hover:scale-[1.02]"
                   >
                     Fechar
                   </button>
@@ -2309,23 +2309,23 @@ function TagModal({ targetUser, companyId, tags, userTagsMap, animating, onClose
       onClick={onClose}
     >
       <div
-        className={`relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col transition-all duration-300 ${
+        className={`relative bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col transition-all duration-300 ${
           animating ? 'translate-y-0 sm:scale-100 opacity-100' : 'translate-y-full sm:translate-y-0 sm:scale-95 opacity-0'
         }`}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex-shrink-0 px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex-shrink-0 px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-lg">
               <Tag className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Gerenciar Tags</h3>
-              <p className="text-sm text-gray-500">{targetUser.full_name || targetUser.email}</p>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Gerenciar Tags</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{targetUser.full_name || targetUser.email}</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all">
+          <button onClick={onClose} className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition-all">
             <X className="w-4 h-4 text-gray-600" />
           </button>
         </div>
@@ -2333,15 +2333,15 @@ function TagModal({ targetUser, companyId, tags, userTagsMap, animating, onClose
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {/* Nova tag */}
-          <form onSubmit={handleCreate} className="bg-violet-50 rounded-2xl p-4 border border-violet-200/60">
-            <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-3">Nova tag</p>
+          <form onSubmit={handleCreate} className="bg-violet-50 dark:bg-violet-900/20 rounded-2xl p-4 border border-violet-200/60 dark:border-violet-700/40">
+            <p className="text-xs font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wide mb-3">Nova tag</p>
             <div className="flex gap-2 mb-3">
               <input
                 type="text"
                 value={newTagName}
                 onChange={e => setNewTagName(e.target.value)}
                 placeholder="Nome da tag..."
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400"
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                 maxLength={30}
               />
               <button
@@ -2384,7 +2384,7 @@ function TagModal({ targetUser, companyId, tags, userTagsMap, animating, onClose
                   <div
                     key={tag.id}
                     className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
-                      assigned ? 'border-violet-300 bg-violet-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                      assigned ? 'border-violet-300 dark:border-violet-600 bg-violet-50 dark:bg-violet-900/20' : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500'
                     }`}
                   >
                     <span
@@ -2393,13 +2393,13 @@ function TagModal({ targetUser, companyId, tags, userTagsMap, animating, onClose
                     >
                       {tag.name.charAt(0).toUpperCase()}
                     </span>
-                    <span className="flex-1 text-sm font-medium text-gray-800">{tag.name}</span>
+                    <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">{tag.name}</span>
                     <button
                       onClick={() => onToggleTag(tag, targetUser.id, companyId)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                         assigned
                           ? 'bg-violet-600 text-white hover:bg-violet-700'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
                       }`}
                     >
                       {assigned ? 'Remover' : 'Atribuir'}
@@ -2419,7 +2419,7 @@ function TagModal({ targetUser, companyId, tags, userTagsMap, animating, onClose
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100">
+        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 dark:border-gray-700">
           <button
             onClick={onClose}
             className="w-full py-3 bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-xl font-medium hover:from-gray-900 hover:to-black transition-all shadow-md"
@@ -2460,16 +2460,16 @@ function EditUserModal({ user, onClose, onSave, loading }) {
           <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
         </div>
 
-        <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <form onSubmit={handleSubmit}>
-            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+            <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
                 Editar Usuário
               </h3>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Nome Completo
                   </label>
                   <input
@@ -2477,14 +2477,14 @@ function EditUserModal({ user, onClose, onSave, loading }) {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Nome completo do usuário"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#EBA500]"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#EBA500] dark:bg-gray-700 dark:text-white"
                     autoFocus
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Email
                   </label>
                   <input
@@ -2492,7 +2492,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="email@empresa.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#EBA500]"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#EBA500] dark:bg-gray-700 dark:text-white"
                     required
                   />
                   {emailChanged && (
@@ -2500,12 +2500,12 @@ function EditUserModal({ user, onClose, onSave, loading }) {
                   )}
                 </div>
 
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <p className="text-sm text-gray-600">
+                <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     <strong>Função:</strong> {user.role || 'user'}
                   </p>
                   {user.companies?.name && (
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       <strong>Empresa:</strong> {user.companies.name}
                     </p>
                   )}
@@ -2513,7 +2513,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
               </div>
             </div>
             
-            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
               <button
                 type="submit"
                 disabled={loading}
@@ -2524,7 +2524,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-3 w-full sm:mt-0 sm:w-auto px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
+                className="mt-3 w-full sm:mt-0 sm:w-auto px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-[#373435] dark:text-gray-200 rounded-2xl hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
               >
                 Cancelar
               </button>
@@ -2571,10 +2571,10 @@ function LinkUserModal({ user, companies, onClose, onLink, loading, currentUserP
           <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
         </div>
 
-        <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <form onSubmit={handleSubmit}>
-            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+            <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
                 {isEdit 
                   ? (canChangeCompany 
                       ? `Alterar a empresa e função de ${user.full_name || user.email}`
@@ -2586,14 +2586,14 @@ function LinkUserModal({ user, companies, onClose, onLink, loading, currentUserP
               <div className="mb-4">
                 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Empresa
                   </label>
                   {canChangeCompany ? (
                     <select
                       value={selectedCompanyId}
                       onChange={(e) => setSelectedCompanyId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200"
                       required
                     >
                       <option value="">Selecione uma empresa...</option>
@@ -2604,20 +2604,20 @@ function LinkUserModal({ user, companies, onClose, onLink, loading, currentUserP
                       ))}
                     </select>
                   ) : (
-                    <div className="w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-md text-gray-700">
+                    <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 rounded-md text-gray-700 dark:text-gray-300">
                       {companies.find(c => c.id === selectedCompanyId)?.name || 'Nenhuma empresa'}
                     </div>
                   )}
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Função na Empresa
                   </label>
                   <select
                     value={selectedRole}
                     onChange={(e) => setSelectedRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200"
                   >
                     <option value="user">Usuário</option>
                     <option value="company_admin">Admin da Empresa</option>
@@ -2627,7 +2627,7 @@ function LinkUserModal({ user, companies, onClose, onLink, loading, currentUserP
               </div>
             </div>
             
-            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
               <button
                 type="submit"
                 disabled={loading}
@@ -2641,7 +2641,7 @@ function LinkUserModal({ user, companies, onClose, onLink, loading, currentUserP
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-3 w-full sm:mt-0 sm:w-auto px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-[#373435] rounded-2xl hover:from-gray-200 hover:to-gray-300 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
+                className="mt-3 w-full sm:mt-0 sm:w-auto px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-[#373435] dark:text-gray-200 rounded-2xl hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
               >
                 Cancelar
               </button>

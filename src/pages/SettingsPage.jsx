@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/useAuth'
+import { useUserContext } from '../contexts/UserContext'
 import { supabase } from '../services/supabase'
 import toast from '@/lib/toast'
 import { 
@@ -78,6 +79,14 @@ const EMPTY_COMPANY_PF = {
 const SettingsPage = () => {
   const { user, profile, refreshProfile } = useAuth()
   const permissions = usePermissions()
+  const { preferences: contextPreferences, updatePreference } = useUserContext()
+
+  const isDark = contextPreferences?.theme === 'dark'
+
+  const handleThemeToggle = () => {
+    updatePreference('theme', isDark ? 'light' : 'dark')
+  }
+
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('profile')
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
@@ -104,7 +113,7 @@ const SettingsPage = () => {
   })
 
   const [preferences, setPreferences] = useState({
-    theme: 'light',
+    theme: contextPreferences?.theme || 'light',
     language: 'pt-BR',
     timezone: 'America/Sao_Paulo'
   })
@@ -566,7 +575,6 @@ const SettingsPage = () => {
   const tabs = [
     { id: 'profile', name: 'Perfil', icon: User },
     { id: 'password', name: 'Senha', icon: Key },
-    { id: 'preferences', name: 'Preferências', icon: Globe },
     ...(isCompanyAdmin ? [{ id: 'empresa', name: 'Empresa', icon: Building2 }] : [])
   ]
 
@@ -575,7 +583,7 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 dark:from-gray-900 to-gray-100/50 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
           
           {/* Header */}
@@ -585,8 +593,8 @@ const SettingsPage = () => {
                 <User className="w-5 h-5 sm:w-6 sm:h-6 text-[#EBA500]" />
               </div>
               <div className="flex-1">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#373435] mb-1 sm:mb-3 break-words">Configurações</h1>
-                <p className="text-gray-600 text-sm sm:text-base lg:text-lg break-words">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#373435] dark:text-white mb-1 sm:mb-3 break-words">Configurações</h1>
+                <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base lg:text-lg break-words">
                   Gerencie suas informações pessoais e preferências da conta
                 </p>
               </div>
@@ -595,7 +603,7 @@ const SettingsPage = () => {
 
           {/* Navegação por abas */}
           <div className="overflow-x-auto mb-6 sm:mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
-            <div className="flex gap-2 bg-white/80 backdrop-blur-sm p-2 rounded-3xl shadow-sm border border-gray-200/50 min-w-max sm:min-w-0">
+            <div className="flex gap-2 bg-white/80 dark:bg-gray-800 backdrop-blur-sm p-2 rounded-3xl shadow-sm border border-gray-200/50 dark:border-gray-700 min-w-max sm:min-w-0">
               {tabs.map((tab) => {
                 const Icon = tab.icon
                 return (
@@ -605,7 +613,7 @@ const SettingsPage = () => {
                     className={`flex items-center px-4 sm:px-6 py-3 rounded-2xl text-xs sm:text-sm font-medium transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 whitespace-nowrap touch-manipulation min-h-[44px] ${
                       activeTab === tab.id
                         ? 'bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 text-white shadow-lg shadow-[#EBA500]/25'
-                        : 'text-[#373435] hover:bg-gradient-to-r hover:from-[#EBA500]/10 hover:to-[#EBA500]/5 hover:text-[#EBA500]'
+                        : 'text-[#373435] dark:text-gray-300 hover:bg-gradient-to-r hover:from-[#EBA500]/10 hover:to-[#EBA500]/5 hover:text-[#EBA500]'
                     }`}
                   >
                     <Icon className={`h-4 w-4 mr-2 transition-all duration-300 ${
@@ -625,9 +633,9 @@ const SettingsPage = () => {
             }`}>
         {/* Aba Perfil */}
         {activeTab === 'profile' && (
-          <Card className="p-4 sm:p-6 bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl transform transition-all duration-500 ease-in-out">
+          <Card className="p-4 sm:p-6 bg-white dark:bg-gray-800 shadow-sm border border-gray-200/50 dark:border-gray-700 rounded-2xl sm:rounded-3xl transform transition-all duration-500 ease-in-out">
             <div className="animate-fadeIn">
-              <h3 className="text-lg sm:text-xl font-semibold text-[#373435] mb-4 sm:mb-6 flex items-center gap-2">
+              <h3 className="text-lg sm:text-xl font-semibold text-[#373435] dark:text-white mb-4 sm:mb-6 flex items-center gap-2">
                 <User className="w-5 h-5 text-[#EBA500]" />
                 Informações Pessoais
               </h3>
@@ -666,8 +674,8 @@ const SettingsPage = () => {
                 </div>
                 
                 <div className="text-center sm:text-left">
-                  <h4 className="text-sm font-medium text-[#373435]">Foto do Perfil</h4>
-                  <p className="text-xs sm:text-sm text-gray-600">JPG, PNG, GIF ou WebP. Máximo 5MB.</p>
+                  <h4 className="text-sm font-medium text-[#373435] dark:text-white">Foto do Perfil</h4>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">JPG, PNG, GIF ou WebP. Máximo 5MB.</p>
                   {avatarSignedUrl && (
                     <button
                       onClick={handleRemoveAvatar}
@@ -685,7 +693,7 @@ const SettingsPage = () => {
               <form onSubmit={handleProfileUpdate} className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-[#373435] mb-2">
+                    <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">
                       Nome Completo
                     </label>
                     <Input
@@ -699,22 +707,22 @@ const SettingsPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#373435] mb-2">
+                    <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">
                       Email
                     </label>
                     <Input
                       type="email"
                       value={user?.email || ''}
                       disabled
-                      className="bg-gray-50/50 w-full"
+                      className="bg-gray-50/50 dark:bg-gray-700/50 w-full"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       O email não pode ser alterado
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#373435] mb-2">
+                    <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">
                       Telefone
                     </label>
                     <Input
@@ -727,12 +735,12 @@ const SettingsPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#373435] mb-2">
+                    <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">
                       Função
                     </label>
-                    <div className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 rounded-2xl border border-[#EBA500]/20">
+                    <div className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 dark:from-amber-900/20 dark:to-amber-900/10 rounded-2xl border border-[#EBA500]/20 dark:border-amber-900/30">
                       <Shield className="h-4 w-4 text-[#EBA500]" />
-                      <span className="text-sm text-[#373435] capitalize font-medium">
+                      <span className="text-sm text-[#373435] dark:text-gray-300 capitalize font-medium">
                         {profile?.role?.replace('_', ' ') || 'Usuário'}
                       </span>
                     </div>
@@ -760,13 +768,43 @@ const SettingsPage = () => {
                 </div>
               </form>
 
+              {/* Preferências */}
+              <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+                <h3 className="text-base font-semibold text-[#373435] dark:text-white mb-4 flex items-center gap-2">
+                  {isDark ? <Moon className="w-4 h-4 text-[#EBA500]" /> : <Sun className="w-4 h-4 text-[#EBA500]" />}
+                  Preferências
+                </h3>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-[#373435] dark:text-gray-300">Tema</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Escolha entre o modo claro ou escuro</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleThemeToggle}
+                    className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
+                      isDark ? 'bg-[#EBA500]' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md transition-transform duration-300 ${
+                      isDark ? 'translate-x-9' : 'translate-x-1'
+                    }`}>
+                      {isDark
+                        ? <Moon className="w-3.5 h-3.5 text-[#EBA500]" />
+                        : <Sun className="w-3.5 h-3.5 text-gray-500" />
+                      }
+                    </span>
+                  </button>
+                </div>
+              </div>
+
               {/* Zona de Perigo */}
-              <div className="mt-10 pt-6 border-t border-red-100">
+              <div className="mt-10 pt-6 border-t border-red-100 dark:border-red-900/30">
                 <h3 className="text-base font-semibold text-red-600 mb-1 flex items-center gap-2">
                   <Trash2 className="w-4 h-4" />
                   Zona de Perigo
                 </h3>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                   Excluir sua conta remove permanentemente todos os seus dados. Esta ação não pode ser desfeita.
                 </p>
                 <button
@@ -783,17 +821,17 @@ const SettingsPage = () => {
         {/* Modal de confirmação de exclusão de conta */}
         {showDeleteModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && setShowDeleteModal(false)}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100">
                   <Trash2 className="w-5 h-5 text-red-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-gray-900">Excluir conta</h3>
-                  <p className="text-xs text-gray-500">Esta ação é permanente e irreversível</p>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">Excluir conta</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Esta ação é permanente e irreversível</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                 Todos os seus dados serão apagados: perfil, configurações e histórico. Para confirmar, digite <strong>EXCLUIR</strong> abaixo.
               </p>
               <input
@@ -801,12 +839,12 @@ const SettingsPage = () => {
                 value={deleteConfirmText}
                 onChange={e => setDeleteConfirmText(e.target.value)}
                 placeholder="Digite EXCLUIR para confirmar"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 mb-4"
+                className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 mb-4"
               />
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -824,16 +862,16 @@ const SettingsPage = () => {
 
         {/* Aba Senha */}
         {activeTab === 'password' && (
-          <Card className="p-4 sm:p-6 bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl transform transition-all duration-500 ease-in-out">
+          <Card className="p-4 sm:p-6 bg-white dark:bg-gray-800 shadow-sm border border-gray-200/50 dark:border-gray-700 rounded-2xl sm:rounded-3xl transform transition-all duration-500 ease-in-out">
             <div className="animate-fadeIn">
-              <h3 className="text-lg sm:text-xl font-semibold text-[#373435] mb-4 sm:mb-6 flex items-center gap-2">
+              <h3 className="text-lg sm:text-xl font-semibold text-[#373435] dark:text-white mb-4 sm:mb-6 flex items-center gap-2">
                 <Key className="w-5 h-5 text-[#EBA500]" />
                 Alterar Senha
               </h3>
               
               <form onSubmit={handlePasswordChange} className="space-y-4 sm:space-y-6 max-w-md">
                 <div className="relative">
-                  <label className="block text-sm font-medium text-[#373435] mb-2">
+                  <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">
                     Senha Atual *
                   </label>
                   <Input
@@ -854,7 +892,7 @@ const SettingsPage = () => {
                 </div>
 
                 <div className="relative">
-                  <label className="block text-sm font-medium text-[#373435] mb-2">
+                  <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">
                     Nova Senha *
                   </label>
                   <Input
@@ -876,7 +914,7 @@ const SettingsPage = () => {
                 </div>
 
                 <div className="relative">
-                  <label className="block text-sm font-medium text-[#373435] mb-2">
+                  <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">
                     Confirmar Nova Senha *
                   </label>
                   <Input
@@ -900,14 +938,14 @@ const SettingsPage = () => {
                 {/* Indicador de força da senha */}
                 {passwordForm.newPassword && (
                   <div className="space-y-2">
-                    <div className="text-sm text-[#373435] font-medium">Força da senha:</div>
+                    <div className="text-sm text-[#373435] dark:text-gray-300 font-medium">Força da senha:</div>
                     <div className="flex space-x-1">
-                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 6 ? 'bg-red-400' : 'bg-gray-200'}`}></div>
-                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 8 && /[A-Z]/.test(passwordForm.newPassword) ? 'bg-yellow-400' : 'bg-gray-200'}`}></div>
-                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 8 && /[A-Z]/.test(passwordForm.newPassword) && /[0-9]/.test(passwordForm.newPassword) ? 'bg-[#EBA500]' : 'bg-gray-200'}`}></div>
-                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 10 && /[A-Z]/.test(passwordForm.newPassword) && /[0-9]/.test(passwordForm.newPassword) && /[!@#$%^&*]/.test(passwordForm.newPassword) ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 6 ? 'bg-red-400' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 8 && /[A-Z]/.test(passwordForm.newPassword) ? 'bg-yellow-400' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 8 && /[A-Z]/.test(passwordForm.newPassword) && /[0-9]/.test(passwordForm.newPassword) ? 'bg-[#EBA500]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+                      <div className={`h-2 w-1/4 rounded-full ${passwordForm.newPassword.length >= 10 && /[A-Z]/.test(passwordForm.newPassword) && /[0-9]/.test(passwordForm.newPassword) && /[!@#$%^&*]/.test(passwordForm.newPassword) ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
                     </div>
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
                       {passwordForm.newPassword.length < 6 && 'Muito fraca - Mínimo 6 caracteres'}
                       {passwordForm.newPassword.length >= 6 && passwordForm.newPassword.length < 8 && 'Fraca - Adicione mais caracteres'}
                       {passwordForm.newPassword.length >= 8 && !/[A-Z]/.test(passwordForm.newPassword) && 'Média - Adicione letras maiúsculas'}
@@ -942,89 +980,13 @@ const SettingsPage = () => {
           </Card>
         )}
 
-        {/* Aba Preferências */}
-        {activeTab === 'preferences' && (
-          <Card className="p-4 sm:p-6 bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl transform transition-all duration-500 ease-in-out">
-            <div className="animate-fadeIn">
-              <h3 className="text-lg sm:text-xl font-semibold text-[#373435] mb-4 sm:mb-6 flex items-center gap-2">
-                <Globe className="w-5 h-5 text-[#EBA500]" />
-                Preferências do Sistema
-              </h3>
-              
-              <div className="space-y-6 sm:space-y-8">
-                {/* Tema */}
-                <div>
-                  <label className="block text-sm font-medium text-[#373435] mb-3 sm:mb-4">Tema</label>
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                    <button
-                      onClick={() => setPreferences(prev => ({ ...prev, theme: 'light' }))}
-                      className={`flex items-center justify-center sm:justify-start space-x-3 p-4 rounded-2xl border-2 transition-all duration-300 hover:shadow-md transform hover:scale-105 active:scale-95 touch-manipulation min-h-[44px] ${
-                        preferences.theme === 'light' 
-                          ? 'border-[#EBA500] bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 shadow-lg' 
-                          : 'border-gray-200 hover:border-[#EBA500]/30'
-                      }`}
-                    >
-                      <Sun className={`h-5 w-5 ${preferences.theme === 'light' ? 'text-[#EBA500]' : 'text-gray-500'}`} />
-                      <span className="text-sm font-medium">Claro</span>
-                    </button>
-                    <button
-                      onClick={() => setPreferences(prev => ({ ...prev, theme: 'dark' }))}
-                      className={`flex items-center justify-center sm:justify-start space-x-3 p-4 rounded-2xl border-2 transition-all duration-300 hover:shadow-md transform hover:scale-105 active:scale-95 touch-manipulation min-h-[44px] ${
-                        preferences.theme === 'dark' 
-                          ? 'border-[#EBA500] bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 shadow-lg' 
-                          : 'border-gray-200 hover:border-[#EBA500]/30'
-                      }`}
-                    >
-                      <Moon className={`h-5 w-5 ${preferences.theme === 'dark' ? 'text-[#EBA500]' : 'text-gray-500'}`} />
-                      <span className="text-sm font-medium">Escuro</span>
-                    </button>
-                  </div>
-                </div>
 
-                {/* Idioma */}
-                <div>
-                  <label className="block text-sm font-medium text-[#373435] mb-2">Idioma</label>
-                  <select
-                    value={preferences.language}
-                    onChange={(e) => setPreferences(prev => ({ ...prev, language: e.target.value }))}
-                    className="block w-full px-4 py-3 border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200"
-                  >
-                    <option value="pt-BR">Português (Brasil)</option>
-                    <option value="en-US">English (US)</option>
-                    <option value="es-ES">Español (España)</option>
-                  </select>
-                </div>
-
-                {/* Fuso Horário */}
-                <div>
-                  <label className="block text-sm font-medium text-[#373435] mb-2">Fuso Horário</label>
-                  <select
-                    value={preferences.timezone}
-                    onChange={(e) => setPreferences(prev => ({ ...prev, timezone: e.target.value }))}
-                    className="block w-full px-4 py-3 border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200"
-                  >
-                    <option value="America/Sao_Paulo">São Paulo (UTC-3)</option>
-                    <option value="America/New_York">Nova York (UTC-5)</option>
-                    <option value="Europe/London">Londres (UTC+0)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-6 sm:mt-8 flex justify-end">
-                <Button className="w-full sm:w-auto bg-gradient-to-r from-[#EBA500] to-[#EBA500]/90 hover:from-[#EBA500]/90 hover:to-[#EBA500]/80 text-white transform hover:scale-105 active:scale-95 transition-all duration-200 min-h-[44px] touch-manipulation">
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar Preferências
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
 
         {/* Aba Empresa */}
         {activeTab === 'empresa' && (
-          <Card className="p-4 sm:p-6 bg-white shadow-sm border border-gray-200/50 rounded-2xl sm:rounded-3xl">
+          <Card className="p-4 sm:p-6 bg-white dark:bg-gray-800 shadow-sm border border-gray-200/50 dark:border-gray-700 rounded-2xl sm:rounded-3xl">
             <div className="animate-fadeIn">
-              <h3 className="text-lg sm:text-xl font-semibold text-[#373435] mb-6 flex items-center gap-2">
+              <h3 className="text-lg sm:text-xl font-semibold text-[#373435] dark:text-white mb-6 flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-[#EBA500]" />
                 {isPfCompany ? 'Dados Pessoais (Pessoa Física)' : 'Dados da Empresa'}
               </h3>
@@ -1037,20 +999,20 @@ const SettingsPage = () => {
 
                   {/* Dados Pessoais */}
                   <section>
-                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
                       <Users className="h-4 w-4 text-[#EBA500]" /> Dados Pessoais
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="sm:col-span-2 lg:col-span-3">
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Nome Completo *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Nome Completo *</label>
                         <Input value={pfCompanyForm.nome} onChange={e => handlePfCompanyChange('nome', e.target.value)} placeholder="Seu nome completo" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">CPF *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">CPF *</label>
                         <Input value={pfCompanyForm.cpf} onChange={e => handlePfCompanyChange('cpf', e.target.value)} placeholder="000.000.000-00" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">RG</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">RG</label>
                         <Input value={pfCompanyForm.rg} onChange={e => handlePfCompanyChange('rg', e.target.value)} placeholder="00.000.000-0" className="w-full" />
                       </div>
                     </div>
@@ -1063,31 +1025,31 @@ const SettingsPage = () => {
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Rua / Logradouro *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Rua / Logradouro *</label>
                         <Input value={pfCompanyForm.address.street} onChange={e => handlePfCompanyChange('address.street', e.target.value)} placeholder="Rua, Avenida..." className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Número</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Número</label>
                         <Input value={pfCompanyForm.address.number} onChange={e => handlePfCompanyChange('address.number', e.target.value)} placeholder="123" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Complemento</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Complemento</label>
                         <Input value={pfCompanyForm.address.complement} onChange={e => handlePfCompanyChange('address.complement', e.target.value)} placeholder="Apto, Bloco..." className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Bairro</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Bairro</label>
                         <Input value={pfCompanyForm.address.neighborhood} onChange={e => handlePfCompanyChange('address.neighborhood', e.target.value)} placeholder="Centro" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Cidade *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Cidade *</label>
                         <Input value={pfCompanyForm.address.city} onChange={e => handlePfCompanyChange('address.city', e.target.value)} placeholder="São Paulo" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Estado *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Estado *</label>
                         <Input value={pfCompanyForm.address.state} onChange={e => handlePfCompanyChange('address.state', e.target.value)} placeholder="SP" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">CEP *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">CEP *</label>
                         <Input value={pfCompanyForm.address.zip} onChange={e => handlePfCompanyChange('address.zip', e.target.value)} placeholder="00000-000" className="w-full" />
                       </div>
                     </div>
@@ -1095,26 +1057,26 @@ const SettingsPage = () => {
 
                   {/* Contato / Cobrança PF */}
                   <section>
-                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
                       <Phone className="h-4 w-4 text-[#EBA500]" /> Contato e Cobrança
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Telefone *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Telefone *</label>
                         <Input type="tel" value={pfCompanyForm.telefone} onChange={e => handlePfCompanyChange('telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">E-mail *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">E-mail *</label>
                         <Input type="email" value={pfCompanyForm.email} onChange={e => handlePfCompanyChange('email', e.target.value)} placeholder="seu@email.com" className="w-full" />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-[#373435] mb-2">E-mail para NF / Boleto</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">E-mail para NF / Boleto</label>
                         <Input type="email" value={pfCompanyForm.email_nf} onChange={e => handlePfCompanyChange('email_nf', e.target.value)} placeholder="financeiro@email.com (opcional)" className="w-full" />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Forma de Pagamento *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Forma de Pagamento *</label>
                         <select value={pfCompanyForm.forma_pagamento} onChange={e => handlePfCompanyChange('forma_pagamento', e.target.value)}
-                          className="block w-full px-4 py-3 border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
+                          className="block w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-2xl shadow-sm bg-white dark:bg-gray-700 text-[#373435] dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
                           <option value="">Selecione...</option>
                           <option value="boleto">Boleto Bancário</option>
                           <option value="cartao_credito">Cartão de Crédito</option>
@@ -1140,20 +1102,20 @@ const SettingsPage = () => {
 
                   {/* Identificação */}
                   <section>
-                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
                       <Building2 className="h-4 w-4 text-[#EBA500]" /> Identificação
                     </h4>
                     {/* Logo */}
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-[#373435] mb-2">Logo da Empresa</label>
+                      <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Logo da Empresa</label>
                       {!companyLogoPreview ? (
-                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all">
+                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all">
                           <Upload className="h-6 w-6 text-gray-400 mb-1" />
-                          <p className="text-xs text-gray-500">PNG, JPG, WEBP (máx. 5MB)</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, WEBP (máx. 5MB)</p>
                           <input type="file" className="hidden" accept="image/*" onChange={handleCompanyLogoChange} />
                         </label>
                       ) : (
-                        <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl">
                           <img src={companyLogoPreview} alt="Logo" className="w-14 h-14 object-contain rounded-lg bg-white border border-gray-200" />
                           <button type="button" onClick={() => { setCompanyLogoFile(null); setCompanyLogoPreview(null) }}
                             className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
@@ -1164,25 +1126,25 @@ const SettingsPage = () => {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Razão Social *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Razão Social *</label>
                         <Input value={companyForm.name} onChange={e => handleCompanyChange('name', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Nome Fantasia</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Nome Fantasia</label>
                         <Input value={companyForm.nome_fantasia} onChange={e => handleCompanyChange('nome_fantasia', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">CNPJ *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">CNPJ *</label>
                         <Input value={companyForm.cnpj} onChange={e => handleCompanyChange('cnpj', e.target.value)} placeholder="00.000.000/0001-00" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Segmento / Setor</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Segmento / Setor</label>
                         <Input value={companyForm.industry} onChange={e => handleCompanyChange('industry', e.target.value)} placeholder="Tecnologia, Saúde..." className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Porte</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Porte</label>
                         <select value={companyForm.size} onChange={e => handleCompanyChange('size', e.target.value)}
-                          className="block w-full px-4 py-3 border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
+                          className="block w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-2xl shadow-sm bg-white dark:bg-gray-700 text-[#373435] dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
                           <option value="micro">Microempresa (ME)</option>
                           <option value="pequena">Pequena Empresa (EPP)</option>
                           <option value="media">Média Empresa</option>
@@ -1190,17 +1152,17 @@ const SettingsPage = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Nº de Colaboradores</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Nº de Colaboradores</label>
                         <Input type="number" min="0" value={companyForm.num_colaboradores} onChange={e => handleCompanyChange('num_colaboradores', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Website</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Website</label>
                         <Input value={companyForm.website} onChange={e => handleCompanyChange('website', e.target.value)} placeholder="https://..." className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Cliente parceiro?</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Cliente parceiro?</label>
                         <select value={companyForm.is_partner_client} onChange={e => handleCompanyChange('is_partner_client', e.target.value)}
-                          className="block w-full px-4 py-3 border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
+                          className="block w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-2xl shadow-sm bg-white dark:bg-gray-700 text-[#373435] dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
                           <option value="nao">Não</option>
                           <option value="sim">Sim</option>
                         </select>
@@ -1210,16 +1172,16 @@ const SettingsPage = () => {
 
                   {/* Contato PJ */}
                   <section>
-                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
                       <Phone className="h-4 w-4 text-[#EBA500]" /> Contato
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">E-mail Principal *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">E-mail Principal *</label>
                         <Input type="email" value={companyForm.email} onChange={e => handleCompanyChange('email', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Telefone *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Telefone *</label>
                         <Input type="tel" value={companyForm.phone} onChange={e => handleCompanyChange('phone', e.target.value)} placeholder="(11) 99999-9999" className="w-full" />
                       </div>
                     </div>
@@ -1227,40 +1189,40 @@ const SettingsPage = () => {
 
                   {/* Endereço PJ */}
                   <section>
-                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
                       <MapPin className="h-4 w-4 text-[#EBA500]" /> Endereço
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Rua / Logradouro *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Rua / Logradouro *</label>
                         <Input value={companyForm.address.street} onChange={e => handleCompanyChange('address.street', e.target.value)} placeholder="Rua, Avenida..." className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Número</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Número</label>
                         <Input value={companyForm.address.number} onChange={e => handleCompanyChange('address.number', e.target.value)} placeholder="123" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Complemento</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Complemento</label>
                         <Input value={companyForm.address.complement} onChange={e => handleCompanyChange('address.complement', e.target.value)} placeholder="Apto, Bloco..." className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Bairro</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Bairro</label>
                         <Input value={companyForm.address.neighborhood} onChange={e => handleCompanyChange('address.neighborhood', e.target.value)} placeholder="Centro" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Cidade *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Cidade *</label>
                         <Input value={companyForm.address.city} onChange={e => handleCompanyChange('address.city', e.target.value)} placeholder="São Paulo" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Estado *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Estado *</label>
                         <Input value={companyForm.address.state} onChange={e => handleCompanyChange('address.state', e.target.value)} placeholder="SP" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">CEP *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">CEP *</label>
                         <Input value={companyForm.address.zip} onChange={e => handleCompanyChange('address.zip', e.target.value)} placeholder="00000-000" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">País</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">País</label>
                         <Input value={companyForm.address.country} onChange={e => handleCompanyChange('address.country', e.target.value)} placeholder="Brasil" className="w-full" />
                       </div>
                     </div>
@@ -1268,22 +1230,22 @@ const SettingsPage = () => {
 
                   {/* Dados Fiscais */}
                   <section>
-                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
                       <Hash className="h-4 w-4 text-[#EBA500]" /> Dados Fiscais
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Inscrição Estadual</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Inscrição Estadual</label>
                         <Input value={companyForm.inscricao_estadual} onChange={e => handleCompanyChange('inscricao_estadual', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Inscrição Municipal</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Inscrição Municipal</label>
                         <Input value={companyForm.inscricao_municipal} onChange={e => handleCompanyChange('inscricao_municipal', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Regime Tributário *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Regime Tributário *</label>
                         <select value={companyForm.regime_tributario} onChange={e => handleCompanyChange('regime_tributario', e.target.value)}
-                          className="block w-full px-4 py-3 border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
+                          className="block w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-2xl shadow-sm bg-white dark:bg-gray-700 text-[#373435] dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
                           <option value="">Selecione...</option>
                           <option value="simples_nacional">Simples Nacional</option>
                           <option value="lucro_presumido">Lucro Presumido</option>
@@ -1292,9 +1254,9 @@ const SettingsPage = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Contribuinte do ICMS *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Contribuinte do ICMS *</label>
                         <select value={companyForm.contribuinte_icms} onChange={e => handleCompanyChange('contribuinte_icms', e.target.value)}
-                          className="block w-full px-4 py-3 border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
+                          className="block w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-2xl shadow-sm bg-white dark:bg-gray-700 text-[#373435] dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
                           <option value="">Selecione...</option>
                           <option value="contribuinte">Contribuinte</option>
                           <option value="nao_contribuinte">Não Contribuinte</option>
@@ -1306,32 +1268,32 @@ const SettingsPage = () => {
 
                   {/* Representante Legal */}
                   <section>
-                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
                       <Users className="h-4 w-4 text-[#EBA500]" /> Representante Legal
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Nome Completo *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Nome Completo *</label>
                         <Input value={companyForm.representante.nome} onChange={e => handleCompanyChange('representante.nome', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">CPF *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">CPF *</label>
                         <Input value={companyForm.representante.cpf} onChange={e => handleCompanyChange('representante.cpf', e.target.value)} placeholder="000.000.000-00" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Cargo</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Cargo</label>
                         <Input value={companyForm.representante.cargo} onChange={e => handleCompanyChange('representante.cargo', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Telefone *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Telefone *</label>
                         <Input type="tel" value={companyForm.representante.telefone} onChange={e => handleCompanyChange('representante.telefone', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">E-mail *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">E-mail *</label>
                         <Input type="email" value={companyForm.representante.email} onChange={e => handleCompanyChange('representante.email', e.target.value)} className="w-full" />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Endereço Completo *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Endereço Completo *</label>
                         <Input value={companyForm.representante.endereco} onChange={e => handleCompanyChange('representante.endereco', e.target.value)} placeholder="Rua, nº, bairro, cidade - estado" className="w-full" />
                       </div>
                     </div>
@@ -1339,34 +1301,34 @@ const SettingsPage = () => {
 
                   {/* Cobrança */}
                   <section>
-                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
                       <CreditCard className="h-4 w-4 text-[#EBA500]" /> Contato para NF / Cobrança
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Nome Completo *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Nome Completo *</label>
                         <Input value={companyForm.contato_cobranca.nome} onChange={e => handleCompanyChange('contato_cobranca.nome', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Cargo *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Cargo *</label>
                         <Input value={companyForm.contato_cobranca.cargo} onChange={e => handleCompanyChange('contato_cobranca.cargo', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">E-mail *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">E-mail *</label>
                         <Input type="email" value={companyForm.contato_cobranca.email} onChange={e => handleCompanyChange('contato_cobranca.email', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Telefone *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Telefone *</label>
                         <Input type="tel" value={companyForm.contato_cobranca.telefone} onChange={e => handleCompanyChange('contato_cobranca.telefone', e.target.value)} className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Melhor dia para pagamento *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Melhor dia para pagamento *</label>
                         <Input type="number" min="1" max="28" value={companyForm.melhor_dia_pagamento} onChange={e => handleCompanyChange('melhor_dia_pagamento', e.target.value)} placeholder="10" className="w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#373435] mb-2">Forma de Pagamento *</label>
+                        <label className="block text-sm font-medium text-[#373435] dark:text-gray-300 mb-2">Forma de Pagamento *</label>
                         <select value={companyForm.forma_pagamento} onChange={e => handleCompanyChange('forma_pagamento', e.target.value)}
-                          className="block w-full px-4 py-3 border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
+                          className="block w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-2xl shadow-sm bg-white dark:bg-gray-700 text-[#373435] dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all duration-200">
                           <option value="">Selecione...</option>
                           <option value="boleto">Boleto Bancário</option>
                           <option value="cartao_credito">Cartão de Crédito</option>

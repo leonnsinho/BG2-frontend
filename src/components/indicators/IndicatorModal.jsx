@@ -225,7 +225,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header com Gradiente */}
         <div className="sticky top-0 bg-yellow-500 px-8 py-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -253,7 +253,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
         <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           {/* Nome do Indicador */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
               <TrendingUp className="h-4 w-4 text-yellow-500" />
               Nome do Indicador *
             </label>
@@ -262,7 +262,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
               placeholder="Ex: Eficiência de Produção"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all bg-gray-50 focus:bg-white font-medium"
+              className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all bg-gray-50 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 focus:bg-white dark:focus:bg-gray-700 font-medium"
               required
             />
           </div>
@@ -270,14 +270,14 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
           {/* Empresa - Só aparece para Super Admin */}
           {permissions.isSuperAdmin() && (
             <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
                 <Building2 className="h-4 w-4 text-blue-500" />
                 Empresa *
               </label>
               <select
                 value={formData.company_id}
                 onChange={(e) => handleChange('company_id', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gradient-to-r from-blue-50 to-white focus:from-white focus:to-white font-medium appearance-none cursor-pointer"
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gradient-to-r from-blue-50 to-white dark:from-gray-700 dark:to-gray-700 dark:text-white focus:from-white focus:to-white dark:focus:from-gray-700 dark:focus:to-gray-700 font-medium appearance-none cursor-pointer"
                 required
                 disabled={loadingCompanies}
               >
@@ -289,7 +289,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
                 ))}
               </select>
               {loadingCompanies && (
-                <p className="mt-2 text-xs text-gray-500">Carregando empresas...</p>
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Carregando empresas...</p>
               )}
             </div>
           )}
@@ -297,14 +297,14 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
           {/* Jornada e Tipo */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
                 <Target className="h-4 w-4 text-purple-500" />
                 Jornada *
               </label>
               <select
                 value={formData.journey}
                 onChange={(e) => handleChange('journey', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-gradient-to-r from-purple-50 to-white focus:from-white focus:to-white font-medium appearance-none cursor-pointer"
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-gradient-to-r from-purple-50 to-white dark:from-gray-700 dark:to-gray-700 dark:text-white focus:from-white focus:to-white dark:focus:from-gray-700 dark:focus:to-gray-700 font-medium appearance-none cursor-pointer"
                 required
               >
                 {journeys.map(journey => (
@@ -314,14 +314,14 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
             </div>
 
             <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
                 <Zap className="h-4 w-4 text-blue-500" />
                 Tipo *
               </label>
               <select
                 value={formData.type}
                 onChange={(e) => handleChange('type', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gradient-to-r from-blue-50 to-white focus:from-white focus:to-white font-medium appearance-none cursor-pointer"
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gradient-to-r from-blue-50 to-white dark:from-gray-700 dark:to-gray-700 dark:text-white focus:from-white focus:to-white dark:focus:from-gray-700 dark:focus:to-gray-700 font-medium appearance-none cursor-pointer"
                 required
               >
                 {types.map(type => (
@@ -333,11 +333,11 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
 
           {/* Meta */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
               <DollarSign className="h-4 w-4 text-green-500" />
               Meta *
             </label>
-            <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-green-500 focus-within:ring-2 focus-within:ring-green-500 bg-gray-50 focus-within:bg-white transition-all">
+            <div className="flex items-center border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden focus-within:border-green-500 focus-within:ring-2 focus-within:ring-green-500 bg-gray-50 dark:bg-gray-700 focus-within:bg-white dark:focus-within:bg-gray-700 transition-all">
               {(formData.type === 'Monetário' || formData.type === 'Financeiro') && (
                 <span className="px-3 py-3 bg-emerald-50 text-emerald-700 font-bold text-sm border-r-2 border-gray-200 select-none">R$</span>
               )}
@@ -352,7 +352,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
                   formData.type === 'Monetário' || formData.type === 'Financeiro' ? '500000' :
                   formData.type === 'Dias' ? '5' : '8.5'
                 }
-                className="flex-1 px-4 py-3 bg-transparent outline-none font-medium text-gray-900 placeholder-gray-400"
+                className="flex-1 px-4 py-3 bg-transparent outline-none font-medium text-gray-900 dark:text-white placeholder-gray-400"
                 required
               />
               {formData.type === 'Percentual' && (
@@ -372,14 +372,14 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
 
           {/* Responsável */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
               <User className="h-4 w-4 text-yellow-500" />
               Responsável
             </label>
             <select
               value={formData.responsible_user_id}
               onChange={(e) => handleChange('responsible_user_id', e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all bg-yellow-50 focus:bg-white font-medium appearance-none cursor-pointer"
+              className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all bg-yellow-50 dark:bg-gray-700 dark:text-white focus:bg-white dark:focus:bg-gray-700 font-medium appearance-none cursor-pointer"
               disabled={loadingUsers || !formData.company_id}
             >
               <option value="">
@@ -399,7 +399,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
               </p>
             )}
             {formData.company_id && companyUsers.length === 0 && !loadingUsers && (
-              <p className="mt-2 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg">
                 ℹ️ Nenhum usuário encontrado nesta empresa
               </p>
             )}
@@ -407,7 +407,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
 
           {/* Descrição */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
               <FileText className="h-4 w-4 text-indigo-500" />
               Descrição (opcional)
             </label>
@@ -416,7 +416,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
               onChange={(e) => handleChange('description', e.target.value)}
               placeholder="Descreva o objetivo e importância deste indicador..."
               rows={3}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-gray-50 focus:bg-white resize-none font-medium"
+              className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-gray-50 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 focus:bg-white dark:focus:bg-gray-700 resize-none font-medium"
             />
           </div>
 
@@ -424,9 +424,9 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
             {/* Polaridade */}
-            <div className="p-5 rounded-2xl border-2 border-gray-100 bg-gray-50">
-              <p className="font-semibold text-gray-900 mb-1">Polaridade do Indicador</p>
-              <p className="text-xs text-gray-500 mb-3">Define se atingir/superar a meta é bom ou ruim</p>
+            <div className="p-5 rounded-2xl border-2 border-gray-100 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <p className="font-semibold text-gray-900 dark:text-white mb-1">Polaridade do Indicador</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Define se atingir/superar a meta é bom ou ruim</p>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -434,7 +434,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
                   className={`flex-1 flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
                     formData.polarity === 'positive'
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                      : 'border-gray-200 dark:border-gray-500 bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-300 hover:border-gray-300'
                   }`}
                 >
                   <span className="text-xl">📈</span>
@@ -447,7 +447,7 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
                   className={`flex-1 flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
                     formData.polarity === 'negative'
                       ? 'border-red-500 bg-red-50 text-red-700'
-                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                      : 'border-gray-200 dark:border-gray-500 bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-300 hover:border-gray-300'
                   }`}
                 >
                   <span className="text-xl">📉</span>
@@ -458,14 +458,14 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
             </div>
 
             {/* Status Ativo */}
-            <div className="flex items-center justify-between p-5 bg-yellow-50 rounded-2xl border-2 border-yellow-100">
+            <div className="flex items-center justify-between p-5 bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl border-2 border-yellow-100 dark:border-yellow-800">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-yellow-500 rounded-xl flex items-center justify-center">
                   <Zap className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">Indicador Ativo</p>
-                  <p className="text-sm text-gray-600">Exibido na visualização</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">Indicador Ativo</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Exibido na visualização</p>
                 </div>
               </div>
               <button
@@ -485,11 +485,11 @@ export default function IndicatorModal({ indicator, onClose, onSave }) {
           </div>
 
           {/* Botões */}
-          <div className="flex gap-4 pt-6 border-t-2 border-gray-100">
+          <div className="flex gap-4 pt-6 border-t-2 border-gray-100 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-semibold hover:border-gray-400"
+              className="flex-1 px-6 py-3.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-semibold hover:border-gray-400"
             >
               Cancelar
             </button>

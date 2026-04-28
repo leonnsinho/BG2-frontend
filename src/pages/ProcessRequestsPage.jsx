@@ -318,86 +318,86 @@ export default function ProcessRequestsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] mb-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#373435] dark:text-white mb-2">
             Solicitações de Processos
           </h1>
-          <p className="text-sm sm:text-base text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
             Gerencie solicitações de criação de novos processos feitas por administradores de empresas
           </p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
               <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg w-fit">
                 <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
               </div>
               <div className="sm:ml-4">
-                <div className="text-xl sm:text-2xl font-bold text-gray-900">
+                <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                   {requests.filter(r => r.status === 'pending').length}
                 </div>
-                <div className="text-xs sm:text-sm text-gray-600">Pendentes</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Pendentes</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
               <div className="p-2 sm:p-3 bg-green-100 rounded-lg w-fit">
                 <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
               <div className="sm:ml-4">
-                <div className="text-xl sm:text-2xl font-bold text-gray-900">
+                <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                   {requests.filter(r => r.status === 'approved').length}
                 </div>
-                <div className="text-xs sm:text-sm text-gray-600">Aprovados</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Aprovados</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
               <div className="p-2 sm:p-3 bg-red-100 rounded-lg w-fit">
                 <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
               </div>
               <div className="sm:ml-4">
-                <div className="text-xl sm:text-2xl font-bold text-gray-900">
+                <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                   {requests.filter(r => r.status === 'rejected').length}
                 </div>
-                <div className="text-xs sm:text-sm text-gray-600">Rejeitados</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Rejeitados</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
               <div className="p-2 sm:p-3 bg-blue-100 rounded-lg w-fit">
                 <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
               <div className="sm:ml-4">
-                <div className="text-xl sm:text-2xl font-bold text-gray-900">
+                <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                   {requests.length}
                 </div>
-                <div className="text-xs sm:text-sm text-gray-600">Total</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4 mb-4 sm:mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-3 sm:p-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <button
               onClick={() => setStatusFilter('all')}
               className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[40px] touch-manipulation ${
                 statusFilter === 'all'
                   ? 'bg-[#EBA500] text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
               Todas ({requests.length})
@@ -407,7 +407,7 @@ export default function ProcessRequestsPage() {
               className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[40px] touch-manipulation ${
                 statusFilter === 'pending'
                   ? 'bg-yellow-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
               Pendentes ({requests.filter(r => r.status === 'pending').length})
@@ -417,7 +417,7 @@ export default function ProcessRequestsPage() {
               className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[40px] touch-manipulation ${
                 statusFilter === 'approved'
                   ? 'bg-green-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
               Aprovados ({requests.filter(r => r.status === 'approved').length})
@@ -427,7 +427,7 @@ export default function ProcessRequestsPage() {
               className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[40px] touch-manipulation ${
                 statusFilter === 'rejected'
                   ? 'bg-red-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
               Rejeitados ({requests.filter(r => r.status === 'rejected').length})
@@ -438,9 +438,9 @@ export default function ProcessRequestsPage() {
         {/* Lista de Solicitações */}
         <div className="space-y-3 sm:space-y-4">
           {filteredRequests.length === 0 ? (
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-8 sm:p-12 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-8 sm:p-12 text-center">
               <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 {statusFilter === 'all' 
                   ? 'Nenhuma solicitação encontrada'
                   : `Nenhuma solicitação ${getStatusConfig(statusFilter).label.toLowerCase()}`
@@ -455,12 +455,12 @@ export default function ProcessRequestsPage() {
               return (
                 <div
                   key={request.id}
-                  className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6 hover:shadow-md transition-shadow"
+                  className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-4 sm:p-6 hover:shadow-md transition-shadow"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
                           {request.process_name}
                         </h3>
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor} border`}>
@@ -470,26 +470,26 @@ export default function ProcessRequestsPage() {
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm mb-3 sm:mb-4">
-                        <div className="flex items-center text-gray-600 min-w-0">
+                        <div className="flex items-center text-gray-600 dark:text-gray-400 min-w-0">
                           <Building2 className="h-4 w-4 mr-2 flex-shrink-0" />
                           <span className="truncate">{request.companies?.name}</span>
                         </div>
-                        <div className="flex items-center text-gray-600 min-w-0">
+                        <div className="flex items-center text-gray-600 dark:text-gray-400 min-w-0">
                           <Target className="h-4 w-4 mr-2 flex-shrink-0" />
                           <span className="capitalize truncate">{request.journey_slug?.replace('-', ' ')}</span>
                         </div>
-                        <div className="flex items-center text-gray-600 min-w-0">
+                        <div className="flex items-center text-gray-600 dark:text-gray-400 min-w-0">
                           <User className="h-4 w-4 mr-2 flex-shrink-0" />
                           <span className="truncate">{request.profiles?.full_name || request.profiles?.email}</span>
                         </div>
-                        <div className="flex items-center text-gray-600">
+                        <div className="flex items-center text-gray-600 dark:text-gray-400">
                           <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
                           <span>{formatDate(request.created_at)}</span>
                         </div>
                       </div>
 
                       {request.process_description && (
-                        <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-2">
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
                           {request.process_description.substring(0, 150)}
                           {request.process_description.length > 150 ? '...' : ''}
                         </p>
@@ -502,7 +502,7 @@ export default function ProcessRequestsPage() {
                           setSelectedRequest(request)
                           setShowDetailsModal(true)
                         }}
-                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors min-h-[40px] min-w-[40px] touch-manipulation flex items-center justify-center"
+                        className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors min-h-[40px] min-w-[40px] touch-manipulation flex items-center justify-center"
                         title="Ver detalhes"
                       >
                         <Eye className="h-5 w-5" />
@@ -543,11 +543,11 @@ export default function ProcessRequestsPage() {
       {/* Modal de Detalhes */}
       {showDetailsModal && selectedRequest && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-auto">
             <div className="p-4 sm:p-6">
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                     {selectedRequest.process_name}
                   </h2>
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusConfig(selectedRequest.status).bgColor} ${getStatusConfig(selectedRequest.status).textColor} border ${getStatusConfig(selectedRequest.status).borderColor}`}>
@@ -565,38 +565,38 @@ export default function ProcessRequestsPage() {
               <div className="space-y-6">
                 {/* Informações Básicas */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                     <Building2 className="h-4 w-4 mr-2 text-[#EBA500]" />
                     Informações da Solicitação
                   </h3>
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Empresa:</span>
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Empresa:</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {selectedRequest.companies?.name}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Jornada:</span>
-                      <span className="text-sm font-medium text-gray-900 capitalize">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Jornada:</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white capitalize">
                         {selectedRequest.journey_slug?.replace('-', ' ')}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Categoria:</span>
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Categoria:</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {selectedRequest.category || 'Não informada'}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Solicitado por:</span>
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Solicitado por:</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {selectedRequest.profiles?.full_name || selectedRequest.profiles?.email}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Data da Solicitação:</span>
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Data da Solicitação:</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {formatDate(selectedRequest.created_at)}
                       </span>
                     </div>
@@ -606,12 +606,12 @@ export default function ProcessRequestsPage() {
                 {/* Descrição */}
                 {selectedRequest.process_description && (
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                       <FileText className="h-4 w-4 mr-2 text-[#EBA500]" />
                       Descrição do Processo
                     </h3>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                         {selectedRequest.process_description}
                       </p>
                     </div>
@@ -621,12 +621,12 @@ export default function ProcessRequestsPage() {
                 {/* Justificativa */}
                 {selectedRequest.justification && (
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                       <MessageSquare className="h-4 w-4 mr-2 text-[#EBA500]" />
                       Justificativa
                     </h3>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                         {selectedRequest.justification}
                       </p>
                     </div>
@@ -636,16 +636,16 @@ export default function ProcessRequestsPage() {
                 {/* Notas do Admin */}
                 {selectedRequest.admin_notes && (
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                       <MessageSquare className="h-4 w-4 mr-2 text-blue-500" />
                       Observações do Administrador
                     </h3>
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                      <p className="text-sm text-blue-900 whitespace-pre-wrap">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700/40">
+                      <p className="text-sm text-blue-900 dark:text-blue-200 whitespace-pre-wrap">
                         {selectedRequest.admin_notes}
                       </p>
                       {selectedRequest.reviewed_at && (
-                        <p className="text-xs text-blue-700 mt-2">
+                        <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
                           Revisado em {formatDate(selectedRequest.reviewed_at)}
                         </p>
                       )}
@@ -657,7 +657,7 @@ export default function ProcessRequestsPage() {
               <div className="flex justify-end mt-6">
                 <button
                   onClick={() => setShowDetailsModal(false)}
-                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+                  className="px-6 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors"
                 >
                   Fechar
                 </button>
@@ -670,14 +670,14 @@ export default function ProcessRequestsPage() {
       {/* Modal de Revisão */}
       {showReviewModal && selectedRequest && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto my-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto my-auto">
             <form onSubmit={handleReview} className="p-4 sm:p-6">
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                     Revisar Solicitação
                   </h2>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     {selectedRequest.process_name}
                   </p>
                 </div>
@@ -693,7 +693,7 @@ export default function ProcessRequestsPage() {
               <div className="space-y-6">
                 {/* Decisão */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Decisão *
                   </label>
                   <div className="grid grid-cols-2 gap-4">
@@ -702,15 +702,15 @@ export default function ProcessRequestsPage() {
                       onClick={() => setReviewData(prev => ({ ...prev, status: 'approved' }))}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         reviewData.status === 'approved'
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-green-300'
+                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-700'
                       }`}
                     >
                       <CheckCircle className={`h-6 w-6 mx-auto mb-2 ${
-                        reviewData.status === 'approved' ? 'text-green-600' : 'text-gray-400'
+                        reviewData.status === 'approved' ? 'text-green-600' : 'text-gray-400 dark:text-gray-500'
                       }`} />
                       <div className={`text-sm font-medium ${
-                        reviewData.status === 'approved' ? 'text-green-700' : 'text-gray-600'
+                        reviewData.status === 'approved' ? 'text-green-700 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'
                       }`}>
                         Aprovar
                       </div>
@@ -720,15 +720,15 @@ export default function ProcessRequestsPage() {
                       onClick={() => setReviewData(prev => ({ ...prev, status: 'rejected' }))}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         reviewData.status === 'rejected'
-                          ? 'border-red-500 bg-red-50'
-                          : 'border-gray-200 hover:border-red-300'
+                          ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700'
                       }`}
                     >
                       <XCircle className={`h-6 w-6 mx-auto mb-2 ${
-                        reviewData.status === 'rejected' ? 'text-red-600' : 'text-gray-400'
+                        reviewData.status === 'rejected' ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'
                       }`} />
                       <div className={`text-sm font-medium ${
-                        reviewData.status === 'rejected' ? 'text-red-700' : 'text-gray-600'
+                        reviewData.status === 'rejected' ? 'text-red-700 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'
                       }`}>
                         Rejeitar
                       </div>
@@ -738,7 +738,7 @@ export default function ProcessRequestsPage() {
 
                 {/* Observações */}
                 <div>
-                  <label htmlFor="admin_notes" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="admin_notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Observações {reviewData.status === 'rejected' && '(Obrigatório para rejeição)'}
                   </label>
                   <textarea
@@ -747,12 +747,12 @@ export default function ProcessRequestsPage() {
                     onChange={(e) => setReviewData(prev => ({ ...prev, admin_notes: e.target.value }))}
                     rows={5}
                     maxLength={1000}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent resize-none"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Adicione observações sobre sua decisão..."
                     required={reviewData.status === 'rejected'}
                   />
                   <div className="flex justify-between items-center mt-2">
-                    <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                       {reviewData.status === 'approved' 
                         ? 'Explique por que esta solicitação foi aprovada'
                         : 'Explique o motivo da rejeição para que o solicitante possa entender'}
@@ -769,7 +769,7 @@ export default function ProcessRequestsPage() {
                   type="button"
                   onClick={() => setShowReviewModal(false)}
                   disabled={updating}
-                  className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation"
                 >
                   Cancelar
                 </button>
@@ -793,10 +793,10 @@ export default function ProcessRequestsPage() {
       {/* Modal de Edição */}
       {showEditModal && selectedRequest && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-auto">
             <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-[#373435]">
+                <h2 className="text-2xl font-bold text-[#373435] dark:text-white">
                   Editar Processo
                 </h2>
                 <button
@@ -810,7 +810,7 @@ export default function ProcessRequestsPage() {
               <div className="space-y-6">
                 {/* Nome do Processo */}
                 <div>
-                  <label htmlFor="edit_process_name" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="edit_process_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Nome do Processo *
                   </label>
                   <input
@@ -819,7 +819,7 @@ export default function ProcessRequestsPage() {
                     value={editData.process_name}
                     onChange={(e) => setEditData(prev => ({ ...prev, process_name: e.target.value }))}
                     maxLength={200}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Ex: Análise de Fornecedores"
                     required
                   />
@@ -830,7 +830,7 @@ export default function ProcessRequestsPage() {
 
                 {/* Descrição */}
                 <div>
-                  <label htmlFor="edit_process_description" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="edit_process_description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Descrição
                   </label>
                   <textarea
@@ -839,7 +839,7 @@ export default function ProcessRequestsPage() {
                     onChange={(e) => setEditData(prev => ({ ...prev, process_description: e.target.value }))}
                     rows={5}
                     maxLength={1000}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Descreva o objetivo e escopo deste processo..."
                   />
                   <span className="text-xs text-gray-500 mt-1 block">
@@ -849,7 +849,7 @@ export default function ProcessRequestsPage() {
 
                 {/* Categoria */}
                 <div>
-                  <label htmlFor="edit_category" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="edit_category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Categoria
                   </label>
                   
@@ -867,7 +867,7 @@ export default function ProcessRequestsPage() {
                             setEditData(prev => ({ ...prev, category: e.target.value }))
                           }
                         }}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
                         <option value="">Selecione uma categoria</option>
                         {availableCategories.map((cat) => (
@@ -880,12 +880,12 @@ export default function ProcessRequestsPage() {
                         </option>
                       </select>
                       {availableCategories.length === 0 && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           Nenhuma categoria disponível nesta jornada ainda
                         </p>
                       )}
                       {availableCategories.length > 0 && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {availableCategories.length} categoria(s) disponível(is) nesta jornada
                         </p>
                       )}
@@ -901,7 +901,7 @@ export default function ProcessRequestsPage() {
                             setEditData(prev => ({ ...prev, category: e.target.value }))
                           }}
                           maxLength={100}
-                          className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                           placeholder="Digite o nome da nova categoria"
                           autoFocus
                         />
@@ -912,12 +912,12 @@ export default function ProcessRequestsPage() {
                             setNewCategoryName('')
                             setEditData(prev => ({ ...prev, category: '' }))
                           }}
-                          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors"
+                          className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl transition-colors"
                         >
                           Cancelar
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {newCategoryName.length}/100 caracteres
                       </p>
                     </>
@@ -925,14 +925,14 @@ export default function ProcessRequestsPage() {
                 </div>
 
                 {/* Info da Jornada */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/40 rounded-xl p-4">
                   <div className="flex items-start gap-3">
                     <Target className="h-5 w-5 text-blue-600 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-blue-900">
+                      <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
                         Jornada: {selectedRequest.journey_slug}
                       </p>
-                      <p className="text-sm text-blue-700 mt-1">
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                         Este processo será criado nesta jornada após aprovação
                       </p>
                     </div>
@@ -945,7 +945,7 @@ export default function ProcessRequestsPage() {
                   type="button"
                   onClick={() => setShowEditModal(false)}
                   disabled={updating}
-                  className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation"
                 >
                   Cancelar
                 </button>

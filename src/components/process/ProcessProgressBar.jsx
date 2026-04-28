@@ -93,7 +93,7 @@ const ProcessProgressBar = ({ processId, companyId, onProgressUpdate, showDetail
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <TrendingUp className="h-4 w-4 text-[#EBA500]" />
-          <span className="text-sm font-semibold text-gray-700">
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
             Progresso de Amadurecimento
           </span>
         </div>
@@ -103,7 +103,7 @@ const ProcessProgressBar = ({ processId, companyId, onProgressUpdate, showDetail
       </div>
 
       {/* Barra de progresso visual */}
-      <div className="relative w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+      <div className="relative w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3 overflow-hidden shadow-inner">
         <div 
           className={`h-full rounded-full transition-all duration-500 ease-out ${getProgressColor()}`}
           style={{ width: `${progress.percentage}%` }}

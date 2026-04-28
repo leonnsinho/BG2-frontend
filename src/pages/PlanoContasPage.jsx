@@ -770,16 +770,16 @@ function PlanoContasPage() {
                   }
                   return '/dfc'
                 })()}
-                className="p-2 hover:bg-gray-100 rounded-xl transition-all group"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all group"
                 title="Voltar ao DFC"
               >
                 <ArrowLeft className="h-5 w-5 text-gray-600 group-hover:text-[#EBA500] transition-colors" />
               </Link>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#373435] dark:text-white">
                   Plano de Contas
                 </h1>
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                   Gerenciar categorias e itens do DFC
                 </p>
               </div>
@@ -819,7 +819,7 @@ function PlanoContasPage() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white border border-gray-200/50 rounded-2xl p-4 sm:p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700 rounded-2xl p-4 sm:p-6 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -828,7 +828,7 @@ function PlanoContasPage() {
               placeholder="Buscar por categoria ou item..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
             />
           </div>
 
@@ -837,7 +837,7 @@ function PlanoContasPage() {
             <select
               value={companyFilter}
               onChange={(e) => setCompanyFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-gray-200"
             >
               <option value="all">Todas as empresas</option>
               {companies.map(company => (
@@ -857,7 +857,7 @@ function PlanoContasPage() {
           <select
             value={categoriaFilter}
             onChange={(e) => setCategoriaFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-gray-200"
           >
             <option value="all">Todas as categorias</option>
             {categorias.map(cat => (
@@ -869,21 +869,21 @@ function PlanoContasPage() {
 
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total de Categorias</p>
-              <p className="text-2xl font-bold text-[#373435] mt-1">{categorias.length}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total de Categorias</p>
+              <p className="text-2xl font-bold text-[#373435] dark:text-white mt-1">{categorias.length}</p>
             </div>
             <BookOpen className="h-8 w-8 text-gray-400" />
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200/50 rounded-2xl p-4">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total de Itens</p>
-              <p className="text-2xl font-bold text-[#373435] mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total de Itens</p>
+              <p className="text-2xl font-bold text-[#373435] dark:text-white mt-1">
                 {categorias.reduce((total, cat) => total + cat.itens.length, 0)}
               </p>
             </div>
@@ -895,15 +895,15 @@ function PlanoContasPage() {
       {/* Lista de Categorias e Itens */}
       <div className="space-y-4">
         {loading ? (
-          <div className="bg-white border border-gray-200/50 rounded-2xl p-12 text-center">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700 rounded-2xl p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EBA500] mx-auto"></div>
-            <p className="mt-4 text-gray-600">Carregando...</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando...</p>
           </div>
         ) : filteredCategorias.length === 0 ? (
-          <div className="bg-white border border-gray-200/50 rounded-2xl p-12 text-center">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700 rounded-2xl p-12 text-center">
             <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma categoria encontrada</h3>
-            <p className="text-gray-600">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Nenhuma categoria encontrada</h3>
+            <p className="text-gray-600 dark:text-gray-400">
               {searchTerm || categoriaFilter !== 'all'
                 ? 'Tente ajustar os filtros de busca'
                 : 'Adicione a primeira categoria'}
@@ -911,9 +911,9 @@ function PlanoContasPage() {
           </div>
         ) : (
           filteredCategorias.map(categoria => (
-            <div key={categoria.id} className="bg-white border border-gray-200/50 rounded-2xl overflow-hidden">
+            <div key={categoria.id} className="bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700 rounded-2xl overflow-hidden">
               {/* Header da Categoria */}
-              <div className="bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 px-6 py-4 border-b border-gray-100">
+              <div className="bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 dark:from-[#EBA500]/20 dark:to-[#EBA500]/10 px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => toggleCategory(categoria.id)}
@@ -923,10 +923,10 @@ function PlanoContasPage() {
                       <Tag className="h-5 w-5 text-[#EBA500]" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-[#373435]">
+                      <h3 className="text-lg font-bold text-[#373435] dark:text-white">
                         {categoria.nome}
                       </h3>
-                      <p className="text-xs text-gray-500 mt-0.5">{categoria.itens.length} {categoria.itens.length === 1 ? 'item' : 'itens'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{categoria.itens.length} {categoria.itens.length === 1 ? 'item' : 'itens'}</p>
                     </div>
                     <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${
                       collapsedCategories[categoria.id] ? 'rotate-0' : 'rotate-180'
@@ -939,7 +939,7 @@ function PlanoContasPage() {
                       <>
                         <button
                           onClick={() => openCategoriaModal(categoria)}
-                          className="p-1.5 text-gray-600 hover:bg-gray-200/50 rounded-lg transition-colors"
+                          className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                           title="Editar categoria"
                         >
                           <Edit2 className="h-4 w-4" />
@@ -974,18 +974,18 @@ function PlanoContasPage() {
                   {categoria.itens.length === 0 ? (
                     <div className="text-center py-6">
                       <List className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">Nenhum item cadastrado nesta categoria</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum item cadastrado nesta categoria</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
                       {categoria.itens.map(item => (
                         <div
                           key={item.id}
-                          className="group border border-gray-200 rounded-lg p-2.5 hover:border-[#EBA500]/30 hover:shadow-sm transition-all bg-white"
+                          className="group border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 hover:border-[#EBA500]/30 hover:shadow-sm transition-all bg-white dark:bg-gray-700"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-sm font-medium text-gray-900 truncate">{item.nome}</h4>
+                              <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.nome}</h4>
                               {item.empresas && item.empresas.length > 0 ? (
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {item.empresas.map((empresa, idx) => (
@@ -999,13 +999,13 @@ function PlanoContasPage() {
                                 </div>
                               ) : (
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                  <span className="inline-block px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded border border-gray-300">
+                                  <span className="inline-block px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-500">
                                     🌐 Global (Todas as empresas)
                                   </span>
                                 </div>
                               )}
                               {item.descricao && (
-                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{item.descricao}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{item.descricao}</p>
                               )}
                             </div>
                             {canEditItem(item) && (
@@ -1046,7 +1046,7 @@ function PlanoContasPage() {
           style={{ animation: 'fadeIn 0.2s ease-out' }}
         >
           <div 
-            className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+            className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             style={{ animation: 'slideUp 0.3s ease-out' }}
           >
@@ -1078,7 +1078,7 @@ function PlanoContasPage() {
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {/* Empresas */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Empresas 
                     {isSuperAdmin() && (
                       <span className="ml-2 text-xs font-normal">
@@ -1097,7 +1097,7 @@ function PlanoContasPage() {
                   
                   {/* Para Company Admin e Gestor - Apenas mostrar sua empresa */}
                   {(isCompanyAdmin() || isGestor()) ? (
-                    <div className="px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 font-medium flex items-center">
+                    <div className="px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl text-sm text-blue-700 dark:text-blue-300 font-medium flex items-center">
                       <Building2 className="h-4 w-4 mr-2" />
                       {companies.find(c => c.id === getCurrentUserCompany())?.name || 'Empresa'}
                     </div>
@@ -1113,7 +1113,7 @@ function PlanoContasPage() {
                         value={companySearchTerm}
                         onChange={(e) => setCompanySearchTerm(e.target.value)}
                         placeholder="Buscar empresa..."
-                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       />
                       {companySearchTerm && (
                         <button
@@ -1127,9 +1127,9 @@ function PlanoContasPage() {
                     </div>
                   )}
 
-                  <div className="border border-gray-300 rounded-xl p-3 max-h-40 overflow-y-auto space-y-1 bg-gray-50">
+                  <div className="border border-gray-300 dark:border-gray-600 rounded-xl p-3 max-h-40 overflow-y-auto space-y-1 bg-gray-50 dark:bg-gray-700/50">
                     {companies.length === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-2">Nenhuma empresa disponível</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">Nenhuma empresa disponível</p>
                     ) : (
                       (() => {
                         const filteredCompanies = companies.filter(company =>
@@ -1138,7 +1138,7 @@ function PlanoContasPage() {
                         
                         if (filteredCompanies.length === 0) {
                           return (
-                            <p className="text-sm text-gray-500 text-center py-2">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
                               Nenhuma empresa encontrada
                             </p>
                           )
@@ -1147,7 +1147,7 @@ function PlanoContasPage() {
                         return filteredCompanies.map(company => (
                           <label
                             key={company.id}
-                            className="flex items-center gap-2 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors"
+                            className="flex items-center gap-2 p-2 hover:bg-white dark:hover:bg-gray-600 rounded-lg cursor-pointer transition-colors"
                           >
                             <input
                               type="checkbox"
@@ -1167,7 +1167,7 @@ function PlanoContasPage() {
                               }}
                               className="h-4 w-4 text-[#EBA500] border-gray-300 rounded focus:ring-[#EBA500]"
                             />
-                            <span className="text-sm text-gray-700">{company.name}</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-200">{company.name}</span>
                           </label>
                         ))
                       })()
@@ -1179,13 +1179,13 @@ function PlanoContasPage() {
 
                 {/* Categoria */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Categoria *
                   </label>
                   <select
                     value={formData.categoria_id}
                     onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-gray-200"
                     required
                   >
                     <option value="">Selecione uma categoria</option>
@@ -1199,7 +1199,7 @@ function PlanoContasPage() {
 
                 {/* Modo de criação (apenas ao criar novo, não ao editar) */}
                 {!editingItem && (
-                  <div className="flex items-center gap-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                  <div className="flex items-center gap-4 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-gray-600 rounded-xl">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
@@ -1207,7 +1207,7 @@ function PlanoContasPage() {
                         onChange={() => setMultipleMode(false)}
                         className="h-4 w-4 text-[#EBA500] border-gray-300 focus:ring-[#EBA500]"
                       />
-                      <span className="text-sm font-medium text-gray-700">Criar item único</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Criar item único</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -1216,7 +1216,7 @@ function PlanoContasPage() {
                         onChange={() => setMultipleMode(true)}
                         className="h-4 w-4 text-[#EBA500] border-gray-300 focus:ring-[#EBA500]"
                       />
-                      <span className="text-sm font-medium text-gray-700">Criar múltiplos itens</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Criar múltiplos itens</span>
                     </label>
                   </div>
                 )}
@@ -1226,14 +1226,14 @@ function PlanoContasPage() {
                   <>
                     {/* Nome */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Nome do Item *
                       </label>
                       <input
                         type="text"
                         value={formData.nome}
                         onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                         placeholder="Ex: Simples Nacional, Aluguel, etc."
                         required
                       />
@@ -1241,13 +1241,13 @@ function PlanoContasPage() {
 
                     {/* Descrição */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Descrição (Opcional)
                       </label>
                       <textarea
                         value={formData.descricao}
                         onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] resize-none"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] resize-none dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                         rows="3"
                         placeholder="Descrição adicional do item..."
                       />
@@ -1256,18 +1256,18 @@ function PlanoContasPage() {
                 ) : (
                   /* Modo múltiplo - Lista de nomes */
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nomes dos Itens * <span className="text-xs text-gray-500">(Um por linha)</span>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Nomes dos Itens * <span className="text-xs text-gray-500 dark:text-gray-400">(Um por linha)</span>
                     </label>
                     <textarea
                       value={multipleNames}
                       onChange={(e) => setMultipleNames(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] resize-none font-mono text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] resize-none font-mono text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       placeholder="Salários&#10;Encargos Sociais&#10;Comissões&#10;Férias&#10;13º Salário"
                       rows={8}
                       required
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {multipleNames.split('\n').filter(n => n.trim()).length} itens para criar
                     </p>
                   </div>
@@ -1305,11 +1305,11 @@ function PlanoContasPage() {
               )}
 
               {/* Footer - Agora dentro do form */}
-              <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end space-x-3 flex-shrink-0">
+              <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50 flex justify-end space-x-3 flex-shrink-0">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-medium"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all font-medium"
                 >
                   Cancelar
                 </button>
@@ -1329,7 +1329,7 @@ function PlanoContasPage() {
       {/* Modal de Confirmação de Exclusão */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md transform transition-all overflow-hidden" style={{ animation: 'slideUp 0.3s ease-out' }}>
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md transform transition-all overflow-hidden" style={{ animation: 'slideUp 0.3s ease-out' }}>
             {/* Header */}
             <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-3xl">
               <div className="flex items-center justify-between">
@@ -1353,10 +1353,10 @@ function PlanoContasPage() {
                   <Trash2 className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-gray-900 font-medium mb-2">
+                  <p className="text-gray-900 dark:text-white font-medium mb-2">
                     Tem certeza que deseja excluir o item "{deletingItem?.nome}"?
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Esta ação não pode ser desfeita. O item será removido permanentemente do plano de contas.
                   </p>
                 </div>
@@ -1364,11 +1364,11 @@ function PlanoContasPage() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-3xl flex justify-end space-x-3">
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-b-3xl flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={cancelDelete}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-medium"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all font-medium"
               >
                 Cancelar
               </button>
@@ -1387,7 +1387,7 @@ function PlanoContasPage() {
       {/* Modal de Categoria (Criar/Editar) */}
       {showCategoriaModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl transform transition-all overflow-hidden" style={{ animation: 'slideUp 0.3s ease-out' }}>
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl transform transition-all overflow-hidden" style={{ animation: 'slideUp 0.3s ease-out' }}>
             {/* Header */}
             <div className="bg-gradient-to-br from-[#EBA500] via-[#EBA500] to-[#d69500] px-8 py-6 rounded-t-3xl">
               <div className="flex items-center justify-between">
@@ -1418,7 +1418,7 @@ function PlanoContasPage() {
               <div className="space-y-6">
                 {/* Nome */}
                 <div>
-                  <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                  <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Nome da Categoria
                     <span className="text-red-500 ml-1">*</span>
                   </label>
@@ -1427,17 +1427,17 @@ function PlanoContasPage() {
                       type="text"
                       value={categoriaFormData.nome}
                       onChange={(e) => setCategoriaFormData({ ...categoriaFormData, nome: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all text-gray-900 font-medium"
+                      className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all text-gray-900 dark:text-white dark:bg-gray-700 font-medium"
                       placeholder="Ex: Despesas Comerciais"
                       required
                     />
                   </div>
-                  <p className="mt-1.5 text-xs text-gray-500">Nome completo que será exibido no sistema</p>
+                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Nome completo que será exibido no sistema</p>
                 </div>
 
                 {/* Tipo */}
                 <div>
-                  <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                  <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Tipo de Categoria
                     <span className="text-red-500 ml-1">*</span>
                   </label>
@@ -1445,7 +1445,7 @@ function PlanoContasPage() {
                     <select
                       value={categoriaFormData.tipo}
                       onChange={(e) => setCategoriaFormData({ ...categoriaFormData, tipo: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all text-gray-900 font-medium appearance-none bg-white"
+                      className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all text-gray-900 dark:text-white dark:bg-gray-700 font-medium appearance-none"
                       required
                     >
                       <option value="saida">Saída (Despesas)</option>
@@ -1453,12 +1453,12 @@ function PlanoContasPage() {
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                   </div>
-                  <p className="mt-1.5 text-xs text-gray-500">Define se a categoria é para entradas (receitas) ou saídas (despesas)</p>
+                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Define se a categoria é para entradas (receitas) ou saídas (despesas)</p>
                 </div>
 
                 {/* Descrição */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Descrição
                     <span className="text-gray-400 ml-1 font-normal">(Opcional)</span>
                   </label>
@@ -1466,22 +1466,22 @@ function PlanoContasPage() {
                     <textarea
                       value={categoriaFormData.descricao}
                       onChange={(e) => setCategoriaFormData({ ...categoriaFormData, descricao: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all text-gray-900 resize-none"
+                      className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all text-gray-900 dark:text-white dark:bg-gray-700 resize-none"
                       rows="4"
                       placeholder="Adicione detalhes sobre esta categoria..."
                     />
                   </div>
-                  <p className="mt-1.5 text-xs text-gray-500">Informações adicionais para identificar melhor a categoria</p>
+                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Informações adicionais para identificar melhor a categoria</p>
                 </div>
               </div>
             </form>
 
             {/* Footer */}
-            <div className="border-t-2 border-gray-100 px-8 py-5 bg-gradient-to-b from-gray-50 to-white rounded-b-3xl flex justify-end space-x-3">
+            <div className="border-t-2 border-gray-100 dark:border-gray-700 px-8 py-5 bg-gradient-to-b from-gray-50 dark:from-gray-700/50 to-white dark:to-gray-800 rounded-b-3xl flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={closeCategoriaModal}
-                className="px-6 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 hover:border-gray-400 transition-all font-semibold"
+                className="px-6 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-400 transition-all font-semibold"
               >
                 Cancelar
               </button>
@@ -1500,7 +1500,7 @@ function PlanoContasPage() {
       {/* Modal de Confirmação de Exclusão de Categoria */}
       {showDeleteCategoriaModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md transform transition-all overflow-hidden" style={{ animation: 'slideUp 0.3s ease-out' }}>
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md transform transition-all overflow-hidden" style={{ animation: 'slideUp 0.3s ease-out' }}>
             {/* Header */}
             <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-3xl">
               <div className="flex items-center justify-between">
@@ -1524,15 +1524,15 @@ function PlanoContasPage() {
                   <Trash2 className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-gray-900 font-medium mb-2">
+                  <p className="text-gray-900 dark:text-white font-medium mb-2">
                     Tem certeza que deseja excluir a categoria "{deletingCategoria?.nome}"?
                   </p>
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                     Esta ação não pode ser desfeita. A categoria e TODOS os seus itens serão removidos permanentemente.
                   </p>
                   {deletingCategoria?.itens?.length > 0 && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-sm text-amber-800 font-medium flex items-center">
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+                      <p className="text-sm text-amber-800 dark:text-amber-300 font-medium flex items-center">
                         <AlertCircle className="h-4 w-4 mr-2" />
                         Esta categoria possui {deletingCategoria.itens.length} {deletingCategoria.itens.length === 1 ? 'item' : 'itens'}
                       </p>
@@ -1542,12 +1542,12 @@ function PlanoContasPage() {
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-3xl flex justify-end space-x-3">
+            {/* Footer (delete categoria) */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-b-3xl flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={cancelDeleteCategoria}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-medium"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all font-medium"
               >
                 Cancelar
               </button>

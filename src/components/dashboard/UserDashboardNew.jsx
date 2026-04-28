@@ -203,12 +203,12 @@ export const UserDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-900 dark:to-gray-800 p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
         
         {/* Saudação Dinâmica */}
         <div className="mb-6 sm:mb-10">
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
             <div className="flex flex-col gap-6">
               <div className="flex-1">
                 <div className="flex items-center gap-2 sm:gap-3 mb-3">
@@ -228,7 +228,7 @@ export const UserDashboard = () => {
                     </div>
                   )}
                   <div className="flex-1">
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#373435] tracking-tight">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#373435] dark:text-white tracking-tight">
                       {getGreeting()}, {profile?.full_name?.split(' ')[0] || 'Usuário'}!
                     </h1>
                     {companyName && (
@@ -251,7 +251,7 @@ export const UserDashboard = () => {
                     )}
                   </div>
                 </div>
-                <p className="text-base sm:text-lg text-gray-600">
+                <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">
                   {stats.pending + stats.inProgress > 0 ? (
                     <>
                       Você tem <span className="font-bold text-[#EBA500]">{stats.pending + stats.inProgress}</span> tarefa{stats.pending + stats.inProgress !== 1 ? 's' : ''} aguardando sua atenção.
@@ -285,7 +285,7 @@ export const UserDashboard = () => {
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
             <div className="w-1 h-6 sm:h-8 bg-gradient-to-b from-[#EBA500] to-[#EBA500]/50 rounded-full" />
-            <h2 className="text-xl sm:text-2xl font-bold text-[#373435]">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#373435] dark:text-white">
               Como Gerenciar suas Tarefas
             </h2>
           </div>
@@ -301,11 +301,11 @@ export const UserDashboard = () => {
                   key={index}
                   onClick={() => setActiveStep(index)}
                   className={`
-                    group cursor-pointer bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-2 
+                    group cursor-pointer bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-2 
                     transition-all duration-500 active:scale-95 sm:hover:-translate-y-2
                     ${isActive 
                       ? `${step.borderColor} shadow-2xl sm:scale-105` 
-                      : 'border-gray-100 hover:border-gray-300 shadow-sm hover:shadow-xl'
+                      : 'border-gray-100 dark:border-gray-700 hover:border-gray-300 shadow-sm hover:shadow-xl'
                     }
                   `}
                 >
@@ -333,11 +333,11 @@ export const UserDashboard = () => {
                   {/* Conteúdo */}
                   <h3 className={`
                     text-base sm:text-lg font-bold mb-1.5 sm:mb-2 transition-colors duration-300
-                    ${isActive ? 'text-[#EBA500]' : 'text-[#373435] group-hover:text-[#EBA500]'}
+                    ${isActive ? 'text-[#EBA500]' : 'text-[#373435] dark:text-white group-hover:text-[#EBA500]'}
                   `}>
                     {step.title}
                   </h3>
-                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                     {step.description}
                   </p>
 
@@ -401,32 +401,32 @@ export const UserDashboard = () => {
 
         {/* Dicas Rápidas - Responsivo */}
         <div className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-          <div className="bg-white rounded-xl sm:rounded-2xl p-5 sm:p-6 border border-blue-100 hover:border-blue-300 transition-colors duration-300">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-5 sm:p-6 border border-blue-100 dark:border-gray-700 hover:border-blue-300 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-2 sm:mb-3">
               <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0" />
-              <h4 className="font-bold text-sm sm:text-base text-gray-800">Trabalho em Equipe</h4>
+              <h4 className="font-bold text-sm sm:text-base text-gray-800 dark:text-gray-100">Trabalho em Equipe</h4>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
               Algumas tarefas podem ter múltiplos responsáveis. Todos devem confirmar a conclusão!
             </p>
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl p-5 sm:p-6 border border-green-100 hover:border-green-300 transition-colors duration-300">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-5 sm:p-6 border border-green-100 dark:border-gray-700 hover:border-green-300 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-2 sm:mb-3">
               <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 flex-shrink-0" />
-              <h4 className="font-bold text-sm sm:text-base text-gray-800">Acompanhe seu Progresso</h4>
+              <h4 className="font-bold text-sm sm:text-base text-gray-800 dark:text-gray-100">Acompanhe seu Progresso</h4>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
               Veja quantas tarefas você completou e quanto ainda falta fazer
             </p>
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl p-5 sm:p-6 border border-purple-100 hover:border-purple-300 transition-colors duration-300">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-5 sm:p-6 border border-purple-100 dark:border-gray-700 hover:border-purple-300 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-2 sm:mb-3">
               <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 flex-shrink-0" />
-              <h4 className="font-bold text-sm sm:text-base text-gray-800">Fique Atento aos Prazos</h4>
+              <h4 className="font-bold text-sm sm:text-base text-gray-800 dark:text-gray-100">Fique Atento aos Prazos</h4>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
               Verifique as datas de vencimento e priorize tarefas mais urgentes
             </p>
           </div>

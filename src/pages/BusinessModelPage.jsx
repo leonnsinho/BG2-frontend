@@ -100,7 +100,7 @@ function SortableCard({ card, sectionId, onEdit, onDelete, isEditing, onStartEdi
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative group bg-white rounded-lg border-2 transition-all duration-200",
+        "relative group bg-white dark:bg-gray-800 rounded-lg border-2 dark:border-gray-600 transition-all duration-200",
         isEditing ? "ring-2 ring-primary-500 shadow-lg" : "shadow-sm hover:shadow-md",
         "min-h-[60px] p-3"
       )}
@@ -191,7 +191,7 @@ function Section({ section, cards, onAddCard, onEditCard, onDeleteCard, editingC
 
   return (
     <div className={cn(
-      "border-2 shadow-lg transition-all duration-300 hover:shadow-xl h-full flex flex-col",
+      "border-2 shadow-lg transition-all duration-300 hover:shadow-xl h-full flex flex-col dark:bg-gray-800 dark:border-gray-600",
       section.color,
       section.borderColor
     )}>
@@ -250,13 +250,13 @@ function Section({ section, cards, onAddCard, onEditCard, onDeleteCard, editingC
 // Skeleton loader
 function SectionSkeleton() {
   return (
-    <div className="rounded-xl border-2 bg-gray-100 animate-pulse">
-      <div className="p-4 border-b-2 border-gray-200">
-        <div className="h-5 bg-gray-200 rounded w-1/2"></div>
+    <div className="rounded-xl border-2 bg-gray-100 dark:bg-gray-800 dark:border-gray-700 animate-pulse">
+      <div className="p-4 border-b-2 border-gray-200 dark:border-gray-700">
+        <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
       </div>
       <div className="p-4 space-y-3">
-        <div className="h-16 bg-gray-200 rounded"></div>
-        <div className="h-16 bg-gray-200 rounded"></div>
+        <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
       </div>
     </div>
   )
@@ -486,9 +486,9 @@ export default function BusinessModelPage() {
   // Verifica se o usuário tem permissão
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Carregando perfil do usuário...</p>
+          <p className="text-gray-600 dark:text-gray-400">Carregando perfil do usuário...</p>
         </div>
       </div>
     )
@@ -498,18 +498,18 @@ export default function BusinessModelPage() {
     // Super admin sem empresa selecionada: mostra seletor
     if (isSuperAdmin()) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
           <SuperAdminBanner />
           <div className="max-w-[1600px] mx-auto">
-            <div className="mb-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
+            <div className="mb-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm">
               <div className="flex items-center gap-3">
                 <Building2 className="h-5 w-5 text-gray-500 flex-shrink-0" />
                 <div className="flex-1">
-                  <label className="block text-xs text-gray-500 mb-1 font-medium">Visualizando modelo de negócio de:</label>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Visualizando modelo de negócio de:</label>
                   <select
                     value={selectedCompanyId || ''}
                     onChange={(e) => setSelectedCompanyId(e.target.value || null)}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
+                    className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
                   >
                     <option value="">Selecione uma empresa...</option>
                     {companies.map(company => (
@@ -519,7 +519,7 @@ export default function BusinessModelPage() {
                 </div>
               </div>
             </div>
-            <div className="text-center py-16 text-gray-500">
+            <div className="text-center py-16 text-gray-500 dark:text-gray-400">
               Selecione uma empresa para visualizar o modelo de negócio
             </div>
           </div>
@@ -527,9 +527,9 @@ export default function BusinessModelPage() {
       )
     }
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Você não está associado a nenhuma empresa.</p>
+          <p className="text-gray-600 dark:text-gray-400">Você não está associado a nenhuma empresa.</p>
         </div>
       </div>
     )
@@ -537,7 +537,7 @@ export default function BusinessModelPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600">{error}</p>
           <button
@@ -553,10 +553,10 @@ export default function BusinessModelPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
         <div className="max-w-[1600px] mx-auto">
           <div className="mb-6">
-            <div className="h-8 bg-gray-200 rounded w-64 animate-pulse"></div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64 animate-pulse"></div>
           </div>
           
           {/* Grid de skeletons */}
@@ -571,22 +571,22 @@ export default function BusinessModelPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
       {/* Banner super admin */}
       <SuperAdminBanner />
 
       <div className="max-w-[1600px] mx-auto">
         {/* Seletor de empresa — apenas super admin */}
         {isSuperAdmin() && (
-          <div className="mb-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
+          <div className="mb-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm">
             <div className="flex items-center gap-3">
               <Building2 className="h-5 w-5 text-gray-500 flex-shrink-0" />
               <div className="flex-1">
-                <label className="block text-xs text-gray-500 mb-1 font-medium">Visualizando modelo de negócio de:</label>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Visualizando modelo de negócio de:</label>
                 <select
                   value={selectedCompanyId || ''}
                   onChange={(e) => setSelectedCompanyId(e.target.value || null)}
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
+                  className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
                 >
                   <option value="">Selecione uma empresa...</option>
                   {companies.map(company => (
@@ -600,24 +600,24 @@ export default function BusinessModelPage() {
 
         {/* Cabeçalho */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Modelo de Negócio
           </h1>
-          <p className="text-gray-600 text-sm sm:text-base">
+          <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
             Construa e visualize seu modelo de negócio de forma colaborativa
           </p>
         </div>
 
         {/* Propósitos Institucionais */}
-        <div className="mb-6 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="mb-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
           {/* Header do bloco */}
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-            <div className="p-2 bg-[#FEF3E2] rounded-lg">
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+            <div className="p-2 bg-[#FEF3E2] dark:bg-[#EBA500]/20 rounded-lg">
               <BookOpen className="h-4 w-4 text-[#EBA500]" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-gray-900">Propósitos Institucionais</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Defina a essência da organização</p>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white">Propósitos Institucionais</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Defina a essência da organização</p>
             </div>
           </div>
 
@@ -627,7 +627,7 @@ export default function BusinessModelPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Target className="h-4 w-4 text-[#EBA500]" />
-                <label className="text-sm font-semibold text-gray-700">Missão</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Missão</label>
                 {savingPurposes.missao && <span className="text-xs text-gray-400 ml-auto">Salvando...</span>}
               </div>
               <textarea
@@ -636,7 +636,7 @@ export default function BusinessModelPage() {
                 onBlur={(e) => handlePurposeBlur('missao', e.target.value)}
                 placeholder="Por que existimos? Qual é o propósito da nossa organização?"
                 rows={4}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-gray-50 placeholder-gray-400"
+                className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-gray-50 dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
               />
             </div>
 
@@ -644,7 +644,7 @@ export default function BusinessModelPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Eye className="h-4 w-4 text-[#EBA500]" />
-                <label className="text-sm font-semibold text-gray-700">Visão</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Visão</label>
                 {savingPurposes.visao && <span className="text-xs text-gray-400 ml-auto">Salvando...</span>}
               </div>
               <textarea
@@ -653,7 +653,7 @@ export default function BusinessModelPage() {
                 onBlur={(e) => handlePurposeBlur('visao', e.target.value)}
                 placeholder="Onde queremos chegar? Qual é o nosso futuro desejado?"
                 rows={4}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-gray-50 placeholder-gray-400"
+                className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-gray-50 dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
               />
             </div>
 
@@ -661,7 +661,7 @@ export default function BusinessModelPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Heart className="h-4 w-4 text-[#EBA500]" />
-                <label className="text-sm font-semibold text-gray-700">Valores</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Valores</label>
                 {savingPurposes.valores && <span className="text-xs text-gray-400 ml-auto">Salvando...</span>}
               </div>
               <textarea
@@ -670,7 +670,7 @@ export default function BusinessModelPage() {
                 onBlur={(e) => handlePurposeBlur('valores', e.target.value)}
                 placeholder="Quais princípios guiam nossas decisões e comportamentos?"
                 rows={4}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-gray-50 placeholder-gray-400"
+                className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-gray-50 dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
               />
             </div>
           </div>

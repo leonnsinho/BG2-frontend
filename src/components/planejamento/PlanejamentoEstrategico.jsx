@@ -64,7 +64,7 @@ const SortableTaskItem = ({
     <div 
       ref={setNodeRef}
       style={style}
-      className={`group border rounded-xl bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-md transition-all duration-300 overflow-hidden relative ${
+      className={`group border rounded-xl bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 hover:shadow-md transition-all duration-300 overflow-hidden relative ${
         isSelecionada 
           ? 'border-[#EBA500] ring-2 ring-[#EBA500]/30' 
           : 'border-[#373435]/10 hover:border-[#EBA500]/30'
@@ -1471,17 +1471,17 @@ const PlanejamentoEstrategico = () => {
     switch (status) {
       case 'in_progress':
       case 'em_andamento': 
-        return 'bg-blue-100 text-blue-800 border-blue-300'
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700'
       case 'completed':
       case 'concluido': 
-        return 'bg-green-100 text-green-800 border-green-300'
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
       case 'cancelled':
       case 'atrasado': 
-        return 'bg-red-100 text-red-800 border-red-300'
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700'
       case 'pending':
       case 'pendente':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
-      default: return 'bg-gray-100 text-gray-800 border-gray-300'
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700'
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-600'
     }
   }
 
@@ -1757,7 +1757,7 @@ const PlanejamentoEstrategico = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Banner Super Admin */}
       <SuperAdminBanner />
       
@@ -1765,21 +1765,21 @@ const PlanejamentoEstrategico = () => {
         <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 mt-6 sm:mt-8">
           <div className="mb-6 sm:mb-8 text-center">
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#EBA500]/20 rounded-xl mx-auto mb-3 sm:mb-4 animate-pulse"></div>
-            <div className="h-5 sm:h-6 bg-gray-200 rounded w-36 sm:w-48 mx-auto mb-2 animate-pulse"></div>
-            <div className="h-3 sm:h-4 bg-gray-100 rounded w-24 sm:w-32 mx-auto animate-pulse"></div>
+            <div className="h-5 sm:h-6 bg-gray-200 dark:bg-gray-700 rounded w-36 sm:w-48 mx-auto mb-2 animate-pulse"></div>
+            <div className="h-3 sm:h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 sm:w-32 mx-auto animate-pulse"></div>
           </div>
           <div className="grid gap-3 sm:gap-4 lg:gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
             {[1, 2, 3, 4, 5].map((item) => (
-              <div key={item} className="bg-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 animate-pulse">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gray-200 rounded-xl sm:rounded-2xl mx-auto mb-3 sm:mb-4"></div>
-                <div className="h-4 sm:h-5 lg:h-6 bg-gray-200 rounded mx-auto mb-2 sm:mb-3 w-3/4"></div>
-                <div className="w-16 sm:w-20 h-1 bg-gray-200 rounded-full mx-auto"></div>
+              <div key={item} className="bg-gray-100 dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 animate-pulse">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gray-200 dark:bg-gray-700 rounded-xl sm:rounded-2xl mx-auto mb-3 sm:mb-4"></div>
+                <div className="h-4 sm:h-5 lg:h-6 bg-gray-200 dark:bg-gray-700 rounded mx-auto mb-2 sm:mb-3 w-3/4"></div>
+                <div className="w-16 sm:w-20 h-1 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto"></div>
               </div>
             ))}
           </div>
           {processesLoading && (
             <div className="text-center mt-8">
-              <div className="text-[#373435]/60 text-sm">
+              <div className="text-[#373435]/60 dark:text-gray-400 text-sm">
                 🔍 Carregando processos prioritários da base de dados...
               </div>
             </div>
@@ -1787,7 +1787,7 @@ const PlanejamentoEstrategico = () => {
         </div>
       ) : processesError ? (
         <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 mt-6 sm:mt-8 text-center">
-          <div className="bg-red-50 border border-red-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 max-w-md mx-auto">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 max-w-md mx-auto">
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg sm:rounded-xl mx-auto mb-3 sm:mb-4 flex items-center justify-center">
               <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
             </div>
@@ -1819,16 +1819,16 @@ const PlanejamentoEstrategico = () => {
                 ${isAtribuida ? 'cursor-pointer hover:scale-105 hover:shadow-lg active:scale-95' : 'cursor-not-allowed'}
                 ${isSelected && isAtribuida
                   ? `${cores.background} text-white border-transparent shadow-lg scale-105` 
-                  : `bg-white border-[#373435]/10 ${isAtribuida ? cores.hover : ''} shadow-md ${isAtribuida ? 'hover:shadow-lg' : ''}`
+                  : `bg-white dark:bg-gray-800 border-[#373435]/10 dark:border-gray-700 ${isAtribuida ? cores.hover : ''} shadow-md ${isAtribuida ? 'hover:shadow-lg' : ''}`
                 }
               `}
             >
               {/* Overlay de bloqueio para jornadas não atribuídas */}
               {!isAtribuida && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl z-20 flex items-center justify-center">
-                  <div className="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-2 shadow-md border border-[#373435]/20">
-                    <Lock className="h-3 w-3 sm:h-4 sm:w-4 text-[#373435]/60 mx-auto mb-0.5 sm:mb-1" />
-                    <div className="text-[#373435]/60 text-[8px] sm:text-[10px] font-medium text-center">
+                <div className="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl sm:rounded-2xl z-20 flex items-center justify-center">
+                  <div className="bg-white dark:bg-gray-700 rounded-lg sm:rounded-xl p-1.5 sm:p-2 shadow-md border border-[#373435]/20 dark:border-gray-600">
+                    <Lock className="h-3 w-3 sm:h-4 sm:w-4 text-[#373435]/60 dark:text-gray-400 mx-auto mb-0.5 sm:mb-1" />
+                    <div className="text-[#373435]/60 dark:text-gray-400 text-[8px] sm:text-[10px] font-medium text-center">
                       Bloqueada
                     </div>
                   </div>
@@ -1866,7 +1866,7 @@ const PlanejamentoEstrategico = () => {
                     font-bold text-sm leading-tight transition-all duration-300 truncate
                     ${isSelected && isAtribuida
                       ? 'text-white drop-shadow-md' 
-                      : `text-[#373435] ${isAtribuida ? `group-hover:${cores.text}` : ''}`
+                      : `text-[#373435] dark:text-gray-200 ${isAtribuida ? `group-hover:${cores.text}` : ''}`
                     }
                   `}>
                     {jornada.nome}
@@ -1907,8 +1907,8 @@ const PlanejamentoEstrategico = () => {
             
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
               {/* Campo para definir limite de processos */}
-              <div className="flex items-center gap-2 bg-white border-2 border-[#EBA500]/30 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 shadow-md">
-                <label htmlFor="limite-processos" className="text-xs sm:text-sm font-semibold text-[#373435] whitespace-nowrap">
+              <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border-2 border-[#EBA500]/30 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 shadow-md">
+                <label htmlFor="limite-processos" className="text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 whitespace-nowrap">
                   Mostrar top:
                 </label>
                 <input
@@ -1926,7 +1926,7 @@ const PlanejamentoEstrategico = () => {
                       setInputLimite(String(valorValido))
                     }
                   }}
-                  className="w-14 sm:w-16 px-2 py-1 text-center border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-lg text-xs sm:text-sm font-bold text-[#373435] transition-all duration-300"
+                  className="w-14 sm:w-16 px-2 py-1 text-center border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-lg text-xs sm:text-sm font-bold text-[#373435] dark:text-white dark:bg-gray-700 dark:border-[#EBA500]/40 transition-all duration-300"
                   placeholder="5"
                 />
                 <button
@@ -1947,7 +1947,7 @@ const PlanejamentoEstrategico = () => {
               {processos.some(p => p.strategic_priority_order != null) && (
                 <button
                   onClick={handleResetOrder}
-                  className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 min-h-[44px] bg-white border-2 border-purple-500/30 hover:border-purple-500 text-purple-600 hover:bg-purple-50 rounded-xl sm:rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg touch-manipulation"
+                  className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 min-h-[44px] bg-white dark:bg-gray-800 border-2 border-purple-500/30 hover:border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl sm:rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg touch-manipulation"
                   title="Resetar para ordenação automática"
                 >
                   <RotateCcw className="h-4 w-4" />
@@ -1967,15 +1967,15 @@ const PlanejamentoEstrategico = () => {
               const coresJornada = getJornadaCores(jornadaSelecionada.id)
               
               return (
-                <div className="group bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#373435]/10 hover:border-[#EBA500]/30 overflow-hidden flex flex-col md:flex-row h-fit min-h-[300px]">
+                <div className="group bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#373435]/10 dark:border-gray-700 hover:border-[#EBA500]/30 overflow-hidden flex flex-col md:flex-row h-fit min-h-[300px]">
                   {/* Header do Processo Elegante */}
-                  <div className="relative p-3 sm:p-4 border-b md:border-b-0 md:border-r md:w-1/3 border-[#373435]/10 bg-[#EBA500]/5 flex-shrink-0">
+                  <div className="relative p-3 sm:p-4 border-b md:border-b-0 md:border-r md:w-1/3 border-[#373435]/10 dark:border-gray-700 bg-[#EBA500]/5 dark:bg-gray-700/50 flex-shrink-0">
                     {/* Background Pattern */}
                     <div className="absolute inset-0 bg-[#EBA500]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
                     <div className="relative z-10">
                       <div className="flex items-start justify-between mb-2 sm:mb-3">
-                        <h4 className={`font-bold text-[#373435] text-xs sm:text-sm group-hover:${coresJornada.text} transition-colors duration-300 leading-tight break-words flex-1`}>
+                        <h4 className={`font-bold text-[#373435] dark:text-gray-100 text-xs sm:text-sm group-hover:${coresJornada.text} transition-colors duration-300 leading-tight break-words flex-1`}>
                           {processo.nome}
                         </h4>
                       </div>
@@ -1988,7 +1988,7 @@ const PlanejamentoEstrategico = () => {
                               placeholder="Defina a meta para este processo..."
                               value={metas[processo.id] || ''}
                               onChange={(e) => setMetas(prev => ({ ...prev, [processo.id]: e.target.value }))}
-                              className="w-full p-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs resize-none bg-white transition-all duration-300 touch-manipulation"
+                              className="w-full p-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs resize-none bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-300 touch-manipulation"
                               rows="2"
                               autoFocus
                             />
@@ -2027,11 +2027,11 @@ const PlanejamentoEstrategico = () => {
                             className="cursor-pointer p-2 bg-[#EBA500]/5 hover:bg-[#EBA500]/10 border border-dashed border-[#EBA500]/30 hover:border-[#EBA500]/50 rounded-xl transition-all duration-300 min-h-[40px] flex items-center"
                           >
                             {metas[processo.id] ? (
-                              <p className="text-xs text-[#373435] leading-relaxed">
+                              <p className="text-xs text-[#373435] dark:text-gray-200 leading-relaxed">
                                 <span className="font-medium">{metas[processo.id]}</span>
                               </p>
                             ) : (
-                              <p className="text-xs text-[#373435]/40 italic">
+                              <p className="text-xs text-[#373435]/40 dark:text-gray-500 italic">
                                 Clique para definir uma meta...
                               </p>
                             )}
@@ -2047,7 +2047,7 @@ const PlanejamentoEstrategico = () => {
                               type="date"
                               value={prazos[processo.id] || ''}
                               onChange={(e) => setPrazos(prev => ({ ...prev, [processo.id]: e.target.value }))}
-                              className="w-full p-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white transition-all duration-300 touch-manipulation"
+                              className="w-full p-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-300 touch-manipulation"
                               autoFocus
                             />
                             <div className="flex gap-2">
@@ -2074,9 +2074,9 @@ const PlanejamentoEstrategico = () => {
                           >
                             <Calendar className="h-3 w-3 text-[#EBA500] flex-shrink-0" />
                             {prazos[processo.id] ? (
-                              <p className="text-xs text-[#373435] font-medium">{formatarData(prazos[processo.id])}</p>
+                              <p className="text-xs text-[#373435] dark:text-gray-200 font-medium">{formatarData(prazos[processo.id])}</p>
                             ) : (
-                              <p className="text-xs text-[#373435]/40 italic">Prazo (opcional)...</p>
+                              <p className="text-xs text-[#373435]/40 dark:text-gray-500 italic">Prazo (opcional)...</p>
                             )}
                           </div>
                         )}
@@ -2089,7 +2089,7 @@ const PlanejamentoEstrategico = () => {
                             <select
                               value={responsaveis[processo.id] || ''}
                               onChange={(e) => setResponsaveis(prev => ({ ...prev, [processo.id]: e.target.value }))}
-                              className="w-full p-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white transition-all duration-300 touch-manipulation"
+                              className="w-full p-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-300 touch-manipulation"
                               autoFocus
                             >
                               <option value="">— Sem responsável —</option>
@@ -2121,11 +2121,11 @@ const PlanejamentoEstrategico = () => {
                           >
                             <User className="h-3 w-3 text-[#EBA500] flex-shrink-0" />
                             {responsaveis[processo.id] ? (
-                              <p className="text-xs text-[#373435] font-medium">
+                              <p className="text-xs text-[#373435] dark:text-gray-200 font-medium">
                                 {usuarios.find(u => u.id === responsaveis[processo.id])?.name || responsaveis[processo.id]}
                               </p>
                             ) : (
-                              <p className="text-xs text-[#373435]/40 italic">Responsável (opcional)...</p>
+                              <p className="text-xs text-[#373435]/40 dark:text-gray-500 italic">Responsável (opcional)...</p>
                             )}
                           </div>
                         )}
@@ -2206,14 +2206,14 @@ const PlanejamentoEstrategico = () => {
                   </div>
 
                 {/* Lista de Tarefas Elegante */}
-                <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 flex-1 max-h-64 sm:max-h-80 md:w-2/3 md:max-h-[500px]">
+                <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 overflow-y-auto custom-scrollbar bg-[#EBA500]/5 dark:bg-gray-700/30 flex-1 max-h-64 sm:max-h-80 md:w-2/3 md:max-h-[500px]">
                   {/* Controles de Seleção Múltipla */}
                   {tarefas[processo.id]?.length > 0 && (
-                    <div className="mb-3 pb-3 border-b border-[#373435]/10">
+                    <div className="mb-3 pb-3 border-b border-[#373435]/10 dark:border-gray-600">
                       {!modoSelecao ? (
                         <button
                           onClick={() => toggleModoSelecao()}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
                         >
                           <CheckSquare className="h-3 w-3" />
                           Selecionar
@@ -2221,7 +2221,7 @@ const PlanejamentoEstrategico = () => {
                       ) : (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs text-gray-600 font-medium">
+                            <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">
                               {tarefasSelecionadas[processo.id]?.length || 0} selecionada(s)
                             </span>
                           </div>
@@ -2229,14 +2229,14 @@ const PlanejamentoEstrategico = () => {
                           <div className="flex items-center gap-2 flex-wrap">
                             <button
                               onClick={() => selecionarTodasTarefas(processo.id)}
-                              className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all font-medium"
+                              className="px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all font-medium"
                             >
                               Todas
                             </button>
                             
                             <button
                               onClick={() => deselecionarTodasTarefas(processo.id)}
-                              className="px-3 py-1.5 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all font-medium"
+                              className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-lg transition-all font-medium"
                             >
                               Nenhuma
                             </button>
@@ -2459,7 +2459,7 @@ const PlanejamentoEstrategico = () => {
                         <div className="space-y-3">
                           <div className="flex items-center space-x-2 mb-2">
                             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span className="text-[#373435] font-semibold text-xs">Editando Tarefa</span>
+                            <span className="text-[#373435] dark:text-gray-200 font-semibold text-xs">Editando Tarefa</span>
                           </div>
                           
                           <textarea
@@ -2484,7 +2484,7 @@ const PlanejamentoEstrategico = () => {
                                   }}
                                   className="text-blue-500 focus:ring-blue-500"
                                 />
-                                <span className="text-[#373435]">Selecionar usuário</span>
+                                <span className="text-[#373435] dark:text-gray-300">Selecionar usuário</span>
                               </label>
                               <label className="flex items-center space-x-2 cursor-pointer">
                                 <input
@@ -2498,7 +2498,7 @@ const PlanejamentoEstrategico = () => {
                                   }}
                                   className="text-blue-500 focus:ring-blue-500"
                                 />
-                                <span className="text-[#373435]">Digitar nome</span>
+                                <span className="text-[#373435] dark:text-gray-300">Digitar nome</span>
                               </label>
                             </div>
                             
@@ -2507,7 +2507,7 @@ const PlanejamentoEstrategico = () => {
                               <select
                                 value={editandoTarefa.responsavel}
                                 onChange={(e) => setEditandoTarefa({ ...editandoTarefa, responsavel: e.target.value })}
-                                className="w-full p-2 border border-[#373435]/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                                className="w-full p-2 border border-[#373435]/20 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs bg-white/90 dark:bg-gray-700 dark:text-white transition-all duration-300"
                               >
                                 <option value="">Selecionar responsável</option>
                                 {usuarios.map(usuario => (
@@ -2522,21 +2522,21 @@ const PlanejamentoEstrategico = () => {
                                 placeholder="Digite o nome do responsável"
                                 value={editandoTarefa.responsavel}
                                 onChange={(e) => setEditandoTarefa({ ...editandoTarefa, responsavel: e.target.value })}
-                                className="w-full p-2 border border-[#373435]/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                                className="w-full p-2 border border-[#373435]/20 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs bg-white/90 dark:bg-gray-700 dark:text-white transition-all duration-300"
                               />
                             )}
                           </div>
                           
                           {/* Data Limite */}
                           <div>
-                            <label className="block text-xs text-[#373435] font-medium mb-1">
+                            <label className="block text-xs text-[#373435] dark:text-gray-300 font-medium mb-1">
                               Data Limite (opcional)
                             </label>
                             <input
                               type="date"
                               value={editandoTarefa.dataLimite}
                               onChange={(e) => setEditandoTarefa({ ...editandoTarefa, dataLimite: e.target.value })}
-                              className="w-full p-2 border border-[#373435]/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs bg-white/90 transition-all duration-300"
+                              className="w-full p-2 border border-[#373435]/20 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs bg-white/90 dark:bg-gray-700 dark:text-white transition-all duration-300"
                             />
                           </div>
                           
@@ -2562,7 +2562,7 @@ const PlanejamentoEstrategico = () => {
                         <div className="space-y-2">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 pr-2">
-                              <p className="text-xs text-[#373435] font-medium leading-relaxed break-words" style={{wordBreak: 'break-word', overflowWrap: 'anywhere'}}>
+                              <p className="text-xs text-[#373435] dark:text-gray-200 font-medium leading-relaxed break-words" style={{wordBreak: 'break-word', overflowWrap: 'anywhere'}}>
                                 {expandedTitles[tarefa.id] || tarefa.texto.length <= 120
                                   ? tarefa.texto
                                   : tarefa.texto.slice(0, 120) + '…'
@@ -2585,7 +2585,7 @@ const PlanejamentoEstrategico = () => {
                               <div className="w-4 h-4 bg-[#EBA500]/20 rounded-full flex items-center justify-center flex-shrink-0">
                                 <Users className="h-2 w-2 text-[#373435]" />
                               </div>
-                              <span className="text-xs text-[#373435]/80 font-semibold">
+                              <span className="text-xs text-[#373435]/80 dark:text-gray-300 font-semibold">
                                 {tarefa.assignees && tarefa.assignees.length > 0 
                                   ? `${tarefa.assignees.length} ${tarefa.assignees.length === 1 ? 'Responsável' : 'Responsáveis'}`
                                   : 'Responsável'
@@ -2603,7 +2603,7 @@ const PlanejamentoEstrategico = () => {
                                     ) : (
                                       <div className="h-3 w-3 border-2 border-gray-300 rounded-full flex-shrink-0"></div>
                                     )}
-                                    <span className={`text-xs ${assignee.hasCompleted ? 'text-green-600 font-medium' : 'text-gray-600'}`}>
+                                    <span className={`text-xs ${assignee.hasCompleted ? 'text-green-600 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
                                       {assignee.name}
                                     </span>
                                   </div>
@@ -2611,7 +2611,7 @@ const PlanejamentoEstrategico = () => {
                               </div>
                             ) : (
                               <div className="ml-6">
-                                <span className="text-xs text-gray-600">{tarefa.responsavel || 'Sem responsável'}</span>
+                                <span className="text-xs text-gray-600 dark:text-gray-400">{tarefa.responsavel || 'Sem responsável'}</span>
                               </div>
                             )}
                             
@@ -2619,7 +2619,7 @@ const PlanejamentoEstrategico = () => {
                             {tarefa.assignees && tarefa.assignees.length > 1 && (
                               <div className="ml-6 mt-1">
                                 <div className="flex items-center space-x-2">
-                                  <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+                                  <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                                     <div 
                                       className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
                                       style={{ 
@@ -2627,7 +2627,7 @@ const PlanejamentoEstrategico = () => {
                                       }}
                                     ></div>
                                   </div>
-                                  <span className="text-xs text-gray-600 font-medium whitespace-nowrap">
+                                  <span className="text-xs text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap">
                                     {tarefa.assignees.filter(a => a.hasCompleted).length}/{tarefa.assignees.length}
                                   </span>
                                 </div>
@@ -2671,7 +2671,7 @@ const PlanejamentoEstrategico = () => {
                           </div>
                           
                           {/* Botões de Ação */}
-                          <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                          <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-600">
                             <button
                               onClick={async (e) => {
                                 e.stopPropagation()
@@ -2690,7 +2690,7 @@ const PlanejamentoEstrategico = () => {
                                 
                                 setModalEdicaoAberto(true)
                               }}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-blue-200 hover:border-blue-300"
+                              className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 border border-blue-200 dark:border-blue-700 hover:border-blue-300"
                               title="Editar ação"
                             >
                               <Edit3 className="h-3.5 w-3.5" />
@@ -2702,7 +2702,7 @@ const PlanejamentoEstrategico = () => {
                                 setProcessoParaDeletar(processo)
                                 setModalDeleteAberto(true)
                               }}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 border border-red-200 hover:border-red-300"
+                              className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 border border-red-200 dark:border-red-700 hover:border-red-300"
                               title="Apagar ação"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -2722,10 +2722,10 @@ const PlanejamentoEstrategico = () => {
                       <div className="w-12 h-12 bg-[#EBA500]/20 rounded-xl mx-auto mb-3 flex items-center justify-center">
                         <Plus className="h-6 w-6 text-[#373435]/40" />
                       </div>
-                      <div className="text-[#373435]/60 text-xs font-medium">
+                      <div className="text-[#373435]/60 dark:text-gray-400 text-xs font-medium">
                         Nenhuma ação criada
                       </div>
-                      <div className="text-[#373435]/40 text-xs mt-1">
+                      <div className="text-[#373435]/40 dark:text-gray-500 text-xs mt-1">
                         Clique em "Adicionar Ação" para começar
                       </div>
                     </div>
@@ -2745,7 +2745,7 @@ const PlanejamentoEstrategico = () => {
                 <h3 className={`text-2xl font-bold mb-3 ${getJornadaCores(jornadaSelecionada.id).text}`}>
                   Nenhum Processo Avaliado
                 </h3>
-                <p className="text-[#373435]/70 text-base leading-relaxed">
+                <p className="text-[#373435]/70 dark:text-gray-400 text-base leading-relaxed">
                   Esta jornada ainda não possui processos prioritários avaliados. Para adicionar processos, acesse a área de Gestão de Processos e realize avaliações.
                 </p>
               </div>
@@ -2761,8 +2761,8 @@ const PlanejamentoEstrategico = () => {
             <div className="w-24 h-24 bg-[#EBA500] rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-2xl">
               <Calendar className="h-12 w-12 text-white" />
             </div>
-            <h3 className="text-2xl font-bold text-[#373435] mb-4">Selecione uma Jornada</h3>
-            <p className="text-[#373435]/70 text-lg max-w-md mx-auto">
+            <h3 className="text-2xl font-bold text-[#373435] dark:text-white mb-4">Selecione uma Jornada</h3>
+            <p className="text-[#373435]/70 dark:text-gray-400 text-lg max-w-md mx-auto">
               Clique em uma das jornadas acima para visualizar e gerenciar os processos prioritários com elegância
             </p>
           </div>
@@ -2803,7 +2803,7 @@ const PlanejamentoEstrategico = () => {
       {modalTarefaAberto && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
           <div 
-            className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slideUp"
+            className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slideUp"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -2836,7 +2836,7 @@ const PlanejamentoEstrategico = () => {
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto max-h-[calc(95vh-180px)] sm:max-h-[calc(90vh-180px)]">
               {/* Descrição da Ação */}
               <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
                   <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
                   <span>Descrição da Ação *</span>
                 </label>
@@ -2845,7 +2845,7 @@ const PlanejamentoEstrategico = () => {
                   onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, descricao: e.target.value })}
                   placeholder="Descreva a ação..."
                   rows={3}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all resize-none shadow-sm hover:border-gray-300 touch-manipulation"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all resize-none shadow-sm hover:border-gray-300 touch-manipulation"
                 />
               </div>
 
@@ -2853,20 +2853,20 @@ const PlanejamentoEstrategico = () => {
 
               {/* Responsáveis (Múltipla Seleção) */}
               <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
                   <Users className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
                   <span>Responsáveis * (selecione um ou mais)</span>
                 </label>
-                <div className="border-2 border-gray-200 rounded-xl p-3 max-h-48 overflow-y-auto bg-white">
+                <div className="border-2 border-gray-200 dark:border-gray-600 rounded-xl p-3 max-h-48 overflow-y-auto bg-white dark:bg-gray-700">
                   {usuarios.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-2">Nenhum usuário disponível</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">Nenhum usuário disponível</p>
                   ) : (
                     <div className="space-y-2">
                       {usuarios.map(usuario => (
                         <label
                           key={usuario.id}
-                          className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-                            responsaveisSelecionados.includes(usuario.id) ? 'bg-[#EBA500]/5' : ''
+                          className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                            responsaveisSelecionados.includes(usuario.id) ? 'bg-[#EBA500]/5 dark:bg-[#EBA500]/10' : ''
                           }`}
                         >
                           <input
@@ -2881,7 +2881,7 @@ const PlanejamentoEstrategico = () => {
                             }}
                             className="w-4 h-4 text-[#EBA500] border-gray-300 rounded focus:ring-[#EBA500]"
                           />
-                          <span className="text-sm text-gray-700">{usuario.name}</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-200">{usuario.name}</span>
                         </label>
                       ))}
                     </div>
@@ -2899,7 +2899,7 @@ const PlanejamentoEstrategico = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {/* Prazo */}
                 <div className="group">
-                  <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
                     <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
                     <span>Prazo</span>
                   </label>
@@ -2907,20 +2907,20 @@ const PlanejamentoEstrategico = () => {
                     type="date"
                     value={adicionandoTarefa.dataLimite}
                     onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, dataLimite: e.target.value })}
-                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
                   />
                 </div>
 
                 {/* Status */}
                 <div className="group">
-                  <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
                     <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
                     <span>Status Inicial</span>
                   </label>
                   <select
                     value={adicionandoTarefa.status}
                     onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, status: e.target.value })}
-                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
                   >
                     <option value="pending">Pendente</option>
                     <option value="in_progress">Em Andamento</option>
@@ -2931,14 +2931,14 @@ const PlanejamentoEstrategico = () => {
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+            <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
               <button
                 onClick={() => {
                   setModalTarefaAberto(false)
                   setProcessoParaTarefa(null)
                   cancelarAdicaoTarefa()
                 }}
-                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold flex items-center justify-center space-x-2 min-h-[44px] touch-manipulation"
+                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 transition-all font-semibold flex items-center justify-center space-x-2 min-h-[44px] touch-manipulation"
               >
                 <X className="h-4 w-4" />
                 <span className="text-sm sm:text-base">Cancelar</span>
@@ -2960,7 +2960,7 @@ const PlanejamentoEstrategico = () => {
       {modalEdicaoAberto && tarefaParaEditar && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
           <div 
-            className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slideUp"
+            className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slideUp"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -2994,7 +2994,7 @@ const PlanejamentoEstrategico = () => {
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto max-h-[calc(95vh-180px)] sm:max-h-[calc(90vh-180px)]">
               {/* Descrição da Ação */}
               <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
                   <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
                   <span>Descrição da Ação *</span>
                 </label>
@@ -3003,26 +3003,26 @@ const PlanejamentoEstrategico = () => {
                   onChange={(e) => setEditandoTarefa({ ...editandoTarefa, texto: e.target.value })}
                   placeholder="Descreva a ação..."
                   rows={3}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none shadow-sm hover:border-gray-300 touch-manipulation"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none shadow-sm hover:border-gray-300 touch-manipulation"
                 />
               </div>
 
               {/* Responsáveis (Múltipla Seleção) */}
               <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
                   <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
                   <span>Responsáveis * (selecione um ou mais)</span>
                 </label>
-                <div className="border-2 border-gray-200 rounded-xl p-3 max-h-48 overflow-y-auto bg-white">
+                <div className="border-2 border-gray-200 dark:border-gray-600 rounded-xl p-3 max-h-48 overflow-y-auto bg-white dark:bg-gray-700">
                   {usuarios.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-2">Nenhum usuário disponível</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">Nenhum usuário disponível</p>
                   ) : (
                     <div className="space-y-2">
                       {usuarios.map(usuario => (
                         <label
                           key={usuario.id}
-                          className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-                            responsaveisEdicaoSelecionados.includes(usuario.id) ? 'bg-blue-500/5' : ''
+                          className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                            responsaveisEdicaoSelecionados.includes(usuario.id) ? 'bg-blue-500/5 dark:bg-blue-500/10' : ''
                           }`}
                         >
                           <input
@@ -3037,7 +3037,7 @@ const PlanejamentoEstrategico = () => {
                             }}
                             className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-700">{usuario.name}</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-200">{usuario.name}</span>
                         </label>
                       ))}
                     </div>
@@ -3053,7 +3053,7 @@ const PlanejamentoEstrategico = () => {
 
               {/* Prazo */}
               <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] mb-2 flex items-center space-x-2">
+                <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
                   <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
                   <span>Prazo</span>
                 </label>
@@ -3061,13 +3061,13 @@ const PlanejamentoEstrategico = () => {
                   type="date"
                   value={editandoTarefa.dataLimite}
                   onChange={(e) => setEditandoTarefa({ ...editandoTarefa, dataLimite: e.target.value })}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
                 />
               </div>
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+            <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
               <button
                 onClick={() => {
                   setModalEdicaoAberto(false)
@@ -3075,7 +3075,7 @@ const PlanejamentoEstrategico = () => {
                   setProcessoParaEdicao(null)
                   cancelarEdicao()
                 }}
-                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold flex items-center justify-center space-x-2 min-h-[44px] touch-manipulation"
+                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 transition-all font-semibold flex items-center justify-center space-x-2 min-h-[44px] touch-manipulation"
               >
                 <X className="h-4 w-4" />
                 <span className="text-sm sm:text-base">Cancelar</span>
@@ -3111,30 +3111,30 @@ const PlanejamentoEstrategico = () => {
       {modalDeleteAberto && tarefaParaDeletar && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-slideUp max-h-[90vh] flex flex-col"
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full animate-slideUp max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 dark:text-red-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg sm:text-xl font-bold text-[#373435]">Excluir Ação</h3>
-                  <p className="text-xs sm:text-sm text-gray-500 mt-1">Esta ação não pode ser desfeita</p>
+                  <h3 className="text-lg sm:text-xl font-bold text-[#373435] dark:text-white">Excluir Ação</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Esta ação não pode ser desfeita</p>
                 </div>
               </div>
             </div>
 
             {/* Body */}
             <div className="p-4 sm:p-6 overflow-y-auto flex-1">
-              <p className="text-gray-700 mb-3 sm:mb-4 text-sm sm:text-base">
+              <p className="text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base">
                 Tem certeza que deseja excluir a tarefa:
               </p>
-              <div className="bg-gray-50 border-l-4 border-red-500 p-3 sm:p-4 rounded-r-lg">
+              <div className="bg-gray-50 dark:bg-gray-700 border-l-4 border-red-500 p-3 sm:p-4 rounded-r-lg">
                 <div className="overflow-y-auto max-h-40">
-                  <p className="font-semibold text-[#373435] text-sm sm:text-base break-words">
+                  <p className="font-semibold text-[#373435] dark:text-gray-200 text-sm sm:text-base break-words">
                     {expandedTitles[`delete-${tarefaParaDeletar.id}`] || tarefaParaDeletar.texto.length <= 120
                       ? tarefaParaDeletar.texto
                       : tarefaParaDeletar.texto.slice(0, 120) + '…'
@@ -3150,7 +3150,7 @@ const PlanejamentoEstrategico = () => {
                   </button>
                 )}
                 {processoParaDeletar && (
-                  <p className="text-xs sm:text-sm text-gray-500 mt-1 truncate">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
                     Processo: {processoParaDeletar.nome}
                   </p>
                 )}
@@ -3158,14 +3158,14 @@ const PlanejamentoEstrategico = () => {
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 rounded-b-2xl flex-shrink-0">
+            <div className="bg-gray-50 dark:bg-gray-700/50 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 rounded-b-2xl flex-shrink-0">
               <button
                 onClick={() => {
                   setModalDeleteAberto(false)
                   setTarefaParaDeletar(null)
                   setProcessoParaDeletar(null)
                 }}
-                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-white transition-all font-semibold min-h-[44px] touch-manipulation text-sm sm:text-base"
+                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-all font-semibold min-h-[44px] touch-manipulation text-sm sm:text-base"
               >
                 Cancelar
               </button>
@@ -3190,19 +3190,19 @@ const PlanejamentoEstrategico = () => {
       {modalImportarPackAberto && processoParaImportarPack && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div 
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+            className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-purple-100">
+            <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/30">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center">
                     <Package className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-[#373435]">Importar Pack de Ações</h3>
-                    <p className="text-sm text-gray-600 mt-1">{processoParaImportarPack.nome}</p>
+                    <h3 className="text-xl font-bold text-[#373435] dark:text-white">Importar Pack de Ações</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{processoParaImportarPack.nome}</p>
                   </div>
                 </div>
                 <button
@@ -3211,9 +3211,9 @@ const PlanejamentoEstrategico = () => {
                     setProcessoParaImportarPack(null)
                     setPacksDisponiveis([])
                   }}
-                  className="p-2 hover:bg-white rounded-lg transition-colors"
+                  className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
@@ -3223,13 +3223,13 @@ const PlanejamentoEstrategico = () => {
               {loadingPacks ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
-                  <p className="text-gray-600">Carregando packs disponíveis...</p>
+                  <p className="text-gray-600 dark:text-gray-400">Carregando packs disponíveis...</p>
                 </div>
               ) : packsDisponiveis.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Package className="h-16 w-16 text-gray-300 mb-4" />
-                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Nenhum pack disponível</h4>
-                  <p className="text-gray-600 text-center max-w-md">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Nenhum pack disponível</h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
                     Não há packs de ações associados a este processo. Entre em contato com o Super Admin para criar packs.
                   </p>
                 </div>
@@ -3242,13 +3242,13 @@ const PlanejamentoEstrategico = () => {
                   {packsDisponiveis.map((pack) => (
                     <div
                       key={pack.id}
-                      className="border-2 border-gray-200 rounded-xl p-4 hover:border-purple-300 transition-all cursor-pointer hover:shadow-md"
+                      className="border-2 border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:border-purple-300 dark:hover:border-purple-500 transition-all cursor-pointer hover:shadow-md"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <h4 className="font-bold text-[#373435] text-lg mb-1">{pack.name}</h4>
+                          <h4 className="font-bold text-[#373435] dark:text-gray-100 text-lg mb-1">{pack.name}</h4>
                           {pack.description && (
-                            <p className="text-sm text-gray-600">{pack.description}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{pack.description}</p>
                           )}
                         </div>
                         <button
@@ -3262,16 +3262,16 @@ const PlanejamentoEstrategico = () => {
 
                       {/* Preview das ações */}
                       <div className="mt-3 space-y-2">
-                        <p className="text-xs font-semibold text-gray-500 uppercase">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
                           {pack.templates.length} {pack.templates.length === 1 ? 'ação' : 'ações'}:
                         </p>
                         <div className="space-y-1.5">
                           {pack.templates.map((template, index) => (
                             <div key={template.id} className="flex items-start space-x-2 text-sm">
-                              <span className="flex-shrink-0 w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">
+                              <span className="flex-shrink-0 w-5 h-5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full flex items-center justify-center text-xs font-bold">
                                 {index + 1}
                               </span>
-                              <p className="text-gray-700 flex-1">{template.title}</p>
+                              <p className="text-gray-700 dark:text-gray-300 flex-1">{template.title}</p>
                             </div>
                           ))}
                         </div>

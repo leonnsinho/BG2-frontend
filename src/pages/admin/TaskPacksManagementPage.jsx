@@ -376,11 +376,11 @@ export default function TaskPacksManagementPage() {
   if (profile?.role !== 'super_admin') {
     return (
       <div className="p-8">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-start space-x-3">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40 rounded-xl p-6 flex items-start space-x-3">
           <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-red-900">Acesso Negado</h3>
-            <p className="text-red-700 text-sm mt-1">
+            <h3 className="font-semibold text-red-900 dark:text-red-200">Acesso Negado</h3>
+            <p className="text-red-700 dark:text-red-300 text-sm mt-1">
               Apenas Super Administradores podem acessar esta página.
             </p>
           </div>
@@ -390,7 +390,7 @@ export default function TaskPacksManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -399,8 +399,8 @@ export default function TaskPacksManagementPage() {
               <Package className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-[#373435]">Packs de Ações</h1>
-              <p className="text-gray-600">Gerencie templates de ações para processos</p>
+              <h1 className="text-3xl font-bold text-[#373435] dark:text-white">Packs de Ações</h1>
+              <p className="text-gray-600 dark:text-gray-300">Gerencie templates de ações para processos</p>
             </div>
           </div>
 
@@ -414,7 +414,7 @@ export default function TaskPacksManagementPage() {
                 placeholder="Buscar packs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
 
@@ -443,12 +443,12 @@ export default function TaskPacksManagementPage() {
         {!loading && (
           <div className="space-y-4">
             {filteredPacks.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-12 text-center">
                 <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   {searchTerm ? 'Nenhum pack encontrado' : 'Nenhum pack criado'}
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
                   {searchTerm 
                     ? 'Tente ajustar os filtros de busca' 
                     : 'Comece criando seu primeiro pack de ações'}
@@ -473,7 +473,7 @@ export default function TaskPacksManagementPage() {
                 const processesCount = pack.process_task_packs?.length || 0
 
                 return (
-                  <div key={pack.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                  <div key={pack.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
                     {/* Pack Header */}
                     <div className="p-6">
                       <div className="flex items-start justify-between">
@@ -481,25 +481,25 @@ export default function TaskPacksManagementPage() {
                           <div className="flex items-center space-x-3 mb-2">
                             <button
                               onClick={() => toggleExpanded(pack.id)}
-                              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                             >
                               {isExpanded ? (
-                                <ChevronDown className="h-5 w-5 text-gray-600" />
+                                <ChevronDown className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                               ) : (
-                                <ChevronRight className="h-5 w-5 text-gray-600" />
+                                <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                               )}
                             </button>
-                            <h3 className="text-xl font-bold text-[#373435]">{pack.name}</h3>
+                            <h3 className="text-xl font-bold text-[#373435] dark:text-white">{pack.name}</h3>
                           </div>
                           {pack.description && (
-                            <p className="text-gray-600 ml-9 mb-3">{pack.description}</p>
+                            <p className="text-gray-600 dark:text-gray-400 ml-9 mb-3">{pack.description}</p>
                           )}
                           <div className="flex items-center space-x-4 ml-9">
-                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                               <ListChecks className="h-4 w-4" />
                               <span>{tasksCount} ação{tasksCount !== 1 ? 'ões' : ''}</span>
                             </div>
-                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                               <Package className="h-4 w-4" />
                               <span>{processesCount} processo{processesCount !== 1 ? 's' : ''}</span>
                             </div>
@@ -510,14 +510,14 @@ export default function TaskPacksManagementPage() {
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => openEditModal(pack)}
-                            className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+                            className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 rounded-lg transition-colors"
                             title="Editar pack"
                           >
                             <Edit className="h-5 w-5" />
                           </button>
                           <button
                             onClick={() => openDeleteModal(pack)}
-                            className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 rounded-lg transition-colors"
                             title="Deletar pack"
                           >
                             <Trash2 className="h-5 w-5" />
@@ -528,11 +528,11 @@ export default function TaskPacksManagementPage() {
 
                     {/* Expanded Content */}
                     {isExpanded && (
-                      <div className="border-t border-gray-100 bg-gray-50 p-6 space-y-6">
+                      <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40 p-6 space-y-6">
                         {/* Tasks */}
                         {tasksCount > 0 && (
                           <div>
-                            <h4 className="font-semibold text-[#373435] mb-3 flex items-center space-x-2">
+                            <h4 className="font-semibold text-[#373435] dark:text-white mb-3 flex items-center space-x-2">
                               <ListChecks className="h-5 w-5" />
                               <span>Ações do Pack</span>
                             </h4>
@@ -540,14 +540,14 @@ export default function TaskPacksManagementPage() {
                               {pack.task_pack_templates
                                 .sort((a, b) => a.order_in_pack - b.order_in_pack)
                                 .map((task, index) => (
-                                  <div key={task.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                                  <div key={task.id} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                                     <div className="flex items-start space-x-3">
                                       <span className="flex-shrink-0 w-6 h-6 bg-[#EBA500] text-white rounded-full flex items-center justify-center text-xs font-bold">
                                         {index + 1}
                                       </span>
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-sm text-[#373435] whitespace-pre-wrap">{task.title}</p>
-                                        <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                        <p className="text-sm text-[#373435] dark:text-white whitespace-pre-wrap">{task.title}</p>
+                                        <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
                                           <span>Status: {task.default_status === 'pending' ? 'Pendente' : 'Em Andamento'}</span>
                                         </div>
                                       </div>
@@ -561,7 +561,7 @@ export default function TaskPacksManagementPage() {
                         {/* Associated Processes */}
                         {processesCount > 0 && (
                           <div>
-                            <h4 className="font-semibold text-[#373435] mb-3 flex items-center space-x-2">
+                            <h4 className="font-semibold text-[#373435] dark:text-white mb-3 flex items-center space-x-2">
                               <Package className="h-5 w-5" />
                               <span>Processos Associados</span>
                             </h4>
@@ -569,7 +569,7 @@ export default function TaskPacksManagementPage() {
                               {pack.process_task_packs.map(assoc => (
                                 <span
                                   key={assoc.process_id}
-                                  className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium"
+                                  className="inline-flex items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg text-sm font-medium"
                                 >
                                   {assoc.processes.name}
                                 </span>
@@ -628,14 +628,14 @@ export default function TaskPacksManagementPage() {
         {/* Delete Modal */}
         {showDeleteModal && selectedPack && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
               <div className="flex items-start space-x-3 mb-4">
-                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                   <AlertCircle className="h-6 w-6 text-red-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-[#373435]">Deletar Pack</h3>
-                  <p className="text-gray-600 mt-1">
+                  <h3 className="text-xl font-bold text-[#373435] dark:text-white">Deletar Pack</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">
                     Tem certeza que deseja deletar o pack "{selectedPack.name}"?
                   </p>
                   <p className="text-sm text-red-600 mt-2">
@@ -651,7 +651,7 @@ export default function TaskPacksManagementPage() {
                     setSelectedPack(null)
                   }}
                   disabled={submitting}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-semibold disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-semibold disabled:opacity-50"
                 >
                   Cancelar
                 </button>
@@ -713,15 +713,15 @@ function PackFormModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-4xl w-full my-8">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full my-8">
         <form onSubmit={onSubmit}>
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-[#373435]">{title}</h2>
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-2xl font-bold text-[#373435] dark:text-white">{title}</h2>
             <button
               type="button"
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -732,27 +732,27 @@ function PackFormModal({
             {/* Pack Info */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-[#373435] mb-2">
+                <label className="block text-sm font-semibold text-[#373435] dark:text-white mb-2">
                   Nome do Pack *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Ex: Onboarding de Cliente"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#373435] mb-2">
+                <label className="block text-sm font-semibold text-[#373435] dark:text-white mb-2">
                   Descrição
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent resize-none"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   rows="3"
                   placeholder="Descreva o objetivo deste pack de ações..."
                 />
@@ -762,7 +762,7 @@ function PackFormModal({
             {/* Tasks */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <label className="text-sm font-semibold text-[#373435] flex items-center space-x-2">
+                <label className="text-sm font-semibold text-[#373435] dark:text-white flex items-center space-x-2">
                   <ListChecks className="h-5 w-5" />
                   <span>Ações do Pack *</span>
                 </label>
@@ -777,14 +777,14 @@ function PackFormModal({
               </div>
 
               {formData.tasks.length === 0 ? (
-                <div className="bg-gray-50 rounded-xl p-6 text-center">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6 text-center">
                   <ListChecks className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-600 text-sm">Nenhuma ação adicionada</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">Nenhuma ação adicionada</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {formData.tasks.map((task, index) => (
-                    <div key={index} className="bg-gray-50 rounded-xl p-4">
+                    <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
                       <div className="flex items-start space-x-3">
                         <span className="flex-shrink-0 w-6 h-6 bg-[#EBA500] text-white rounded-full flex items-center justify-center text-xs font-bold mt-2">
                           {index + 1}
@@ -793,17 +793,17 @@ function PackFormModal({
                           <textarea
                             value={task.title}
                             onChange={(e) => updateTask(index, 'title', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent resize-none"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                             rows="3"
                             placeholder="Descrição da ação..."
                             required
                           />
                           <div className="mt-3">
-                            <label className="block text-xs text-gray-600 mb-1">Status Inicial</label>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Status Inicial</label>
                             <select
                               value={task.default_status}
                               onChange={(e) => updateTask(index, 'default_status', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             >
                               <option value="pending">Pendente</option>
                               <option value="in_progress">Em Andamento</option>
@@ -826,7 +826,7 @@ function PackFormModal({
 
             {/* Associated Processes */}
             <div>
-              <label className="block text-sm font-semibold text-[#373435] mb-3 flex items-center space-x-2">
+              <label className="block text-sm font-semibold text-[#373435] dark:text-white mb-3 flex items-center space-x-2">
                 <Package className="h-5 w-5" />
                 <span>Associar a Processos</span>
               </label>
@@ -840,13 +840,13 @@ function PackFormModal({
                     placeholder="Buscar processo por nome..."
                     value={processSearchTerm}
                     onChange={(e) => setProcessSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent text-sm"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
                 <select
                   value={selectedJourney}
                   onChange={(e) => setSelectedJourney(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="">Todas as Jornadas</option>
                   {journeys.map(journey => (
@@ -857,15 +857,15 @@ function PackFormModal({
                 </select>
               </div>
 
-              <div className="bg-gray-50 rounded-xl p-4 max-h-60 overflow-y-auto">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 max-h-60 overflow-y-auto">
                 {processes.length === 0 ? (
-                  <p className="text-gray-600 text-sm text-center py-4">Nenhum processo disponível</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm text-center py-4">Nenhum processo disponível</p>
                 ) : filteredProcesses.length === 0 ? (
-                  <p className="text-gray-600 text-sm text-center py-4">Nenhum processo encontrado</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm text-center py-4">Nenhum processo encontrado</p>
                 ) : (
                   <div className="space-y-2">
                     {filteredProcesses.map(process => (
-                      <label key={process.id} className="flex items-center justify-between p-2 hover:bg-white rounded-lg cursor-pointer transition-colors">
+                      <label key={process.id} className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-gray-600 rounded-lg cursor-pointer transition-colors">
                         <div className="flex items-center space-x-3 flex-1 min-w-0">
                           <input
                             type="checkbox"
@@ -886,9 +886,9 @@ function PackFormModal({
                             className="w-4 h-4 text-[#EBA500] border-gray-300 rounded focus:ring-[#EBA500] flex-shrink-0"
                           />
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm text-[#373435] block truncate">{process.name}</span>
+                            <span className="text-sm text-[#373435] dark:text-white block truncate">{process.name}</span>
                             {process.journeys && (
-                              <span className="text-xs text-gray-500">{process.journeys.name}</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{process.journeys.name}</span>
                             )}
                           </div>
                         </div>
@@ -901,12 +901,12 @@ function PackFormModal({
           </div>
 
           {/* Footer */}
-          <div className="flex gap-3 p-6 border-t border-gray-200">
+          <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-semibold disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-semibold disabled:opacity-50"
             >
               Cancelar
             </button>

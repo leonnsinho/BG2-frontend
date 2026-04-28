@@ -281,17 +281,17 @@ export default function IndicatorsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       <SuperAdminBanner />
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 Indicadores de Gestão
               </h1>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 Controle mensal por jornada e acompanhe metas
               </p>
             </div>
@@ -307,7 +307,7 @@ export default function IndicatorsPage() {
               </button>
               <button
                 onClick={() => navigate('/indicators/manage')}
-                className="flex items-center gap-2 px-4 sm:px-5 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                className="flex items-center gap-2 px-4 sm:px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
               >
                 <Settings className="h-5 w-5" />
                 <span className="hidden sm:inline">Gerenciar</span>
@@ -321,7 +321,7 @@ export default function IndicatorsPage() {
               <select
                 value={selectedCompany}
                 onChange={(e) => setSelectedCompany(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer text-sm sm:text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer text-sm sm:text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Selecione uma empresa</option>
                 {companies.map(company => (
@@ -337,7 +337,7 @@ export default function IndicatorsPage() {
               <select
                 value={responsibleFilter}
                 onChange={(e) => setResponsibleFilter(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Todos os responsáveis</option>
                 <option value="unassigned">Sem responsável</option>
@@ -347,10 +347,10 @@ export default function IndicatorsPage() {
               </select>
             )}
 
-            <div className="relative flex items-center gap-1 bg-white border border-gray-300 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            <div className="relative flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
               <button
                 onClick={() => setSelectedYear(selectedYear - 1)}
-                className="p-3 text-gray-600 hover:bg-gray-50 transition-colors"
+                className="p-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 title="Ano anterior"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -369,14 +369,14 @@ export default function IndicatorsPage() {
                   }}
                   min="1900"
                   max="2100"
-                  className="w-20 py-1 text-center font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 rounded text-sm sm:text-base"
+                  className="w-20 py-1 text-center font-semibold text-gray-900 dark:text-white dark:bg-transparent focus:outline-none focus:ring-2 focus:ring-yellow-500 rounded text-sm sm:text-base"
                   placeholder="Ano"
                 />
               </div>
               
               <button
                 onClick={() => setSelectedYear(selectedYear + 1)}
-                className="p-3 text-gray-600 hover:bg-gray-50 transition-colors"
+                className="p-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 title="Próximo ano"
               >
                 <ChevronRight className="h-5 w-5" />
@@ -386,8 +386,8 @@ export default function IndicatorsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 mb-6 overflow-hidden">
-          <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-hide">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 mb-6 overflow-hidden">
+          <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto scrollbar-hide">
             {journeys.map((journey) => {
               const count = indicators.filter(ind => ind.journey === journey).length
               const journeyColors = {
@@ -405,14 +405,14 @@ export default function IndicatorsPage() {
                   className={`px-6 py-4 font-medium whitespace-nowrap transition-all border-b-2 flex-shrink-0 ${
                     activeTab === journey
                       ? journeyColors[journey]
-                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   {journey}
                   <span className={`ml-2 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                     activeTab === journey
-                      ? 'bg-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'bg-white dark:bg-gray-700 shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                   }`}>
                     {count}
                   </span>
@@ -425,18 +425,18 @@ export default function IndicatorsPage() {
           {loading ? (
             <div className="p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mb-4"></div>
-              <p className="text-gray-500">Carregando indicadores...</p>
+              <p className="text-gray-500 dark:text-gray-400">Carregando indicadores...</p>
             </div>
           ) : !selectedCompany ? (
             <div className="p-12 text-center">
               <TrendingUp className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 mb-2 text-lg font-medium">Selecione uma empresa</p>
-              <p className="text-gray-400 text-sm">Escolha uma empresa acima para visualizar os indicadores</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-2 text-lg font-medium">Selecione uma empresa</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm">Escolha uma empresa acima para visualizar os indicadores</p>
             </div>
           ) : filteredIndicators.length === 0 ? (
             <div className="p-12 text-center">
               <TrendingDown className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4 text-lg font-medium">Nenhum indicador ativo nesta jornada</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-4 text-lg font-medium">Nenhum indicador ativo nesta jornada</p>
               <button
                 onClick={() => navigate('/indicators/manage')}
                 className="px-6 py-3 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-all font-medium shadow-md hover:shadow-lg"
@@ -447,43 +447,43 @@ export default function IndicatorsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700/80">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10 shadow-sm">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700/80 z-10 shadow-sm">
                       Indicador
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Tipo
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Meta
                     </th>
                     {monthNames.map((month) => (
-                      <th key={month} className="px-4 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px]">
+                      <th key={month} className="px-4 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider min-w-[100px]">
                         {month}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
                   {filteredIndicators.map((indicator) => {
                     const companyData = getCompanyIndicatorData(indicator.id)
                     
                     return (
-                      <tr key={indicator.id} className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-white transition-all">
-                        <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-white group-hover:bg-gradient-to-r group-hover:from-gray-50 group-hover:to-white z-10 shadow-sm">
-                          <div className="font-semibold text-gray-900">{indicator.name}</div>
+                      <tr key={indicator.id} className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-white dark:hover:from-gray-700/50 dark:hover:to-gray-700/30 transition-all">
+                        <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 z-10 shadow-sm">
+                          <div className="font-semibold text-gray-900 dark:text-white">{indicator.name}</div>
                           {indicator.description && (
-                            <div className="text-xs text-gray-500 mt-1">{indicator.description}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{indicator.description}</div>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                             {indicator.type}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-semibold text-gray-900 px-3 py-1 bg-blue-50 rounded-lg border border-blue-100">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white px-3 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800">
                             {formatValue(indicator.meta, indicator.type) || indicator.meta}
                           </span>
                         </td>
@@ -512,10 +512,10 @@ export default function IndicatorsPage() {
                               ) : (
                                 <div
                                   onClick={() => handleCellClick(indicator.id, month)}
-                                  className={`text-sm font-medium text-gray-900 cursor-pointer px-3 py-2 rounded-lg min-h-[36px] flex items-center justify-center transition-all ${
+                                  className={`text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer px-3 py-2 rounded-lg min-h-[36px] flex items-center justify-center transition-all ${
                                     bgColor 
                                       ? `${bgColor} hover:opacity-80` 
-                                      : 'border border-transparent hover:bg-yellow-50 hover:border-yellow-200'
+                                      : 'border border-transparent hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:border-yellow-200 dark:hover:border-yellow-700'
                                   }`}
                                 >
                                   {formatValue(companyData?.[month], indicator.type) || '-'}

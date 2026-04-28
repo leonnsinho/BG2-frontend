@@ -79,7 +79,7 @@ function SummaryCard({ icon: Icon, iconBg, value, label, borderColor = 'border-g
   const Tag = onDetail ? 'button' : 'div'
   return (
     <Tag
-      className={`bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border-2 ${borderColor} flex flex-col gap-1 w-full text-left transition-all ${
+      className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border-2 ${borderColor} flex flex-col gap-1 w-full text-left transition-all ${
         onDetail ? 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer active:scale-[.98]' : ''
       }`}
       onClick={onDetail}
@@ -88,10 +88,10 @@ function SummaryCard({ icon: Icon, iconBg, value, label, borderColor = 'border-g
         <div className={`p-2 rounded-xl ${iconBg}`}>
           <Icon className="h-5 w-5" />
         </div>
-        {onDetail && <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Ver detalhes</span>}
+        {onDetail && <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">Ver detalhes</span>}
       </div>
-      <p className="text-2xl sm:text-3xl font-bold text-gray-900 leading-none">{value}</p>
-      <p className="text-xs sm:text-sm font-semibold text-gray-700">{label}</p>
+      <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-none">{value}</p>
+      <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</p>
     </Tag>
   )
 }
@@ -133,7 +133,7 @@ function TaskDetailModal({ modal, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
       <div
-        className="relative bg-white w-full sm:max-w-xl max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
+        className="relative bg-white dark:bg-gray-800 w-full sm:max-w-xl max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${accentHex}, ${accentHex}88)` }} />
@@ -144,11 +144,11 @@ function TaskDetailModal({ modal, onClose }) {
               <ModalIcon className="h-5 w-5" style={{ color: accentHex }} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900 leading-tight">{title}</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{title}</h3>
               <p className="text-xs text-gray-400 mt-0.5">{tasks.length} {tasks.length === 1 ? 'ação encontrada' : 'ações encontradas'}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -162,47 +162,47 @@ function TaskDetailModal({ modal, onClose }) {
                 placeholder="Buscar ação…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-[#EBA500] transition-all bg-gray-50"
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-[#EBA500] transition-all bg-gray-50"
               />
             </div>
           </div>
         )}
 
-        <div className="h-px bg-gray-100 mx-5" />
+        <div className="h-px bg-gray-100 dark:bg-gray-700 mx-5" />
 
         <div className="overflow-y-auto flex-1 px-5 py-3 space-y-2">
           {filtered.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <FileText className="h-5 w-5 text-gray-400" />
               </div>
-              <p className="text-sm font-medium text-gray-500">Nenhuma ação encontrada</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nenhuma ação encontrada</p>
               {search && <p className="text-xs text-gray-400 mt-1">Tente outro termo de busca</p>}
             </div>
           ) : filtered.map((t, idx) => {
             const rel = daysRelative(t.due_date)
             const st = statusLabel(t.status)
             return (
-              <div key={t.id} className="flex gap-3 p-3.5 rounded-2xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-gray-200 hover:shadow-sm transition-all">
+              <div key={t.id} className="flex gap-3 p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-700/50 hover:bg-white dark:hover:bg-gray-700 hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm transition-all">
                 <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white mt-0.5"
                   style={{ background: accentHex }}>
                   {idx + 1}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{t.title || 'Sem título'}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">{t.title || 'Sem título'}</p>
                     <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {t.due_date && (
-                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                      <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                         <Calendar className="h-3 w-3 text-gray-400" />
                         {new Date(t.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                         {rel && <span className={`ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${rel.cls}`}>{rel.label}</span>}
                       </span>
                     )}
                     {t.assigned_to_name && (
-                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                      <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                         <Users className="h-3 w-3 text-gray-400" />
                         {t.assigned_to_name}
                       </span>
@@ -214,9 +214,9 @@ function TaskDetailModal({ modal, onClose }) {
           })}
         </div>
 
-        <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between">
+        <div className="px-5 py-3.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/50 flex items-center justify-between">
           <p className="text-xs text-gray-400">
-            Mostrando <span className="font-semibold text-gray-600">{filtered.length}</span> de <span className="font-semibold text-gray-600">{tasks.length}</span> ações
+            Mostrando <span className="font-semibold text-gray-600 dark:text-gray-300">{filtered.length}</span> de <span className="font-semibold text-gray-600 dark:text-gray-300">{tasks.length}</span> ações
           </p>
           <button
             onClick={onClose}
@@ -674,10 +674,10 @@ export default function RelatorioProdutividadeUsuarioPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:bg-none dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader className="h-8 w-8 animate-spin text-[#EBA500] mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Carregando relatório…</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Carregando relatório…</p>
         </div>
       </div>
     )
@@ -692,7 +692,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:bg-none dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
 
         {/* ── Header ── */}
@@ -704,10 +704,10 @@ export default function RelatorioProdutividadeUsuarioPage() {
               </div>
               <span className="text-xs font-semibold text-[#EBA500] tracking-widest uppercase">Relatório</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight">
               Produtividade por Usuário
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Ações atribuídas, concluídas, atrasadas e em andamento por colaborador
             </p>
           </div>
@@ -716,7 +716,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
             <button
               onClick={() => loadData(true)}
               disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Atualizando…' : 'Atualizar'}
@@ -733,11 +733,11 @@ export default function RelatorioProdutividadeUsuarioPage() {
         </div>
 
         {/* ── Filtro de período ── */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4 mb-5 sm:mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-4 mb-5 sm:mb-6">
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 mr-2">
               <Filter className="h-4 w-4 text-gray-400" />
-              <span className="text-xs sm:text-sm font-semibold text-gray-600">Período:</span>
+              <span className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400">Período:</span>
             </div>
 
             {/* Quick periods */}
@@ -748,7 +748,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
                 className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                   period === p.value
                     ? 'bg-[#EBA500] text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 {p.value === '1m' && period === '1m' ? formatMonthLabel(selectedMonth) : p.label}
@@ -761,7 +761,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all border ${
                 period === 'custom'
                   ? 'bg-[#EBA500] text-white border-[#EBA500] shadow-sm'
-                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
               }`}
             >
               <CalendarRange className="h-3.5 w-3.5" />
@@ -771,14 +771,14 @@ export default function RelatorioProdutividadeUsuarioPage() {
 
           {/* Month picker */}
           {period === '1m' && (
-            <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-end gap-3">
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-end gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-gray-500">Selecione o mês</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">Selecione o mês</label>
                 <input
                   type="month"
                   value={selectedMonth}
                   onChange={e => setSelectedMonth(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
+                  className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
                 />
               </div>
             </div>
@@ -786,30 +786,30 @@ export default function RelatorioProdutividadeUsuarioPage() {
 
           {/* Custom date range inputs */}
           {showCustom && (
-            <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-end gap-3">
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-end gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-gray-500">De</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">De</label>
                 <input
                   type="date"
                   value={customStart}
                   max={customEnd || undefined}
                   onChange={e => setCustomStart(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
+                  className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-gray-500">Até</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">Até</label>
                 <input
                   type="date"
                   value={customEnd}
                   min={customStart || undefined}
                   onChange={e => setCustomEnd(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
+                  className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
                 />
               </div>
               <button
                 onClick={() => { setCustomStart(''); setCustomEnd('') }}
-                className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-500 hover:text-red-500 bg-gray-100 hover:bg-red-50 rounded-xl transition-all min-h-[40px]"
+                className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-500 hover:text-red-500 bg-gray-100 dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all min-h-[40px]"
                 title="Limpar datas"
               >
                 <X className="h-3.5 w-3.5" />
@@ -857,29 +857,29 @@ export default function RelatorioProdutividadeUsuarioPage() {
 
         {/* ── Empty state ── */}
         {userData.length === 0 ? (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
-            <div className="p-4 bg-gray-100 rounded-full w-fit mx-auto mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-10 text-center">
+            <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-full w-fit mx-auto mb-4">
               <FileText className="h-10 w-10 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma ação encontrada no período</h3>
-            <p className="text-sm text-gray-500">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Nenhuma ação encontrada no período</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Tente selecionar um período diferente ou verifique se há ações atribuídas no Planejamento Estratégico.
             </p>
           </div>
         ) : (
           <>
             {/* ── Search + table ── */}
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
 
               {/* Search bar */}
-              <div className="p-3 sm:p-4 border-b border-gray-100 flex items-center gap-2">
+              <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
                 <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
                 <input
                   type="text"
                   placeholder="Buscar usuário…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="flex-1 text-sm bg-transparent outline-none text-gray-700 placeholder-gray-400"
+                  className="flex-1 text-sm bg-transparent outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400"
                 />
                 {search && (
                   <button onClick={() => setSearch('')} className="text-gray-400 hover:text-gray-600">
@@ -893,12 +893,12 @@ export default function RelatorioProdutividadeUsuarioPage() {
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
+                    <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
                       {columns.map(col => (
                         <th
                           key={col.key}
                           onClick={() => handleSort(col.key)}
-                          className={`px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 select-none ${
+                          className={`px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none ${
                             col.align === 'center' ? 'text-center' : 'text-left'
                           }`}
                         >
@@ -910,11 +910,11 @@ export default function RelatorioProdutividadeUsuarioPage() {
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                     {filteredSorted.map((user, idx) => {
                       const pctConcluidas = totals.atribuidas === 0 ? 0 : Math.round((user.concluidas / user.atribuidas) * 100)
                       return (
-                        <tr key={user.userId} className="hover:bg-amber-50/30 transition-colors">
+                        <tr key={user.userId} className="hover:bg-amber-50/30 dark:hover:bg-amber-900/10 transition-colors">
                           {/* Usuário */}
                           <td className="px-4 py-3.5">
                             <div className="flex items-center gap-3">
@@ -930,8 +930,8 @@ export default function RelatorioProdutividadeUsuarioPage() {
                                 </div>
                               )}
                               <div>
-                                <p className="text-sm font-semibold text-gray-900">{formatName(user.name)}</p>
-                                <div className="mt-1 w-24 bg-gray-100 rounded-full h-1.5">
+                                <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatName(user.name)}</p>
+                                <div className="mt-1 w-24 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
                                   <div
                                     className="h-1.5 rounded-full bg-emerald-400 transition-all duration-700"
                                     style={{ width: `${pctConcluidas}%` }}
@@ -991,7 +991,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
               </div>
 
               {/* Cards — mobile */}
-              <div className="sm:hidden divide-y divide-gray-50">
+              <div className="sm:hidden divide-y divide-gray-50 dark:divide-gray-700">
                 {filteredSorted.map((user, idx) => {
                   const pctConcluidas = user.atribuidas === 0 ? 0 : Math.round((user.concluidas / user.atribuidas) * 100)
                   return (
@@ -1009,8 +1009,8 @@ export default function RelatorioProdutividadeUsuarioPage() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 truncate">{formatName(user.name)}</p>
-                          <div className="mt-1 w-full bg-gray-100 rounded-full h-1.5">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{formatName(user.name)}</p>
+                          <div className="mt-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
                             <div
                               className="h-1.5 rounded-full bg-emerald-400 transition-all duration-700"
                               style={{ width: `${pctConcluidas}%` }}
@@ -1044,7 +1044,7 @@ export default function RelatorioProdutividadeUsuarioPage() {
             </div>
 
             {lastUpdated && (
-              <p className="text-xs text-gray-400 mt-3 text-right">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-3 text-right">
                 Última atualização: {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </p>
             )}

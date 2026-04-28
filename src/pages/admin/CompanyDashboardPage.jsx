@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -657,13 +657,13 @@ const CompanyDashboardPage = () => {
   )
 
   return (
-    <div className="min-h-screen bg-white p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Módulos - Mostrado acima quando empresa selecionada */}
         {selectedCompany && (
-          <div className="mb-6 bg-white rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="mb-6 bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             {/* Header: identidade da empresa + ações */}
-            <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+            <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-700 dark:to-gray-800">
               <div className="flex items-center gap-3">
                 {/* Mini logo */}
                 <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex-shrink-0 overflow-hidden bg-gradient-to-br from-[#EBA500] to-yellow-600 flex items-center justify-center shadow-sm">
@@ -675,7 +675,7 @@ const CompanyDashboardPage = () => {
                 </div>
                 {/* Nome + stats */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-gray-900 text-sm sm:text-base truncate leading-tight">{selectedCompany.name}</p>
+                  <p className="font-bold text-gray-900 dark:text-white text-sm sm:text-base truncate leading-tight">{selectedCompany.name}</p>
                   <div className="flex items-center gap-3 mt-0.5">
                     <span className="text-xs text-gray-500 flex items-center gap-1">
                       <Users className="h-3 w-3" />{companyStats.usersCount} usuários
@@ -725,12 +725,12 @@ const CompanyDashboardPage = () => {
                     <button
                       key={idx}
                       onClick={() => navigateToModule(module.path, selectedCompany.id)}
-                      className="group flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border border-gray-200 bg-white hover:border-[#EBA500] hover:shadow-md active:scale-95 transition-all duration-150"
+                      className="group flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-[#EBA500] hover:shadow-md active:scale-95 transition-all duration-150"
                     >
                       <div className={`p-2 sm:p-2.5 rounded-lg ${colors.lightBg} group-hover:scale-110 transition-transform duration-150`}>
                         <Icon className={`h-5 w-5 ${colors.text}`} />
                       </div>
-                      <span className="text-[10px] sm:text-xs font-medium text-gray-600 text-center leading-tight line-clamp-2">
+                      <span className="text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-300 text-center leading-tight line-clamp-2">
                         {module.name}
                       </span>
                     </button>
@@ -742,10 +742,10 @@ const CompanyDashboardPage = () => {
         )}
 
         {/* Seletor de Empresa */}
-        <div className="mb-6 bg-white rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {/* Header da seção */}
-          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-700">Selecione a Empresa</p>
+          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100 dark:border-gray-700">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Selecione a Empresa</p>
           </div>
 
           <div className="p-3 sm:p-4">
@@ -757,7 +757,7 @@ const CompanyDashboardPage = () => {
                 placeholder="Buscar empresa..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#EBA500] focus:border-transparent transition-all"
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#EBA500] focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400"
               />
             </div>
 
@@ -776,7 +776,7 @@ const CompanyDashboardPage = () => {
                       className={`w-full flex items-center gap-3 px-3 py-2.5 sm:py-3 rounded-xl border-2 transition-all duration-150 text-left active:scale-[0.98] ${
                         isSelected
                           ? 'border-[#EBA500] bg-[#EBA500]/8 shadow-sm'
-                          : 'border-transparent hover:border-gray-200 hover:bg-gray-50 bg-white'
+                          : 'border-transparent hover:border-gray-200 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800'
                       }`}
                     >
                       {/* Logo */}
@@ -792,7 +792,7 @@ const CompanyDashboardPage = () => {
 
                       {/* Informações */}
                       <div className="flex-1 min-w-0">
-                        <p className={`font-semibold text-sm sm:text-base truncate ${isSelected ? 'text-gray-900' : 'text-gray-700'}`}>
+                        <p className={`font-semibold text-sm sm:text-base truncate ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                           {company.name}
                         </p>
                         <p className="text-xs text-gray-400 truncate">
@@ -828,23 +828,23 @@ const CompanyDashboardPage = () => {
         <div className="mb-6">
           <button
             onClick={() => { setShowCreateForm(v => !v); if (showCreateForm) clearCreateForm() }}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 sm:py-2.5 rounded-xl border-2 border-dashed border-gray-300 text-gray-600 hover:border-[#EBA500] hover:text-[#EBA500] active:scale-[0.98] transition-all duration-200 text-sm font-medium"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 sm:py-2.5 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-[#EBA500] hover:text-[#EBA500] active:scale-[0.98] transition-all duration-200 text-sm font-medium"
           >
             {showCreateForm ? <ChevronUp className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             {showCreateForm ? 'Ocultar formulário' : 'Criar Nova Empresa'}
           </button>
 
           {showCreateForm && (
-            <div className="mt-4 bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
+            <div className="mt-4 bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
               {/* Header do form */}
-              <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-[#EBA500]/10">
                     <Building2 className="h-5 w-5 text-[#EBA500]" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Nova Empresa</h3>
-                    <p className="text-sm text-gray-500">Cadastre uma nova empresa no sistema</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Nova Empresa</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Cadastre uma nova empresa no sistema</p>
                   </div>
                 </div>
                 {/* Toggle Internacional + Empresa Teste */}
@@ -874,7 +874,7 @@ const CompanyDashboardPage = () => {
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#EBA500]"></div>
-                  <span className="ms-2 text-xs font-medium text-gray-700">🌍 Internacional</span>
+                  <span className="ms-2 text-xs font-medium text-gray-700 dark:text-gray-300">🌍 Internacional</span>
                 </label>
                 </div>
               </div>
@@ -887,17 +887,17 @@ const CompanyDashboardPage = () => {
                     <ImageIcon className="h-4 w-4" /> Logo da Empresa (Opcional)
                   </label>
                   {!createLogoPreview ? (
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-[#EBA500]/50 transition-all">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 hover:border-[#EBA500]/50 transition-all">
                       <Upload className="h-7 w-7 text-gray-400 mb-2" />
                       <p className="text-sm text-gray-500"><span className="font-medium">Clique para upload</span> · PNG, JPG, GIF, WEBP (max 5MB)</p>
                       <input type="file" className="hidden" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" onChange={handleCreateLogoChange} />
                     </label>
                   ) : (
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl">
                       <img src={createLogoPreview} alt="Preview" className="w-16 h-16 object-contain rounded-lg bg-white border border-gray-200" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-700 truncate">{createLogoFile?.name}</p>
-                        <p className="text-xs text-gray-500">{(createLogoFile?.size / 1024).toFixed(1)} KB</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{(createLogoFile?.size / 1024).toFixed(1)} KB</p>
                       </div>
                       <button type="button" onClick={handleRemoveCreateLogo} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                         <X className="h-4 w-4" />
@@ -908,25 +908,25 @@ const CompanyDashboardPage = () => {
 
                 {/* Informações Básicas */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-[#EBA500]" /> Informações Básicas
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Razão Social *</label>
-                      <input type="text" value={createFormData.name} onChange={e => handleCreateInputChange('name', e.target.value)} placeholder="Ex: Empresa ABC Ltda" required className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Razão Social *</label>
+                      <input type="text" value={createFormData.name} onChange={e => handleCreateInputChange('name', e.target.value)} placeholder="Ex: Empresa ABC Ltda" required className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Nome Fantasia</label>
-                      <input type="text" value={createFormData.nome_fantasia} onChange={e => handleCreateInputChange('nome_fantasia', e.target.value)} placeholder="Ex: ABC Soluções" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome Fantasia</label>
+                      <input type="text" value={createFormData.nome_fantasia} onChange={e => handleCreateInputChange('nome_fantasia', e.target.value)} placeholder="Ex: ABC Soluções" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">{createIsInternational ? 'Documento Fiscal (Tax ID)' : 'CNPJ *'}</label>
-                      <input type="text" value={createFormData.cnpj} onChange={e => handleCreateInputChange('cnpj', e.target.value)} placeholder={createIsInternational ? 'Ex: 12-3456789' : '00.000.000/0000-00'} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{createIsInternational ? 'Documento Fiscal (Tax ID)' : 'CNPJ *'}</label>
+                      <input type="text" value={createFormData.cnpj} onChange={e => handleCreateInputChange('cnpj', e.target.value)} placeholder={createIsInternational ? 'Ex: 12-3456789' : '00.000.000/0000-00'} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Porte</label>
-                      <select value={createFormData.size} onChange={e => handleCreateInputChange('size', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Porte</label>
+                      <select value={createFormData.size} onChange={e => handleCreateInputChange('size', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white">
                         <option value="micro">Microempresa</option>
                         <option value="pequena">Pequena Empresa</option>
                         <option value="media">Média Empresa</option>
@@ -934,95 +934,95 @@ const CompanyDashboardPage = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Segmento</label>
-                      <input type="text" value={createFormData.industry} onChange={e => handleCreateInputChange('industry', e.target.value)} placeholder="Ex: Tecnologia, Varejo, Serviços..." className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Segmento</label>
+                      <input type="text" value={createFormData.industry} onChange={e => handleCreateInputChange('industry', e.target.value)} placeholder="Ex: Tecnologia, Varejo, Serviços..." className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Nº de Colaboradores</label>
-                      <input type="number" min="0" value={createFormData.num_colaboradores} onChange={e => handleCreateInputChange('num_colaboradores', e.target.value)} placeholder="Ex: 25" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nº de Colaboradores</label>
+                      <input type="number" min="0" value={createFormData.num_colaboradores} onChange={e => handleCreateInputChange('num_colaboradores', e.target.value)} placeholder="Ex: 25" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                   </div>
                 </div>
 
                 {/* Contato */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <Phone className="h-4 w-4 text-[#EBA500]" /> Informações de Contato
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Email Principal *</label>
-                      <input type="email" value={createFormData.email} onChange={e => handleCreateInputChange('email', e.target.value)} placeholder="contato@empresa.com" required className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Email Principal *</label>
+                      <input type="email" value={createFormData.email} onChange={e => handleCreateInputChange('email', e.target.value)} placeholder="contato@empresa.com" required className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Telefone da Empresa (com DDD) *</label>
-                      <input type="tel" value={createFormData.phone} onChange={e => handleCreateInputChange('phone', e.target.value)} placeholder={createIsInternational ? '+1 234 567-8900' : '(11) 99999-9999'} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Telefone da Empresa (com DDD) *</label>
+                      <input type="tel" value={createFormData.phone} onChange={e => handleCreateInputChange('phone', e.target.value)} placeholder={createIsInternational ? '+1 234 567-8900' : '(11) 99999-9999'} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Website</label>
-                      <input type="url" value={createFormData.website} onChange={e => handleCreateInputChange('website', e.target.value)} placeholder="https://www.empresa.com.br" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Website</label>
+                      <input type="url" value={createFormData.website} onChange={e => handleCreateInputChange('website', e.target.value)} placeholder="https://www.empresa.com.br" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                   </div>
                 </div>
 
                 {/* Endereço */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-[#EBA500]" /> Endereço *
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">País</label>
-                      <input type="text" value={createFormData.address.country} onChange={e => handleCreateInputChange('address.country', e.target.value)} placeholder={createIsInternational ? 'Ex: Portugal' : 'Brasil'} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">País</label>
+                      <input type="text" value={createFormData.address.country} onChange={e => handleCreateInputChange('address.country', e.target.value)} placeholder={createIsInternational ? 'Ex: Portugal' : 'Brasil'} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Logradouro</label>
-                      <input type="text" value={createFormData.address.street} onChange={e => handleCreateInputChange('address.street', e.target.value)} placeholder="Rua, Avenida..." className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Logradouro</label>
+                      <input type="text" value={createFormData.address.street} onChange={e => handleCreateInputChange('address.street', e.target.value)} placeholder="Rua, Avenida..." className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Número</label>
-                      <input type="text" value={createFormData.address.number} onChange={e => handleCreateInputChange('address.number', e.target.value)} placeholder="123" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Número</label>
+                      <input type="text" value={createFormData.address.number} onChange={e => handleCreateInputChange('address.number', e.target.value)} placeholder="123" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Complemento</label>
-                      <input type="text" value={createFormData.address.complement} onChange={e => handleCreateInputChange('address.complement', e.target.value)} placeholder="Sala, Apto..." className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Complemento</label>
+                      <input type="text" value={createFormData.address.complement} onChange={e => handleCreateInputChange('address.complement', e.target.value)} placeholder="Sala, Apto..." className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Bairro</label>
-                      <input type="text" value={createFormData.address.neighborhood} onChange={e => handleCreateInputChange('address.neighborhood', e.target.value)} placeholder="Centro" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Bairro</label>
+                      <input type="text" value={createFormData.address.neighborhood} onChange={e => handleCreateInputChange('address.neighborhood', e.target.value)} placeholder="Centro" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Cidade</label>
-                      <input type="text" value={createFormData.address.city} onChange={e => handleCreateInputChange('address.city', e.target.value)} placeholder="São Paulo" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cidade</label>
+                      <input type="text" value={createFormData.address.city} onChange={e => handleCreateInputChange('address.city', e.target.value)} placeholder="São Paulo" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">{createIsInternational ? 'Estado/Região' : 'Estado'}</label>
-                      <input type="text" value={createFormData.address.state} onChange={e => handleCreateInputChange('address.state', e.target.value)} placeholder={createIsInternational ? 'California' : 'SP'} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{createIsInternational ? 'Estado/Região' : 'Estado'}</label>
+                      <input type="text" value={createFormData.address.state} onChange={e => handleCreateInputChange('address.state', e.target.value)} placeholder={createIsInternational ? 'California' : 'SP'} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">{createIsInternational ? 'Código Postal / ZIP' : 'CEP'}</label>
-                      <input type="text" value={createFormData.address.zip} onChange={e => handleCreateInputChange('address.zip', e.target.value)} placeholder={createIsInternational ? '90210' : '00000-000'} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{createIsInternational ? 'Código Postal / ZIP' : 'CEP'}</label>
+                      <input type="text" value={createFormData.address.zip} onChange={e => handleCreateInputChange('address.zip', e.target.value)} placeholder={createIsInternational ? '90210' : '00000-000'} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                   </div>
                 </div>
 
                 {/* Dados Fiscais */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <Hash className="h-4 w-4 text-[#EBA500]" /> Dados Fiscais
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Estadual *</label>
-                      <input type="text" value={createFormData.inscricao_estadual} onChange={e => handleCreateInputChange('inscricao_estadual', e.target.value)} placeholder="Ex: 123.456.789.000 ou ISENTO" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Inscrição Estadual *</label>
+                      <input type="text" value={createFormData.inscricao_estadual} onChange={e => handleCreateInputChange('inscricao_estadual', e.target.value)} placeholder="Ex: 123.456.789.000 ou ISENTO" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Municipal *</label>
-                      <input type="text" value={createFormData.inscricao_municipal} onChange={e => handleCreateInputChange('inscricao_municipal', e.target.value)} placeholder="Ex: 12345678" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Inscrição Municipal *</label>
+                      <input type="text" value={createFormData.inscricao_municipal} onChange={e => handleCreateInputChange('inscricao_municipal', e.target.value)} placeholder="Ex: 12345678" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Regime Tributário *</label>
-                      <select value={createFormData.regime_tributario} onChange={e => handleCreateInputChange('regime_tributario', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Regime Tributário *</label>
+                      <select value={createFormData.regime_tributario} onChange={e => handleCreateInputChange('regime_tributario', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white">
                         <option value="">Selecione...</option>
                         <option value="simples_nacional">Simples Nacional</option>
                         <option value="lucro_real">Lucro Real</option>
@@ -1030,8 +1030,8 @@ const CompanyDashboardPage = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Contribuinte do ICMS *</label>
-                      <select value={createFormData.contribuinte_icms} onChange={e => handleCreateInputChange('contribuinte_icms', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Contribuinte do ICMS *</label>
+                      <select value={createFormData.contribuinte_icms} onChange={e => handleCreateInputChange('contribuinte_icms', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white">
                         <option value="">Selecione...</option>
                         <option value="contribuinte">Contribuinte</option>
                         <option value="contribuinte_isento">Contribuinte Isento</option>
@@ -1039,8 +1039,8 @@ const CompanyDashboardPage = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">É cliente Partner?</label>
-                      <select value={createFormData.is_partner_client} onChange={e => handleCreateInputChange('is_partner_client', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">É cliente Partner?</label>
+                      <select value={createFormData.is_partner_client} onChange={e => handleCreateInputChange('is_partner_client', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white">
                         <option value="">Selecione...</option>
                         <option value="sim">Sim</option>
                         <option value="nao">Não</option>
@@ -1051,70 +1051,70 @@ const CompanyDashboardPage = () => {
 
                 {/* Representante Legal */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <Users className="h-4 w-4 text-[#EBA500]" /> Representante Legal
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Nome Completo *</label>
-                      <input type="text" value={createFormData.representante.nome} onChange={e => handleCreateInputChange('representante.nome', e.target.value)} placeholder="Ex: João da Silva" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome Completo *</label>
+                      <input type="text" value={createFormData.representante.nome} onChange={e => handleCreateInputChange('representante.nome', e.target.value)} placeholder="Ex: João da Silva" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">CPF *</label>
-                      <input type="text" value={createFormData.representante.cpf} onChange={e => handleCreateInputChange('representante.cpf', e.target.value)} placeholder="000.000.000-00" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">CPF *</label>
+                      <input type="text" value={createFormData.representante.cpf} onChange={e => handleCreateInputChange('representante.cpf', e.target.value)} placeholder="000.000.000-00" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Telefone (com DDD) *</label>
-                      <input type="tel" value={createFormData.representante.telefone} onChange={e => handleCreateInputChange('representante.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Telefone (com DDD) *</label>
+                      <input type="tel" value={createFormData.representante.telefone} onChange={e => handleCreateInputChange('representante.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
-                      <input type="email" value={createFormData.representante.email} onChange={e => handleCreateInputChange('representante.email', e.target.value)} placeholder="representante@empresa.com" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">E-mail *</label>
+                      <input type="email" value={createFormData.representante.email} onChange={e => handleCreateInputChange('representante.email', e.target.value)} placeholder="representante@empresa.com" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Endereço Completo *</label>
-                      <input type="text" value={createFormData.representante.endereco} onChange={e => handleCreateInputChange('representante.endereco', e.target.value)} placeholder="Rua, nº, bairro, cidade – estado" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Endereço Completo *</label>
+                      <input type="text" value={createFormData.representante.endereco} onChange={e => handleCreateInputChange('representante.endereco', e.target.value)} placeholder="Rua, nº, bairro, cidade – estado" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                   </div>
                 </div>
 
                 {/* Contato para NF / Cobrança */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <CreditCard className="h-4 w-4 text-[#EBA500]" /> Contato para NF / Cobrança
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Nome Completo *</label>
-                      <input type="text" value={createFormData.contato_cobranca.nome} onChange={e => handleCreateInputChange('contato_cobranca.nome', e.target.value)} placeholder="Ex: Maria Souza" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome Completo *</label>
+                      <input type="text" value={createFormData.contato_cobranca.nome} onChange={e => handleCreateInputChange('contato_cobranca.nome', e.target.value)} placeholder="Ex: Maria Souza" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Cargo *</label>
-                      <input type="text" value={createFormData.contato_cobranca.cargo} onChange={e => handleCreateInputChange('contato_cobranca.cargo', e.target.value)} placeholder="Ex: Financeiro" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cargo *</label>
+                      <input type="text" value={createFormData.contato_cobranca.cargo} onChange={e => handleCreateInputChange('contato_cobranca.cargo', e.target.value)} placeholder="Ex: Financeiro" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
-                      <input type="email" value={createFormData.contato_cobranca.email} onChange={e => handleCreateInputChange('contato_cobranca.email', e.target.value)} placeholder="financeiro@empresa.com" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">E-mail *</label>
+                      <input type="email" value={createFormData.contato_cobranca.email} onChange={e => handleCreateInputChange('contato_cobranca.email', e.target.value)} placeholder="financeiro@empresa.com" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Telefone (com DDD) *</label>
-                      <input type="tel" value={createFormData.contato_cobranca.telefone} onChange={e => handleCreateInputChange('contato_cobranca.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Telefone (com DDD) *</label>
+                      <input type="tel" value={createFormData.contato_cobranca.telefone} onChange={e => handleCreateInputChange('contato_cobranca.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                   </div>
                 </div>
 
                 {/* Condições de Pagamento */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <Wallet className="h-4 w-4 text-[#EBA500]" /> Condições de Pagamento
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Melhor Dia para Pagamento *</label>
-                      <input type="text" value={createFormData.melhor_dia_pagamento} onChange={e => handleCreateInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: 10" className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500]" />
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Melhor Dia para Pagamento *</label>
+                      <input type="text" value={createFormData.melhor_dia_pagamento} onChange={e => handleCreateInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: 10" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Forma de Pagamento *</label>
                       <select value={createFormData.forma_pagamento} onChange={e => handleCreateInputChange('forma_pagamento', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white">
                         <option value="">Selecione...</option>
                         <option value="boleto">Boleto Bancário</option>
@@ -1128,11 +1128,11 @@ const CompanyDashboardPage = () => {
                 </div>
 
                 {/* Botões */}
-                <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
                   <button
                     type="button"
                     onClick={() => { setShowCreateForm(false); clearCreateForm() }}
-                    className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                    className="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                   >
                     Cancelar
                   </button>
@@ -1156,7 +1156,7 @@ const CompanyDashboardPage = () => {
         {/* Modal de Detalhes */}
         {showDetailsModal && selectedCompany && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[75vh] shadow-2xl flex flex-col overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full max-h-[75vh] shadow-2xl flex flex-col overflow-hidden">
               {/* Header com Gradiente */}
               <div className="relative bg-gradient-to-br from-[#EBA500] via-yellow-500 to-yellow-600 p-6 rounded-t-3xl flex-shrink-0">
                 <button
@@ -1197,43 +1197,43 @@ const CompanyDashboardPage = () => {
               <div className="p-6 space-y-4 overflow-y-auto flex-1 scrollbar-custom">
                 {/* Informações Básicas */}
                 <div>
-                  <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-[#EBA500]" />
                     Informações Básicas
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {selectedCompany.cnpj && (
-                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                      <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                         <div className="p-2 bg-blue-100 rounded-lg">
                           <Hash className="h-5 w-5 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">CNPJ</label>
-                          <p className="text-gray-900 font-semibold mt-1">{selectedCompany.cnpj}</p>
+                          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">CNPJ</label>
+                          <p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.cnpj}</p>
                         </div>
                       </div>
                     )}
                     
                     {selectedCompany.industry && (
-                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                      <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                         <div className="p-2 bg-purple-100 rounded-lg">
                           <Briefcase className="h-5 w-5 text-purple-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Setor</label>
-                          <p className="text-gray-900 font-semibold mt-1">{selectedCompany.industry}</p>
+                          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Setor</label>
+                          <p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.industry}</p>
                         </div>
                       </div>
                     )}
                     
                     {selectedCompany.created_at && (
-                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                      <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                         <div className="p-2 bg-green-100 rounded-lg">
                           <Calendar className="h-5 w-5 text-green-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cadastro</label>
-                          <p className="text-gray-900 font-semibold mt-1">
+                          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Cadastro</label>
+                          <p className="text-gray-900 dark:text-white font-semibold mt-1">
                             {new Date(selectedCompany.created_at).toLocaleDateString('pt-BR', {
                               day: '2-digit',
                               month: 'long',
@@ -1249,42 +1249,42 @@ const CompanyDashboardPage = () => {
                 {/* Contato */}
                 {(selectedCompany.email || selectedCompany.phone || selectedCompany.website) && (
                   <div>
-                    <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                       <Phone className="h-5 w-5 text-[#EBA500]" />
                       Informações de Contato
                     </h4>
                     <div className="grid grid-cols-1 gap-3">
                       {selectedCompany.email && (
-                        <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 hover:shadow-md transition-all">
+                        <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-blue-50 dark:from-blue-900/20 to-indigo-50 dark:to-indigo-900/20 rounded-xl border border-blue-100 dark:border-blue-800/40 hover:shadow-md transition-all">
                           <div className="p-2 bg-blue-500 rounded-lg shadow-sm">
                             <Mail className="h-5 w-5 text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <label className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Email</label>
-                            <p className="text-gray-900 font-semibold mt-1 break-all">{selectedCompany.email}</p>
+                            <label className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Email</label>
+                            <p className="text-gray-900 dark:text-white font-semibold mt-1 break-all">{selectedCompany.email}</p>
                           </div>
                         </div>
                       )}
                       
                       {selectedCompany.phone && (
-                        <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 hover:shadow-md transition-all">
+                        <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-green-50 dark:from-green-900/20 to-emerald-50 dark:to-emerald-900/20 rounded-xl border border-green-100 dark:border-green-800/40 hover:shadow-md transition-all">
                           <div className="p-2 bg-green-500 rounded-lg shadow-sm">
                             <Phone className="h-5 w-5 text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <label className="text-xs font-semibold text-green-700 uppercase tracking-wide">Telefone</label>
-                            <p className="text-gray-900 font-semibold mt-1">{selectedCompany.phone}</p>
+                            <label className="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">Telefone</label>
+                            <p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.phone}</p>
                           </div>
                         </div>
                       )}
                       
                       {selectedCompany.website && (
-                        <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 hover:shadow-md transition-all">
+                        <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-purple-50 dark:from-purple-900/20 to-pink-50 dark:to-pink-900/20 rounded-xl border border-purple-100 dark:border-purple-800/40 hover:shadow-md transition-all">
                           <div className="p-2 bg-purple-500 rounded-lg shadow-sm">
                             <Globe className="h-5 w-5 text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <label className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Website</label>
+                            <label className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Website</label>
                             <a 
                               href={selectedCompany.website.startsWith('http') ? selectedCompany.website : `https://${selectedCompany.website}`}
                               target="_blank"
@@ -1303,30 +1303,30 @@ const CompanyDashboardPage = () => {
                 {/* Endereço (se houver) */}
                 {selectedCompany.address && (
                   <div>
-                    <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-[#EBA500]" />
                       Localização
                     </h4>
-                    <div className="p-3 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border border-orange-200">
+                    <div className="p-3 bg-gradient-to-br from-orange-50 dark:from-orange-900/20 to-amber-50 dark:to-amber-900/20 rounded-xl border border-orange-200 dark:border-orange-700/40">
                       <div className="flex items-start gap-3">
                         <div className="p-2 bg-orange-500 rounded-lg shadow-sm">
                           <MapPin className="h-5 w-5 text-white" />
                         </div>
                         <div className="flex-1">
                           {(selectedCompany.address.street || selectedCompany.address.number) && (
-                            <p className="text-gray-900 font-semibold">
+                            <p className="text-gray-900 dark:text-white font-semibold">
                               {[selectedCompany.address.street, selectedCompany.address.number]
                                 .filter(Boolean)
                                 .join(', ')}
                             </p>
                           )}
                           {selectedCompany.address.complement && (
-                            <p className="text-gray-700 text-sm mt-1">{selectedCompany.address.complement}</p>
+                            <p className="text-gray-700 dark:text-gray-300 text-sm mt-1">{selectedCompany.address.complement}</p>
                           )}
                           {selectedCompany.address.neighborhood && (
-                            <p className="text-gray-700 text-sm mt-1">{selectedCompany.address.neighborhood}</p>
+                            <p className="text-gray-700 dark:text-gray-300 text-sm mt-1">{selectedCompany.address.neighborhood}</p>
                           )}
-                          <p className="text-gray-700 mt-1">
+                          <p className="text-gray-700 dark:text-gray-300 mt-1">
                             {[
                               selectedCompany.address.city, 
                               selectedCompany.address.state, 
@@ -1344,54 +1344,54 @@ const CompanyDashboardPage = () => {
                 {/* Dados Fiscais */}
                 {(selectedCompany.nome_fantasia || selectedCompany.inscricao_estadual || selectedCompany.inscricao_municipal || selectedCompany.num_colaboradores || selectedCompany.regime_tributario || selectedCompany.contribuinte_icms || selectedCompany.is_partner_client != null) && (
                   <div>
-                    <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                       <Hash className="h-5 w-5 text-[#EBA500]" /> Dados Fiscais
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {selectedCompany.nome_fantasia && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-indigo-100 rounded-lg"><Building2 className="h-4 w-4 text-indigo-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome Fantasia</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.nome_fantasia}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Nome Fantasia</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.nome_fantasia}</p></div>
                         </div>
                       )}
                       {selectedCompany.num_colaboradores && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-blue-100 rounded-lg"><Users className="h-4 w-4 text-blue-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nº Colaboradores</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.num_colaboradores}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Nº Colaboradores</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.num_colaboradores}</p></div>
                         </div>
                       )}
                       {selectedCompany.inscricao_estadual && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-yellow-100 rounded-lg"><Hash className="h-4 w-4 text-yellow-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Inscrição Estadual</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.inscricao_estadual}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Inscrição Estadual</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.inscricao_estadual}</p></div>
                         </div>
                       )}
                       {selectedCompany.inscricao_municipal && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-yellow-100 rounded-lg"><Hash className="h-4 w-4 text-yellow-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Inscrição Municipal</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.inscricao_municipal}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Inscrição Municipal</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.inscricao_municipal}</p></div>
                         </div>
                       )}
                       {selectedCompany.regime_tributario && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-green-100 rounded-lg"><Briefcase className="h-4 w-4 text-green-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Regime Tributário</label>
-                            <p className="text-gray-900 font-semibold mt-1">{{ simples_nacional: 'Simples Nacional', lucro_real: 'Lucro Real', lucro_presumido: 'Lucro Presumido' }[selectedCompany.regime_tributario] || selectedCompany.regime_tributario}</p>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Regime Tributário</label>
+                            <p className="text-gray-900 dark:text-white font-semibold mt-1">{{ simples_nacional: 'Simples Nacional', lucro_real: 'Lucro Real', lucro_presumido: 'Lucro Presumido' }[selectedCompany.regime_tributario] || selectedCompany.regime_tributario}</p>
                           </div>
                         </div>
                       )}
                       {selectedCompany.contribuinte_icms && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-orange-100 rounded-lg"><Hash className="h-4 w-4 text-orange-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contribuinte ICMS</label>
-                            <p className="text-gray-900 font-semibold mt-1">{{ contribuinte: 'Contribuinte', contribuinte_isento: 'Contribuinte Isento', nao_contribuinte: 'Não Contribuinte' }[selectedCompany.contribuinte_icms] || selectedCompany.contribuinte_icms}</p>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Contribuinte ICMS</label>
+                            <p className="text-gray-900 dark:text-white font-semibold mt-1">{{ contribuinte: 'Contribuinte', contribuinte_isento: 'Contribuinte Isento', nao_contribuinte: 'Não Contribuinte' }[selectedCompany.contribuinte_icms] || selectedCompany.contribuinte_icms}</p>
                           </div>
                         </div>
                       )}
                       {selectedCompany.is_partner_client != null && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-purple-100 rounded-lg"><Check className="h-4 w-4 text-purple-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cliente Partner</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.is_partner_client ? 'Sim' : 'Não'}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Cliente Partner</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.is_partner_client ? 'Sim' : 'Não'}</p></div>
                         </div>
                       )}
                     </div>
@@ -1401,38 +1401,38 @@ const CompanyDashboardPage = () => {
                 {/* Representante Legal */}
                 {selectedCompany.representante_legal?.nome && (
                   <div>
-                    <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                       <Users className="h-5 w-5 text-[#EBA500]" /> Representante Legal
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {selectedCompany.representante_legal.nome && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl md:col-span-2">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl md:col-span-2">
                           <div className="p-2 bg-blue-100 rounded-lg"><Users className="h-4 w-4 text-blue-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.representante_legal.nome}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Nome</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.representante_legal.nome}</p></div>
                         </div>
                       )}
                       {selectedCompany.representante_legal.cpf && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-gray-100 rounded-lg"><Hash className="h-4 w-4 text-gray-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">CPF</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.representante_legal.cpf}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">CPF</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.representante_legal.cpf}</p></div>
                         </div>
                       )}
                       {selectedCompany.representante_legal.telefone && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-green-100 rounded-lg"><Phone className="h-4 w-4 text-green-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Telefone</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.representante_legal.telefone}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Telefone</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.representante_legal.telefone}</p></div>
                         </div>
                       )}
                       {selectedCompany.representante_legal.email && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-blue-100 rounded-lg"><Mail className="h-4 w-4 text-blue-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">E-mail</label><p className="text-gray-900 font-semibold mt-1 break-all">{selectedCompany.representante_legal.email}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">E-mail</label><p className="text-gray-900 dark:text-white font-semibold mt-1 break-all">{selectedCompany.representante_legal.email}</p></div>
                         </div>
                       )}
                       {selectedCompany.representante_legal.endereco && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl md:col-span-2">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl md:col-span-2">
                           <div className="p-2 bg-orange-100 rounded-lg"><MapPin className="h-4 w-4 text-orange-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Endereço</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.representante_legal.endereco}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Endereço</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.representante_legal.endereco}</p></div>
                         </div>
                       )}
                     </div>
@@ -1442,32 +1442,32 @@ const CompanyDashboardPage = () => {
                 {/* Contato NF / Cobrança */}
                 {selectedCompany.contato_cobranca?.nome && (
                   <div>
-                    <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                       <CreditCard className="h-5 w-5 text-[#EBA500]" /> Contato para NF / Cobrança
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {selectedCompany.contato_cobranca.nome && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-blue-100 rounded-lg"><Users className="h-4 w-4 text-blue-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.contato_cobranca.nome}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Nome</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.contato_cobranca.nome}</p></div>
                         </div>
                       )}
                       {selectedCompany.contato_cobranca.cargo && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-purple-100 rounded-lg"><Briefcase className="h-4 w-4 text-purple-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cargo</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.contato_cobranca.cargo}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Cargo</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.contato_cobranca.cargo}</p></div>
                         </div>
                       )}
                       {selectedCompany.contato_cobranca.email && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-blue-100 rounded-lg"><Mail className="h-4 w-4 text-blue-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">E-mail</label><p className="text-gray-900 font-semibold mt-1 break-all">{selectedCompany.contato_cobranca.email}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">E-mail</label><p className="text-gray-900 dark:text-white font-semibold mt-1 break-all">{selectedCompany.contato_cobranca.email}</p></div>
                         </div>
                       )}
                       {selectedCompany.contato_cobranca.telefone && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-green-100 rounded-lg"><Phone className="h-4 w-4 text-green-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Telefone</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.contato_cobranca.telefone}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Telefone</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.contato_cobranca.telefone}</p></div>
                         </div>
                       )}
                     </div>
@@ -1477,20 +1477,20 @@ const CompanyDashboardPage = () => {
                 {/* Condições de Pagamento */}
                 {(selectedCompany.melhor_dia_pagamento || selectedCompany.forma_pagamento) && (
                   <div>
-                    <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                       <Wallet className="h-5 w-5 text-[#EBA500]" /> Condições de Pagamento
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {selectedCompany.melhor_dia_pagamento && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-green-100 rounded-lg"><Calendar className="h-4 w-4 text-green-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Melhor Dia</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.melhor_dia_pagamento}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Melhor Dia</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.melhor_dia_pagamento}</p></div>
                         </div>
                       )}
                       {selectedCompany.forma_pagamento && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-indigo-100 rounded-lg"><CreditCard className="h-4 w-4 text-indigo-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Forma de Pagamento</label><p className="text-gray-900 font-semibold mt-1">{selectedCompany.forma_pagamento}</p></div>
+                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Forma de Pagamento</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.forma_pagamento}</p></div>
                         </div>
                       )}
                     </div>
@@ -1499,10 +1499,10 @@ const CompanyDashboardPage = () => {
               </div>
 
               {/* Footer */}
-              <div className="px-6 pb-6 flex justify-end gap-3 flex-shrink-0 border-t border-gray-100 pt-4 bg-gray-50 rounded-b-3xl">
+              <div className="px-6 pb-6 flex justify-end gap-3 flex-shrink-0 border-t border-gray-100 dark:border-gray-700 pt-4 bg-gray-50 dark:bg-gray-700/50 rounded-b-3xl">
                 <button
                   onClick={() => setShowDetailsModal(false)}
-                  className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                  className="px-6 py-2.5 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors font-medium"
                 >
                   Fechar
                 </button>
@@ -1534,7 +1534,7 @@ const CompanyDashboardPage = () => {
         {/* Modal de Confirmação de Exclusão */}
         {showDeleteModal && selectedCompany && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full">
               <div className="p-6">
                 <div className="flex items-center justify-center mb-4">
                   <div className="p-3 bg-red-100 rounded-full">
@@ -1542,10 +1542,10 @@ const CompanyDashboardPage = () => {
                   </div>
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
                   Excluir Empresa
                 </h3>
-                <p className="text-gray-600 text-center mb-6">
+                <p className="text-gray-600 dark:text-gray-300 text-center mb-6">
                   Tem certeza que deseja excluir <strong>{selectedCompany.name}</strong>? 
                   Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.
                 </p>
@@ -1553,7 +1553,7 @@ const CompanyDashboardPage = () => {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowDeleteModal(false)}
-                    className="flex-1 px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                    className="flex-1 px-6 py-2.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors font-medium"
                   >
                     Cancelar
                   </button>
@@ -1734,7 +1734,7 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
       onClick={onClose}
     >
       <div 
-        className="relative bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] shadow-2xl flex flex-col overflow-hidden"
+        className="relative bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full max-h-[85vh] shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header com Gradiente */}
@@ -1764,7 +1764,7 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
 
           {/* Upload de Logo */}
           <div>
-            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <ImageIcon className="h-5 w-5 text-[#EBA500]" />
               Logo da Empresa
             </h4>
@@ -1808,7 +1808,7 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-900 truncate mb-1">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate mb-1">
                       {logoFile ? logoFile.name : 'Logo atual'}
                     </p>
                     {logoFile && (
@@ -1818,7 +1818,7 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
                       </p>
                     )}
                     {!logoFile && (
-                      <p className="text-xs text-gray-500">Imagem carregada</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Imagem carregada</p>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -1846,13 +1846,13 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
           
           {/* Informações Básicas */}
           <div>
-            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <Building2 className="h-5 w-5 text-[#EBA500]" />
               Informações Básicas
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Building2 className="w-4 h-4 text-blue-600" />
                   Razão Social *
                 </label>
@@ -1861,12 +1861,12 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   placeholder="Digite o nome da empresa"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white hover:border-gray-300"
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white dark:bg-gray-700 dark:text-white hover:border-gray-300 dark:hover:border-gray-500"
                 />
               </div>
               
               <div className="col-span-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Hash className="w-4 h-4 text-purple-600" />
                   Documento Fiscal
                 </label>
@@ -1874,12 +1874,12 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
                   value={formData.cnpj}
                   onChange={(e) => setFormData({...formData, cnpj: e.target.value})}
                   placeholder="CNPJ, Tax ID, NIF, etc."
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white hover:border-gray-300"
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white dark:bg-gray-700 dark:text-white hover:border-gray-300 dark:hover:border-gray-500"
                 />
               </div>
               
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Briefcase className="w-4 h-4 text-green-600" />
                   Porte da Empresa
                 </label>
@@ -1895,7 +1895,7 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
               </div>
               
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Briefcase className="w-4 h-4 text-orange-600" />
                   Segmento
                 </label>
@@ -1903,7 +1903,7 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
                   value={formData.industry}
                   onChange={(e) => setFormData({...formData, industry: e.target.value})}
                   placeholder="Ex: Tecnologia, Varejo, Saúde"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white hover:border-gray-300"
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white dark:bg-gray-700 dark:text-white hover:border-gray-300 dark:hover:border-gray-500"
                 />
               </div>
             </div>
@@ -1911,13 +1911,13 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
 
           {/* Informações de Contato */}
           <div>
-            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <Phone className="h-5 w-5 text-[#EBA500]" />
               Informações de Contato
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Mail className="w-4 h-4 text-blue-600" />
                   Email Corporativo
                 </label>
@@ -1926,12 +1926,12 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   placeholder="contato@empresa.com"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white hover:border-gray-300"
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white dark:bg-gray-700 dark:text-white hover:border-gray-300 dark:hover:border-gray-500"
                 />
               </div>
               
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Phone className="w-4 h-4 text-green-600" />
                   Telefone da Empresa (com DDD) *
                 </label>
@@ -1939,12 +1939,12 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
                   placeholder="(11) 99999-9999"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white hover:border-gray-300"
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white dark:bg-gray-700 dark:text-white hover:border-gray-300 dark:hover:border-gray-500"
                 />
               </div>
               
               <div className="col-span-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Globe className="w-4 h-4 text-purple-600" />
                   Website
                 </label>
@@ -1953,7 +1953,7 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
                   value={formData.website}
                   onChange={(e) => setFormData({...formData, website: e.target.value})}
                   placeholder="https://www.empresa.com"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white hover:border-gray-300"
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white dark:bg-gray-700 dark:text-white hover:border-gray-300 dark:hover:border-gray-500"
                 />
               </div>
             </div>
@@ -1961,70 +1961,70 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
 
           {/* Endereço */}
           <div>
-            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <MapPin className="h-5 w-5 text-[#EBA500]" /> Endereço *
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="col-span-3 md:col-span-1">
-                <label className="block text-xs font-medium text-gray-600 mb-1">País</label>
-                <input value={formData.address.country} onChange={e => handleInputChange('address.country', e.target.value)} placeholder="Brasil" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">País</label>
+                <input value={formData.address.country} onChange={e => handleInputChange('address.country', e.target.value)} placeholder="Brasil" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div className="col-span-3 md:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Logradouro *</label>
-                <input value={formData.address.street} onChange={e => handleInputChange('address.street', e.target.value)} placeholder="Rua, Avenida..." className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Logradouro *</label>
+                <input value={formData.address.street} onChange={e => handleInputChange('address.street', e.target.value)} placeholder="Rua, Avenida..." className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Número *</label>
-                <input value={formData.address.number} onChange={e => handleInputChange('address.number', e.target.value)} placeholder="123" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Número *</label>
+                <input value={formData.address.number} onChange={e => handleInputChange('address.number', e.target.value)} placeholder="123" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Complemento</label>
-                <input value={formData.address.complement} onChange={e => handleInputChange('address.complement', e.target.value)} placeholder="Sala, Apto..." className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Complemento</label>
+                <input value={formData.address.complement} onChange={e => handleInputChange('address.complement', e.target.value)} placeholder="Sala, Apto..." className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Bairro</label>
-                <input value={formData.address.neighborhood} onChange={e => handleInputChange('address.neighborhood', e.target.value)} placeholder="Centro" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Bairro</label>
+                <input value={formData.address.neighborhood} onChange={e => handleInputChange('address.neighborhood', e.target.value)} placeholder="Centro" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Cidade *</label>
-                <input value={formData.address.city} onChange={e => handleInputChange('address.city', e.target.value)} placeholder="São Paulo" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cidade *</label>
+                <input value={formData.address.city} onChange={e => handleInputChange('address.city', e.target.value)} placeholder="São Paulo" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Estado *</label>
-                <input value={formData.address.state} onChange={e => handleInputChange('address.state', e.target.value)} placeholder="SP" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Estado *</label>
+                <input value={formData.address.state} onChange={e => handleInputChange('address.state', e.target.value)} placeholder="SP" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">CEP *</label>
-                <input value={formData.address.zip} onChange={e => handleInputChange('address.zip', e.target.value)} placeholder="00000-000" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">CEP *</label>
+                <input value={formData.address.zip} onChange={e => handleInputChange('address.zip', e.target.value)} placeholder="00000-000" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
             </div>
           </div>
 
           {/* Dados Fiscais */}
           <div>
-            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <Hash className="h-5 w-5 text-[#EBA500]" /> Dados Fiscais
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nome Fantasia</label>
-                <input value={formData.nome_fantasia} onChange={e => handleInputChange('nome_fantasia', e.target.value)} placeholder="Ex: ABC Soluções" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome Fantasia</label>
+                <input value={formData.nome_fantasia} onChange={e => handleInputChange('nome_fantasia', e.target.value)} placeholder="Ex: ABC Soluções" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nº de Colaboradores</label>
-                <input type="number" min="0" value={formData.num_colaboradores} onChange={e => handleInputChange('num_colaboradores', e.target.value)} placeholder="Ex: 25" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nº de Colaboradores</label>
+                <input type="number" min="0" value={formData.num_colaboradores} onChange={e => handleInputChange('num_colaboradores', e.target.value)} placeholder="Ex: 25" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Estadual</label>
-                <input value={formData.inscricao_estadual} onChange={e => handleInputChange('inscricao_estadual', e.target.value)} placeholder="Ex: 123.456.789.000 ou ISENTO" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Inscrição Estadual</label>
+                <input value={formData.inscricao_estadual} onChange={e => handleInputChange('inscricao_estadual', e.target.value)} placeholder="Ex: 123.456.789.000 ou ISENTO" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Municipal</label>
-                <input value={formData.inscricao_municipal} onChange={e => handleInputChange('inscricao_municipal', e.target.value)} placeholder="Ex: 12345678" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Inscrição Municipal</label>
+                <input value={formData.inscricao_municipal} onChange={e => handleInputChange('inscricao_municipal', e.target.value)} placeholder="Ex: 12345678" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Regime Tributário *</label>
-                <select value={formData.regime_tributario} onChange={e => handleInputChange('regime_tributario', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Regime Tributário *</label>
+                <select value={formData.regime_tributario} onChange={e => handleInputChange('regime_tributario', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white">
                   <option value="">Selecione...</option>
                   <option value="simples_nacional">Simples Nacional</option>
                   <option value="lucro_real">Lucro Real</option>
@@ -2032,8 +2032,8 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Contribuinte do ICMS *</label>
-                <select value={formData.contribuinte_icms} onChange={e => handleInputChange('contribuinte_icms', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Contribuinte do ICMS *</label>
+                <select value={formData.contribuinte_icms} onChange={e => handleInputChange('contribuinte_icms', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white">
                   <option value="">Selecione...</option>
                   <option value="contribuinte">Contribuinte</option>
                   <option value="contribuinte_isento">Contribuinte Isento</option>
@@ -2041,8 +2041,8 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">É cliente Partner?</label>
-                <select value={formData.is_partner_client} onChange={e => handleInputChange('is_partner_client', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">É cliente Partner?</label>
+                <select value={formData.is_partner_client} onChange={e => handleInputChange('is_partner_client', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white">
                   <option value="">Selecione...</option>
                   <option value="sim">Sim</option>
                   <option value="nao">Não</option>
@@ -2053,71 +2053,71 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
 
           {/* Representante Legal */}
           <div>
-            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <Users className="h-5 w-5 text-[#EBA500]" /> Representante Legal
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nome Completo *</label>
-                <input value={formData.representante.nome} onChange={e => handleInputChange('representante.nome', e.target.value)} placeholder="Ex: João da Silva" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome Completo *</label>
+                <input value={formData.representante.nome} onChange={e => handleInputChange('representante.nome', e.target.value)} placeholder="Ex: João da Silva" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">CPF *</label>
-                <input value={formData.representante.cpf} onChange={e => handleInputChange('representante.cpf', e.target.value)} placeholder="000.000.000-00" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">CPF *</label>
+                <input value={formData.representante.cpf} onChange={e => handleInputChange('representante.cpf', e.target.value)} placeholder="000.000.000-00" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Telefone (com DDD) *</label>
-                <input value={formData.representante.telefone} onChange={e => handleInputChange('representante.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Telefone (com DDD) *</label>
+                <input value={formData.representante.telefone} onChange={e => handleInputChange('representante.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
-                <input type="email" value={formData.representante.email} onChange={e => handleInputChange('representante.email', e.target.value)} placeholder="representante@empresa.com" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">E-mail *</label>
+                <input type="email" value={formData.representante.email} onChange={e => handleInputChange('representante.email', e.target.value)} placeholder="representante@empresa.com" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Endereço Completo *</label>
-                <input value={formData.representante.endereco} onChange={e => handleInputChange('representante.endereco', e.target.value)} placeholder="Rua, nº, bairro, cidade – estado" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Endereço Completo *</label>
+                <input value={formData.representante.endereco} onChange={e => handleInputChange('representante.endereco', e.target.value)} placeholder="Rua, nº, bairro, cidade – estado" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
             </div>
           </div>
 
           {/* Contato para NF / Cobrança */}
           <div>
-            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-[#EBA500]" /> Contato para NF / Cobrança
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nome Completo *</label>
-                <input value={formData.contato_cobranca_data.nome} onChange={e => handleInputChange('contato_cobranca_data.nome', e.target.value)} placeholder="Ex: Maria Souza" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome Completo *</label>
+                <input value={formData.contato_cobranca_data.nome} onChange={e => handleInputChange('contato_cobranca_data.nome', e.target.value)} placeholder="Ex: Maria Souza" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Cargo *</label>
-                <input value={formData.contato_cobranca_data.cargo} onChange={e => handleInputChange('contato_cobranca_data.cargo', e.target.value)} placeholder="Ex: Financeiro" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cargo *</label>
+                <input value={formData.contato_cobranca_data.cargo} onChange={e => handleInputChange('contato_cobranca_data.cargo', e.target.value)} placeholder="Ex: Financeiro" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
-                <input type="email" value={formData.contato_cobranca_data.email} onChange={e => handleInputChange('contato_cobranca_data.email', e.target.value)} placeholder="financeiro@empresa.com" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">E-mail *</label>
+                <input type="email" value={formData.contato_cobranca_data.email} onChange={e => handleInputChange('contato_cobranca_data.email', e.target.value)} placeholder="financeiro@empresa.com" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Telefone (com DDD) *</label>
-                <input type="tel" value={formData.contato_cobranca_data.telefone} onChange={e => handleInputChange('contato_cobranca_data.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Telefone (com DDD) *</label>
+                <input type="tel" value={formData.contato_cobranca_data.telefone} onChange={e => handleInputChange('contato_cobranca_data.telefone', e.target.value)} placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
             </div>
           </div>
 
           {/* Condições de Pagamento */}
           <div>
-            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <Wallet className="h-5 w-5 text-[#EBA500]" /> Condições de Pagamento
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Melhor Dia para Pagamento *</label>
-                <input value={formData.melhor_dia_pagamento} onChange={e => handleInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: 10" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white" />
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Melhor Dia para Pagamento *</label>
+                <input value={formData.melhor_dia_pagamento} onChange={e => handleInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: 10" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
-                <select value={formData.forma_pagamento} onChange={e => handleInputChange('forma_pagamento', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Forma de Pagamento *</label>
+                <select value={formData.forma_pagamento} onChange={e => handleInputChange('forma_pagamento', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white">
                   <option value="">Selecione...</option>
                   <option value="boleto">Boleto Bancário</option>
                   <option value="cartao_credito">Cartão de Crédito</option>
@@ -2131,7 +2131,7 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
           </div>
           
           {/* Footer com botões */}
-          <div className="px-6 pb-6 flex justify-end gap-3 flex-shrink-0 border-t border-gray-100 pt-4 bg-gray-50 rounded-b-3xl">
+          <div className="px-6 pb-6 flex justify-end gap-3 flex-shrink-0 border-t border-gray-100 dark:border-gray-700 pt-4 bg-gray-50 dark:bg-gray-700/50 rounded-b-3xl">
             <button
               type="button"
               onClick={onClose}

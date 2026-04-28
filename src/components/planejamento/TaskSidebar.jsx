@@ -234,24 +234,24 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
       
       {/* Sidebar */}
       <div 
-        className={`fixed top-0 right-0 h-full w-full sm:w-[500px] bg-white shadow-2xl z-10 rounded-l-[40px] sm:rounded-l-[40px] transform transition-transform duration-500 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[500px] bg-white dark:bg-gray-800 shadow-2xl z-10 rounded-l-[40px] sm:rounded-l-[40px] transform transition-transform duration-500 ease-out ${
           isVisible ? 'translate-x-0' : 'translate-x-full'
         } flex flex-col`}
       >
         
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 rounded-tl-[40px] sm:rounded-tl-[40px] flex-shrink-0">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 rounded-tl-[40px] sm:rounded-tl-[40px] flex-shrink-0">
           <div className="flex items-center space-x-2">
             {getStatusIcon(task.status)}
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
               {getStatusLabel(task.status)}
             </span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-400" />
+            <X className="h-5 w-5 text-gray-400 dark:text-gray-500" />
           </button>
         </div>
 
@@ -273,7 +273,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
                       setEditingTitle(false)
                     }
                   }}
-                  className="w-full text-xl sm:text-2xl font-bold text-gray-900 bg-transparent border-none outline-none focus:ring-0 p-0"
+                  className="w-full text-xl sm:text-2xl font-bold text-gray-900 dark:text-white bg-transparent border-none outline-none focus:ring-0 p-0"
                   autoFocus
                 />
                 <div className="flex items-center space-x-2 text-xs text-gray-500">
@@ -285,12 +285,12 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
                 className={profile?.role !== 'user' ? "group cursor-pointer" : ""}
                 onClick={() => profile?.role !== 'user' && setEditingTitle(true)}
               >
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
                   {task.texto}
                 </h1>
                 {profile?.role !== 'user' && (
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-1">
-                    <div className="flex items-center space-x-1 text-xs text-gray-400">
+                    <div className="flex items-center space-x-1 text-xs text-gray-400 dark:text-gray-500">
                       <Edit3 className="h-3 w-3" />
                       <span>Clique para editar</span>
                     </div>
@@ -308,10 +308,10 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
                 <User className="h-4 w-4 text-[#EBA500]" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-gray-500 uppercase font-semibold tracking-wide">
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wide">
                   Responsável
                 </div>
-                <div className="text-sm font-medium text-gray-900 truncate">
+                <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {getResponsavelName()}
                 </div>
               </div>
@@ -319,14 +319,14 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
 
             {/* Due Date */}
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Calendar className="h-4 w-4 text-blue-600" />
+              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-gray-500 uppercase font-semibold tracking-wide">
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wide">
                   Data Limite
                 </div>
-                <div className="text-sm font-medium text-gray-900 truncate">
+                <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {formatDate(task.dataLimite || task.due_date)}
                 </div>
               </div>
@@ -335,10 +335,10 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
             {/* Description */}
             {task.descricao && (
               <div className="space-y-2">
-                <div className="text-xs text-gray-500 uppercase font-semibold tracking-wide">
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wide">
                   Descrição
                 </div>
-                <div className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg p-3">
+                <div className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   {task.descricao}
                 </div>
               </div>
@@ -346,11 +346,11 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
           </div>
 
           {/* Comments Section */}
-          <div className="mt-6 sm:mt-8 border-t border-gray-100 pb-4 sm:pb-6">
+            <div className="mt-6 sm:mt-8 border-t border-gray-100 dark:border-gray-700 pb-4 sm:pb-6">
             <div className="p-4 sm:p-6">
               <div className="flex items-center space-x-2 mb-4">
                 <MessageCircle className="h-5 w-5 text-gray-400" />
-                <h3 className="font-semibold text-gray-900">
+              <h3 className="font-semibold text-gray-900 dark:text-white">
                   Comentários ({comments.length})
                 </h3>
               </div>
@@ -363,7 +363,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
                     <p className="text-sm">Carregando comentários...</p>
                   </div>
                 ) : comments.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                     <MessageCircle className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                     <p className="text-sm">Nenhum comentário ainda</p>
                     <p className="text-xs text-gray-400 mt-1">Seja o primeiro a comentar</p>
@@ -375,16 +375,16 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
                         <div className="w-6 h-6 bg-[#EBA500]/20 rounded-full flex items-center justify-center flex-shrink-0">
                           <User className="h-3 w-3 text-[#EBA500]" />
                         </div>
-                        <span className="text-sm font-medium text-gray-900 truncate">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
                           {comment.author_name}
                         </span>
-                        <span className="text-xs text-gray-500 flex-shrink-0">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
                           {formatDateTime(comment.created_at)}
                         </span>
                       </div>
                       <div className="ml-8">
                         {comment.content && (
-                          <div className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 mb-2">
+                          <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-2">
                             {comment.content}
                           </div>
                         )}
@@ -399,11 +399,11 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
         </div>
 
         {/* Add Comment - Fixed at bottom */}
-        <div className="border-t border-gray-100 bg-white rounded-bl-[40px] sm:rounded-bl-[40px] flex-shrink-0">
+        <div className="border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-bl-[40px] sm:rounded-bl-[40px] flex-shrink-0">
           <div className="p-4 sm:p-6 space-y-3">
             {/* File Upload Area */}
             {showFileUpload && (
-              <div className="border rounded-lg p-3 bg-gray-50">
+              <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-700">
                 <FileUploadArea
                   onFileSelect={handleFileSelect}
                   selectedFiles={selectedFiles}
@@ -420,7 +420,7 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Adicione um comentário..."
-                className="w-full p-3 pr-12 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-colors"
+                className="w-full p-3 pr-12 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm resize-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-colors"
                 rows={3}
               />
               {/* Attach Files Button */}
@@ -440,11 +440,11 @@ const TaskSidebar = ({ isOpen, onClose, task, users = [], onTaskUpdate }) => {
             {/* Progress bar durante upload */}
             {uploading && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                   <span>Enviando arquivos...</span>
                   <span>{Math.round(uploadProgress)}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-1">
+                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1">
                   <div 
                     className="bg-[#EBA500] h-1 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}

@@ -14,6 +14,16 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Theme init: apply dark class before React loads to prevent flash -->
+    <script>
+      ;(function () {
+        try {
+          if (localStorage.getItem('bg2_theme') === 'dark') {
+            document.documentElement.classList.add('dark')
+          }
+        } catch (e) {}
+      })()
+    </script>
     <script type="module" src="/src/main.jsx"></script>
     
     <!-- Service Worker Registration -->

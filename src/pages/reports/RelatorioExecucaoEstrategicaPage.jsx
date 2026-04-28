@@ -62,7 +62,7 @@ function formatName(n) {
 
 function StatCard({ icon: Icon, iconBg, value, label, sub, borderColor = 'border-gray-100', onDetail }) {
   return (
-    <div className={`bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border-2 ${borderColor} flex flex-col gap-1`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border-2 ${borderColor} flex flex-col gap-1`}>
       <div className="flex items-center justify-between mb-1">
         <div className={`p-2 rounded-xl ${iconBg}`}>
           <Icon className="h-5 w-5" />
@@ -77,8 +77,8 @@ function StatCard({ icon: Icon, iconBg, value, label, sub, borderColor = 'border
           </button>
         )}
       </div>
-      <p className="text-2xl sm:text-3xl font-bold text-gray-900 leading-none">{value}</p>
-      <p className="text-xs sm:text-sm font-semibold text-gray-700">{label}</p>
+      <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-none">{value}</p>
+      <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</p>
       {sub && <p className="text-xs text-gray-400">{sub}</p>}
     </div>
   )
@@ -114,7 +114,7 @@ function TaskDetailModal({ modal, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
       <div
-        className="relative bg-white w-full sm:max-w-xl max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
+        className="relative bg-white dark:bg-gray-800 w-full sm:max-w-xl max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Coloured top band */}
@@ -127,11 +127,11 @@ function TaskDetailModal({ modal, onClose }) {
               <ModalIcon className="h-5 w-5" style={{ color: accentHex }} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900 leading-tight">{title}</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{title}</h3>
               <p className="text-xs text-gray-400 mt-0.5">{tasks.length} {tasks.length === 1 ? 'meta encontrada' : 'metas encontradas'}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -146,14 +146,14 @@ function TaskDetailModal({ modal, onClose }) {
                 placeholder="Buscar por nome ou responsável…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-[#EBA500] transition-all bg-gray-50"
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-[#EBA500] transition-all bg-gray-50"
               />
             </div>
           </div>
         )}
 
         {/* Divider */}
-        <div className="h-px bg-gray-100 mx-5" />
+        <div className="h-px bg-gray-100 dark:bg-gray-700 mx-5" />
 
         {/* List */}
         <div className="overflow-y-auto flex-1 px-5 py-3 space-y-2">
@@ -172,7 +172,7 @@ function TaskDetailModal({ modal, onClose }) {
               ? Math.round((t.completed_assignees / t.total_assignees) * 100)
               : null
             return (
-              <div key={t.id} className="group flex gap-3 p-3.5 rounded-2xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-gray-200 hover:shadow-sm transition-all">
+              <div key={t.id} className="group flex gap-3 p-3.5 rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-700/50 hover:bg-white dark:hover:bg-gray-700 hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm transition-all">
                 {/* Index dot */}
                 <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white mt-0.5"
                   style={{ background: accentHex }}>
@@ -182,21 +182,21 @@ function TaskDetailModal({ modal, onClose }) {
                 <div className="flex-1 min-w-0">
                   {/* Title + status */}
                   <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{t.title || 'Sem título'}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">{t.title || 'Sem título'}</p>
                     <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
                   </div>
 
                   {/* Meta row */}
                   <div className="flex flex-wrap gap-2">
                     {t.due_date && (
-                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                      <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                         <Calendar className="h-3 w-3 text-gray-400" />
                         {new Date(t.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                         {rel && <span className={`ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${rel.cls}`}>{rel.label}</span>}
                       </span>
                     )}
                     {t.assigned_to_name && (
-                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                      <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                         <Users className="h-3 w-3 text-gray-400" />
                         {t.assigned_to_name}
                       </span>
@@ -210,7 +210,7 @@ function TaskDetailModal({ modal, onClose }) {
                         <span className="text-[10px] text-gray-400 font-medium">Responsáveis concluídos</span>
                         <span className="text-[10px] font-bold text-gray-600">{t.completed_assignees}/{t.total_assignees}</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                         <div
                           className="h-1.5 rounded-full transition-all"
                           style={{ width: `${progress}%`, background: accentHex }}
@@ -225,9 +225,9 @@ function TaskDetailModal({ modal, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between">
+        <div className="px-5 py-3.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/50 flex items-center justify-between">
           <p className="text-xs text-gray-400">
-            Mostrando <span className="font-semibold text-gray-600">{filtered.length}</span> de <span className="font-semibold text-gray-600">{tasks.length}</span> metas
+            Mostrando <span className="font-semibold text-gray-600 dark:text-gray-300">{filtered.length}</span> de <span className="font-semibold text-gray-600 dark:text-gray-300">{tasks.length}</span> metas
           </p>
           <button
             onClick={onClose}
@@ -247,10 +247,10 @@ function PctBar({ label, value, color, count, total }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs sm:text-sm font-medium text-gray-700">{label}</span>
-        <span className="text-xs sm:text-sm font-bold text-gray-900">{value}%</span>
+        <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+        <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">{value}%</span>
       </div>
-      <div className="w-full bg-gray-100 rounded-full h-2.5">
+      <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5">
         <div
           className={`h-2.5 rounded-full transition-all duration-700 ${color}`}
           style={{ width: `${value}%` }}
@@ -827,10 +827,10 @@ export default function RelatorioExecucaoEstrategicaPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:bg-none dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EBA500] mx-auto mb-4" />
-          <p className="text-gray-600">Carregando relatório...</p>
+          <p className="text-gray-600 dark:text-gray-400">Carregando relatório...</p>
         </div>
       </div>
     )
@@ -838,7 +838,7 @@ export default function RelatorioExecucaoEstrategicaPage() {
 
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:bg-none dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 
         {/* ── Header ── */}
@@ -851,8 +851,8 @@ export default function RelatorioExecucaoEstrategicaPage() {
                 </div>
                 <span className="text-xs font-semibold text-[#EBA500] uppercase tracking-wide">Relatórios / Performance</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Execução Estratégica</h1>
-              <p className="text-sm sm:text-base text-gray-500 mt-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Execução Estratégica</h1>
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
                 Acompanhe o desempenho das ações do planejamento estratégico
               </p>
             </div>
@@ -861,7 +861,7 @@ export default function RelatorioExecucaoEstrategicaPage() {
               <button
                 onClick={() => loadData(true)}
                 disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-60"
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 transition-all shadow-sm disabled:opacity-60"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                 Atualizar
@@ -878,18 +878,18 @@ export default function RelatorioExecucaoEstrategicaPage() {
           </div>
 
           {lastUpdated && (
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
               Última atualização: {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
             </p>
           )}
         </div>
 
         {/* ── Filtro de período ── */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4 mb-5 sm:mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-4 mb-5 sm:mb-6">
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 mr-2">
               <Filter className="h-4 w-4 text-gray-400" />
-              <span className="text-xs sm:text-sm font-semibold text-gray-600">Período:</span>
+              <span className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400">Período:</span>
             </div>
 
             {/* Quick periods */}
@@ -900,7 +900,7 @@ export default function RelatorioExecucaoEstrategicaPage() {
                 className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                   period === p.value
                     ? 'bg-[#EBA500] text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 {p.value === '1m' && period === '1m' ? formatMonthLabel(selectedMonth) : p.label}
@@ -915,7 +915,7 @@ export default function RelatorioExecucaoEstrategicaPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all border ${
                 period === 'custom'
                   ? 'bg-[#EBA500] text-white border-[#EBA500] shadow-sm'
-                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
               }`}
             >
               <CalendarRange className="h-3.5 w-3.5" />
@@ -925,14 +925,14 @@ export default function RelatorioExecucaoEstrategicaPage() {
 
           {/* Month picker */}
           {period === '1m' && (
-            <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-end gap-3">
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-end gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-gray-500">Selecione o mês</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">Selecione o mês</label>
                 <input
                   type="month"
                   value={selectedMonth}
                   onChange={e => setSelectedMonth(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
+                  className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
                 />
               </div>
             </div>
@@ -940,30 +940,30 @@ export default function RelatorioExecucaoEstrategicaPage() {
 
           {/* Custom date range inputs */}
           {showCustom && (
-            <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-end gap-3">
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-end gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-gray-500">De</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">De</label>
                 <input
                   type="date"
                   value={customStart}
                   max={customEnd || undefined}
                   onChange={e => setCustomStart(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
+                  className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-gray-500">Até</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">Até</label>
                 <input
                   type="date"
                   value={customEnd}
                   min={customStart || undefined}
                   onChange={e => setCustomEnd(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
+                  className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:border-[#EBA500] focus:ring-2 focus:ring-amber-500/20 transition-all min-h-[40px]"
                 />
               </div>
               <button
                 onClick={() => { setCustomStart(''); setCustomEnd('') }}
-                className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-500 hover:text-red-500 bg-gray-100 hover:bg-red-50 rounded-xl transition-all min-h-[40px]"
+                className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-500 hover:text-red-500 bg-gray-100 dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all min-h-[40px]"
                 title="Limpar datas"
               >
                 <X className="h-3.5 w-3.5" />
@@ -975,12 +975,12 @@ export default function RelatorioExecucaoEstrategicaPage() {
 
         {/* ── Empty state ── */}
         {totalComPrazo === 0 ? (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
-            <div className="p-4 bg-gray-100 rounded-full w-fit mx-auto mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-10 text-center">
+            <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-full w-fit mx-auto mb-4">
               <FileText className="h-10 w-10 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma ação com prazo no período</h3>
-            <p className="text-sm text-gray-500">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Nenhuma ação com prazo no período</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Tente selecionar um período maior ou adicione ações com prazo no Planejamento Estratégico.
             </p>
           </div>
@@ -1029,12 +1029,12 @@ export default function RelatorioExecucaoEstrategicaPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
 
               {/* ── Distribuição de status ── */}
-              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-5">
-                  <div className="p-1.5 bg-blue-50 rounded-lg">
+                  <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <BarChart3 className="h-4 w-4 text-blue-600" />
                   </div>
-                  <h2 className="text-base sm:text-lg font-bold text-gray-900">Distribuição de Status</h2>
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Distribuição de Status</h2>
                 </div>
 
                 <div className="space-y-4">
@@ -1062,14 +1062,14 @@ export default function RelatorioExecucaoEstrategicaPage() {
                 </div>
 
                 {/* Taxa geral */}
-                <div className="mt-6 pt-4 border-t border-gray-100">
+                <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-gray-800">Taxa de conclusão geral</span>
+                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">Taxa de conclusão geral</span>
                     <span className={`text-lg font-bold ${taxaConclusaoGeral >= 70 ? 'text-green-600' : taxaConclusaoGeral >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
                       {taxaConclusaoGeral}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-3.5">
+                  <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-3.5">
                     <div
                       className={`h-3.5 rounded-full transition-all duration-700 ${
                         taxaConclusaoGeral >= 70
@@ -1081,27 +1081,27 @@ export default function RelatorioExecucaoEstrategicaPage() {
                       style={{ width: `${taxaConclusaoGeral}%` }}
                     />
                   </div>
-                  <p className="text-xs text-gray-400 mt-1.5">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
                     {concluidas.length} de {totalComPrazo} ações concluídas no planejamento
                   </p>
                 </div>
               </div>
 
               {/* ── Performance por liderança ── */}
-              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-5">
-                  <div className="p-1.5 bg-amber-50 rounded-lg">
+                  <div className="p-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                     <Award className="h-4 w-4 text-[#EBA500]" />
                   </div>
-                  <h2 className="text-base sm:text-lg font-bold text-gray-900">Performance por Liderança</h2>
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Performance por Liderança</h2>
                 </div>
 
                 {assigneeCompletions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <div className="p-3 bg-gray-100 rounded-full mb-3">
+                    <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full mb-3">
                       <Users className="h-8 w-8 text-gray-400" />
                     </div>
-                    <p className="text-sm text-gray-500">Nenhuma ação foi concluída por responsáveis neste período.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma ação foi concluída por responsáveis neste período.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1119,10 +1119,10 @@ export default function RelatorioExecucaoEstrategicaPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs sm:text-sm font-semibold text-gray-800 truncate">{formatName(user.name)}</span>
-                              <span className="text-xs font-bold text-gray-700 ml-2 flex-shrink-0">{user.count} ação{user.count !== 1 ? 'ões' : ''}</span>
+                              <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{formatName(user.name)}</span>
+                              <span className="text-xs font-bold text-gray-700 dark:text-gray-300 ml-2 flex-shrink-0">{user.count} ação{user.count !== 1 ? 'ões' : ''}</span>
                             </div>
-                            <div className="w-full bg-gray-100 rounded-full h-2">
+                            <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                               <div
                                 className={`h-2 rounded-full transition-all duration-700 ${
                                   idx === 0
@@ -1144,14 +1144,14 @@ export default function RelatorioExecucaoEstrategicaPage() {
                 )}
 
                 {topPerformer && (
-                  <div className="mt-5 pt-4 border-t border-amber-100 flex items-center gap-3 bg-amber-50/60 rounded-xl p-3">
+                  <div className="mt-5 pt-4 border-t border-amber-100 dark:border-amber-900/40 flex items-center gap-3 bg-amber-50/60 dark:bg-amber-900/20 rounded-xl p-3">
                     <div className="p-2 bg-[#EBA500]/10 rounded-lg flex-shrink-0">
                       <Zap className="h-4 w-4 text-[#EBA500]" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs text-gray-500 font-medium">Destaque do período</p>
-                      <p className="text-sm font-bold text-gray-900 truncate">{formatName(topPerformer.name)}</p>
-                      <p className="text-xs text-gray-500">{topPerformer.count} ação{topPerformer.count !== 1 ? 'ões' : ''} concluída{topPerformer.count !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Destaque do período</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{formatName(topPerformer.name)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{topPerformer.count} ação{topPerformer.count !== 1 ? 'ões' : ''} concluída{topPerformer.count !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
                 )}
@@ -1159,12 +1159,12 @@ export default function RelatorioExecucaoEstrategicaPage() {
 
               {/* ── Últimas ações em atraso ── */}
               {atrasadas.length > 0 && (
-                <div className="lg:col-span-2 bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-red-100">
+                <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-red-100 dark:border-red-900/40">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="p-1.5 bg-red-50 rounded-lg">
+                    <div className="p-1.5 bg-red-50 dark:bg-red-900/20 rounded-lg">
                       <AlertTriangle className="h-4 w-4 text-red-500" />
                     </div>
-                    <h2 className="text-base sm:text-lg font-bold text-gray-900">Ações em Atraso</h2>
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Ações em Atraso</h2>
                     <span className="ml-auto text-xs font-semibold bg-red-100 text-red-700 px-2 py-1 rounded-full">
                       {atrasadas.length} ação{atrasadas.length !== 1 ? 'ões' : ''}
                     </span>
@@ -1174,10 +1174,10 @@ export default function RelatorioExecucaoEstrategicaPage() {
                     {atrasadas.slice(0, 20).map(task => {
                       const daysLate = Math.floor((now - new Date(task.due_date)) / (1000 * 60 * 60 * 24))
                       return (
-                        <div key={task.id} className="flex items-start gap-3 p-3 bg-red-50/50 rounded-xl border border-red-100">
+                        <div key={task.id} className="flex items-start gap-3 p-3 bg-red-50/50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-700/40">
                           <AlertTriangle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-800 truncate">{task.title}</p>
+                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{task.title}</p>
                             <div className="flex flex-wrap items-center gap-3 mt-1">
                               <span className="flex items-center gap-1 text-xs text-red-600">
                                 <Calendar className="h-3 w-3" />
@@ -1187,7 +1187,7 @@ export default function RelatorioExecucaoEstrategicaPage() {
                                 {daysLate}d atrasada{daysLate !== 1 ? 's' : ''}
                               </span>
                               {task.assigned_to_name && (
-                                <span className="flex items-center gap-1 text-xs text-gray-500">
+                                <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                                   <Users className="h-3 w-3" />
                                   {formatName(task.assigned_to_name)}
                                 </span>
@@ -1207,32 +1207,32 @@ export default function RelatorioExecucaoEstrategicaPage() {
               )}
 
               {/* ── Resumo de conclusões ── */}
-              <div className={`bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 ${atrasadas.length === 0 ? 'lg:col-span-2' : ''}`}>
+              <div className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 ${atrasadas.length === 0 ? 'lg:col-span-2' : ''}`}>
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="p-1.5 bg-green-50 rounded-lg">
+                  <div className="p-1.5 bg-green-50 dark:bg-green-900/20 rounded-lg">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
                   </div>
-                  <h2 className="text-base sm:text-lg font-bold text-gray-900">Últimas Concluídas</h2>
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Últimas Concluídas</h2>
                 </div>
 
                 {concluidas.length === 0 ? (
                   <div className="text-center py-6">
-                    <p className="text-sm text-gray-500">Nenhuma ação concluída neste período.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma ação concluída neste período.</p>
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                     {concluidas.slice(0, 15).map(task => (
-                      <div key={task.id} className="flex items-start gap-3 p-3 bg-green-50/50 rounded-xl border border-green-100">
+                      <div key={task.id} className="flex items-start gap-3 p-3 bg-green-50/50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-700/40">
                         <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{task.title}</p>
+                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{task.title}</p>
                           <div className="flex flex-wrap items-center gap-3 mt-1">
-                            <span className="flex items-center gap-1 text-xs text-gray-500">
+                            <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                               <Calendar className="h-3 w-3" />
                               Prazo {new Date(task.due_date).toLocaleDateString('pt-BR')}
                             </span>
                             {task.assigned_to_name && (
-                              <span className="flex items-center gap-1 text-xs text-gray-500">
+                              <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                                 <Users className="h-3 w-3" />
                                 {formatName(task.assigned_to_name)}
                               </span>

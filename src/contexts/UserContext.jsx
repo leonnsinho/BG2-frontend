@@ -261,6 +261,16 @@ export function UserProvider({ children }) {
     }
   }, [state.preferences, user])
 
+  // Aplicar tema dark/light no <html>
+  useEffect(() => {
+    const root = document.documentElement
+    if (state.preferences.theme === 'dark') {
+      root.classList.add('dark')
+    } else {
+      root.classList.remove('dark')
+    }
+  }, [state.preferences.theme])
+
   // Carregar preferências do localStorage
   const loadUserPreferences = () => {
     try {
@@ -270,6 +280,14 @@ export function UserProvider({ children }) {
         dispatch({
           type: USER_ACTIONS.SET_PREFERENCES,
           payload: preferences
+        })
+      } else {
+        // No saved prefs for this user — explicitly enforce the 'light' default
+        // so a stale dark class from another user or session doesn't persist
+        dispatch({
+          type: USER_ACTIONS.UPDATE_PREFERENCE,
+          key: 'theme',
+          value: 'light'
         })
       }
     } catch (error) {
@@ -284,6 +302,9 @@ export function UserProvider({ children }) {
         `bg2_preferences_${user.id}`,
         JSON.stringify(state.preferences)
       )
+      // Also save theme to a global key so the index.html init script
+      // can apply it before React mounts (prevents flash)
+      localStorage.setItem('bg2_theme', state.preferences.theme)
     } catch (error) {
       console.warn('Erro ao salvar preferências:', error)
     }

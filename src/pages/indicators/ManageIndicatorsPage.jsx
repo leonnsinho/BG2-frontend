@@ -341,7 +341,7 @@ export default function ManageIndicatorsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
@@ -349,15 +349,15 @@ export default function ManageIndicatorsPage() {
             <div>
               <button
                 onClick={() => navigate('/indicators')}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 transition-colors group"
+                className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-3 transition-colors group"
               >
                 <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
                 <span className="text-sm font-medium">Voltar para Indicadores</span>
               </button>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 Gerenciar Indicadores
               </h1>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 Crie e gerencie seus indicadores de gestão
               </p>
             </div>
@@ -377,11 +377,11 @@ export default function ManageIndicatorsPage() {
         </div>
 
         {/* Filtros e Busca */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-4 sm:p-6 mb-6">
           <div className={`grid grid-cols-1 sm:grid-cols-2 ${permissions.isSuperAdmin() ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
             {/* Barra de Busca */}
             <div className="sm:col-span-2 lg:col-span-1">
-              <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                 <Search className="h-4 w-4 text-yellow-500" />
                 Buscar
               </label>
@@ -392,14 +392,14 @@ export default function ManageIndicatorsPage() {
                   placeholder="Nome ou tipo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 hover:border-gray-300 transition-all bg-gray-50 focus:bg-white"
+                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 hover:border-gray-300 transition-all bg-gray-50 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 focus:bg-white dark:focus:bg-gray-700"
                 />
               </div>
             </div>
 
             {/* Filtro Jornada */}
             <div>
-              <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                 <Target className="h-4 w-4 text-purple-500" />
                 Jornada
               </label>
@@ -407,7 +407,7 @@ export default function ManageIndicatorsPage() {
                 <select
                   value={journeyFilter}
                   onChange={(e) => setJourneyFilter(e.target.value)}
-                  className="w-full pl-4 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 hover:border-gray-300 transition-all bg-gradient-to-r from-purple-50 to-white focus:from-white focus:to-white appearance-none cursor-pointer font-medium text-gray-700"
+                  className="w-full pl-4 pr-10 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 hover:border-gray-300 transition-all bg-gradient-to-r from-purple-50 to-white dark:from-gray-700 dark:to-gray-700 focus:from-white focus:to-white dark:focus:from-gray-700 dark:focus:to-gray-700 appearance-none cursor-pointer font-medium text-gray-700 dark:text-gray-200"
                 >
                   {journeys.map(journey => (
                     <option key={journey} value={journey}>{journey}</option>
@@ -419,7 +419,7 @@ export default function ManageIndicatorsPage() {
 
             {/* Filtro Status */}
             <div>
-              <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                 <Zap className="h-4 w-4 text-blue-500" />
                 Status
               </label>
@@ -427,7 +427,7 @@ export default function ManageIndicatorsPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full pl-4 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 transition-all bg-gradient-to-r from-blue-50 to-white focus:from-white focus:to-white appearance-none cursor-pointer font-medium text-gray-700"
+                  className="w-full pl-4 pr-10 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 transition-all bg-gradient-to-r from-blue-50 to-white dark:from-gray-700 dark:to-gray-700 focus:from-white focus:to-white dark:focus:from-gray-700 dark:focus:to-gray-700 appearance-none cursor-pointer font-medium text-gray-700 dark:text-gray-200"
                 >
                   {statuses.map(status => (
                     <option key={status} value={status}>{status}</option>
@@ -439,7 +439,7 @@ export default function ManageIndicatorsPage() {
 
             {/* Filtro Responsável */}
             <div>
-              <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                 <User className="h-4 w-4 text-green-500" />
                 Responsável
               </label>
@@ -447,7 +447,7 @@ export default function ManageIndicatorsPage() {
                 <select
                   value={responsibleFilter}
                   onChange={(e) => setResponsibleFilter(e.target.value)}
-                  className="w-full pl-4 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:border-gray-300 transition-all bg-gradient-to-r from-green-50 to-white focus:from-white focus:to-white appearance-none cursor-pointer font-medium text-gray-700"
+                  className="w-full pl-4 pr-10 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:border-gray-300 transition-all bg-gradient-to-r from-green-50 to-white dark:from-gray-700 dark:to-gray-700 focus:from-white focus:to-white dark:focus:from-gray-700 dark:focus:to-gray-700 appearance-none cursor-pointer font-medium text-gray-700 dark:text-gray-200"
                 >
                   <option value="Todos">Todos responsáveis</option>
                   {users.map(user => (
@@ -463,7 +463,7 @@ export default function ManageIndicatorsPage() {
             {/* Filtro Empresa - Só aparece para Super Admin */}
             {permissions.isSuperAdmin() && (
               <div>
-                <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                   <Building2 className="h-4 w-4 text-yellow-500" />
                   Empresa
                 </label>
@@ -471,7 +471,7 @@ export default function ManageIndicatorsPage() {
                   <select
                     value={companyFilter}
                     onChange={(e) => setCompanyFilter(e.target.value)}
-                    className="w-full pl-4 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 hover:border-gray-300 transition-all bg-yellow-50 focus:bg-white appearance-none cursor-pointer font-medium text-gray-700"
+                    className="w-full pl-4 pr-10 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 hover:border-gray-300 transition-all bg-yellow-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-700 appearance-none cursor-pointer font-medium text-gray-700 dark:text-gray-200"
                   >
                     <option value="Todas">Todas as empresas</option>
                     {companies.map(company => (
@@ -489,22 +489,22 @@ export default function ManageIndicatorsPage() {
 
         {/* Controles da Tabela */}
         <div className="flex items-center justify-end mb-4">
-          <p className="text-sm text-gray-600 font-medium">
-            Mostrando <span className="text-yellow-600 font-bold">{filteredIndicators.length}</span> indicador{filteredIndicators.length !== 1 ? 'es' : ''}
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+            Mostrando <span className="text-yellow-600 dark:text-yellow-500 font-bold">{filteredIndicators.length}</span> indicador{filteredIndicators.length !== 1 ? 'es' : ''}
           </p>
         </div>
 
         {/* Tabela */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
           {loading ? (
             <div className="p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mb-4"></div>
-              <p className="text-gray-500">Carregando indicadores...</p>
+              <p className="text-gray-500 dark:text-gray-400">Carregando indicadores...</p>
             </div>
           ) : filteredIndicators.length === 0 ? (
             <div className="p-12 text-center">
               <Search className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4 text-lg font-medium">Nenhum indicador encontrado</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-4 text-lg font-medium">Nenhum indicador encontrado</p>
               <button
                 onClick={() => {
                   setEditingIndicator(null)
@@ -518,37 +518,37 @@ export default function ManageIndicatorsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700/80 border-b border-gray-200 dark:border-gray-700">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Indicador
                     </th>
                     {permissions.isSuperAdmin() && (
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         Empresa
                       </th>
                     )}
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Jornada
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Tipo
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Responsável
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Ativo
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Última Atualização
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Ações
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
                   {filteredIndicators.map((indicator) => {
                     const journeyColors = {
                       'Estratégia': 'bg-purple-100 text-purple-800 border-purple-200',
@@ -559,18 +559,18 @@ export default function ManageIndicatorsPage() {
                     }
                     
                     return (
-                    <tr key={indicator.id} className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-white transition-all">
+                    <tr key={indicator.id} className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-white dark:hover:from-gray-700/50 dark:hover:to-gray-700/30 transition-all">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-semibold text-gray-900">{indicator.name}</div>
+                        <div className="font-semibold text-gray-900 dark:text-white">{indicator.name}</div>
                         {indicator.description && (
-                          <div className="text-xs text-gray-500 mt-1 max-w-xs truncate">{indicator.description}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs truncate">{indicator.description}</div>
                         )}
                       </td>
                       {permissions.isSuperAdmin() && (
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <Building2 className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm font-medium text-gray-700">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                               {indicator.companies?.name || 'N/A'}
                             </span>
                           </div>
@@ -582,7 +582,7 @@ export default function ManageIndicatorsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-800">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                           {indicator.type}
                         </span>
                       </td>
@@ -607,7 +607,7 @@ export default function ManageIndicatorsPage() {
                               {getResponsibleInitials(indicator.responsible_user_id)}
                             </span>
                           </div>
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {getResponsibleName(indicator.responsible_user_id)}
                           </span>
                         </div>
@@ -627,7 +627,7 @@ export default function ManageIndicatorsPage() {
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-500">{getTimeAgo(indicator.updated_at)}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{getTimeAgo(indicator.updated_at)}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-1">
@@ -636,21 +636,21 @@ export default function ManageIndicatorsPage() {
                               setEditingIndicator(indicator)
                               setShowModal(true)
                             }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all hover:shadow-sm"
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all hover:shadow-sm"
                             title="Editar"
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDuplicate(indicator)}
-                            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-all hover:shadow-sm"
+                            className="p-2 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-lg transition-all hover:shadow-sm"
                             title="Duplicar"
                           >
                             <Copy className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(indicator.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all hover:shadow-sm"
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all hover:shadow-sm"
                             title="Excluir"
                           >
                             <Trash2 className="h-4 w-4" />

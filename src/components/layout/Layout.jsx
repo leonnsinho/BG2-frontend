@@ -32,7 +32,7 @@ const Layout = ({ children, className }) => {
   }, [])
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dark:bg-gray-900">
       {/* Sidebar */}
       <Sidebar 
         isOpen={sidebarOpen} 

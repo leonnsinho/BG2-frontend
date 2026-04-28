@@ -1735,28 +1735,28 @@ export default function DFCDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400">Carregando dashboard...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900">
       <SuperAdminBanner />
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="p-2 sm:p-3 bg-primary-500 rounded-xl sm:rounded-2xl">
               <TrendingDown className="h-5 w-5 sm:h-8 sm:w-8 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">Demonstrativo de Fluxo de Caixa</h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 truncate">Visão geral das movimentações financeiras</p>
+              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white truncate">Demonstrativo de Fluxo de Caixa</h1>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1 truncate">Visão geral das movimentações financeiras</p>
             </div>
           </div>
         </div>
@@ -1764,16 +1764,16 @@ export default function DFCDashboardPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Controle de Período */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Filtros</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Filtros</h3>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => setShowHistoricoModal(true)}
-                className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors border border-gray-300 flex-1 sm:flex-none"
+                className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 flex-1 sm:flex-none"
                 title="Ver histórico de relatórios"
               >
                 <History className="h-4 w-4" />
@@ -1793,7 +1793,7 @@ export default function DFCDashboardPage() {
             {/* Seletor de Empresa (apenas para Super Admin) */}
             {isSuperAdmin() && (
               <div className="lg:col-span-2 space-y-2">
-                <label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center gap-2">
+                <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
                   Empresa
                 </label>
@@ -1803,7 +1803,7 @@ export default function DFCDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white text-left flex items-center justify-between"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white dark:bg-gray-700 dark:text-gray-200 text-left flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2">
                       {selectedCompanyId === 'all' ? (
@@ -1831,10 +1831,10 @@ export default function DFCDashboardPage() {
 
                   {/* Dropdown Menu */}
                   {showCompanyDropdown && (
-                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-hidden">
                       {/* Busca */}
                       {companies.length > 5 && (
-                        <div className="p-2 border-b border-gray-200">
+                        <div className="p-2 border-b border-gray-200 dark:border-gray-700">
                           <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <input
@@ -1842,7 +1842,7 @@ export default function DFCDashboardPage() {
                               value={companySearch}
                               onChange={(e) => setCompanySearch(e.target.value)}
                               placeholder="Buscar empresa..."
-                              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                               onClick={(e) => e.stopPropagation()}
                             />
                           </div>
@@ -1883,8 +1883,8 @@ export default function DFCDashboardPage() {
                                 setShowCompanyDropdown(false)
                                 setCompanySearch('')
                               }}
-                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                                selectedCompanyId === company.id ? 'bg-primary-50 text-primary-600 font-medium' : 'text-gray-900'
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                                selectedCompanyId === company.id ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 font-medium' : 'text-gray-900 dark:text-gray-200'
                               }`}
                             >
                               <div className="flex items-center gap-2">
@@ -1911,14 +1911,14 @@ export default function DFCDashboardPage() {
 
             {/* Períodos Pré-definidos */}
             <div className="space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-gray-700">Períodos Rápidos</label>
+              <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Períodos Rápidos</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setPeriodoTipo('ultimos30dias')}
                   className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     periodoTipo === 'ultimos30dias'
                       ? 'bg-primary-500 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   <span className="hidden sm:inline">Últimos </span>30 dias
@@ -1928,7 +1928,7 @@ export default function DFCDashboardPage() {
                   className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     periodoTipo === 'ultimos3meses'
                       ? 'bg-primary-500 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   <span className="hidden sm:inline">Últimos </span>3 meses
@@ -1938,7 +1938,7 @@ export default function DFCDashboardPage() {
                   className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     periodoTipo === 'ultimos6meses'
                       ? 'bg-primary-500 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   <span className="hidden sm:inline">Últimos </span>6 meses
@@ -1948,7 +1948,7 @@ export default function DFCDashboardPage() {
                   className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     periodoTipo === 'ultimo12meses'
                       ? 'bg-primary-500 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   <span className="hidden sm:inline">Último </span>1 ano
@@ -1958,10 +1958,10 @@ export default function DFCDashboardPage() {
 
             {/* Período Personalizado */}
             <div className="space-y-2">
-              <label className="text-xs sm:text-sm font-medium text-gray-700">Período Personalizado</label>
+              <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Período Personalizado</label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1">
-                  <label className="text-xs text-gray-600">Data Início</label>
+                  <label className="text-xs text-gray-600 dark:text-gray-400">Data Início</label>
                   <input
                     type="date"
                     value={dataInicio}
@@ -1971,11 +1971,11 @@ export default function DFCDashboardPage() {
                         setPeriodoTipo('personalizado')
                       }
                     }}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-gray-600">Data Fim</label>
+                  <label className="text-xs text-gray-600 dark:text-gray-400">Data Fim</label>
                   <input
                     type="date"
                     value={dataFim}
@@ -1985,7 +1985,7 @@ export default function DFCDashboardPage() {
                         setPeriodoTipo('personalizado')
                       }
                     }}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   />
                 </div>
               </div>
@@ -2033,15 +2033,15 @@ export default function DFCDashboardPage() {
           <Link
             to={buildSubUrl('/dfc/entradas', dataInicio && dataFim ? { dataInicio, dataFim } : {})}
             onClick={() => handleSubNav('/dfc/entradas')}
-            className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border-2 border-green-200 hover:shadow-lg transition-all hover:scale-105"
+            className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border-2 border-green-200 dark:border-green-800 hover:shadow-lg transition-all hover:scale-105"
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-xs sm:text-sm font-medium text-gray-600">Entradas no Período</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Entradas no Período</p>
                 <h3 className="text-xl sm:text-2xl font-bold text-green-600 mt-1">
                   {formatCurrency(stats.totalEntradas)}
                 </h3>
-                <p className="text-xs text-gray-500 mt-1 sm:mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
                   Mês atual: {formatCurrency(stats.entradasMes)}
                 </p>
               </div>
@@ -2058,15 +2058,15 @@ export default function DFCDashboardPage() {
           <Link
             to={buildSubUrl('/dfc/saidas', dataInicio && dataFim ? { dataInicio, dataFim } : {})}
             onClick={() => handleSubNav('/dfc/saidas')}
-            className="bg-white rounded-2xl p-6 shadow-sm border-2 border-red-200 hover:shadow-lg transition-all hover:scale-105"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border-2 border-red-200 dark:border-red-800 hover:shadow-lg transition-all hover:scale-105"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Saídas no Período</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Saídas no Período</p>
                 <h3 className="text-2xl font-bold text-red-600 mt-1">
                   {formatCurrency(stats.totalSaidas)}
                 </h3>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   Mês atual: {formatCurrency(stats.saidasMes)}
                 </p>
               </div>
@@ -2083,13 +2083,13 @@ export default function DFCDashboardPage() {
           <Link
             to={buildSubUrl('/dfc/plano-contas')}
             onClick={() => handleSubNav('/dfc/plano-contas')}
-            className="bg-white rounded-2xl p-6 shadow-sm border-2 border-blue-200 hover:shadow-lg transition-all hover:scale-105"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border-2 border-blue-200 dark:border-blue-800 hover:shadow-lg transition-all hover:scale-105"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Plano de Contas</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Plano de Contas</p>
                 <h3 className="text-2xl font-bold text-blue-600 mt-1">Gerenciar</h3>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   Categorias e subcategorias
                 </p>
               </div>
@@ -2258,7 +2258,7 @@ export default function DFCDashboardPage() {
 
 
         {/* Resumo Financeiro */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg border-2 border-gray-200 dark:border-gray-700 overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4">
             <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
@@ -2268,7 +2268,7 @@ export default function DFCDashboardPage() {
           </div>
 
           {/* Grid de valores */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 dark:divide-gray-700">
             {/* Saldo Inicial */}
             <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100/50">
               <div className="flex items-start justify-between mb-2">
@@ -2282,7 +2282,7 @@ export default function DFCDashboardPage() {
             </div>
 
             {/* Entradas e Saídas */}
-            <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100/50">
+            <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-700 dark:to-gray-700/50">
               <div className="space-y-4">
                 {/* Entradas */}
                 <div>
@@ -2293,7 +2293,7 @@ export default function DFCDashboardPage() {
                   <h4 className="text-xl sm:text-2xl font-bold text-green-700">{formatCurrency(stats.totalEntradas)}</h4>
                 </div>
 
-                <div className="border-t border-gray-300"></div>
+                <div className="border-t border-gray-300 dark:border-gray-600"></div>
 
                 {/* Saídas */}
                 <div>
@@ -2304,11 +2304,11 @@ export default function DFCDashboardPage() {
                   <h4 className="text-xl sm:text-2xl font-bold text-red-700">{formatCurrency(stats.totalSaidas)}</h4>
                 </div>
 
-                <div className="border-t border-gray-300"></div>
+                <div className="border-t border-gray-300 dark:border-gray-600"></div>
 
                 {/* Movimentação */}
                 <div>
-                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">Movimentação</p>
+                  <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1">Movimentação</p>
                   <h4 className={`text-lg sm:text-xl font-bold ${stats.saldoTotal >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                     {formatCurrency(stats.saldoTotal)}
                   </h4>
@@ -2339,8 +2339,8 @@ export default function DFCDashboardPage() {
           </div>
 
           {/* Rodapé informativo */}
-          <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-            <p className="text-xs text-gray-600 text-center">
+          <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
               <strong>Período:</strong> {formatDateBR(getPeriodoDatas().inicio)} até {formatDateBR(getPeriodoDatas().fim)}
               {periodoTipo !== 'personalizado' && ` • ${getPeriodoLabel()}`}
             </p>
@@ -2350,21 +2350,21 @@ export default function DFCDashboardPage() {
         {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Gráfico de Linha - Fluxo Mensal */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg sm:rounded-xl">
+                <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg sm:rounded-xl">
                   <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900">Fluxo de Caixa Mensal</h3>
-                  <p className="text-xs sm:text-sm text-gray-600">Últimos {mesesGrafico} {mesesGrafico === 1 ? 'mês' : 'meses'}</p>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Fluxo de Caixa Mensal</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Últimos {mesesGrafico} {mesesGrafico === 1 ? 'mês' : 'meses'}</p>
                 </div>
               </div>
               <select
                 value={mesesGrafico}
                 onChange={(e) => setMesesGrafico(Number(e.target.value))}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-gray-200"
               >
                 <option value={3}>3 meses</option>
                 <option value={6}>6 meses</option>
@@ -2426,14 +2426,14 @@ export default function DFCDashboardPage() {
           </div>
 
           {/* Gráfico de Pizza - Saídas por Categoria */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-purple-100 rounded-xl">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
                 <PieChart className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Saídas por Categoria</h3>
-                <p className="text-sm text-gray-600">Top 8 categorias</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Saídas por Categoria</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Top 8 categorias</p>
               </div>
             </div>
             
@@ -2462,9 +2462,9 @@ export default function DFCDashboardPage() {
                       const total = categoryData.reduce((s, d) => s + d.value, 0)
                       const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0
                       return (
-                        <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-3 py-2 text-sm">
-                          <p className="font-semibold text-gray-800 mb-0.5">{name}</p>
-                          <p className="text-gray-600">{formatCurrency(value)}</p>
+                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg px-3 py-2 text-sm">
+                          <p className="font-semibold text-gray-800 dark:text-white mb-0.5">{name}</p>
+                          <p className="text-gray-600 dark:text-gray-300">{formatCurrency(value)}</p>
                           <p className="text-gray-400 text-xs">{pct}% do total</p>
                         </div>
                       )
@@ -2482,7 +2482,7 @@ export default function DFCDashboardPage() {
                 return (
                   <div
                     key={index}
-                    className="flex items-center gap-2 min-w-0 cursor-pointer rounded-lg px-1.5 py-0.5 hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-2 min-w-0 cursor-pointer rounded-lg px-1.5 py-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     onClick={() => setSelectedCategory(entry.name)}
                     title={`Ver despesas: ${entry.name}`}
                   >
@@ -2490,8 +2490,8 @@ export default function DFCDashboardPage() {
                       className="flex-shrink-0 w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: COLORS[index % COLORS.length] }}
                     />
-                    <span className="text-xs text-gray-600 truncate flex-1">{entry.name}</span>
-                    <span className="text-xs font-semibold text-gray-700 flex-shrink-0">{pct}%</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate flex-1">{entry.name}</span>
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex-shrink-0">{pct}%</span>
                   </div>
                 )
               })}
@@ -2500,14 +2500,14 @@ export default function DFCDashboardPage() {
         </div>
 
         {/* Transações Recentes */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-            <div className="p-1.5 sm:p-2 bg-gray-100 rounded-lg sm:rounded-xl">
-              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
+            <div className="p-1.5 sm:p-2 bg-gray-100 dark:bg-gray-700 rounded-lg sm:rounded-xl">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600 dark:text-gray-400" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-bold text-gray-900">Transações Recentes</h3>
-              <p className="text-xs sm:text-sm text-gray-600">Últimas 10 movimentações</p>
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Transações Recentes</h3>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Últimas 10 movimentações</p>
             </div>
           </div>
 
@@ -2515,7 +2515,7 @@ export default function DFCDashboardPage() {
             {recentTransactions.map((transaction, index) => (
               <div
                 key={index}
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg sm:rounded-xl hover:bg-gray-100 transition-colors gap-2 sm:gap-0"
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg sm:rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors gap-2 sm:gap-0"
               >
                 <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                   <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${
@@ -2528,11 +2528,11 @@ export default function DFCDashboardPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm sm:text-base text-gray-900 truncate">{transaction.descricao || 'Sem descrição'}</p>
+                    <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white truncate">{transaction.descricao || 'Sem descrição'}</p>
                     <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
-                      <p className="text-xs text-gray-500 truncate">{transaction.categoriaNome || 'Sem categoria'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{transaction.categoriaNome || 'Sem categoria'}</p>
                       <span className="text-xs text-gray-400 flex-shrink-0">•</span>
-                      <p className="text-xs text-gray-500 flex-shrink-0">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
                         {(() => {
                           const [year, month, day] = transaction.vencimento.split('-')
                           const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
@@ -2553,7 +2553,7 @@ export default function DFCDashboardPage() {
             {recentTransactions.length === 0 && (
               <div className="text-center py-8 sm:py-12">
                 <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
-                <p className="text-sm sm:text-base text-gray-600">Nenhuma transação registrada</p>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Nenhuma transação registrada</p>
               </div>
             )}
           </div>
@@ -2563,23 +2563,23 @@ export default function DFCDashboardPage() {
       {/* Modal de Histórico de Relatórios */}
       {showHistoricoModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-hidden">
             {/* Header do Modal */}
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-white">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-50 dark:from-primary-900/20 to-white dark:to-gray-800">
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1.5 sm:p-2 bg-primary-100 rounded-lg">
+                <div className="p-1.5 sm:p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
                   <History className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600" />
                 </div>
                 <div>
-                  <h2 className="text-base sm:text-xl font-bold text-gray-900">Histórico de Relatórios</h2>
-                  <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Últimos relatórios gerados</p>
+                  <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">Histórico de Relatórios</h2>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden sm:block">Últimos relatórios gerados</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowHistoricoModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
-                <X className="h-5 w-5 text-gray-500" />
+                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               </button>
             </div>
 
@@ -2588,56 +2588,56 @@ export default function DFCDashboardPage() {
               {historicoRelatorios.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 font-medium">Nenhum relatório gerado ainda</p>
-                  <p className="text-sm text-gray-500 mt-2">Os relatórios exportados aparecerão aqui</p>
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">Nenhum relatório gerado ainda</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Os relatórios exportados aparecerão aqui</p>
                 </div>
               ) : (
                 <div className="space-y-2 sm:space-y-3">
                   {historicoRelatorios.map((relatorio) => (
                     <div
                       key={relatorio.id}
-                      className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 hover:bg-gray-100 transition-colors border border-gray-200"
+                      className="bg-gray-50 dark:bg-gray-700 rounded-lg sm:rounded-xl p-3 sm:p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600"
                     >
                       <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
                         <div className="flex-1 w-full">
                           <div className="flex items-center gap-2 mb-2">
                             <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-600" />
-                            <h3 className="font-semibold text-sm sm:text-base text-gray-900 truncate">{relatorio.empresa_nome}</h3>
+                            <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">{relatorio.empresa_nome}</h3>
                           </div>
                           
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                             <div>
-                              <span className="text-gray-600">Período:</span>
-                              <p className="font-medium text-gray-900 text-xs sm:text-sm">{getPeriodoLabel(relatorio.periodo_tipo)}</p>
-                              <p className="text-[10px] sm:text-xs text-gray-500">
+                              <span className="text-gray-600 dark:text-gray-400">Período:</span>
+                              <p className="font-medium text-gray-900 dark:text-white text-xs sm:text-sm">{getPeriodoLabel(relatorio.periodo_tipo)}</p>
+                              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                                 {formatDateBR(relatorio.periodo_inicio)} até {formatDateBR(relatorio.periodo_fim)}
                               </p>
                             </div>
                             
                             <div>
-                              <span className="text-gray-600">Gerado em:</span>
-                              <p className="font-medium text-gray-900 text-xs sm:text-sm">
+                              <span className="text-gray-600 dark:text-gray-400">Gerado em:</span>
+                              <p className="font-medium text-gray-900 dark:text-white text-xs sm:text-sm">
                                 {new Date(relatorio.created_at).toLocaleDateString('pt-BR')}
                               </p>
-                              <p className="text-[10px] sm:text-xs text-gray-500 truncate">
+                              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
                                 {new Date(relatorio.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} por {relatorio.usuario_nome}
                               </p>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200">
+                          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 dark:border-gray-600">
                             <div className="text-center">
-                              <p className="text-[10px] sm:text-xs text-gray-600">Entradas</p>
+                              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Entradas</p>
                               <p className="font-semibold text-xs sm:text-sm text-green-600">{relatorio.quantidade_entradas}</p>
-                              <p className="text-[10px] sm:text-xs text-gray-900 truncate">{formatCurrency(relatorio.total_entradas)}</p>
+                              <p className="text-[10px] sm:text-xs text-gray-900 dark:text-white truncate">{formatCurrency(relatorio.total_entradas)}</p>
                             </div>
                             <div className="text-center">
-                              <p className="text-[10px] sm:text-xs text-gray-600">Saídas</p>
+                              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Saídas</p>
                               <p className="font-semibold text-xs sm:text-sm text-red-600">{relatorio.quantidade_saidas}</p>
-                              <p className="text-[10px] sm:text-xs text-gray-900 truncate">{formatCurrency(relatorio.total_saidas)}</p>
+                              <p className="text-[10px] sm:text-xs text-gray-900 dark:text-white truncate">{formatCurrency(relatorio.total_saidas)}</p>
                             </div>
                             <div className="text-center">
-                              <p className="text-[10px] sm:text-xs text-gray-600">Saldo</p>
+                              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Saldo</p>
                               <p className={`font-semibold text-xs sm:text-sm ${
                                 relatorio.saldo_total >= 0 ? 'text-green-600' : 'text-red-600'
                               }`}>
@@ -2692,8 +2692,8 @@ export default function DFCDashboardPage() {
 
             {/* Footer do Modal */}
             {historicoRelatorios.length > 0 && (
-              <div className="p-4 border-t border-gray-200 bg-gray-50 text-center">
-                <p className="text-xs text-gray-600">
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 text-center">
+                <p className="text-xs text-gray-600 dark:text-gray-400">
                   Total de relatórios: {historicoRelatorios.length}
                 </p>
               </div>
@@ -2705,7 +2705,7 @@ export default function DFCDashboardPage() {
       {/* Modal de Detalhes dos Pagamentos Futuros */}
       {showFuturePaymentsModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
             {/* Header do Modal */}
             <div className={`px-6 py-4 ${futurePaymentsDetails.type === 'entradas' ? 'bg-gradient-to-r from-green-600 to-green-700' : 'bg-gradient-to-r from-red-600 to-red-700'}`}>
               <div className="flex items-center justify-between">
@@ -2741,7 +2741,7 @@ export default function DFCDashboardPage() {
               {futurePaymentsDetails.items.length === 0 ? (
                 <div className="text-center py-12">
                   <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">Nenhuma parcela encontrada para este período</p>
+                  <p className="text-gray-500 dark:text-gray-400">Nenhuma parcela encontrada para este período</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -2750,22 +2750,22 @@ export default function DFCDashboardPage() {
                       key={item.id || index}
                       className={`p-4 rounded-xl border-2 ${
                         futurePaymentsDetails.type === 'entradas' 
-                          ? 'bg-green-50 border-green-200 hover:border-green-300' 
-                          : 'bg-red-50 border-red-200 hover:border-red-300'
+                          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 hover:border-green-300' 
+                          : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 hover:border-red-300'
                       } transition-all hover:shadow-md`}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 truncate mb-1">
+                          <h4 className="font-semibold text-gray-900 dark:text-white truncate mb-1">
                             {item.descricao}
                           </h4>
-                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                          <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-4 w-4" />
                               <span>{formatDateBR(item.data_vencimento || item.vencimento)}</span>
                             </div>
                             {item.parcela_numero && (
-                              <span className="px-2 py-0.5 bg-white rounded-md text-xs font-medium">
+                              <span className="px-2 py-0.5 bg-white dark:bg-gray-700 rounded-md text-xs font-medium dark:text-gray-300">
                                 Parcela {item.parcela_numero}
                               </span>
                             )}
@@ -2789,11 +2789,11 @@ export default function DFCDashboardPage() {
             {futurePaymentsDetails.items.length > 0 && (
               <div className={`p-4 border-t ${
                 futurePaymentsDetails.type === 'entradas' 
-                  ? 'border-green-200 bg-green-50' 
-                  : 'border-red-200 bg-red-50'
+                  ? 'border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/20' 
+                  : 'border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20'
               }`}>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-gray-700">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     Total de {futurePaymentsDetails.items.length} parcela{futurePaymentsDetails.items.length !== 1 ? 's' : ''}
                   </p>
                   <p className={`text-2xl font-bold ${
@@ -2811,29 +2811,29 @@ export default function DFCDashboardPage() {
       {/* Modal de exportação */}
       {showExportModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-1">Exportar DFC</h2>
-              <p className="text-sm text-gray-500 mb-5">Escolha o ano e o formato de exportação.</p>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-1">Exportar DFC</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">Escolha o ano e o formato de exportação.</p>
 
-              <label className="block text-sm font-medium text-gray-700 mb-2">Ano</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ano</label>
               <div className="flex items-center gap-3 mb-5">
                 <button
                   onClick={() => setExportYear(y => y - 1)}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-lg transition-colors"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-lg transition-colors"
                 >
                   ‹
                 </button>
-                <span className="flex-1 text-center text-2xl font-bold text-gray-900">{exportYear}</span>
+                <span className="flex-1 text-center text-2xl font-bold text-gray-900 dark:text-white">{exportYear}</span>
                 <button
                   onClick={() => setExportYear(y => y + 1)}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-lg transition-colors"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-lg transition-colors"
                 >
                   ›
                 </button>
               </div>
 
-              <label className="block text-sm font-medium text-gray-700 mb-2">Formato</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Formato</label>
               <div className="grid grid-cols-3 gap-2 mb-6">
                 {[
                   { id: 'excel', label: 'Excel', icon: '📊', desc: '.xlsx' },
@@ -2845,8 +2845,8 @@ export default function DFCDashboardPage() {
                     onClick={() => setExportFormat(f.id)}
                     className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors text-sm ${
                       exportFormat === f.id
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 hover:border-gray-400 text-gray-600'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-400 text-gray-600 dark:text-gray-400'
                     }`}
                   >
                     <span className="text-xl">{f.icon}</span>
@@ -2859,7 +2859,7 @@ export default function DFCDashboardPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowExportModal(false)}
-                  className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -2884,23 +2884,23 @@ export default function DFCDashboardPage() {
       {/* Modal de Despesas por Categoria */}
       {selectedCategory && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 bg-purple-100 rounded-xl flex-shrink-0">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex-shrink-0">
                   <PieChart className="h-5 w-5 text-purple-600" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-gray-900 truncate">{selectedCategory}</h2>
-                  <p className="text-sm text-gray-500">Despesas da categoria</p>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{selectedCategory}</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Despesas da categoria</p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedCategory(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 ml-3"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0 ml-3"
               >
-                <X className="h-5 w-5 text-gray-500" />
+                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               </button>
             </div>
 
@@ -2916,7 +2916,7 @@ export default function DFCDashboardPage() {
 
                 if (items.length === 0) {
                   return (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                       <TrendingDown className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                       <p>Nenhuma despesa encontrada para este período.</p>
                     </div>
@@ -2931,10 +2931,10 @@ export default function DFCDashboardPage() {
                       {items.map((item, idx) => (
                         <div
                           key={item.id || idx}
-                          className="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                          className="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-800 truncate">
+                            <p className="text-sm font-medium text-gray-800 dark:text-white truncate">
                               {item.descricao || '—'}
                             </p>
                             {item.vencimento && (
@@ -2952,8 +2952,8 @@ export default function DFCDashboardPage() {
                     </div>
 
                     {/* Total */}
-                    <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
-                      <span className="text-sm font-semibold text-gray-700">{items.length} despesa{items.length !== 1 ? 's' : ''}</span>
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{items.length} despesa{items.length !== 1 ? 's' : ''}</span>
                       <span className="text-base font-bold text-red-600">{formatCurrency(total)}</span>
                     </div>
                   </>

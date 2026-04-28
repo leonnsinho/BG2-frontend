@@ -663,19 +663,19 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
   if (isInline) {
     return (
       <div 
-        className="bg-white rounded-3xl shadow-lg border border-gray-200 w-full overflow-hidden flex flex-col"
+        className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 w-full overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div 
-          className="p-6 border-b border-gray-200"
+          className="p-6 border-b border-gray-200 dark:border-gray-700"
           style={{ 
-            background: `linear-gradient(135deg, ${block.color}10 0%, white 100%)`,
+            background: `linear-gradient(135deg, ${block.color}10 0%, transparent 100%)`,
             borderTop: `4px solid ${block.color}`
           }}
         >
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3 flex-1">
-              <div className="p-2 bg-white rounded-xl shadow-sm">
+              <div className="p-2 bg-white dark:bg-gray-700 rounded-xl shadow-sm">
                 {renderIcon(block.icon, 'h-6 w-6')}
               </div>
               {isEditingTitle ? (
@@ -686,13 +686,13 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     onChange={(e) => setTitle(e.target.value)}
                     onBlur={handleSaveTitle}
                     onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
-                    className="flex-1 text-2xl font-bold text-gray-900 border-2 border-blue-500 rounded-lg px-3 py-1 focus:outline-none"
+                    className="flex-1 text-2xl font-bold text-gray-900 dark:text-white border-2 border-blue-500 rounded-lg px-3 py-1 focus:outline-none dark:bg-gray-700"
                     autoFocus
                   />
                 </div>
               ) : (
                 <h2 
-                  className="flex-1 text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
+                  className="flex-1 text-2xl font-bold text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   onClick={() => setIsEditingTitle(true)}
                 >
                   {title}
@@ -705,14 +705,14 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowChecklistForm(!showChecklistForm)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
             >
               <CheckSquare className="h-4 w-4" />
               <span className="text-sm font-medium">Checklist</span>
             </button>
             <button
               onClick={() => setShowAttachmentForm(!showAttachmentForm)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
             >
               <Paperclip className="h-4 w-4" />
               <span className="text-sm font-medium">Anexo</span>
@@ -725,7 +725,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
           {/* Descrição Interna */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Descrição
               </h3>
@@ -733,14 +733,14 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
             {isEditingDescription ? (
               <div>
                 {/* Barra de Ferramentas de Formatação */}
-                <div className="flex items-center gap-1 mb-2 p-2 bg-gray-100 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-1 mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                   <button
                     type="button"
                     onClick={() => applyRichFormatting('bold')}
                     className={`p-2 rounded transition-colors ${
                       activeFormats.bold 
                         ? 'bg-blue-500 text-white' 
-                        : 'hover:bg-gray-200 text-gray-700'
+                        : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="Negrito (Ctrl+B)"
                   >
@@ -752,7 +752,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     className={`p-2 rounded transition-colors ${
                       activeFormats.italic 
                         ? 'bg-blue-500 text-white' 
-                        : 'hover:bg-gray-200 text-gray-700'
+                        : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="Itálico (Ctrl+I)"
                   >
@@ -770,7 +770,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                   <button
                     type="button"
                     onClick={() => applyRichFormatting('formatBlock', '<h2>')}
-                    className="p-2 hover:bg-gray-200 rounded transition-colors text-gray-700"
+                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors text-gray-700 dark:text-gray-300"
                     title="Título"
                   >
                     <Heading className="h-4 w-4" />
@@ -778,7 +778,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                   <button
                     type="button"
                     onClick={() => applyRichFormatting('insertUnorderedList')}
-                    className="p-2 hover:bg-gray-200 rounded transition-colors text-gray-700"
+                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors text-gray-700 dark:text-gray-300"
                     title="Lista"
                   >
                     <List className="h-4 w-4" />
@@ -792,7 +792,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                   ref={editorRef}
                   contentEditable
                   suppressContentEditableWarning
-                  className="w-full min-h-[120px] max-h-[400px] p-3 border-2 border-blue-500 rounded-lg focus:outline-none overflow-y-auto bg-white prose prose-sm max-w-none"
+                  className="w-full min-h-[120px] max-h-[400px] p-3 border-2 border-blue-500 rounded-lg focus:outline-none overflow-y-auto bg-white dark:bg-gray-700 dark:text-gray-200 prose prose-sm max-w-none"
                   style={{
                     minHeight: '120px',
                   }}
@@ -836,11 +836,11 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                   }
                   setIsEditingDescription(true)
                 }}
-                className="min-h-[80px] p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                className="min-h-[80px] p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 {internalDescription ? (
                   <div 
-                    className="text-gray-700 prose prose-sm max-w-none break-words overflow-wrap-anywhere [&_a]:text-blue-600 [&_a]:hover:underline [&_a]:cursor-pointer"
+                    className="text-gray-700 dark:text-gray-300 prose prose-sm max-w-none break-words overflow-wrap-anywhere [&_a]:text-blue-600 [&_a]:hover:underline [&_a]:cursor-pointer"
                     dangerouslySetInnerHTML={{ __html: internalDescription }}
                     onClick={(e) => {
                       // Garantir que links abram em nova aba
@@ -865,14 +865,14 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
 
           {/* Form de Nova Checklist */}
           {showChecklistForm && (
-            <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <input
                 type="text"
                 value={newChecklistName}
                 onChange={(e) => setNewChecklistName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateChecklist()}
                 placeholder="Nome da checklist..."
-                className="w-full p-2 border border-gray-300 rounded-lg mb-2"
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg mb-2"
                 autoFocus
               />
               <div className="flex gap-2">
@@ -897,9 +897,9 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
 
           {/* Checklists */}
           {checklists.map((checklist) => (
-            <div key={checklist.id} className="bg-white border border-gray-200 rounded-lg p-4">
+            <div key={checklist.id} className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <CheckSquare className="h-4 w-4" />
                   {checklist.name}
                 </h3>
@@ -914,14 +914,14 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
               {/* Progress Bar */}
               {checklist.policy_checklist_items && checklist.policy_checklist_items.length > 0 && (
                 <div className="mb-3">
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
                     <span>{calculateChecklistProgress(checklist)}%</span>
                     <span>
                       {checklist.policy_checklist_items.filter(item => item.is_completed).length}/
                       {checklist.policy_checklist_items.length}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                     <div
                       className="bg-green-500 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${calculateChecklistProgress(checklist)}%` }}
@@ -940,7 +940,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                       onChange={() => handleToggleChecklistItem(item.checklist_id, item.id, item.is_completed)}
                       className="mt-1 h-4 w-4 text-green-500 rounded border-gray-300 focus:ring-green-500"
                     />
-                    <span className={`flex-1 text-sm ${item.is_completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                    <span className={`flex-1 text-sm ${item.is_completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
                       {item.text}
                     </span>
                     <button
@@ -964,7 +964,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                       e.target.value = ''
                     }
                   }}
-                  className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full p-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
@@ -972,7 +972,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
 
           {/* Form de Novo Anexo */}
           {showAttachmentForm && (
-            <div className="p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 space-y-4 shadow-sm">
+            <div className="p-5 bg-gradient-to-br from-blue-50 dark:from-gray-700 to-indigo-50 dark:to-gray-700/80 rounded-xl border-2 border-blue-200 dark:border-gray-600 space-y-4 shadow-sm">
               {/* Toggle Arquivo/Link */}
               <div className="flex gap-2">
                 <button
@@ -980,7 +980,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                   className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
                     attachmentType === 'file'
                       ? 'bg-blue-600 text-white shadow-md scale-105'
-                      : 'bg-white text-gray-600 border border-gray-300 hover:border-blue-400 hover:text-blue-600'
+                      : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:text-blue-600'
                   }`}
                 >
                   <Upload className="h-4 w-4" />
@@ -991,7 +991,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                   className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
                     attachmentType === 'link'
                       ? 'bg-blue-600 text-white shadow-md scale-105'
-                      : 'bg-white text-gray-600 border border-gray-300 hover:border-blue-400 hover:text-blue-600'
+                      : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:text-blue-600'
                   }`}
                 >
                   <LinkIcon className="h-4 w-4" />
@@ -1002,7 +1002,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
               {/* Upload de Arquivo */}
               {attachmentType === 'file' ? (
                 <div className="relative">
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-white hover:bg-blue-50 transition-all hover:border-blue-500 group">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg cursor-pointer bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 transition-all hover:border-blue-500 group">
                     {saving ? (
                       <div className="flex flex-col items-center gap-2">
                         <Loader2 className="h-10 w-10 text-blue-500 animate-spin" />
@@ -1012,10 +1012,10 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                       <div className="flex flex-col items-center gap-2">
                         <Upload className="h-10 w-10 text-blue-400 group-hover:text-blue-600 transition-colors" />
                         <div className="text-center">
-                          <p className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">
+                          <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 group-hover:text-blue-600 transition-colors">
                             Clique para selecionar ou arraste aqui
                           </p>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             PDF, imagens, documentos até 10MB
                           </p>
                         </div>
@@ -1041,7 +1041,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                       onChange={(e) => setAttachmentLink(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
                       placeholder="Cole o link aqui... (https://...)" 
-                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:border-blue-500 transition-colors text-sm"
                     />
                   </div>
                   <button
@@ -1061,7 +1061,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                   setShowAttachmentForm(false)
                   setAttachmentLink('')
                 }}
-                className="w-full px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-100 text-sm font-medium transition-all border border-gray-300"
+                className="w-full px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium transition-all border border-gray-300 dark:border-gray-600"
               >
                 Cancelar
               </button>
@@ -1072,7 +1072,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
           {attachments.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                   <Paperclip className="h-4 w-4" />
                   Anexos ({attachments.length})
                 </h3>
@@ -1107,14 +1107,14 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
               
               {/* Checkbox selecionar todos */}
               {attachments.length > 1 && (
-                <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg">
+                <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                   <input
                     type="checkbox"
                     checked={selectedAttachments.length === attachments.length}
                     onChange={toggleSelectAll}
                     className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-xs font-medium text-gray-700">
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                     Selecionar todos
                   </span>
                 </div>
@@ -1124,7 +1124,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                 {attachments.map((attachment) => (
                   <div
                     key={attachment.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       {/* Checkbox de seleção */}
@@ -1137,9 +1137,9 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                       />
                       <FileText className="h-5 w-5 text-gray-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{attachment.name || attachment.file_name || 'Sem nome'}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{attachment.name || attachment.file_name || 'Sem nome'}</p>
                         {attachment.type === 'file' && attachment.file_size && (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {(attachment.file_size / 1024).toFixed(1)} KB
                           </p>
                         )}
@@ -1198,20 +1198,20 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
       <div 
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-scale-in"
+        className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-scale-in"
         style={{ border: `3px solid ${block.color}` }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div 
-          className="p-6 border-b border-gray-200"
+          className="p-6 border-b border-gray-200 dark:border-gray-700"
           style={{ 
-            background: `linear-gradient(135deg, ${block.color}10 0%, white 100%)`
+            background: `linear-gradient(135deg, ${block.color}10 0%, transparent 100%)`
           }}
         >
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3 flex-1">
-              <div className="p-2 bg-white rounded-xl shadow-sm">
+              <div className="p-2 bg-white dark:bg-gray-700 rounded-xl shadow-sm">
                 {renderIcon(block.icon, 'h-6 w-6')}
               </div>
               {isEditingTitle ? (
@@ -1222,13 +1222,13 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     onChange={(e) => setTitle(e.target.value)}
                     onBlur={handleSaveTitle}
                     onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
-                    className="flex-1 text-2xl font-bold text-gray-900 border-2 border-blue-500 rounded-lg px-3 py-1 focus:outline-none"
+                    className="flex-1 text-2xl font-bold text-gray-900 dark:text-white border-2 border-blue-500 rounded-lg px-3 py-1 focus:outline-none dark:bg-gray-700"
                     autoFocus
                   />
                 </div>
               ) : (
                 <h2 
-                  className="flex-1 text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
+                  className="flex-1 text-2xl font-bold text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   onClick={() => setIsEditingTitle(true)}
                 >
                   {title}
@@ -1237,9 +1237,9 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
-              <X className="h-5 w-5 text-gray-500" />
+              <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
 
@@ -1247,14 +1247,14 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowChecklistForm(!showChecklistForm)}
-              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-all text-sm font-medium"
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-600 transition-all text-sm font-medium text-gray-700 dark:text-gray-200"
             >
               <CheckSquare className="h-4 w-4" />
               <span>Checklist</span>
             </button>
             <button
               onClick={() => setShowAttachmentForm(!showAttachmentForm)}
-              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-all text-sm font-medium"
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-600 transition-all text-sm font-medium text-gray-700 dark:text-gray-200"
             >
               <Paperclip className="h-4 w-4" />
               <span>Anexo</span>
@@ -1266,8 +1266,8 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Checklist Form */}
           {showChecklistForm && (
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Nova Checklist</h3>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Nova Checklist</h3>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -1275,7 +1275,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                   onChange={(e) => setNewChecklistName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreateChecklist()}
                   placeholder="Nome da checklist..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                   onClick={handleCreateChecklist}
@@ -1289,7 +1289,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     setShowChecklistForm(false)
                     setNewChecklistName('')
                   }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1299,8 +1299,8 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
 
           {/* Attachment Form */}
           {showAttachmentForm && (
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Adicionar Anexo</h3>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Adicionar Anexo</h3>
               
               {/* Toggle tipo de anexo */}
               <div className="flex gap-2 mb-3">
@@ -1309,7 +1309,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                   className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
                     attachmentType === 'file'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
                   }`}
                 >
                   Arquivo
@@ -1319,7 +1319,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                   className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
                     attachmentType === 'link'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
                   }`}
                 >
                   Link
@@ -1332,7 +1332,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     type="file"
                     multiple
                     onChange={(e) => e.target.files.length > 0 && handleUploadFile(Array.from(e.target.files))}
-                    className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    className="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                 </div>
               ) : (
@@ -1342,7 +1342,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                     value={attachmentLink}
                     onChange={(e) => setAttachmentLink(e.target.value)}
                     placeholder="Cole o link aqui..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={handleAddLink}
@@ -1359,7 +1359,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                   setShowAttachmentForm(false)
                   setAttachmentLink('')
                 }}
-                className="mt-3 w-full py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                className="mt-3 w-full py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
               >
                 Cancelar
               </button>
@@ -1368,14 +1368,14 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
 
           {/* Description */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Descrição</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Descrição</h3>
             {isEditingDescription ? (
               <div className="space-y-2">
                 <textarea
                   value={internalDescription}
                   onChange={(e) => setInternalDescription(e.target.value)}
                   placeholder="😃 Diga o que quer com um emoji. Basta digitar ':'."
-                  className="w-full px-4 py-3 border-2 border-blue-500 rounded-lg focus:outline-none min-h-[120px] resize-none"
+                  className="w-full px-4 py-3 border-2 border-blue-500 rounded-lg focus:outline-none min-h-[120px] resize-none dark:bg-gray-700 dark:text-white"
                   autoFocus
                 />
                 <div className="flex gap-2">
@@ -1392,7 +1392,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                       setInternalDescription(block.internal_description || '')
                       setIsEditingDescription(false)
                     }}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
                   >
                     Cancelar
                   </button>
@@ -1401,10 +1401,10 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
             ) : (
               <div
                 onClick={() => setIsEditingDescription(true)}
-                className="p-4 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors min-h-[80px]"
+                className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors min-h-[80px]"
               >
                 {internalDescription ? (
-                  <p className="text-gray-700 whitespace-pre-wrap break-words overflow-wrap-anywhere">{internalDescription}</p>
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words overflow-wrap-anywhere">{internalDescription}</p>
                 ) : (
                   <p className="text-gray-400">Clique para adicionar uma descrição...</p>
                 )}
@@ -1433,7 +1433,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
           {attachments.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-700">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                   Anexos ({attachments.length})
                 </h3>
                 
@@ -1467,14 +1467,14 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
               
               {/* Checkbox selecionar todos */}
               {attachments.length > 1 && (
-                <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
                   <input
                     type="checkbox"
                     checked={selectedAttachments.length === attachments.length}
                     onChange={toggleSelectAll}
                     className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-xs font-medium text-gray-700">
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                     Selecionar todos
                   </span>
                 </div>
@@ -1484,7 +1484,7 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                 {attachments.map((attachment) => (
                   <div
                     key={attachment.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       {/* Checkbox de seleção */}
@@ -1497,11 +1497,11 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
                       />
                       <Paperclip className="h-5 w-5 text-gray-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                           {attachment.file_name || attachment.name || 'Sem nome'}
                         </p>
                         {attachment.file_size && (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {(attachment.file_size / 1024).toFixed(2)} KB
                           </p>
                         )}
@@ -1581,11 +1581,11 @@ function ChecklistSection({ checklist, onAddItem, onToggleItem, onDeleteItem, on
   }
 
   return (
-    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <CheckSquare className="h-5 w-5 text-gray-600" />
-          <h3 className="text-sm font-semibold text-gray-900">{checklist.name}</h3>
+          <CheckSquare className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{checklist.name}</h3>
         </div>
         <button
           onClick={() => onDeleteChecklist(checklist.id)}
@@ -1599,9 +1599,9 @@ function ChecklistSection({ checklist, onAddItem, onToggleItem, onDeleteItem, on
       {/* Progress Bar */}
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-medium text-gray-600">{progress}%</span>
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{progress}%</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
           <div
             className="bg-blue-600 h-2 rounded-full transition-all duration-300"
             style={{ width: `${progress}%` }}
@@ -1619,7 +1619,7 @@ function ChecklistSection({ checklist, onAddItem, onToggleItem, onDeleteItem, on
               onChange={() => onToggleItem(checklist.id, item.id, item.is_completed)}
               className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
             />
-            <span className={`flex-1 text-sm ${item.is_completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+            <span className={`flex-1 text-sm ${item.is_completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
               {item.text}
             </span>
             <button
@@ -1641,7 +1641,7 @@ function ChecklistSection({ checklist, onAddItem, onToggleItem, onDeleteItem, on
             onChange={(e) => setNewItemText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmitItem()}
             placeholder="Adicionar um item..."
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             autoFocus
           />
           <button
@@ -1655,7 +1655,7 @@ function ChecklistSection({ checklist, onAddItem, onToggleItem, onDeleteItem, on
               setShowAddItem(false)
               setNewItemText('')
             }}
-            className="px-3 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition-colors"
+            className="px-3 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
           >
             Cancelar
           </button>
@@ -1663,7 +1663,7 @@ function ChecklistSection({ checklist, onAddItem, onToggleItem, onDeleteItem, on
       ) : (
         <button
           onClick={() => setShowAddItem(true)}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-200 rounded-lg transition-colors w-full"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors w-full"
         >
           <Plus className="h-4 w-4" />
           <span>Adicionar item</span>

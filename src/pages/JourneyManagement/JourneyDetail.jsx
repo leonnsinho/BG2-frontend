@@ -638,10 +638,10 @@ const JourneyDetail = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EBA500] mx-auto"></div>
-          <p className="mt-4 text-[#373435]">Carregando processos...</p>
+          <p className="mt-4 text-[#373435] dark:text-white">Carregando processos...</p>
         </div>
       </div>
     )
@@ -649,10 +649,10 @@ const JourneyDetail = () => {
 
   if (!journey) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900">
         <div className="text-center">
-          <h1 className="text-xl font-semibold text-[#373435]">Jornada não encontrada</h1>
-          <p className="mt-2 text-gray-600">A jornada "{journeySlug}" não foi encontrada.</p>
+          <h1 className="text-xl font-semibold text-[#373435] dark:text-white">Jornada não encontrada</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">A jornada "{journeySlug}" não foi encontrada.</p>
           <button
             onClick={() => navigate('/journey-management')}
             className="mt-4 text-[#EBA500] hover:text-[#EBA500]/80 font-medium"
@@ -675,13 +675,13 @@ const JourneyDetail = () => {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
           <div className="p-8">
             {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div>
                 <div className="flex items-center space-x-3 mb-3">
-                  <span className="inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium bg-gradient-to-r from-[#373435]/10 to-[#373435]/20 text-[#373435] border border-[#373435]/20">
+                  <span className="inline-flex items-center px-3 py-1 rounded-2xl text-sm font-medium bg-gradient-to-r from-[#373435]/10 to-[#373435]/20 text-[#373435] dark:from-gray-700 dark:to-gray-600 dark:text-gray-200 border border-[#373435]/20 dark:border-gray-600">
                     {journey.name.replace('Jornada ', '')}/{selectedProcess.name}
                   </span>
                   {selectedProcess.category_name && (
@@ -690,11 +690,11 @@ const JourneyDetail = () => {
                     </span>
                   )}
                 </div>
-                <h3 className="text-2xl font-bold text-[#373435]">{selectedProcess.description || selectedProcess.name}</h3>
+                <h3 className="text-2xl font-bold text-[#373435] dark:text-white">{selectedProcess.description || selectedProcess.name}</h3>
               </div>
               <button
                 onClick={() => setShowDetailsModal(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-2xl transition-all duration-200"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-2xl transition-all duration-200"
               >
                 ✕
               </button>
@@ -703,8 +703,8 @@ const JourneyDetail = () => {
             {/* Descrição */}
             {selectedProcess.description && (
               <div className="mb-8">
-                <h4 className="text-lg font-semibold text-[#373435] mb-3">Descrição</h4>
-                <p className="text-gray-600 leading-relaxed bg-gray-50 p-4 rounded-2xl">
+                <h4 className="text-lg font-semibold text-[#373435] dark:text-white mb-3">Descrição</h4>
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl">
                   {selectedProcess.description}
                 </p>
               </div>
@@ -713,7 +713,7 @@ const JourneyDetail = () => {
             {/* Métricas de Priorização */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-semibold text-[#373435]">Análise de Priorização</h4>
+                <h4 className="text-lg font-semibold text-[#373435] dark:text-white">Análise de Priorização</h4>
                 {selectedProcess.evaluation_id && (
                   <div className="flex items-center space-x-2 text-sm bg-green-100 text-green-800 px-3 py-1 rounded-2xl border border-green-200">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -723,10 +723,10 @@ const JourneyDetail = () => {
               </div>
               
               {evaluation.has_process === true ? (
-                <div className="bg-green-50 p-6 rounded-2xl border border-green-200 text-center">
+                <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-2xl border border-green-200 dark:border-green-700/40 text-center">
                   <div className="text-green-500 text-2xl mb-3">✅</div>
-                  <h5 className="font-semibold text-green-800 mb-2">Processo Amadurecido</h5>
-                  <p className="text-sm text-green-700">
+                  <h5 className="font-semibold text-green-800 dark:text-green-300 mb-2">Processo Amadurecido</h5>
+                  <p className="text-sm text-green-700 dark:text-green-400">
                     A empresa já possui este processo amadurecido, não entra no cálculo de prioridade.
                   </p>
                 </div>
@@ -734,7 +734,7 @@ const JourneyDetail = () => {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Importância para o Negócio */}
-                    <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-700/40">
                       <div className="flex items-center justify-between mb-2">
                         <h5 className="font-semibold text-indigo-800">Importância para o Negócio</h5>
                         <div className="flex items-center space-x-1">
@@ -759,7 +759,7 @@ const JourneyDetail = () => {
                     </div>
 
                 {/* Urgência para Implementação */}
-                <div className="bg-orange-50 p-6 rounded-2xl border border-orange-100">
+                <div className="bg-orange-50 dark:bg-orange-900/20 p-6 rounded-2xl border border-orange-100 dark:border-orange-700/40">
                   <div className="flex items-center justify-between mb-2">
                     <h5 className="font-semibold text-orange-800">Urgência para Implementação</h5>
                     <div className="flex items-center space-x-1">
@@ -784,7 +784,7 @@ const JourneyDetail = () => {
                 </div>
 
                 {/* Facilidade para Implementar */}
-                <div className="bg-green-50 p-6 rounded-2xl border border-green-100">
+                <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-2xl border border-green-100 dark:border-green-700/40">
                   <div className="flex items-center justify-between mb-2">
                     <h5 className="font-semibold text-green-800">Facilidade para Implementar</h5>
                     <div className="flex items-center space-x-1">
@@ -836,9 +836,9 @@ const JourneyDetail = () => {
 
               {/* Observações */}
               {evaluation.observations && (
-                <div className="mt-6 bg-gray-50 p-4 rounded-2xl border border-gray-200">
-                  <h5 className="font-semibold text-gray-800 mb-2">Observações</h5>
-                  <p className="text-sm text-gray-600">{evaluation.observations}</p>
+                <div className="mt-6 bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl border border-gray-200 dark:border-gray-600">
+                  <h5 className="font-semibold text-gray-800 dark:text-white mb-2">Observações</h5>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{evaluation.observations}</p>
                 </div>
               )}
                 </>
@@ -846,9 +846,9 @@ const JourneyDetail = () => {
 
               {/* Se não há avaliação */}
               {!selectedProcess.evaluation_id && (
-                <div className="mt-6 bg-yellow-50 p-6 rounded-2xl border border-yellow-100 text-center">
-                  <h5 className="font-semibold text-yellow-800 mb-2">Processo Não Avaliado</h5>
-                  <p className="text-sm text-yellow-700">
+                <div className="mt-6 bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-2xl border border-yellow-100 dark:border-yellow-700/40 text-center">
+                  <h5 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">Processo Não Avaliado</h5>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-400">
                     Este processo ainda não foi avaliado para esta empresa.
                   </p>
                 </div>
@@ -856,24 +856,24 @@ const JourneyDetail = () => {
             </div>
 
             {/* Informações Adicionais */}
-            <div className="pt-6 border-t border-gray-100">
+            <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-500">Peso do Processo:</span>
-                  <span className="ml-2 font-medium text-[#373435]">{selectedProcess.weight || 'N/A'}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Peso do Processo:</span>
+                  <span className="ml-2 font-medium text-[#373435] dark:text-white">{selectedProcess.weight || 'N/A'}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Ordem:</span>
-                  <span className="ml-2 font-medium text-[#373435]">{selectedProcess.order_index || 'N/A'}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Ordem:</span>
+                  <span className="ml-2 font-medium text-[#373435] dark:text-white">{selectedProcess.order_index || 'N/A'}</span>
                 </div>
               </div>
             </div>
 
             {/* Botões de Ação */}
-            <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-100">
+            <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => setShowDetailsModal(false)}
-                className="px-6 py-2 text-[#373435] bg-gray-100 hover:bg-gray-200 rounded-2xl font-medium transition-all duration-200"
+                className="px-6 py-2 text-[#373435] dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-2xl font-medium transition-all duration-200"
               >
                 Fechar
               </button>
@@ -897,16 +897,16 @@ const JourneyDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200/50 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200/50 dark:border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-4 sm:py-6 lg:py-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full">
                 <button
                   onClick={() => navigate('/journey-management')}
-                  className="flex items-center space-x-2 px-4 py-2 min-h-[44px] text-[#373435] bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-[#EBA500]/30 transition-all duration-200 shadow-sm touch-manipulation"
+                  className="flex items-center space-x-2 px-4 py-2 min-h-[44px] text-[#373435] dark:text-white bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-[#EBA500]/30 transition-all duration-200 shadow-sm touch-manipulation"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   <span className="text-sm font-medium">Voltar</span>
@@ -917,8 +917,8 @@ const JourneyDetail = () => {
                 </div>
                 
                 <div className="flex-1">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[#373435]">{journey.name}</h1>
-                  <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">Este diagnóstico ajuda a identificar gaps estratégicos e oportunidades de crescimento.</p>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#373435] dark:text-white">{journey.name}</h1>
+                  <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-300">Este diagnóstico ajuda a identificar gaps estratégicos e oportunidades de crescimento.</p>
                 </div>
               </div>
             </div>
@@ -928,7 +928,7 @@ const JourneyDetail = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Filtros e Busca */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50 p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
           <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:gap-6">
             <div className="flex-1">
               <div className="relative">
@@ -940,7 +940,7 @@ const JourneyDetail = () => {
                   placeholder="Buscar processos..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 sm:pl-12 pr-4 py-3 min-h-[44px] border border-gray-200 rounded-2xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] text-sm sm:text-base transition-all duration-200 touch-manipulation"
+                  className="block w-full pl-10 sm:pl-12 pr-4 py-3 min-h-[44px] border border-gray-200 dark:border-gray-600 rounded-2xl leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] text-sm sm:text-base transition-all duration-200 touch-manipulation"
                 />
               </div>
             </div>
@@ -949,7 +949,7 @@ const JourneyDetail = () => {
               <select
                 value={usageFilter}
                 onChange={(e) => setUsageFilter(e.target.value)}
-                className="block w-full pl-4 pr-10 py-3 min-h-[44px] text-sm sm:text-base border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] rounded-2xl transition-all duration-200 touch-manipulation"
+                className="block w-full pl-4 pr-10 py-3 min-h-[44px] text-sm sm:text-base border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] rounded-2xl transition-all duration-200 touch-manipulation"
               >
                 <option value="all">Todos os processos</option>
                 <option value="not-evaluated">Não avaliados</option>
@@ -964,58 +964,58 @@ const JourneyDetail = () => {
         {/* Estatísticas */}
         {company && evaluations.length > 0 && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4 lg:p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-3 sm:p-4 lg:p-6">
               <div className="flex flex-col sm:flex-row items-center">
                 <div className="flex-shrink-0 mb-2 sm:mb-0">
                   <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
                 </div>
                 <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
-                  <div className="text-base sm:text-lg font-medium text-[#373435]">
+                  <div className="text-base sm:text-lg font-medium text-[#373435] dark:text-white">
                     {evaluations.filter(e => e.has_process === true).length}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500">Amadurecidos</div>
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Amadurecidos</div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4 lg:p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-3 sm:p-4 lg:p-6">
               <div className="flex flex-col sm:flex-row items-center">
                 <div className="flex-shrink-0 mb-2 sm:mb-0">
                   <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-orange-400" />
                 </div>
                 <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
-                  <div className="text-base sm:text-lg font-medium text-[#373435]">
+                  <div className="text-base sm:text-lg font-medium text-[#373435] dark:text-white">
                     {evaluations.filter(e => e.has_process === false).length}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500">Em Processo</div>
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Em Processo</div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4 lg:p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-3 sm:p-4 lg:p-6">
               <div className="flex flex-col sm:flex-row items-center">
                 <div className="flex-shrink-0 mb-2 sm:mb-0">
                   <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                 </div>
                 <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
-                  <div className="text-base sm:text-lg font-medium text-[#373435]">
+                  <div className="text-base sm:text-lg font-medium text-[#373435] dark:text-white">
                     {processes.length - evaluations.length}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500">Não Avaliados</div>
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Não Avaliados</div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4 lg:p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-3 sm:p-4 lg:p-6">
               <div className="flex flex-col sm:flex-row items-center">
                 <div className="flex-shrink-0 mb-2 sm:mb-0">
                   <EyeOff className="h-6 w-6 sm:h-8 sm:w-8 text-gray-500" />
                 </div>
                 <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
-                  <div className="text-base sm:text-lg font-medium text-[#373435]">
+                  <div className="text-base sm:text-lg font-medium text-[#373435] dark:text-white">
                     {processes.filter(p => !p.is_active).length}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500">Desativados</div>
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Desativados</div>
                 </div>
               </div>
             </div>
@@ -1024,14 +1024,14 @@ const JourneyDetail = () => {
 
         {/* Barra de Progresso de Amadurecimento */}
         {company && processes.filter(p => p.is_active).length > 0 && (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-5 lg:p-6 mb-4 sm:mb-6 lg:mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-4 sm:p-5 lg:p-6 mb-4 sm:mb-6 lg:mb-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-[#373435]">Progresso de Amadurecimento</h4>
+                  <h4 className="text-sm font-semibold text-[#373435] dark:text-white">Progresso de Amadurecimento</h4>
                 </div>
               </div>
               <div className="text-left sm:text-right">
@@ -1048,7 +1048,7 @@ const JourneyDetail = () => {
             </div>
             
             {/* Barra de Progresso */}
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500 ease-out"
                 style={{ 
@@ -1061,7 +1061,7 @@ const JourneyDetail = () => {
             </div>
             
             {/* Detalhamento */}
-            <div className="flex justify-between text-xs text-gray-600 mt-2">
+            <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-2">
               <span>0%</span>
               <span className="text-blue-600 font-medium">
                 {processes.filter(p => p.is_active).length > 0 
@@ -1075,9 +1075,9 @@ const JourneyDetail = () => {
         )}
 
         {/* Lista de Processos */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50">
-          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-            <h3 className="text-base sm:text-lg font-semibold text-[#373435]">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/50 dark:border-gray-700">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <h3 className="text-base sm:text-lg font-semibold text-[#373435] dark:text-white">
               Processos ({filteredProcesses.length} de {processes.length})
             </h3>
             
@@ -1110,10 +1110,10 @@ const JourneyDetail = () => {
             </div>
           </div>
           
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {filteredProcesses.length === 0 ? (
               <div className="p-6 sm:p-8 text-center">
-                <p className="text-sm sm:text-base text-gray-500">Nenhum processo encontrado.</p>
+                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">Nenhum processo encontrado.</p>
               </div>
             ) : (
               filteredProcesses.map((process) => {
@@ -1123,7 +1123,7 @@ const JourneyDetail = () => {
                   <div key={process.id} className={`p-4 sm:p-5 lg:p-6 transition-all duration-200 ${
                     process.is_active 
                       ? 'hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-[#EBA500]/5' 
-                      : 'bg-gray-50/30 opacity-60'
+                      : 'bg-gray-50/30 dark:bg-gray-700/20 opacity-60'
                   }`}>
                     <div className="flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-6">
                       <div className="flex-1 w-full lg:w-auto">
@@ -1148,7 +1148,7 @@ const JourneyDetail = () => {
                         
                         {/* Título do Processo (name) em destaque */}
                         <h4 className={`text-lg sm:text-xl lg:text-2xl font-bold mb-2 ${
-                          process.is_active ? 'text-[#373435]' : 'text-gray-500'
+                          process.is_active ? 'text-[#373435] dark:text-white' : 'text-gray-500 dark:text-gray-400'
                         }`}>
                           {process.name}
                         </h4>
@@ -1156,7 +1156,7 @@ const JourneyDetail = () => {
                         {/* Descrição menor */}
                         {process.description && (
                           <p className={`text-xs sm:text-sm leading-relaxed line-clamp-2 sm:line-clamp-none ${
-                            process.is_active ? 'text-gray-600' : 'text-gray-400'
+                            process.is_active ? 'text-gray-600 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'
                           }`}>
                             {process.description}
                           </p>
@@ -1192,7 +1192,7 @@ const JourneyDetail = () => {
                           </div>
                         ) : company ? (
                           <div>
-                            <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl text-xs sm:text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                            <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl text-xs sm:text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
                               <span className="mr-1.5 sm:mr-2">⏳</span>
                               Não Avaliado
                             </div>
@@ -1227,7 +1227,7 @@ const JourneyDetail = () => {
                               {showDropdownMenu === process.id && (
                                 <div 
                                   data-dropdown
-                                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+                                  className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10"
                                 >
                                   <div className="py-1">
                                     <button
@@ -1235,7 +1235,7 @@ const JourneyDetail = () => {
                                         handleEditProcess(process)
                                         setShowDropdownMenu(null)
                                       }}
-                                      className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+                                      className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 w-full text-left"
                                     >
                                       <Edit className="h-4 w-4" />
                                       <span>Editar Processo</span>
@@ -1320,22 +1320,22 @@ const JourneyDetail = () => {
       {/* Modal de Confirmação de Exclusão */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-red-100 rounded-lg">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
                 <Trash2 className="h-5 w-5 text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Confirmar Remoção</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirmar Remoção</h3>
             </div>
             
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
               Tem certeza que deseja remover este processo? Esta ação não pode ser desfeita.
             </p>
             
             <div className="flex items-center justify-end space-x-3">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancelar
               </button>
@@ -1353,22 +1353,22 @@ const JourneyDetail = () => {
       {/* Modal de Confirmação de Deleção Permanente */}
       {showPermanentDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-red-100 rounded-lg">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
                 <Trash2 className="h-5 w-5 text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">⚠️ Apagar Permanentemente</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">⚠️ Apagar Permanentemente</h3>
             </div>
             
             <div className="mb-6">
-              <p className="text-sm text-gray-900 font-medium mb-2">
+              <p className="text-sm text-gray-900 dark:text-white font-medium mb-2">
                 Esta ação irá remover permanentemente o processo "{showPermanentDeleteConfirm.name}" do banco de dados.
               </p>
               <p className="text-sm text-red-600 font-medium">
                 ⚠️ ATENÇÃO: Esta ação NÃO PODE ser desfeita!
               </p>
-              <p className="text-sm text-gray-600 mt-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                 Todas as avaliações associadas a este processo também serão removidas.
               </p>
             </div>
@@ -1376,7 +1376,7 @@ const JourneyDetail = () => {
             <div className="flex items-center justify-end space-x-3">
               <button
                 onClick={() => setShowPermanentDeleteConfirm(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancelar
               </button>
@@ -1394,10 +1394,10 @@ const JourneyDetail = () => {
       {/* Modal de Confirmação de Ativar/Desativar */}
       {showToggleConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center space-x-3 mb-4">
               <div className={`p-2 rounded-lg ${
-                showToggleConfirm.is_active ? 'bg-orange-100' : 'bg-green-100'
+                showToggleConfirm.is_active ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-green-100 dark:bg-green-900/30'
               }`}>
                 {showToggleConfirm.is_active ? (
                   <EyeOff className="h-5 w-5 text-orange-600" />
@@ -1405,12 +1405,12 @@ const JourneyDetail = () => {
                   <Eye className="h-5 w-5 text-green-600" />
                 )}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {showToggleConfirm.is_active ? 'Desativar Processo' : 'Ativar Processo'}
               </h3>
             </div>
             
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
               {showToggleConfirm.is_active 
                 ? `Tem certeza que deseja desativar o processo "${showToggleConfirm.name}"? Ele ficará visível mas não poderá ser avaliado.`
                 : `Tem certeza que deseja ativar o processo "${showToggleConfirm.name}"? Ele voltará a ficar disponível para avaliação.`
@@ -1420,7 +1420,7 @@ const JourneyDetail = () => {
             <div className="flex items-center justify-end space-x-3">
               <button
                 onClick={() => setShowToggleConfirm(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancelar
               </button>

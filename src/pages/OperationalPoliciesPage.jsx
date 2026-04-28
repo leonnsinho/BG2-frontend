@@ -45,6 +45,7 @@ export default function OperationalPoliciesPage() {
   const [selectedJourney, setSelectedJourney] = useState(null)
   const [blocks, setBlocks] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingBlocks, setLoadingBlocks] = useState(false)
   const [expandedBlocks, setExpandedBlocks] = useState({})
   const [expandedSubblocks, setExpandedSubblocks] = useState({})
   const [expandedSubSubblocks, setExpandedSubSubblocks] = useState({}) // 🔥 NOVO: Para 3º nível
@@ -257,7 +258,7 @@ export default function OperationalPoliciesPage() {
       return
     }
 
-    setLoading(true)
+    setLoadingBlocks(true)
     try {
       console.log('🔄 Carregando blocos para:', {
         company_id: userCompanyId,
@@ -287,7 +288,7 @@ export default function OperationalPoliciesPage() {
       console.error('Erro ao carregar blocos:', error)
       toast.alert('Erro ao carregar blocos: ' + error.message)
     } finally {
-      setLoading(false)
+      setLoadingBlocks(false)
     }
   }
 
@@ -1539,11 +1540,11 @@ export default function OperationalPoliciesPage() {
               <textarea
                 value={textData.text}
                 onChange={(e) => setInlineTableData({ text: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[150px] text-gray-700"
+                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[150px] text-gray-700 dark:bg-gray-700 dark:text-white dark:border-blue-500"
                 placeholder="Digite o texto..."
               />
             ) : (
-              <p className="text-gray-700 whitespace-pre-wrap break-words overflow-wrap-anywhere">{textData.text}</p>
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words overflow-wrap-anywhere">{textData.text}</p>
             )}
             
             {/* Botões de ação */}
@@ -1628,7 +1629,7 @@ export default function OperationalPoliciesPage() {
                         newItems[index] = e.target.value
                         setInlineTableData({ items: newItems })
                       }}
-                      className="flex-1 px-3 py-2 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 border-2 border-blue-300 dark:border-blue-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
                       onClick={() => {
@@ -1653,7 +1654,7 @@ export default function OperationalPoliciesPage() {
                 </button>
               </div>
             ) : (
-              <ul className="list-disc list-inside space-y-1 text-gray-700">
+              <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
                 {listData.items?.map((item, index) => (
                   <li key={index} className="break-words">{item}</li>
                 ))}
@@ -1734,11 +1735,11 @@ export default function OperationalPoliciesPage() {
             {isInlineEditing ? (
               <div className="space-y-2">
                 <div className="flex gap-2 items-center">
-                  <label className="text-sm text-gray-600">Nível:</label>
+                  <label className="text-sm text-gray-600 dark:text-gray-400">Nível:</label>
                   <select
                     value={headingData.level}
                     onChange={(e) => setInlineTableData({ ...headingData, level: parseInt(e.target.value) })}
-                    className="px-3 py-2 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border-2 border-blue-300 dark:border-blue-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value={1}>H1 - Grande</option>
                     <option value={2}>H2 - Médio</option>
@@ -1749,13 +1750,13 @@ export default function OperationalPoliciesPage() {
                   type="text"
                   value={headingData.text}
                   onChange={(e) => setInlineTableData({ ...headingData, text: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-bold"
+                  className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-bold"
                   placeholder="Digite o título..."
                 />
               </div>
             ) : (
               React.createElement(HeadingTag, {
-                className: `font-bold text-gray-900 break-words ${headingData.level === 2 ? 'text-xl' : 'text-lg'}`
+                className: `font-bold text-gray-900 dark:text-white break-words ${headingData.level === 2 ? 'text-xl' : 'text-lg'}`
               }, headingData.text)
             )}
             
@@ -1831,11 +1832,11 @@ export default function OperationalPoliciesPage() {
         return (
           <div className="space-y-3">
             <div className="overflow-x-auto">
-              <table className="min-w-full border border-gray-300">
-                <thead className="bg-gray-50">
+              <table className="min-w-full border border-gray-300 dark:border-gray-600">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     {tableData.headers?.map((header, index) => (
-                      <th key={index} className="px-4 py-2 border border-gray-300 text-left text-sm font-semibold text-gray-900 break-words">
+                      <th key={index} className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-left text-sm font-semibold text-gray-900 dark:text-white break-words">
                         {isInlineEditing ? (
                           <input
                             type="text"
@@ -1845,7 +1846,7 @@ export default function OperationalPoliciesPage() {
                               newHeaders[index] = e.target.value
                               setInlineTableData({ ...tableData, headers: newHeaders })
                             }}
-                            className="w-full px-2 py-1 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-2 py-1 border border-blue-300 dark:border-blue-600 dark:bg-gray-700 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         ) : (
                           header
@@ -1853,7 +1854,7 @@ export default function OperationalPoliciesPage() {
                       </th>
                     ))}
                     {isInlineEditing && (
-                      <th className="px-2 py-2 border border-gray-300 w-10">
+                      <th className="px-2 py-2 border border-gray-300 dark:border-gray-600 w-10">
                         <button
                           onClick={() => {
                             setInlineTableData({
@@ -1875,7 +1876,7 @@ export default function OperationalPoliciesPage() {
                   {tableData.rows?.map((row, rowIndex) => (
                     <tr key={rowIndex}>
                       {row.map((cell, cellIndex) => (
-                        <td key={cellIndex} className="px-4 py-2 border border-gray-300 text-sm text-gray-700 break-words">
+                        <td key={cellIndex} className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 break-words">
                           {isInlineEditing ? (
                             <input
                               type="text"
@@ -1885,7 +1886,7 @@ export default function OperationalPoliciesPage() {
                                 newRows[rowIndex][cellIndex] = e.target.value
                                 setInlineTableData({ ...tableData, rows: newRows })
                               }}
-                              className="w-full px-2 py-1 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-2 py-1 border border-blue-300 dark:border-blue-600 dark:bg-gray-700 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           ) : (
                             cell
@@ -1893,7 +1894,7 @@ export default function OperationalPoliciesPage() {
                         </td>
                       ))}
                       {isInlineEditing && (
-                        <td className="px-2 py-2 border border-gray-300">
+                        <td className="px-2 py-2 border border-gray-300 dark:border-gray-600">
                           <button
                             onClick={() => {
                               const newRows = tableData.rows.filter((_, i) => i !== rowIndex)
@@ -1910,7 +1911,7 @@ export default function OperationalPoliciesPage() {
                   ))}
                   {isInlineEditing && (
                     <tr>
-                      <td colSpan={tableData.headers?.length + 1} className="px-4 py-2 border border-gray-300 text-center">
+                      <td colSpan={tableData.headers?.length + 1} className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-center">
                         <button
                           onClick={() => {
                             setInlineTableData({
@@ -2074,7 +2075,7 @@ export default function OperationalPoliciesPage() {
         }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-900 dark:to-gray-900">
       {/* Banner Super Admin */}
       <SuperAdminBanner />
       
@@ -2087,7 +2088,7 @@ export default function OperationalPoliciesPage() {
               <FileText className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-[#373435] tracking-tight truncate">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-[#373435] dark:text-white tracking-tight truncate">
                 {selectedJourney ? selectedJourney.name : 'Políticas de Gestão'}
               </h1>
               {selectedJourney ? (
@@ -2099,7 +2100,7 @@ export default function OperationalPoliciesPage() {
                         value={journeyDescription}
                         onChange={(e) => setJourneyDescription(e.target.value)}
                         placeholder="Adicione uma descrição para esta jornada..."
-                        className="flex-1 px-3 py-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs sm:text-sm bg-white transition-all duration-300 min-h-[44px] touch-manipulation"
+                        className="flex-1 px-3 py-2 border border-[#EBA500]/30 focus:border-[#EBA500] focus:ring-2 focus:ring-[#EBA500]/20 rounded-xl text-xs sm:text-sm bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-300 min-h-[44px] touch-manipulation"
                         autoFocus
                       />
                       <button
@@ -2123,7 +2124,7 @@ export default function OperationalPoliciesPage() {
                   ) : (
                     <div
                       onClick={() => setEditingDescription(true)}
-                      className="cursor-pointer text-gray-500 hover:text-gray-700 transition-colors inline-flex items-center gap-2 group touch-manipulation min-h-[40px]"
+                      className="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors inline-flex items-center gap-2 group touch-manipulation min-h-[40px]"
                     >
                       {journeyDescription ? (
                         <span className="text-xs sm:text-sm break-words">{journeyDescription}</span>
@@ -2135,7 +2136,7 @@ export default function OperationalPoliciesPage() {
                   )}
                 </div>
               ) : (
-                <p className="text-gray-500 mt-1">Selecione uma jornada no menu lateral</p>
+                <p className="text-gray-500 dark:text-gray-400 mt-1">Selecione uma jornada no menu lateral</p>
               )}
             </div>
           </div>
@@ -2146,10 +2147,10 @@ export default function OperationalPoliciesPage() {
             {/* 🔥 NOVO: Navegação entre jornadas (APENAS SUPER ADMIN) */}
             {profile?.role === 'super_admin' && journeys.length > 0 && (
               <div className="mb-4 sm:mb-6">
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-2 sm:mb-3">
                     <Layers className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
-                    <h3 className="text-xs sm:text-sm font-semibold text-gray-700">Navegar entre Jornadas</h3>
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-200">Navegar entre Jornadas</h3>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {journeys.map((journey) => (
@@ -2162,7 +2163,7 @@ export default function OperationalPoliciesPage() {
                         className={`px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm transition-all duration-200 min-h-[40px] touch-manipulation ${
                           selectedJourney?.id === journey.id
                             ? 'bg-gradient-to-br from-[#EBA500] to-[#d99500] text-white shadow-lg shadow-[#EBA500]/20'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
                         {journey.name}
@@ -2587,7 +2588,7 @@ export default function OperationalPoliciesPage() {
                               Adicionar
                             </button>
                           </div>
-                          <p className="text-xs sm:text-sm text-gray-500 text-center py-6 sm:py-8 bg-gray-50 rounded-xl">
+                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center py-6 sm:py-8 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                             Nenhum sub-bloco cadastrado
                           </p>
                         </div>
@@ -2596,7 +2597,7 @@ export default function OperationalPoliciesPage() {
                       {/* Conteúdos */}
                       <div className="mb-6 sm:mb-8">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 sm:mb-4">
-                          <h3 className="text-base sm:text-lg font-bold text-[#373435]">Conteúdos</h3>
+                          <h3 className="text-base sm:text-lg font-bold text-[#373435] dark:text-white">Conteúdos</h3>
                           <button
                             onClick={() => openContentModal(viewingSubblock.id)}
                             className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all min-h-[44px] touch-manipulation"
@@ -2608,13 +2609,13 @@ export default function OperationalPoliciesPage() {
                         {viewingSubblock.policy_contents && viewingSubblock.policy_contents.length > 0 ? (
                           <div className="space-y-3 sm:space-y-4">
                             {viewingSubblock.policy_contents.map((content) => (
-                              <div key={content.id} className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 touch-manipulation">
+                              <div key={content.id} className="bg-gradient-to-br from-gray-50 dark:from-gray-700 to-white dark:to-gray-700/50 border-2 border-gray-200 dark:border-gray-600 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 touch-manipulation">
                                 {renderContent(content)}
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-xl">
+                          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                             Nenhum conteúdo cadastrado
                           </p>
                         )}
@@ -2623,7 +2624,7 @@ export default function OperationalPoliciesPage() {
                       {/* Anexos */}
                       <div>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 sm:mb-4">
-                          <h3 className="text-base sm:text-lg font-bold text-[#373435]">Anexos</h3>
+                          <h3 className="text-base sm:text-lg font-bold text-[#373435] dark:text-white">Anexos</h3>
                           <button
                             onClick={() => openAttachmentModal(viewingSubblock.id)}
                             className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-md text-white rounded-xl font-semibold text-sm transition-all min-h-[44px] touch-manipulation"
@@ -2640,17 +2641,17 @@ export default function OperationalPoliciesPage() {
                                 href={attachment.file_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl sm:rounded-2xl hover:shadow-lg hover:border-[#EBA500] transition-all group touch-manipulation min-h-[60px]"
+                                className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 bg-gradient-to-br from-gray-50 dark:from-gray-700 to-white dark:to-gray-700/50 border-2 border-gray-200 dark:border-gray-600 rounded-xl sm:rounded-2xl hover:shadow-lg hover:border-[#EBA500] transition-all group touch-manipulation min-h-[60px]"
                               >
                                 <div className="p-2 sm:p-3 bg-[#EBA500]/10 rounded-xl group-hover:bg-[#EBA500]/20 transition-colors flex-shrink-0">
                                   <Paperclip className="h-5 w-5 sm:h-6 sm:w-6 text-[#EBA500]" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm sm:text-base font-semibold text-gray-900 truncate group-hover:text-[#EBA500] transition-colors">
+                                  <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate group-hover:text-[#EBA500] transition-colors">
                                     {attachment.file_name || attachment.name || 'Sem nome'}
                                   </p>
                                   {attachment.description && (
-                                    <p className="text-xs sm:text-sm text-gray-500 truncate">{attachment.description}</p>
+                                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{attachment.description}</p>
                                   )}
                                 </div>
                                 <ExternalLink className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0 group-hover:text-[#EBA500] transition-colors" />
@@ -2658,7 +2659,7 @@ export default function OperationalPoliciesPage() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-xl">
+                          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                             Nenhum anexo cadastrado
                           </p>
                         )}
@@ -2672,7 +2673,7 @@ export default function OperationalPoliciesPage() {
             {/* Header da seção de blocos */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
               <div className="flex-1 min-w-0">
-                <h2 className="text-xl sm:text-2xl font-bold text-[#373435] truncate">
+                <h2 className="text-xl sm:text-2xl font-bold text-[#373435] dark:text-white truncate">
                   Blocos de Políticas
                 </h2>
               </div>
@@ -2699,7 +2700,7 @@ export default function OperationalPoliciesPage() {
                   placeholder="Buscar..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-white text-sm sm:text-base min-h-[44px] touch-manipulation"
+                  className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-gray-200 dark:border-gray-700 focus:outline-none focus:border-[#EBA500] transition-colors bg-white dark:bg-gray-800 dark:text-white dark:placeholder-gray-400 text-sm sm:text-base min-h-[44px] touch-manipulation"
                 />
                 {searchQuery && (
                   <button
@@ -2713,7 +2714,24 @@ export default function OperationalPoliciesPage() {
             </div>
 
             {/* Lista/Grid de Blocos */}
-            {(() => {
+            {loadingBlocks ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden animate-pulse" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                    <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl bg-gray-200 dark:bg-gray-700" />
+                    <div className="p-5 pl-6">
+                      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded-lg w-2/3 mb-3" />
+                      <div className="h-3 bg-gray-100 dark:bg-gray-700/60 rounded w-full mb-2" />
+                      <div className="h-3 bg-gray-100 dark:bg-gray-700/60 rounded w-4/5" />
+                      <div className="flex gap-3 mt-5 pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <div className="h-3 bg-gray-100 dark:bg-gray-700/60 rounded w-16" />
+                        <div className="h-3 bg-gray-100 dark:bg-gray-700/60 rounded w-16" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (() => {
               // 🔥 Filtrar blocos pela busca
               const filteredBlocks = blocks.filter(block => 
                 block.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -2722,15 +2740,15 @@ export default function OperationalPoliciesPage() {
 
               if (blocks.length === 0) {
                 return (
-                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-200/50 p-16 text-center">
+                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-16 text-center">
                     <div className="max-w-md mx-auto">
-                      <div className="inline-flex p-5 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl mb-6">
+                      <div className="inline-flex p-5 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-700 rounded-3xl mb-6">
                         <FolderOpen className="h-12 w-12 text-gray-400" />
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-3">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                         Nenhum bloco criado
                       </h3>
-                      <p className="text-gray-500 mb-8 leading-relaxed">
+                      <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
                         Comece criando um novo bloco de políticas para organizar suas operações
                       </p>
                       <button
@@ -2747,15 +2765,15 @@ export default function OperationalPoliciesPage() {
 
               if (filteredBlocks.length === 0) {
                 return (
-                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-200/50 p-16 text-center">
+                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-200/50 dark:border-gray-700 p-16 text-center">
                     <div className="max-w-md mx-auto">
-                      <div className="inline-flex p-5 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl mb-6">
+                      <div className="inline-flex p-5 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-700 rounded-3xl mb-6">
                         <Search className="h-12 w-12 text-gray-400" />
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-3">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                         Nenhum bloco encontrado
                       </h3>
-                      <p className="text-gray-500 mb-8 leading-relaxed">
+                      <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
                         Não encontramos blocos com "{searchQuery}"
                       </p>
                       <button
@@ -2915,7 +2933,7 @@ export default function OperationalPoliciesPage() {
                     <div
                       key={block.id}
                       onClick={() => { setSelectedBlockForCard(block); setShowBlockCardModal(true); }}
-                      className="group relative bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1"
+                      className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1"
                       style={{
                         boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)',
                       }}
@@ -2936,14 +2954,14 @@ export default function OperationalPoliciesPage() {
                       <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                         <button
                           onClick={(e) => { e.stopPropagation(); openBlockModal(block) }}
-                          className="p-1.5 rounded-lg bg-white/90 backdrop-blur-sm shadow-sm text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                          className="p-1.5 rounded-lg bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm shadow-sm text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all"
                           title="Editar"
                         >
                           <Edit2 className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDeleteBlock(block.id) }}
-                          className="p-1.5 rounded-lg bg-white/90 backdrop-blur-sm shadow-sm text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all"
+                          className="p-1.5 rounded-lg bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm shadow-sm text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all"
                           title="Excluir"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -2977,7 +2995,7 @@ export default function OperationalPoliciesPage() {
                             </div>
                           )}
                           <div className="flex-1 min-w-0 pt-0.5">
-                            <h3 className="text-sm font-bold text-[#373435] leading-snug line-clamp-2 pr-14">
+                            <h3 className="text-sm font-bold text-[#373435] dark:text-gray-100 leading-snug line-clamp-2 pr-14">
                               {block.name}
                             </h3>
                           </div>
@@ -2985,20 +3003,20 @@ export default function OperationalPoliciesPage() {
 
                         {/* Descrição */}
                         {block.description && (
-                          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 mb-3">
                             {block.description}
                           </p>
                         )}
 
                         {/* Separador */}
                         <div className="flex-1" />
-                        <div className="h-px bg-gray-100 mb-3" />
+                        <div className="h-px bg-gray-100 dark:bg-gray-700 mb-3" />
 
                         {/* Rodapé: stats + data */}
                         <div className="flex items-center justify-between gap-2">
                           {/* Stats */}
                           <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                               <FileText className="h-3.5 w-3.5" style={{ color }} />
                               <span className="font-medium" style={{ color }}>{totalDocs}</span>
                               <span>{totalDocs === 1 ? 'doc' : 'docs'}</span>
@@ -3006,7 +3024,7 @@ export default function OperationalPoliciesPage() {
                           </div>
                           {/* Data ultima atualização */}
                           {block.updated_at && (
-                            <div className="flex items-center gap-1 text-xs text-gray-400">
+                            <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                               <Clock className="h-3 w-3" />
                               <span>{formatBlockDate(block.updated_at)}</span>
                             </div>
@@ -3019,7 +3037,7 @@ export default function OperationalPoliciesPage() {
               </div>
                 );
               }
-            })()}
+            })()} 
           </>
         )}
 
@@ -3027,7 +3045,7 @@ export default function OperationalPoliciesPage() {
         {showBlockViewModal && viewingBlock && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
             <div 
-              className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden"
+              className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden"
               style={{
                 animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
               }}
@@ -3037,7 +3055,7 @@ export default function OperationalPoliciesPage() {
                 className="p-8 relative"
                 style={{ 
                   borderBottom: `3px solid ${viewingBlock.color}30`,
-                  background: `linear-gradient(135deg, ${viewingBlock.color}12 0%, ${viewingBlock.color}05 50%, white 100%)`,
+                  background: `linear-gradient(135deg, ${viewingBlock.color}12 0%, ${viewingBlock.color}05 50%, transparent 100%)`,
                   boxShadow: `inset 0 0 60px ${viewingBlock.color}08, 0 4px 20px ${viewingBlock.color}15`
                 }}
               >
@@ -3045,11 +3063,11 @@ export default function OperationalPoliciesPage() {
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="flex-shrink-0">{renderIcon(viewingBlock.icon, 'h-12 w-12')}</div>
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-3xl font-bold text-[#373435] mb-2 break-words">
+                      <h2 className="text-3xl font-bold text-[#373435] dark:text-white mb-2 break-words">
                         {viewingBlock.name}
                       </h2>
                       {viewingBlock.description && (
-                        <p className="text-gray-600 leading-relaxed break-words">
+                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed break-words">
                           {viewingBlock.description}
                         </p>
                       )}
@@ -3069,7 +3087,7 @@ export default function OperationalPoliciesPage() {
                     </button>
                     <button
                       onClick={closeBlockView}
-                      className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                      className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-xl transition-all"
                     >
                       <X className="h-6 w-6" />
                     </button>
@@ -3087,7 +3105,7 @@ export default function OperationalPoliciesPage() {
                       placeholder="Buscar sub-blocos..."
                       value={subblockSearchQuery}
                       onChange={(e) => setSubblockSearchQuery(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 placeholder:text-gray-400"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white dark:placeholder-gray-400 placeholder:text-gray-400"
                     />
                     {subblockSearchQuery && (
                       <button
@@ -3138,7 +3156,7 @@ export default function OperationalPoliciesPage() {
                         {filteredSubblocks.map((subblock) => (
                       <div
                         key={subblock.id}
-                        className="group bg-gradient-to-br from-white to-gray-50/50 rounded-2xl border-2 border-gray-200/50 hover:border-[#EBA500]/30 hover:shadow-lg p-6 transition-all duration-200 relative"
+                        className="group bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-700 dark:to-gray-700/50 rounded-2xl border-2 border-gray-200/50 dark:border-gray-600 hover:border-[#EBA500]/30 hover:shadow-lg p-6 transition-all duration-200 relative"
                       >
                         {/* Botões de Ação (aparecem no hover) */}
                         <div className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -3170,26 +3188,26 @@ export default function OperationalPoliciesPage() {
                           className="cursor-pointer"
                         >
                           <div className="flex items-start justify-between mb-3">
-                            <h3 className="text-lg font-bold text-[#373435] flex-1 pr-16 break-words">
+                            <h3 className="text-lg font-bold text-[#373435] dark:text-gray-100 flex-1 pr-16 break-words">
                               {subblock.name}
                             </h3>
                             <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-[#EBA500] group-hover:translate-x-1 transition-all flex-shrink-0" />
                           </div>
                           {subblock.description && (
-                            <p className="text-sm text-gray-600 mb-4 line-clamp-2 break-words">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 break-words">
                               {subblock.description}
                             </p>
                           )}
-                          <div className="flex items-center gap-4 pt-3 border-t border-gray-200/50">
-                            <span className="text-xs text-gray-500">
+                          <div className="flex items-center gap-4 pt-3 border-t border-gray-200/50 dark:border-gray-600">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
                               <Layers className="h-3 w-3 inline mr-1" />
                               {subblock.children?.length || 0} sub-blocos
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
                               <FileText className="h-3 w-3 inline mr-1" />
                               {subblock.policy_contents?.length || 0} conteúdos
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
                               <Paperclip className="h-3 w-3 inline mr-1" />
                               {subblock.policy_attachments?.length || 0} anexos
                             </span>
@@ -3202,13 +3220,13 @@ export default function OperationalPoliciesPage() {
                   } else {
                     return (
                       <div className="text-center py-16">
-                        <div className="inline-flex p-6 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl mb-6">
+                        <div className="inline-flex p-6 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-700 rounded-3xl mb-6">
                           <FolderOpen className="h-16 w-16 text-gray-300" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-700 mb-3">
+                        <h3 className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-3">
                           Nenhum sub-bloco criado
                         </h3>
-                        <p className="text-gray-500 mb-6">
+                        <p className="text-gray-500 dark:text-gray-400 mb-6">
                           Comece criando um sub-bloco para organizar este bloco
                         </p>
                         <button
@@ -3234,7 +3252,7 @@ export default function OperationalPoliciesPage() {
         {showBlockModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 animate-in fade-in duration-300">
             <div 
-              className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-4 sm:p-6 lg:p-8 max-h-[95vh] overflow-y-auto"
+              className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-4 sm:p-6 lg:p-8 max-h-[95vh] overflow-y-auto"
               style={{
                 animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
               }}
@@ -3244,13 +3262,13 @@ export default function OperationalPoliciesPage() {
                   <div className="p-2 sm:p-2.5 bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 rounded-xl sm:rounded-2xl">
                     <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-[#EBA500]" />
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#373435]">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#373435] dark:text-white">
                     {editingBlock ? 'Editar Bloco' : 'Novo Bloco'}
                   </h2>
                 </div>
                 <button
                   onClick={() => setShowBlockModal(false)}
-                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all min-w-[44px] min-h-[44px] touch-manipulation flex items-center justify-center"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-xl transition-all min-w-[44px] min-h-[44px] touch-manipulation flex items-center justify-center"
                 >
                   <X className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
@@ -3258,7 +3276,7 @@ export default function OperationalPoliciesPage() {
 
               <div className="space-y-4 sm:space-y-5">
                 <div>
-                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-2.5">
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-2.5">
                     Nome do Bloco *
                   </label>
                   <input
@@ -3266,13 +3284,13 @@ export default function OperationalPoliciesPage() {
                     value={blockForm.name}
                     onChange={(e) => setBlockForm(prev => ({ ...prev, name: e.target.value }))}
                     maxLength={100}
-                    className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white text-sm sm:text-base min-h-[44px] touch-manipulation"
+                    className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700 text-sm sm:text-base min-h-[44px] touch-manipulation"
                     placeholder="Ex: Bloco Financeiro"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-2.5">
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-2.5">
                     Descrição
                   </label>
                   <textarea
@@ -3280,20 +3298,20 @@ export default function OperationalPoliciesPage() {
                     onChange={(e) => setBlockForm(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
                     maxLength={500}
-                    className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white resize-none text-sm sm:text-base min-h-[80px] touch-manipulation"
+                    className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700 resize-none text-sm sm:text-base min-h-[80px] touch-manipulation"
                     placeholder="Descrição do bloco..."
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 sm:gap-5">
                   <div className="relative">
-                    <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-2.5">
+                    <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-2.5">
                       Ícone (Emoji ou SVG)
                     </label>
                     <div className="relative">
                       <div
                         onClick={() => setShowEmojiPicker(true)}
-                        className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:border-[#EBA500] transition-colors bg-gray-50/50 hover:bg-white text-2xl sm:text-3xl flex items-center justify-center min-h-[44px] touch-manipulation cursor-pointer hover:border-[#EBA500]"
+                        className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 hover:bg-white dark:hover:bg-gray-700 text-2xl sm:text-3xl flex items-center justify-center min-h-[44px] touch-manipulation cursor-pointer hover:border-[#EBA500]"
                       >
                         {blockForm.icon ? (
                           <div className="flex items-center justify-center">
@@ -3314,7 +3332,7 @@ export default function OperationalPoliciesPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-2.5">
+                    <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-2.5">
                       Cor
                     </label>
                     <input
@@ -3327,11 +3345,11 @@ export default function OperationalPoliciesPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
                 <button
                   onClick={() => setShowBlockModal(false)}
                   disabled={saving}
-                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
+                  className="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
                 >
                   Cancelar
                 </button>
@@ -3361,7 +3379,7 @@ export default function OperationalPoliciesPage() {
         {showSubblockModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 animate-in fade-in duration-300">
             <div 
-              className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-4 sm:p-6 lg:p-8 max-h-[95vh] overflow-y-auto"
+              className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-4 sm:p-6 lg:p-8 max-h-[95vh] overflow-y-auto"
               style={{
                 animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
               }}
@@ -3371,13 +3389,13 @@ export default function OperationalPoliciesPage() {
                   <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-xl sm:rounded-2xl">
                     <FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#373435]">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#373435] dark:text-white">
                     {editingSubblock ? 'Editar Sub-bloco' : 'Novo Sub-bloco'}
                   </h2>
                 </div>
                 <button
                   onClick={() => setShowSubblockModal(false)}
-                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all min-w-[44px] min-h-[44px] touch-manipulation flex items-center justify-center"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-xl transition-all min-w-[44px] min-h-[44px] touch-manipulation flex items-center justify-center"
                 >
                   <X className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
@@ -3385,7 +3403,7 @@ export default function OperationalPoliciesPage() {
 
               <div className="space-y-4 sm:space-y-5">
                 <div>
-                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-2.5">
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 sm:mb-2.5">
                     Nome do Sub-bloco *
                   </label>
                   <input
@@ -3393,13 +3411,13 @@ export default function OperationalPoliciesPage() {
                     value={subblockForm.name}
                     onChange={(e) => setSubblockForm(prev => ({ ...prev, name: e.target.value }))}
                     maxLength={100}
-                    className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white text-sm sm:text-base min-h-[44px] touch-manipulation"
+                    className="w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700 text-sm sm:text-base min-h-[44px] touch-manipulation"
                     placeholder="Ex: Despesas Mensais"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                     Descrição
                   </label>
                   <textarea
@@ -3407,17 +3425,17 @@ export default function OperationalPoliciesPage() {
                     onChange={(e) => setSubblockForm(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
                     maxLength={500}
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white resize-none"
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700 resize-none"
                     placeholder="Descrição do sub-bloco..."
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
                 <button
                   onClick={() => setShowSubblockModal(false)}
                   disabled={saving}
-                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
+                  className="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
                 >
                   Cancelar
                 </button>
@@ -3447,7 +3465,7 @@ export default function OperationalPoliciesPage() {
         {showSubSubblockModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
             <div 
-              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8"
+              className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-2xl w-full p-8"
               style={{
                 animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
               }}
@@ -3457,13 +3475,13 @@ export default function OperationalPoliciesPage() {
                   <div className="p-2.5 bg-gradient-to-br from-indigo-500/20 to-indigo-500/10 rounded-2xl">
                     <Layers className="h-6 w-6 text-indigo-600" />
                   </div>
-                  <h2 className="text-2xl font-bold text-[#373435]">
+                  <h2 className="text-2xl font-bold text-[#373435] dark:text-white">
                     {editingSubSubblock ? 'Editar Sub-bloco' : 'Novo Sub-bloco'}
                   </h2>
                 </div>
                 <button
                   onClick={() => setShowSubSubblockModal(false)}
-                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-xl transition-all"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -3471,7 +3489,7 @@ export default function OperationalPoliciesPage() {
 
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                     Nome do Sub-bloco *
                   </label>
                   <input
@@ -3479,14 +3497,14 @@ export default function OperationalPoliciesPage() {
                     value={subSubblockForm.name}
                     onChange={(e) => setSubSubblockForm(prev => ({ ...prev, name: e.target.value }))}
                     maxLength={100}
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-indigo-500 transition-colors bg-gray-50/50 focus:bg-white"
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-indigo-500 transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700"
                     placeholder="Ex: Despesas Fixas"
                     autoFocus
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                     Descrição
                   </label>
                   <textarea
@@ -3494,17 +3512,17 @@ export default function OperationalPoliciesPage() {
                     onChange={(e) => setSubSubblockForm(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
                     maxLength={500}
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-indigo-500 transition-colors bg-gray-50/50 focus:bg-white resize-none"
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-indigo-500 transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700 resize-none"
                     placeholder="Descrição do sub-bloco..."
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
                 <button
                   onClick={() => setShowSubSubblockModal(false)}
                   disabled={saving}
-                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
+                  className="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
                 >
                   Cancelar
                 </button>
@@ -3534,7 +3552,7 @@ export default function OperationalPoliciesPage() {
         {showContentModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
             <div 
-              className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full p-8 max-h-[90vh] overflow-y-auto"
+              className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-3xl w-full p-8 max-h-[90vh] overflow-y-auto"
               style={{
                 animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
               }}
@@ -3544,13 +3562,13 @@ export default function OperationalPoliciesPage() {
                   <div className="p-2.5 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-2xl">
                     <FileText className="h-6 w-6 text-purple-600" />
                   </div>
-                  <h2 className="text-2xl font-bold text-[#373435]">
+                  <h2 className="text-2xl font-bold text-[#373435] dark:text-white">
                     {editingContent ? 'Editar Conteúdo' : 'Novo Conteúdo'}
                   </h2>
                 </div>
                 <button
                   onClick={closeContentModal}
-                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-xl transition-all"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -3558,7 +3576,7 @@ export default function OperationalPoliciesPage() {
 
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                     Tipo de Conteúdo
                   </label>
                   <select
@@ -3573,7 +3591,7 @@ export default function OperationalPoliciesPage() {
                       
                       setContentForm({ content_type: type, content_data: defaultData })
                     }}
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white"
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700"
                   >
                     <option value="text">📝 Texto</option>
                     <option value="heading">🏷️ Título</option>
@@ -3585,7 +3603,7 @@ export default function OperationalPoliciesPage() {
                 {/* Text */}
                 {contentForm.content_type === 'text' && (
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                       Texto
                     </label>
                     <textarea
@@ -3595,7 +3613,7 @@ export default function OperationalPoliciesPage() {
                         content_data: { text: e.target.value }
                       }))}
                       rows={8}
-                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white resize-none"
+                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700 resize-none"
                       placeholder="Digite o texto da política..."
                     />
                   </div>
@@ -3605,7 +3623,7 @@ export default function OperationalPoliciesPage() {
                 {contentForm.content_type === 'heading' && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                         Texto do Título
                       </label>
                       <input
@@ -3615,12 +3633,12 @@ export default function OperationalPoliciesPage() {
                           ...prev,
                           content_data: { ...prev.content_data, text: e.target.value }
                         }))}
-                        className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white"
+                        className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700"
                         placeholder="Título da seção"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                         Nível
                       </label>
                       <select
@@ -3629,7 +3647,7 @@ export default function OperationalPoliciesPage() {
                           ...prev,
                           content_data: { ...prev.content_data, level: parseInt(e.target.value) }
                         }))}
-                        className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white"
+                        className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700"
                       >
                         <option value="2">H2 (Grande)</option>
                         <option value="3">H3 (Médio)</option>
@@ -3642,7 +3660,7 @@ export default function OperationalPoliciesPage() {
                 {/* List */}
                 {contentForm.content_type === 'list' && (
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                       Itens da Lista
                     </label>
                     <div className="space-y-2">
@@ -3659,7 +3677,7 @@ export default function OperationalPoliciesPage() {
                                 content_data: { items: newItems }
                               }))
                             }}
-                            className="flex-1 px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white"
+                            className="flex-1 px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700"
                             placeholder={`Item ${index + 1}`}
                           />
                           <button
@@ -3696,7 +3714,7 @@ export default function OperationalPoliciesPage() {
                 {contentForm.content_type === 'table' && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                         Cabeçalhos da Tabela
                       </label>
                       <div className="flex gap-2">
@@ -3713,7 +3731,7 @@ export default function OperationalPoliciesPage() {
                                 content_data: { ...prev.content_data, headers: newHeaders }
                               }))
                             }}
-                            className="flex-1 px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white text-sm"
+                            className="flex-1 px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700 text-sm"
                             placeholder={`Coluna ${index + 1}`}
                           />
                         ))}
@@ -3734,7 +3752,7 @@ export default function OperationalPoliciesPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                         Linhas da Tabela
                       </label>
                       <div className="space-y-2">
@@ -3753,7 +3771,7 @@ export default function OperationalPoliciesPage() {
                                     content_data: { ...prev.content_data, rows: newRows }
                                   }))
                                 }}
-                                className="flex-1 px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white text-sm"
+                                className="flex-1 px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700 text-sm"
                               />
                             ))}
                             <button
@@ -3790,11 +3808,11 @@ export default function OperationalPoliciesPage() {
                 )}
               </div>
 
-              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
                 <button
                   onClick={() => setShowContentModal(false)}
                   disabled={saving}
-                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
+                  className="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
                 >
                   Cancelar
                 </button>
@@ -3824,7 +3842,7 @@ export default function OperationalPoliciesPage() {
         {showAttachmentModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
             <div 
-              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8"
+              className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-2xl w-full p-8"
               style={{
                 animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
               }}
@@ -3834,13 +3852,13 @@ export default function OperationalPoliciesPage() {
                   <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-2xl">
                     <Paperclip className="h-6 w-6 text-blue-600" />
                   </div>
-                  <h2 className="text-2xl font-bold text-[#373435]">
+                  <h2 className="text-2xl font-bold text-[#373435] dark:text-white">
                     Adicionar Anexo
                   </h2>
                 </div>
                 <button
                   onClick={closeAttachmentModal}
-                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-xl transition-all"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-xl transition-all"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -3848,7 +3866,7 @@ export default function OperationalPoliciesPage() {
 
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                     Arquivos * (múltiplos)
                   </label>
                   <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-[#EBA500] hover:bg-[#EBA500]/5 transition-all cursor-pointer">
@@ -3865,17 +3883,17 @@ export default function OperationalPoliciesPage() {
                       </div>
                       {uploadFiles && uploadFiles.length > 0 ? (
                         <div className="space-y-2">
-                          <p className="text-gray-900 font-bold text-lg mb-3">
+                          <p className="text-gray-900 dark:text-white font-bold text-lg mb-3">
                             {uploadFiles.length} arquivo(s) selecionado(s)
                           </p>
                           <div className="max-h-40 overflow-y-auto space-y-2">
                             {uploadFiles.map((file, idx) => (
-                              <div key={idx} className="flex items-center justify-between bg-gray-50 px-4 py-2 rounded-xl">
+                              <div key={idx} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-4 py-2 rounded-xl">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <FileIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                                  <span className="text-sm text-gray-700 truncate">{file.name}</span>
+                                  <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{file.name}</span>
                                 </div>
-                                <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
                                   {formatFileSize(file.size)}
                                 </span>
                               </div>
@@ -3884,10 +3902,10 @@ export default function OperationalPoliciesPage() {
                         </div>
                       ) : (
                         <>
-                          <p className="text-gray-700 font-bold mb-2">
+                          <p className="text-gray-700 dark:text-gray-200 font-bold mb-2">
                             Clique para selecionar arquivos
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             PDF, Word, Excel, imagens, etc. (múltiplos arquivos)
                           </p>
                         </>
@@ -3897,7 +3915,7 @@ export default function OperationalPoliciesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2.5">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5">
                     Descrição (opcional)
                   </label>
                   <textarea
@@ -3905,17 +3923,17 @@ export default function OperationalPoliciesPage() {
                     onChange={(e) => setUploadDescription(e.target.value)}
                     rows={3}
                     maxLength={500}
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 focus:bg-white resize-none"
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-600 focus:outline-none focus:border-[#EBA500] transition-colors bg-gray-50/50 dark:bg-gray-700/50 dark:text-white focus:bg-white dark:focus:bg-gray-700 resize-none"
                     placeholder="Descrição do arquivo..."
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
                 <button
                   onClick={() => setShowAttachmentModal(false)}
                   disabled={uploading}
-                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
+                  className="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
                 >
                   Cancelar
                 </button>
