@@ -50,12 +50,12 @@ export const ProgressMetric = ({
         <>
           {/* Título e porcentagem na mesma linha */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[#373435]">{title}</span>
-            <span className="text-sm font-semibold text-[#373435]">{Math.round(percentage)}%</span>
+            <span className="text-sm font-medium text-[#373435] dark:text-gray-200">{title}</span>
+            <span className="text-sm font-semibold text-[#373435] dark:text-gray-200">{Math.round(percentage)}%</span>
           </div>
           
           {/* Progress Bar minimalista */}
-          <div className="flex-1 bg-[#373435]/10 rounded-full h-3">
+          <div className="flex-1 bg-[#373435]/10 dark:bg-gray-600 rounded-full h-3">
             <div 
               className={`${colors.progress} h-3 rounded-full transition-all duration-500 shadow-sm`}
               style={{ 

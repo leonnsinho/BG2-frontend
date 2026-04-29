@@ -940,56 +940,6 @@ const DashboardPage = memo(() => {
               </div>
             </div>
 
-            {/* Status do Sistema com Destaque BG2 */}
-            <div className="bg-white dark:bg-gray-800 border border-[#EBA500]/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-lg ring-1 ring-[#EBA500]/5">
-              <div className="mb-6 sm:mb-8">
-                <div className="flex items-center space-x-3 sm:space-x-4">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#EBA500] rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#373435] dark:text-white mb-0.5 sm:mb-1">Status do Sistema</h3>
-                    <p className="text-xs sm:text-sm text-neutral-600 dark:text-gray-300">Monitoramento em tempo real</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Conexões APIs */}
-              <div className="mb-6 sm:mb-8">
-                <div className="flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-6">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#373435] rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="text-base sm:text-lg font-bold text-[#373435] dark:text-white">Conexões APIs</h4>
-                    <p className="text-xs sm:text-sm text-neutral-500 dark:text-gray-400">Status dos serviços externos</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {API_CONNECTIONS.map((connection) => (
-                    <ApiConnectionItem key={connection.service} connection={connection} />
-                  ))}
-                </div>
-              </div>
-              
-              {/* Status Global com Personalidade */}
-              <div className="pt-6 sm:pt-8 border-t border-neutral-100 dark:border-gray-700">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-                  <div className="flex items-center space-x-3 sm:space-x-4">
-                    <div className="w-4 h-4 bg-success-500 rounded-full animate-pulse shadow-lg shadow-success-200 flex-shrink-0"></div>
-                    <div>
-                      <span className="text-base sm:text-lg font-bold text-[#373435] dark:text-white block">Sistema Operacional</span>
-                      <p className="text-xs sm:text-sm text-neutral-500 dark:text-gray-400">Todos os serviços funcionando perfeitamente</p>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right">
-                    <div className="text-sm font-semibold text-[#EBA500]">99.9% Uptime</div>
-                    <div className="text-xs text-neutral-400">Atualizado agora</div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
     )

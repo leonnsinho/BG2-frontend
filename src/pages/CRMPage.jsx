@@ -306,7 +306,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   const calcLinha = (vu, qty, disc) => {
     const base = parseFloat(vu) || 0
     if (!base) return ''
-    return (base * (parseInt(qty) || 1) * (1 - (parseFloat(disc) || 0) / 100)).toFixed(2)
+    return (base * (parseFloat(qty) || 1) * (1 - (parseFloat(disc) || 0) / 100)).toFixed(2)
   }
 
   const addLineItem = (product) => {
@@ -456,7 +456,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
           product_id: li.product_id || null,
           nome_produto: li.nome_produto || '',
           valor_unitario: li.valor_unitario !== '' ? parseFloat(li.valor_unitario) || null : null,
-          quantidade: parseInt(li.quantidade) || 1,
+          quantidade: parseFloat(li.quantidade) || 1,
           desconto_percentual: li.desconto_percentual !== '' && li.desconto_percentual != null ? parseFloat(li.desconto_percentual) || null : null,
           valor_linha: li.valor_linha !== '' ? parseFloat(li.valor_linha) || null : null,
         }))
@@ -835,10 +835,14 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                     <div className="grid grid-cols-4 gap-2">
                       <div>
                         <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1">Qtd.</label>
-                        <input type="number" min="1" step="1"
+                        <input type="text" inputMode="decimal" placeholder="1"
                           className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-emerald-400 focus:outline-none bg-white"
                           value={li.quantidade}
-                          onChange={e => updateLineItem(li.lineId, 'quantidade', Math.max(1, parseInt(e.target.value) || 1))}
+                          onChange={e => updateLineItem(li.lineId, 'quantidade', e.target.value.replace(',', '.'))}
+                          onBlur={e => {
+                            const parsed = parseFloat(e.target.value.replace(',', '.'))
+                            updateLineItem(li.lineId, 'quantidade', isNaN(parsed) || parsed <= 0 ? 1 : parsed)
+                          }}
                         />
                       </div>
                       <div>
