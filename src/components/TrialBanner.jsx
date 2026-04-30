@@ -6,7 +6,7 @@ import { supabase } from '../services/supabase'
 import {
   Clock, X, ArrowLeft, ArrowRight, Save, Phone,
   CreditCard, Users, MapPin, Hash, Upload, Image as ImageIcon,
-  Building2, Check, Wallet
+  Building2, Check, Wallet, Zap
 } from 'lucide-react'
 import toast from '@/lib/toast'
 
@@ -18,6 +18,7 @@ const STEPS = [
   { label: 'Fiscal',       icon: Hash },
   { label: 'Representante',icon: Users },
   { label: 'Cobrança',     icon: CreditCard },
+  { label: 'Plano',        icon: Zap },
 ]
 
 const EMPTY_FORM = {
@@ -90,6 +91,7 @@ const PF_STEPS = [
   { label: 'Dados Pessoais', icon: Users },
   { label: 'Endereço',       icon: MapPin },
   { label: 'Contato',        icon: Phone },
+  { label: 'Plano',          icon: Zap },
 ]
 
 // ─── TrialBanner ─────────────────────────────────────────────────────────────
@@ -251,13 +253,12 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
         address:         Object.values(pfData.address).some(v => v.trim()) ? pfData.address : null,
         representante_legal: { tipo: 'pf', rg: pfData.rg.trim() || null },
         contato_cobranca: pfData.email_nf.trim() ? { email: pfData.email_nf.trim() } : null,
-        subscription_status: 'active',
         updated_at: new Date().toISOString(),
       }
       const { error } = await supabase.from('companies').update(updateData).eq('id', trialCompanyId)
       if (error) throw error
-      toast.success('Cadastro completo! Conta ativada com sucesso.')
-      setOpen(false)
+      toast.success('Dados salvos! Agora escolha um plano para ativar sua conta.')
+      setStep(s => s + 1)
       await refreshProfile()
     } catch (err) {
       toast.error(`Erro: ${err.message}`)
@@ -368,7 +369,6 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
         melhor_dia_pagamento: formData.melhor_dia_pagamento.trim() || null,
         forma_pagamento:    formData.forma_pagamento || null,
         address:            Object.values(formData.address).some(v => v?.trim?.()) ? formData.address : null,
-        subscription_status: 'active',
         updated_at:         new Date().toISOString(),
         ...(logoUrl !== undefined && { logo_url: logoUrl }),
       }
@@ -376,8 +376,8 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
       const { error } = await supabase.from('companies').update(updateData).eq('id', trialCompanyId)
       if (error) throw error
 
-      toast.success('Cadastro completo! Conta ativada com sucesso.')
-      setOpen(false)
+      toast.success('Dados salvos! Agora escolha um plano para ativar sua conta.')
+      setStep(s => s + 1)
       await refreshProfile()
     } catch (err) {
       console.error(err)
@@ -491,7 +491,7 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {!isPf && (
+                {!isPf && step < STEPS.length - 1 && (
                 <button
                   onClick={fillTestData}
                   title="Preencher campos vazios com dados de teste"
@@ -793,7 +793,7 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
                     </div>
                   </div>
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-                    Ao completar o cadastro sua conta será <strong>ativada permanentemente</strong> sem restrições.
+                    Ao salvar, você será direcionado para escolher um plano e ativar sua conta.
                   </div>
                 </div>
               )}
@@ -812,27 +812,37 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
               </button>
 
               {isPf ? (
-                step < PF_STEPS.length - 1 ? (
+                step < PF_STEPS.length - 2 ? (
                   <button type="button" onClick={() => { if (validatePfStep()) setStep(s => s + 1) }}
                     className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
                     Próximo <ArrowRight className="w-4 h-4" />
                   </button>
-                ) : (
+                ) : step === PF_STEPS.length - 2 ? (
                   <button type="button" onClick={handleSubmitPf} disabled={loading}
                     className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                    {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Salvando...</> : <><Save className="h-4 w-4" /> Ativar conta</>}
+                    {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Salvando...</> : <>Salvar e Continuar <ArrowRight className="w-4 h-4" /></>}
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => { setOpen(false); navigate('/planos') }}
+                    className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+                    Escolher plano <ArrowRight className="w-4 h-4" />
                   </button>
                 )
               ) : (
-                step < STEPS.length - 1 ? (
+                step < STEPS.length - 2 ? (
                   <button type="button" onClick={nextStep}
                     className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
                     Próximo <ArrowRight className="w-4 h-4" />
                   </button>
-                ) : (
+                ) : step === STEPS.length - 2 ? (
                   <button type="button" onClick={handleSubmit} disabled={loading}
                     className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                    {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Salvando...</> : <><Save className="h-4 w-4" /> Ativar conta</>}
+                    {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Salvando...</> : <>Salvar e Continuar <ArrowRight className="w-4 h-4" /></>}
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => { setOpen(false); navigate('/planos') }}
+                    className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+                    Escolher plano <ArrowRight className="w-4 h-4" />
                   </button>
                 )
               )}

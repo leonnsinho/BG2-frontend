@@ -213,6 +213,26 @@ export default function UsersManagementPage() {
            profile?.user_companies?.some(uc => uc.is_active && uc.role === 'company_admin')
   }
 
+  // Limites por plano
+  const PLAN_USER_LIMITS = { free: 1, individual: 1, profissional: 10, premium: 20, enterprise: Infinity }
+  const SOLO_PLANS = ['free', 'individual']
+
+  const getCompanyPlanInfo = () => {
+    if (isSuperAdmin()) return null // super_admin não tem restrição
+    const co = getCurrentUserCompany()
+    if (!co) return null
+    const plan = co.subscription_plan || 'free'
+    const limit = PLAN_USER_LIMITS[plan] ?? 1
+    const companyUsers = users.filter(u => u.companies?.id === co.id)
+    return { plan, limit, current: companyUsers.length }
+  }
+
+  const planInfo = getCompanyPlanInfo()
+  // Planos solo (free/individual) SEMPRE bloqueiam convites — admin já é o único usuário
+  const atUserLimit = planInfo
+    ? SOLO_PLANS.includes(planInfo.plan) || planInfo.current >= planInfo.limit
+    : false
+
   useEffect(() => {
     if (profile) {
       loadUsers()
@@ -815,7 +835,7 @@ export default function UsersManagementPage() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .select('id, name')
+        .select('id, name, subscription_plan')
         .eq('is_active', true)
         .order('name')
 
@@ -1206,6 +1226,14 @@ export default function UsersManagementPage() {
       return
     }
 
+    // Verificar limite de usuários por plano
+    const adminCompanyData = isCompanyAdmin() && !isSuperAdmin() ? getCurrentUserCompany() : companies.find(c => c.id === companyId)
+    const companyPlan = adminCompanyData?.subscription_plan || 'free'
+    if (companyPlan === 'free' || companyPlan === 'individual') {
+      toast.error('Os planos Gratuito e Individual permitem apenas 1 usuário (o administrador). Faça upgrade para adicionar membros à equipe.')
+      return
+    }
+
     setCreatingUser(true)
     
     try {
@@ -1318,13 +1346,43 @@ export default function UsersManagementPage() {
               Gerencie usuários, funções e vínculos com empresas no sistema.
             </p>
           </div>
-          <button
-            onClick={() => setIsCreateUserModalOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-[#EBA500] text-white rounded-lg hover:bg-[#d49400] transition-colors min-h-[44px] sm:min-h-0 touch-manipulation"
-          >
-            <UserPlus className="h-5 w-5" />
-            <span>Convidar Usuário</span>
-          </button>
+          <div className="flex items-center gap-3">
+            {planInfo && (
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold border ${
+                atUserLimit
+                  ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'
+                  : planInfo.current / planInfo.limit >= 0.8
+                  ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400'
+                  : 'bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400'
+              }`}>
+                <Users className="h-3.5 w-3.5" />
+                <span>{SOLO_PLANS.includes(planInfo.plan) ? planInfo.limit : planInfo.current}/{planInfo.limit === Infinity ? '∞' : planInfo.limit}</span>
+                <span className="hidden sm:inline text-xs font-normal">usuários</span>
+                {atUserLimit && (
+                  <Link
+                    to="/planos"
+                    title="Fazer upgrade para adicionar mais usuários"
+                    className="ml-1 flex items-center justify-center w-5 h-5 rounded-full bg-[#EBA500] hover:bg-[#d49400] text-white transition-colors shrink-0"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Link>
+                )}
+              </div>
+            )}
+            <button
+              onClick={() => setIsCreateUserModalOpen(true)}
+              disabled={atUserLimit}
+              title={atUserLimit ? `Limite de ${planInfo?.limit} usuário(s) atingido. Faça upgrade do plano.` : 'Convidar novo usuário'}
+              className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 sm:py-2 rounded-lg transition-colors min-h-[44px] sm:min-h-0 touch-manipulation ${
+                atUserLimit
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                  : 'bg-[#EBA500] text-white hover:bg-[#d49400]'
+              }`}
+            >
+              <UserPlus className="h-5 w-5" />
+              <span>Convidar Usuário</span>
+            </button>
+          </div>
         </div>
 
         {/* Filtros */}

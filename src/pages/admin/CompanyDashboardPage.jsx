@@ -281,8 +281,8 @@ const CompanyDashboardPage = () => {
         address: Object.values(createFormData.address).some(v => v.trim()) ? createFormData.address : null,
         logo_url: logoUrl,
         created_by: user?.id,
-        subscription_plan: 'basic',
-        subscription_status: 'active',
+        subscription_plan: 'free',
+        subscription_status: 'trial',
         is_active: true
       }
 

@@ -443,8 +443,8 @@ export default function CreateCompanyPage() {
         address: Object.values(formData.address).some(v => v.trim()) ? formData.address : null,
         logo_url: logoUrl,
         created_by: user.id,
-        subscription_plan: 'basic',
-        subscription_status: 'active',
+        subscription_plan: 'free',
+        subscription_status: 'trial',
         is_active: true
       }
 

@@ -67,13 +67,33 @@ export function RegisterPage() {
       
       const { data, error } = await supabase
         .from('companies')
-        .select('id, name')
+        .select('id, name, subscription_plan')
         .eq('invite_token', token)
         .single()
 
       if (error || !data) {
         console.error('❌ Token inválido:', error)
         setError('Link de convite inválido ou expirado')
+        return
+      }
+
+      // Verificar se o plano permite novos usuários
+      if (data.subscription_plan === 'free' || data.subscription_plan === 'individual') {
+        setError('Esta empresa está em um plano individual (somente 1 usuário) e não aceita novos membros. Entre em contato com o administrador para fazer upgrade do plano.')
+        return
+      }
+
+      // Verificar quantidade atual de usuários vs limite
+      const { count } = await supabase
+        .from('user_companies')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', data.id)
+        .eq('is_active', true)
+
+      const PLAN_LIMITS = { free: 1, individual: 1, profissional: 10, premium: 20, enterprise: 999999 }
+      const limit = PLAN_LIMITS[data.subscription_plan] ?? 1
+      if ((count ?? 0) >= limit) {
+        setError(`Esta empresa atingiu o limite de ${limit} usuário(s) do plano ${data.subscription_plan}. Entre em contato com o administrador para fazer upgrade.`)
         return
       }
 

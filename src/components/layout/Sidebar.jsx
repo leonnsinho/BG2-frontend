@@ -1274,6 +1274,26 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                 <p className="text-xs text-neutral-400 truncate">
                   {profile?.email || ''}
                 </p>
+                {(() => {
+                  const activeUc = profile?.user_companies?.find(uc => uc.is_active)
+                  const isAdmin = activeUc?.role === 'company_admin'
+                  const plan = activeUc?.companies?.subscription_plan
+                  const status = activeUc?.companies?.subscription_status
+                  if (!isAdmin || !plan || status !== 'active') return null
+                  const labels = {
+                    individual: { label: 'Individual', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
+                    profissional: { label: 'Profissional', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+                    premium: { label: 'Premium', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+                    enterprise: { label: 'Enterprise', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+                  }
+                  const cfg = labels[plan]
+                  if (!cfg) return null
+                  return (
+                    <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${cfg.color}`}>
+                      {cfg.label}
+                    </span>
+                  )
+                })()}
               </div>
             )}
           </div>

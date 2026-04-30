@@ -15,7 +15,6 @@
 - Até 10 usuários
 - Todos os módulos liberados
 - Todas as ferramentas liberadas
-- R$ 7.900,00 para pagamento à vista
 
 ---
 
@@ -25,7 +24,6 @@
 - De 10 a 20 usuários
 - Todos os módulos liberados
 - Todas as ferramentas liberadas
-- R$ 13.900,00 para pagamento à vista
 
 ---
 

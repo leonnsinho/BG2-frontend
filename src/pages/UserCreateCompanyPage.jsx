@@ -37,7 +37,7 @@ const EMPTY_PF = {
 
 const PF_STEPS = [
   { label: 'Dados Pessoais', icon: Users },
-  { label: 'Endereço',       icon: MapPin },
+  { label: 'Endereï¿½o',       icon: MapPin },
   { label: 'Contato',        icon: Phone },
 ]
 
@@ -54,7 +54,7 @@ export default function UserCreateCompanyPage() {
   const [formData, setFormData] = useState(EMPTY_FORM)
   const [pfData, setPfData] = useState(EMPTY_PF)
 
-  // Detecta se o usuário já tem uma empresa em trial (para o modo "completar")
+  // Detecta se o usuï¿½rio jï¿½ tem uma empresa em trial (para o modo "completar")
   const trialCompany = profile?.user_companies?.find(
     uc => uc.is_active && uc.companies?.subscription_status === 'trial'
   )
@@ -144,30 +144,30 @@ export default function UserCreateCompanyPage() {
   const validatePfStep = () => {
     switch (step) {
       case 0:
-        if (!pfData.nome.trim())  { toast.error('Nome completo é obrigatório'); return false }
-        if (!pfData.cpf.trim())   { toast.error('CPF é obrigatório'); return false }
+        if (!pfData.nome.trim())  { toast.error('Nome completo ï¿½ obrigatï¿½rio'); return false }
+        if (!pfData.cpf.trim())   { toast.error('CPF ï¿½ obrigatï¿½rio'); return false }
         return true
       case 1:
-        if (!pfData.address.street.trim()) { toast.error('Rua é obrigatória'); return false }
-        if (!pfData.address.city.trim())   { toast.error('Cidade é obrigatória'); return false }
-        if (!pfData.address.state.trim())  { toast.error('Estado é obrigatório'); return false }
-        if (!pfData.address.zip.trim())    { toast.error('CEP é obrigatório'); return false }
+        if (!pfData.address.street.trim()) { toast.error('Rua ï¿½ obrigatï¿½ria'); return false }
+        if (!pfData.address.city.trim())   { toast.error('Cidade ï¿½ obrigatï¿½ria'); return false }
+        if (!pfData.address.state.trim())  { toast.error('Estado ï¿½ obrigatï¿½rio'); return false }
+        if (!pfData.address.zip.trim())    { toast.error('CEP ï¿½ obrigatï¿½rio'); return false }
         return true
       case 2:
-        if (!pfData.telefone.trim())      { toast.error('Telefone é obrigatório'); return false }
-        if (!pfData.email.trim())         { toast.error('E-mail é obrigatório'); return false }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pfData.email)) { toast.error('E-mail inválido'); return false }
-        if (!pfData.forma_pagamento)      { toast.error('Forma de pagamento é obrigatória'); return false }
+        if (!pfData.telefone.trim())      { toast.error('Telefone ï¿½ obrigatï¿½rio'); return false }
+        if (!pfData.email.trim())         { toast.error('E-mail ï¿½ obrigatï¿½rio'); return false }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pfData.email)) { toast.error('E-mail invï¿½lido'); return false }
+        if (!pfData.forma_pagamento)      { toast.error('Forma de pagamento ï¿½ obrigatï¿½ria'); return false }
         return true
       default: return true
     }
   }
 
   const handleSubmitPfBasico = async () => {
-    if (!pfData.nome.trim())     { toast.error('Nome completo é obrigatório'); return }
-    if (!pfData.email.trim())    { toast.error('E-mail é obrigatório'); return }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pfData.email)) { toast.error('E-mail inválido'); return }
-    if (!pfData.telefone.trim()) { toast.error('Telefone é obrigatório'); return }
+    if (!pfData.nome.trim())     { toast.error('Nome completo ï¿½ obrigatï¿½rio'); return }
+    if (!pfData.email.trim())    { toast.error('E-mail ï¿½ obrigatï¿½rio'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pfData.email)) { toast.error('E-mail invï¿½lido'); return }
+    if (!pfData.telefone.trim()) { toast.error('Telefone ï¿½ obrigatï¿½rio'); return }
     setLoading(true)
     try {
       const companyData = {
@@ -176,7 +176,7 @@ export default function UserCreateCompanyPage() {
         phone: pfData.telefone.trim(),
         representante_legal: { tipo: 'pf' },
         created_by: user.id,
-        subscription_plan: 'basic',
+        subscription_plan: 'individual',
         subscription_status: 'trial',
         is_active: true,
       }
@@ -185,7 +185,7 @@ export default function UserCreateCompanyPage() {
       if (companyError) throw companyError
       await supabase.from('user_companies').insert([{ user_id: user.id, company_id: company.id, role: 'company_admin', is_active: true }])
       await supabase.from('profiles').update({ role: 'company_admin' }).eq('id', user.id)
-      toast.success('Cadastro criado! Você tem 14 dias para completar os dados.')
+      toast.success('Cadastro criado! Vocï¿½ tem 14 dias para completar os dados.')
       await refreshProfile()
       navigate('/dashboard')
     } catch (error) {
@@ -209,8 +209,8 @@ export default function UserCreateCompanyPage() {
         representante_legal: { tipo: 'pf', rg: pfData.rg.trim() || null },
         contato_cobranca: pfData.email_nf.trim() ? { email: pfData.email_nf.trim() } : null,
         created_by: user.id,
-        subscription_plan: 'basic',
-        subscription_status: 'active',
+        subscription_plan: 'free',
+        subscription_status: 'trial',
         is_active: true,
       }
       const { data: company, error: companyError } = await supabase
@@ -311,8 +311,8 @@ export default function UserCreateCompanyPage() {
         address: Object.values(formData.address).some(v => v.trim()) ? formData.address : null,
         logo_url: logoUrl,
         created_by: user.id,
-        subscription_plan: 'basic',
-        subscription_status: 'active',
+        subscription_plan: 'free',
+        subscription_status: 'trial',
         is_active: true
       }
 
@@ -345,14 +345,14 @@ export default function UserCreateCompanyPage() {
     }
   }
 
-  // --- Cadastro rápido (trial 14 dias) -------------------------------------
+  // --- Cadastro rï¿½pido (trial 14 dias) -------------------------------------
   const handleSubmitBasico = async () => {
-    if (!formData.name.trim())                    { toast.error('Razão Social é obrigatória'); return }
-    if (!formData.representante.nome.trim())      { toast.error('Nome do representante é obrigatório'); return }
-    if (!formData.representante.cargo.trim())     { toast.error('Cargo do representante é obrigatório'); return }
-    if (!formData.representante.email.trim())     { toast.error('E-mail do representante é obrigatório'); return }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.representante.email)) { toast.error('E-mail do representante inválido'); return }
-    if (!formData.representante.telefone.trim())  { toast.error('Telefone do representante é obrigatório'); return }
+    if (!formData.name.trim())                    { toast.error('Razï¿½o Social ï¿½ obrigatï¿½ria'); return }
+    if (!formData.representante.nome.trim())      { toast.error('Nome do representante ï¿½ obrigatï¿½rio'); return }
+    if (!formData.representante.cargo.trim())     { toast.error('Cargo do representante ï¿½ obrigatï¿½rio'); return }
+    if (!formData.representante.email.trim())     { toast.error('E-mail do representante ï¿½ obrigatï¿½rio'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.representante.email)) { toast.error('E-mail do representante invï¿½lido'); return }
+    if (!formData.representante.telefone.trim())  { toast.error('Telefone do representante ï¿½ obrigatï¿½rio'); return }
 
     setLoading(true)
     try {
@@ -365,7 +365,7 @@ export default function UserCreateCompanyPage() {
           telefone: formData.representante.telefone.trim(),
         },
         created_by: user.id,
-        subscription_plan: 'basic',
+        subscription_plan: 'free',
         subscription_status: 'trial',
         is_active: true,
       }
@@ -383,12 +383,12 @@ export default function UserCreateCompanyPage() {
         .from('profiles').update({ role: 'company_admin' }).eq('id', user.id)
       if (profileError) throw profileError
 
-      toast.success('Empresa criada! Você tem 14 dias para completar o cadastro.')
+      toast.success('Empresa criada! Vocï¿½ tem 14 dias para completar o cadastro.')
       await refreshProfile()
       navigate('/dashboard')
     } catch (error) {
-      console.error('Erro ao criar empresa (básico):', error)
-      if (error.message?.includes('cnpj')) toast.error('CNPJ já está em uso')
+      console.error('Erro ao criar empresa (bï¿½sico):', error)
+      if (error.message?.includes('cnpj')) toast.error('CNPJ jï¿½ estï¿½ em uso')
       else toast.error(`Erro: ${error.message}`)
     } finally {
       setLoading(false)
@@ -420,7 +420,7 @@ export default function UserCreateCompanyPage() {
               </h1>
               <p className="text-sm text-gray-500">
                 {mode === 'basico'
-                  ? 'Preencha o mínimo para começar a usar o sistema'
+                  ? 'Preencha o mï¿½nimo para comeï¿½ar a usar o sistema'
                   : `Passo ${step + 1} de ${STEPS.length}`}
               </p>
             </div>
@@ -445,7 +445,7 @@ export default function UserCreateCompanyPage() {
                   pessoa_tipo === 'pj' ? 'bg-white text-[#EBA500] shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Pessoa Jurídica (PJ)
+                Pessoa Jurï¿½dica (PJ)
               </button>
               <button
                 onClick={() => { setPessoaTipo('pf'); setStep(0) }}
@@ -453,13 +453,13 @@ export default function UserCreateCompanyPage() {
                   pessoa_tipo === 'pf' ? 'bg-white text-[#EBA500] shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Pessoa Física (PF)
+                Pessoa Fï¿½sica (PF)
               </button>
             </div>
           </div>
         )}
 
-        {/* --- Tabs: Básico / Completo ----------------------------------- */}
+        {/* --- Tabs: Bï¿½sico / Completo ----------------------------------- */}
         {!isCompleting && (
           <div className="flex gap-2 mb-6">
             <button
@@ -471,10 +471,10 @@ export default function UserCreateCompanyPage() {
               }`}
             >
               <Zap className="h-4 w-4" />
-              Cadastro Rápido
+              Cadastro Rï¿½pido
               <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
                 mode === 'basico' ? 'bg-[#EBA500]/20 text-[#EBA500]' : 'bg-gray-100 text-gray-500'
-              }`}>padrão</span>
+              }`}>padrï¿½o</span>
             </button>
             <button
               onClick={() => { setMode('completo'); setStep(0) }}
@@ -490,28 +490,28 @@ export default function UserCreateCompanyPage() {
           </div>
         )}
 
-        {/* --- Modo Básico ------------------------------------------------ */}
+        {/* --- Modo Bï¿½sico ------------------------------------------------ */}
         {(mode === 'basico' && !isCompleting && pessoa_tipo === 'pj') && (
           <>
             {/* Banner de trial */}
             <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-5 text-sm text-amber-800">
               <Clock className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
               <div>
-                <p className="font-semibold mb-0.5">Acesso de 14 dias grátis</p>
-                <p className="text-amber-700">Preencha apenas os dados básicos agora e complete o cadastro quando quiser. Após 14 dias, o cadastro completo será exigido para continuar usando o sistema.</p>
+                <p className="font-semibold mb-0.5">Acesso de 14 dias grï¿½tis</p>
+                <p className="text-amber-700">Preencha apenas os dados bï¿½sicos agora e complete o cadastro quando quiser. Apï¿½s 14 dias, o cadastro completo serï¿½ exigido para continuar usando o sistema.</p>
               </div>
             </div>
 
             <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
               <div className="p-6 sm:p-8 space-y-6">
 
-                {/* Informações da Empresa */}
+                {/* Informaï¿½ï¿½es da Empresa */}
                 <div className="space-y-4">
                   <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-[#EBA500]" /> Informações da Empresa
+                    <Building2 className="h-4 w-4 text-[#EBA500]" /> Informaï¿½ï¿½es da Empresa
                   </h2>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Razão Social *</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Razï¿½o Social *</label>
                     <input type="text" value={formData.name} onChange={e => handleChange('name', e.target.value)} placeholder="Ex: Empresa ABC Ltda" className={inp} />
                   </div>
                 </div>
@@ -562,21 +562,21 @@ export default function UserCreateCompanyPage() {
                 >
                   {loading
                     ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Criando...</>
-                    : <><Zap className="h-4 w-4" /> Começar agora</>}
+                    : <><Zap className="h-4 w-4" /> Comeï¿½ar agora</>}
                 </button>
               </div>
             </div>
           </>
         )}
 
-        {/* --- Modo Básico PF --------------------------------------------- */}
+        {/* --- Modo Bï¿½sico PF --------------------------------------------- */}
         {(mode === 'basico' && !isCompleting && pessoa_tipo === 'pf') && (
           <>
             <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-5 text-sm text-amber-800">
               <Clock className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
               <div>
-                <p className="font-semibold mb-0.5">Acesso de 14 dias grátis</p>
-                <p className="text-amber-700">Preencha apenas os dados básicos agora e complete o cadastro quando quiser.</p>
+                <p className="font-semibold mb-0.5">Acesso de 14 dias grï¿½tis</p>
+                <p className="text-amber-700">Preencha apenas os dados bï¿½sicos agora e complete o cadastro quando quiser.</p>
               </div>
             </div>
             <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
@@ -604,7 +604,7 @@ export default function UserCreateCompanyPage() {
                 </button>
                 <button type="button" onClick={handleSubmitPfBasico} disabled={loading}
                   className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                  {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Criando...</> : <><Zap className="h-4 w-4" /> Começar agora</>}
+                  {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Criando...</> : <><Zap className="h-4 w-4" /> Comeï¿½ar agora</>}
                 </button>
               </div>
             </div>
@@ -620,7 +620,7 @@ export default function UserCreateCompanyPage() {
             <Clock className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
             <div>
               <p className="font-semibold mb-0.5">Complete seu cadastro</p>
-              <p className="text-amber-700">Preencha todos os dados para liberar o acesso completo à plataforma sem restrições.</p>
+              <p className="text-amber-700">Preencha todos os dados para liberar o acesso completo ï¿½ plataforma sem restriï¿½ï¿½es.</p>
             </div>
           </div>
         )}
@@ -657,7 +657,7 @@ export default function UserCreateCompanyPage() {
         <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="p-6 sm:p-8">
 
-            {/* STEP 0 — Informacoes Basicas + Logo */}
+            {/* STEP 0 ï¿½ Informacoes Basicas + Logo */}
             {step === 0 && (
               <div className="space-y-5">
                 <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
@@ -672,7 +672,7 @@ export default function UserCreateCompanyPage() {
                   {!logoPreview ? (
                     <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-[#EBA500]/50 transition-all">
                       <Upload className="h-6 w-6 text-gray-400 mb-1" />
-                      <p className="text-xs text-gray-500"><span className="font-medium">Clique para upload</span> · PNG, JPG, WEBP (max 5MB)</p>
+                      <p className="text-xs text-gray-500"><span className="font-medium">Clique para upload</span> ï¿½ PNG, JPG, WEBP (max 5MB)</p>
                       <input type="file" className="hidden" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" onChange={handleLogoChange} />
                     </label>
                   ) : (
@@ -736,7 +736,7 @@ export default function UserCreateCompanyPage() {
               </div>
             )}
 
-            {/* STEP 1 — Contato */}
+            {/* STEP 1 ï¿½ Contato */}
             {step === 1 && (
               <div className="space-y-5">
                 <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
@@ -759,7 +759,7 @@ export default function UserCreateCompanyPage() {
               </div>
             )}
 
-            {/* STEP 2 — Endereco */}
+            {/* STEP 2 ï¿½ Endereco */}
             {step === 2 && (
               <div className="space-y-5">
                 <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
@@ -802,7 +802,7 @@ export default function UserCreateCompanyPage() {
               </div>
             )}
 
-            {/* STEP 3 — Dados Fiscais */}
+            {/* STEP 3 ï¿½ Dados Fiscais */}
             {step === 3 && (
               <div className="space-y-5">
                 <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
@@ -847,7 +847,7 @@ export default function UserCreateCompanyPage() {
               </div>
             )}
 
-            {/* STEP 4 — Representante Legal */}
+            {/* STEP 4 ï¿½ Representante Legal */}
             {step === 4 && (
               <div className="space-y-5">
                 <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
@@ -878,7 +878,7 @@ export default function UserCreateCompanyPage() {
               </div>
             )}
 
-            {/* STEP 5 — Cobranca & Pagamento */}
+            {/* STEP 5 ï¿½ Cobranca & Pagamento */}
             {step === 5 && (
               <div className="space-y-6">
                 <div>
@@ -1008,7 +1008,7 @@ export default function UserCreateCompanyPage() {
             <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
               <div className="p-6 sm:p-8">
 
-                {/* PF STEP 0 — Dados Pessoais */}
+                {/* PF STEP 0 ï¿½ Dados Pessoais */}
                 {step === 0 && (
                   <div className="space-y-4">
                     <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
@@ -1031,11 +1031,11 @@ export default function UserCreateCompanyPage() {
                   </div>
                 )}
 
-                {/* PF STEP 1 — Endereço */}
+                {/* PF STEP 1 ï¿½ Endereï¿½o */}
                 {step === 1 && (
                   <div className="space-y-4">
                     <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-[#EBA500]" /> Endereço
+                      <MapPin className="h-4 w-4 text-[#EBA500]" /> Endereï¿½o
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="sm:col-span-2">
@@ -1043,7 +1043,7 @@ export default function UserCreateCompanyPage() {
                         <input type="text" value={pfData.address.street} onChange={e => handlePfChange('address.street', e.target.value)} placeholder="Rua, Avenida..." className={inp} />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Número</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Nï¿½mero</label>
                         <input type="text" value={pfData.address.number} onChange={e => handlePfChange('address.number', e.target.value)} placeholder="123" className={inp} />
                       </div>
                       <div>
@@ -1056,7 +1056,7 @@ export default function UserCreateCompanyPage() {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">Cidade *</label>
-                        <input type="text" value={pfData.address.city} onChange={e => handlePfChange('address.city', e.target.value)} placeholder="São Paulo" className={inp} />
+                        <input type="text" value={pfData.address.city} onChange={e => handlePfChange('address.city', e.target.value)} placeholder="Sï¿½o Paulo" className={inp} />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">Estado *</label>
@@ -1070,11 +1070,11 @@ export default function UserCreateCompanyPage() {
                   </div>
                 )}
 
-                {/* PF STEP 2 — Contato & Cobrança */}
+                {/* PF STEP 2 ï¿½ Contato & Cobranï¿½a */}
                 {step === 2 && (
                   <div className="space-y-4">
                     <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-[#EBA500]" /> Contato e Cobrança
+                      <Phone className="h-4 w-4 text-[#EBA500]" /> Contato e Cobranï¿½a
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -1093,11 +1093,11 @@ export default function UserCreateCompanyPage() {
                         <label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
                         <select value={pfData.forma_pagamento} onChange={e => handlePfChange('forma_pagamento', e.target.value)} className={sel}>
                           <option value="">Selecione...</option>
-                          <option value="boleto">Boleto Bancário</option>
-                          <option value="cartao_credito">Cartão de Crédito</option>
+                          <option value="boleto">Boleto Bancï¿½rio</option>
+                          <option value="cartao_credito">Cartï¿½o de Crï¿½dito</option>
                           <option value="pix">Pix</option>
-                          <option value="transferencia">Transferência Bancária</option>
-                          <option value="debito_automatico">Débito Automático</option>
+                          <option value="transferencia">Transferï¿½ncia Bancï¿½ria</option>
+                          <option value="debito_automatico">Dï¿½bito Automï¿½tico</option>
                         </select>
                       </div>
                     </div>
@@ -1117,7 +1117,7 @@ export default function UserCreateCompanyPage() {
                 {step < PF_STEPS.length - 1 ? (
                   <button type="button" onClick={() => { if (validatePfStep()) setStep(s => s + 1) }}
                     className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
-                    Próximo <ArrowRight className="w-4 h-4" />
+                    Prï¿½ximo <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
                   <button type="button" onClick={handleSubmitPfCompleto} disabled={loading}

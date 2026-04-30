@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../services/supabase'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useToolPermissions } from '../../hooks/useToolPermissions'
 import toast from '@/lib/toast'
 import { 
@@ -188,8 +188,28 @@ const QuickAppsCard = () => {
   )
 }
 
+// Limites de usuários por plano (espelha o SQL get_plan_user_limit)
+const PLAN_USER_LIMITS = {
+  free: 1,
+  individual: 1,
+  profissional: 10,
+  premium: 20,
+  enterprise: Infinity,
+}
+
+const PLAN_LABELS = {
+  free: 'Gratuito',
+  individual: 'Individual',
+  profissional: 'Profissional',
+  premium: 'Premium',
+  enterprise: 'Enterprise',
+}
+
 // Componente de Link de Convite
-const InviteLinkCard = ({ companyId }) => {
+const InviteLinkCard = ({ companyId, subscriptionPlan }) => {
+  // Planos com limite 1 = só o admin, sem convites possíveis
+  const SOLO_PLANS = ['free', 'individual']
+  const isFree = !subscriptionPlan || SOLO_PLANS.includes(subscriptionPlan)
   const [inviteToken, setInviteToken] = useState('')
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -238,6 +258,41 @@ const InviteLinkCard = ({ companyId }) => {
       console.error('Erro ao copiar:', error)
       toast.error('Erro ao copiar link')
     }
+  }
+
+  // Plano free: mostrar card bloqueado com CTA de upgrade
+  if (isFree) {
+    return (
+      <div className="mb-6 sm:mb-8">
+        <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 shadow-xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800" />
+          <div className="absolute inset-0 opacity-30" style={{
+            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 20px)'
+          }} />
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gray-200 dark:bg-gray-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-base sm:text-lg font-bold text-gray-500 dark:text-gray-400">
+                Link de Convite — Recurso bloqueado
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                O plano <strong>{subscriptionPlan === 'individual' ? 'Individual' : 'Gratuito'}</strong> permite apenas 1 usuário por empresa (somente o administrador). Faça upgrade para convidar membros para a sua equipe.
+              </p>
+            </div>
+            <a
+              href="/planos"
+              className="shrink-0 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#EBA500] to-amber-600 text-white text-sm font-semibold shadow hover:shadow-md transition-all"
+            >
+              Ver planos
+            </a>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
@@ -356,7 +411,17 @@ const getGradientColors = (colorClass) => {
 
 export default function CompanyAdminDashboard() {
   const { profile } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [showPaymentBanner, setShowPaymentBanner] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  // Detectar retorno do Stripe com payment=success
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      setShowPaymentBanner(true)
+      setSearchParams(prev => { prev.delete('payment'); return prev }, { replace: true })
+    }
+  }, [])
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalTasks: 0,
@@ -371,6 +436,7 @@ export default function CompanyAdminDashboard() {
   const [avatarUrl, setAvatarUrl] = useState('')
   const [companyLogo, setCompanyLogo] = useState('')
   const [companyId, setCompanyId] = useState(null)
+  const [subscriptionPlan, setSubscriptionPlan] = useState(null)
 
   // Carregar avatar do perfil
   useEffect(() => {
@@ -427,15 +493,16 @@ export default function CompanyAdminDashboard() {
 
       setCompanyId(currentCompanyId)
 
-      // Buscar nome e logo da empresa
+      // Buscar nome, logo e plano da empresa
       const { data: companyData } = await supabase
         .from('companies')
-        .select('name, logo_url')
+        .select('name, logo_url, subscription_plan')
         .eq('id', currentCompanyId)
         .single()
       
       if (companyData) {
         setCompanyName(companyData.name)
+        setSubscriptionPlan(companyData.subscription_plan || 'free')
         
         // Carregar logo se existir
         if (companyData.logo_url) {
@@ -549,7 +616,43 @@ export default function CompanyAdminDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
-        
+
+        {/* Banner de boas-vindas pós-pagamento */}
+        {showPaymentBanner && (
+          <div className="mb-6 sm:mb-8 relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-xl">
+            {/* Fundo animado */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#EBA500] via-amber-500 to-orange-500" />
+            <div className="absolute inset-0 opacity-20" style={{
+              backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)',
+              backgroundSize: '40px 40px'
+            }} />
+            <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
+            <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
+            {/* Conteúdo */}
+            <div className="relative z-10 flex items-start justify-between gap-4 p-5 sm:p-7">
+              <div className="flex items-start gap-4">
+                <div className="text-4xl sm:text-5xl select-none">🎉</div>
+                <div>
+                  <h2 className="text-lg sm:text-2xl font-extrabold text-white mb-1">
+                    Bem-vindo ao seu novo plano!
+                  </h2>
+                  <p className="text-sm sm:text-base text-white/90 max-w-lg">
+                    Sua assinatura foi ativada com sucesso. A plataforma está totalmente disponível para você e sua equipe. Aproveite!
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPaymentBanner(false)}
+                className="shrink-0 p-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-colors mt-0.5"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header com Saudação */}
         <div className="mb-6 sm:mb-8 lg:mb-10">
           <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow duration-300">
@@ -849,7 +952,7 @@ export default function CompanyAdminDashboard() {
         <QuickAppsCard />
 
         {/* Link de Convite da Empresa */}
-        {companyId && <InviteLinkCard companyId={companyId} />}
+        {companyId && <InviteLinkCard companyId={companyId} subscriptionPlan={subscriptionPlan} />}
 
       </div>
     </div>

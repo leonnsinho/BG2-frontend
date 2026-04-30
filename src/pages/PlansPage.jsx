@@ -93,6 +93,7 @@ export default function PlansPage() {
   const { user, profile, authLoading } = useUserContext()
 
   const paymentStatus = searchParams.get('payment')
+  const trialExpired = searchParams.get('trialExpired') === 'true'
   const companyId = profile?.user_companies?.find(uc => uc.is_active)?.company_id
   const isProfileReady = !authLoading && profile?.id && profile?.user_companies !== undefined
 
@@ -277,6 +278,26 @@ export default function PlansPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
       <div className="max-w-6xl mx-auto">
 
+        {/* Banner: trial expirado */}
+        {trialExpired && (
+          <div className="mb-8 rounded-2xl border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 px-6 py-5">
+            <div className="flex items-start gap-4">
+              <div className="mt-0.5 flex-shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-800/40 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-red-800 dark:text-red-300 mb-1">
+                  Seu período de teste de 14 dias encerrou
+                </h2>
+                <p className="text-sm text-red-700 dark:text-red-400">
+                  Para continuar utilizando a plataforma, escolha um dos planos abaixo e assine agora.
+                  Seus dados estão preservados e o acesso é retomado imediatamente após a confirmação do pagamento.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Feedback de pagamento */}
         {paymentStatus === 'success' && (
           <div className="mb-8 flex items-center gap-3 bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl px-5 py-4 text-green-800 dark:text-green-300">
@@ -291,18 +312,20 @@ export default function PlansPage() {
           </div>
         )}
 
-        {/* Botão voltar */}
-        <div className="mb-6">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Voltar ao Dashboard
-          </button>
-        </div>
+        {/* Botão voltar — oculto quando trial expirado */}
+        {!trialExpired && (
+          <div className="mb-6">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Voltar ao Dashboard
+            </button>
+          </div>
+        )}
 
         {/* Header */}
         <div className="text-center mb-10">

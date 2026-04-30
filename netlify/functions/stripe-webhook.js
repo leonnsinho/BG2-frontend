@@ -11,11 +11,11 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 // Mapeamento Price ID → subscription_plan da tabela companies
 const PRICE_TO_PLAN = {
-  'price_1TReTdFUmTFSWkItrIiOcTop': 'basic',       // Individual mensal
-  'price_1TReTrFUmTFSWkIttUUvGSHw': 'professional', // Profissional mensal
-  'price_1TReVGFUmTFSWkItKrsCp0eO': 'professional', // Profissional anual
-  'price_1TReU1FUmTFSWkItEZcxgY4B': 'enterprise',   // Premium mensal
-  'price_1TReUxFUmTFSWkItssYPU7sq': 'enterprise',   // Premium anual
+  'price_1TReTdFUmTFSWkItrIiOcTop': 'individual',   // Individual mensal
+  'price_1TReTrFUmTFSWkIttUUvGSHw': 'profissional', // Profissional mensal
+  'price_1TReVGFUmTFSWkItKrsCp0eO': 'profissional', // Profissional anual
+  'price_1TReU1FUmTFSWkItEZcxgY4B': 'premium',      // Premium mensal
+  'price_1TReUxFUmTFSWkItssYPU7sq': 'premium',      // Premium anual
 }
 
 // Verifica a assinatura do webhook Stripe (HMAC-SHA256)
@@ -134,7 +134,7 @@ exports.handler = async (event) => {
           if (subResponse.ok) {
             const sub = await subResponse.json()
             const priceId = sub.items?.data?.[0]?.price?.id
-            plan = PRICE_TO_PLAN[priceId] || 'basic'
+            plan = PRICE_TO_PLAN[priceId] || 'individual'
           }
         }
 
@@ -158,7 +158,7 @@ exports.handler = async (event) => {
         }
 
         const priceId = obj.items?.data?.[0]?.price?.id
-        const plan = PRICE_TO_PLAN[priceId] || 'basic'
+        const plan = PRICE_TO_PLAN[priceId] || 'individual'
         const status = obj.status === 'active' ? 'active' : 'inactive'
 
         await updateCompany(companyId, {
@@ -180,7 +180,7 @@ exports.handler = async (event) => {
         }
 
         await updateCompany(companyId, {
-          subscription_plan: 'basic',
+          subscription_plan: 'individual',
           subscription_status: 'inactive',
           stripe_subscription_id: null,
         })

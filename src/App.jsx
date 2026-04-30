@@ -88,16 +88,29 @@ function NotificationManager() {
 
 // Guard: se o trial da empresa expirou (> 14 dias) e o cadastro está incompleto,
 // redireciona para /criar-empresa para forçar o preenchimento completo.
-// Não bloqueia páginas públicas nem /criar-empresa em si.
+// Também redireciona para /planos se o trial do plano free expirou (só company_admin).
+// Não bloqueia páginas públicas nem /criar-empresa e /planos em si.
 function TrialExpiredGuard({ children }) {
   const { profile, loading } = useAuth()
   const contentRef = React.useRef(null)
 
+  // ── Caso 1: plano free + inactive → redirecionar para /planos (company_admin)
+  const isPlanExpired = (() => {
+    if (!profile) return false
+    const activeUc = profile?.user_companies?.find(uc => uc.is_active)
+    if (!activeUc || activeUc.role !== 'company_admin') return false
+    return (
+      activeUc.companies?.subscription_plan === 'free' &&
+      activeUc.companies?.subscription_status === 'inactive'
+    )
+  })()
+
+  // ── Caso 2: trial de dados incompletos (status='trial' + > 14 dias) → overlay
   const trialCompany = profile?.user_companies?.find(
     uc => uc.is_active && uc.companies?.subscription_status === 'trial'
   )
 
-  const isExpired = (() => {
+  const isDataTrialExpired = (() => {
     if (!trialCompany) return false
     const createdAt = trialCompany.companies?.created_at
     if (!createdAt) return false
@@ -105,20 +118,23 @@ function TrialExpiredGuard({ children }) {
   })()
 
   // Aplicar/remover atributo inert no wrapper do layout inteiro.
-  // inert bloqueia todo tipo de interação (cliques, teclado, foco) a nível do browser,
-  // independentemente do que o usuário apague via DevTools.
   React.useEffect(() => {
     const el = contentRef.current
     if (!el) return
-    if (isExpired) {
+    if (isDataTrialExpired) {
       el.setAttribute('inert', '')
     } else {
       el.removeAttribute('inert')
     }
-  }, [isExpired])
+  }, [isDataTrialExpired])
 
   if (loading) return null
   if (!profile) return children
+
+  // Redirecionar para /planos quando trial do plano expirou
+  if (isPlanExpired) {
+    return <Navigate to="/planos?trialExpired=true" replace />
+  }
 
   return (
     <>
@@ -128,7 +144,7 @@ function TrialExpiredGuard({ children }) {
       </div>
       {/* Overlay visual independente — fora do subtree inert, não pode ser removido
           junto com o modal sem perder o bloqueio do inert */}
-      {isExpired && (
+      {isDataTrialExpired && (
         <div className="fixed inset-0 z-[45] bg-black/60 backdrop-blur-sm" />
       )}
     </>
