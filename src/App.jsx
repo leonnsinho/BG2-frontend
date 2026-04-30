@@ -53,6 +53,7 @@ import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage'
 import DrePage from './pages/financeiro/DrePage'
 import DfcPage from './pages/financeiro/DfcPage'
 import DFCSaidasPage from './pages/DFCPage'
+import PlansPage from './pages/PlansPage'
 import DFCEntradasPage from './pages/DFCEntradasPage'
 import DFCDashboardPage from './pages/DFCDashboardPage'
 import PlanoContasPage from './pages/PlanoContasPage'
@@ -159,6 +160,7 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
       <Route path="/complete-signup" element={<CompleteSignupPage />} />
+      <Route path="/planos" element={<PlansPage />} />
       
       {/* Rotas protegidas com Layout/Sidebar persistente */}
       <Route element={<TrialExpiredGuard><ProtectedLayout /></TrialExpiredGuard>}>
