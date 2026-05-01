@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/useAuth'
 import { useUserContext } from '../contexts/UserContext'
@@ -76,8 +77,17 @@ const EMPTY_COMPANY_PF = {
   address: { street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zip: '' },
 }
 
+const PLAN_LABELS = {
+  free: 'Gratuito',
+  individual: 'Individual',
+  profissional: 'Profissional',
+  premium: 'Premium',
+  enterprise: 'Enterprise',
+}
+
 const SettingsPage = () => {
   const { user, profile, refreshProfile } = useAuth()
+  const [searchParams] = useSearchParams()
   const permissions = usePermissions()
   const { preferences: contextPreferences, updatePreference } = useUserContext()
 
@@ -88,7 +98,10 @@ const SettingsPage = () => {
   }
 
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState('profile')
+  const [activeTab, setActiveTab] = useState(() => {
+    const t = searchParams.get('tab')
+    return ['profile', 'password', 'empresa', 'plano'].includes(t) ? t : 'profile'
+  })
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -137,6 +150,27 @@ const SettingsPage = () => {
       loadCompanyData()
     }
   }, [activeTab, adminCompanyId])
+
+  // ─── Plano ───────────────────────────────────────────────────────────────
+  const [portalLoading, setPortalLoading] = useState(false)
+
+  const handleOpenPortal = async () => {
+    if (!adminCompanyId) return
+    setPortalLoading(true)
+    try {
+      const res = await fetch('/.netlify/functions/stripe-create-portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId: adminCompanyId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao abrir portal')
+      window.location.href = data.url
+    } catch (err) {
+      toast.error(err.message)
+      setPortalLoading(false)
+    }
+  }
 
   const loadCompanyData = async () => {
     if (!adminCompanyId) return
@@ -575,7 +609,8 @@ const SettingsPage = () => {
   const tabs = [
     { id: 'profile', name: 'Perfil', icon: User },
     { id: 'password', name: 'Senha', icon: Key },
-    ...(isCompanyAdmin ? [{ id: 'empresa', name: 'Empresa', icon: Building2 }] : [])
+    ...(isCompanyAdmin ? [{ id: 'empresa', name: 'Empresa', icon: Building2 }] : []),
+    ...(isCompanyAdmin ? [{ id: 'plano', name: 'Plano', icon: CreditCard }] : []),
   ]
 
   if (permissions.isLoading) {
@@ -1348,6 +1383,71 @@ const SettingsPage = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </Card>
+        )}
+
+        {/* Aba Plano */}
+        {activeTab === 'plano' && (
+          <Card className="p-4 sm:p-6 bg-white dark:bg-gray-800 shadow-sm border border-gray-200/50 dark:border-gray-700 rounded-2xl sm:rounded-3xl">
+            <div className="animate-fadeIn">
+              <h3 className="text-lg sm:text-xl font-semibold text-[#373435] dark:text-white mb-6 flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-[#EBA500]" />
+                Plano e Assinatura
+              </h3>
+
+              {(() => {
+                const currentPlan =
+                  profile?.user_companies?.find(uc => uc.is_active)?.companies?.subscription_plan ||
+                  'free'
+                const currentStatus =
+                  profile?.user_companies?.find(uc => uc.is_active)?.companies?.subscription_status ||
+                  'inactive'
+                const statusColors = {
+                  active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                  inactive: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                  suspended: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+                  trial: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                }
+                const statusLabels = { active: 'Ativo', inactive: 'Inativo', suspended: 'Suspenso', trial: 'Teste' }
+
+                return (
+                  <div className="space-y-6">
+                    <div className="rounded-2xl border border-[#EBA500]/30 bg-gradient-to-br from-[#EBA500]/5 to-amber-50/40 dark:from-[#EBA500]/10 dark:to-amber-900/10 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#EBA500]/20 to-[#EBA500]/10 flex items-center justify-center flex-shrink-0">
+                          <CreditCard className="w-6 h-6 text-[#EBA500]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-bold text-[#373435] dark:text-white">
+                              {PLAN_LABELS[currentPlan] ?? currentPlan}
+                            </span>
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${statusColors[currentStatus] ?? statusColors.inactive}`}>
+                              {statusLabels[currentStatus] ?? currentStatus}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                            Gerencie cobranças, faturas e cancelamento no portal Stripe.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleOpenPortal}
+                        disabled={portalLoading}
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#EBA500] hover:bg-[#EBA500]/90 text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed min-w-[180px]"
+                      >
+                        {portalLoading ? (
+                          <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Abrindo...</>
+                        ) : (
+                          <><Wallet className="w-4 h-4" />Gerenciar assinatura</>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           </Card>
         )}

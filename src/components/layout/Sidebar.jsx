@@ -1289,9 +1289,12 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                   const cfg = labels[plan]
                   if (!cfg) return null
                   return (
-                    <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${cfg.color}`}>
+                    <Link
+                      to="/settings?tab=plano"
+                      className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity ${cfg.color}`}
+                    >
                       {cfg.label}
-                    </span>
+                    </Link>
                   )
                 })()}
               </div>

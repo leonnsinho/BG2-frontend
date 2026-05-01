@@ -54,6 +54,8 @@ import DrePage from './pages/financeiro/DrePage'
 import DfcPage from './pages/financeiro/DfcPage'
 import DFCSaidasPage from './pages/DFCPage'
 import PlansPage from './pages/PlansPage'
+import EmpresaInativaPage from './pages/EmpresaInativaPage'
+import UsuarioDesativadoPage from './pages/UsuarioDesativadoPage'
 import DFCEntradasPage from './pages/DFCEntradasPage'
 import DFCDashboardPage from './pages/DFCDashboardPage'
 import PlanoContasPage from './pages/PlanoContasPage'
@@ -94,16 +96,22 @@ function TrialExpiredGuard({ children }) {
   const { profile, loading } = useAuth()
   const contentRef = React.useRef(null)
 
-  // ── Caso 1: plano free + inactive → redirecionar para /planos (company_admin)
-  const isPlanExpired = (() => {
-    if (!profile) return false
-    const activeUc = profile?.user_companies?.find(uc => uc.is_active)
-    if (!activeUc || activeUc.role !== 'company_admin') return false
-    return (
-      activeUc.companies?.subscription_plan === 'free' &&
-      activeUc.companies?.subscription_status === 'inactive'
-    )
-  })()
+  // ── Caso 0: usuário desativado pelo admin
+  const isUserDeactivated = profile?.is_active === false
+
+  // ── Caso 1: empresa inactive
+  // company_admin → /planos (free → trialExpired=true, pago → planInativo=true)
+  // outros usuários → /empresa-inativa
+  const activeUc = profile?.user_companies?.find(uc => uc.is_active)
+  const companyIsInactive = !!activeUc && activeUc.companies?.subscription_status === 'inactive'
+  const isPlanExpired = companyIsInactive && activeUc.role === 'company_admin'
+  const isCompanyOfflineForUser = companyIsInactive && activeUc.role !== 'company_admin'
+
+  // ── Caso 3: empresa com mais usuários do que o plano permite (downgrade)
+  // company_admin → acesso liberado, mas verá banner no dashboard
+  // outros usuários → /empresa-inativa
+  const isOverUserLimit = !!activeUc && activeUc.companies?.over_user_limit === true
+  const isBlockedByOverLimit = isOverUserLimit && activeUc.role !== 'company_admin'
 
   // ── Caso 2: trial de dados incompletos (status='trial' + > 14 dias) → overlay
   const trialCompany = profile?.user_companies?.find(
@@ -131,9 +139,24 @@ function TrialExpiredGuard({ children }) {
   if (loading) return null
   if (!profile) return children
 
-  // Redirecionar para /planos quando trial do plano expirou
+  // Redirecionar quando usuário foi desativado pelo admin
+  if (isUserDeactivated) {
+    return <Navigate to="/usuario-desativado" replace />
+  }
+
+  // Redirecionar quando empresa está inativa
   if (isPlanExpired) {
-    return <Navigate to="/planos?trialExpired=true" replace />
+    const plan = activeUc?.companies?.subscription_plan
+    const param = plan === 'free' ? 'trialExpired=true' : 'planInativo=true'
+    return <Navigate to={`/planos?${param}`} replace />
+  }
+
+  if (isCompanyOfflineForUser) {
+    return <Navigate to="/empresa-inativa" replace />
+  }
+
+  if (isBlockedByOverLimit) {
+    return <Navigate to="/empresa-inativa" replace />
   }
 
   return (
@@ -177,6 +200,8 @@ function AppRoutes() {
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
       <Route path="/complete-signup" element={<CompleteSignupPage />} />
       <Route path="/planos" element={<PlansPage />} />
+      <Route path="/empresa-inativa" element={<EmpresaInativaPage />} />
+      <Route path="/usuario-desativado" element={<UsuarioDesativadoPage />} />
       
       {/* Rotas protegidas com Layout/Sidebar persistente */}
       <Route element={<TrialExpiredGuard><ProtectedLayout /></TrialExpiredGuard>}>

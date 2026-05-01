@@ -19,6 +19,11 @@ dist-ssr
 .env.test.local
 .env.production.local
 
+# Arquivos com credenciais/chaves — NUNCA commitar
+*.yaml
+*.yml
+!netlify.toml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

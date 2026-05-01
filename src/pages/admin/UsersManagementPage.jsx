@@ -224,14 +224,13 @@ export default function UsersManagementPage() {
     const plan = co.subscription_plan || 'free'
     const limit = PLAN_USER_LIMITS[plan] ?? 1
     const companyUsers = users.filter(u => u.companies?.id === co.id)
-    return { plan, limit, current: companyUsers.length }
+    const current = companyUsers.length
+    return { plan, limit, current }
   }
 
   const planInfo = getCompanyPlanInfo()
-  // Planos solo (free/individual) SEMPRE bloqueiam convites — admin já é o único usuário
-  const atUserLimit = planInfo
-    ? SOLO_PLANS.includes(planInfo.plan) || planInfo.current >= planInfo.limit
-    : false
+  const atUserLimit = planInfo ? planInfo.current >= planInfo.limit : false
+  const overUserLimit = planInfo ? planInfo.current > planInfo.limit : false
 
   useEffect(() => {
     if (profile) {
@@ -371,15 +370,16 @@ export default function UsersManagementPage() {
         
         if (currentUserCompany) {
           console.log('🔍 Filtrando usuários para company_admin da empresa:', currentUserCompany.name)
-          // Filtrar apenas usuários da mesma empresa, excluindo o próprio usuário atual
+          // Filtrar apenas usuários da mesma empresa (inclui o próprio admin)
           const beforeFilter = combinedUsers.length
           combinedUsers = combinedUsers.filter(user => {
             const isSameCompany = user.companies?.id === currentUserCompany.id
-            const isNotCurrentUser = user.id !== profile.id
+            // Incluir o próprio admin na lista
+            const isSelf = user.id === profile.id
             
-            console.log(`  - ${user.email}: empresa=${user.companies?.name}, mesmaEmpresa=${isSameCompany}, naoEuMesmo=${isNotCurrentUser}, incluir=${isSameCompany && isNotCurrentUser}`)
+            console.log(`  - ${user.email}: empresa=${user.companies?.name}, mesmaEmpresa=${isSameCompany}, incluir=${isSameCompany || isSelf}`)
             
-            return isSameCompany && isNotCurrentUser
+            return isSameCompany || isSelf
           })
           console.log('📊 Usuários filtrados:', combinedUsers.length, 'de', beforeFilter)
         } else {
@@ -1356,7 +1356,7 @@ export default function UsersManagementPage() {
                   : 'bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400'
               }`}>
                 <Users className="h-3.5 w-3.5" />
-                <span>{SOLO_PLANS.includes(planInfo.plan) ? planInfo.limit : planInfo.current}/{planInfo.limit === Infinity ? '∞' : planInfo.limit}</span>
+                <span>{planInfo.current}/{planInfo.limit === Infinity ? '∞' : planInfo.limit}</span>
                 <span className="hidden sm:inline text-xs font-normal">usuários</span>
                 {atUserLimit && (
                   <Link
@@ -1366,6 +1366,9 @@ export default function UsersManagementPage() {
                   >
                     <Plus className="h-3 w-3" />
                   </Link>
+                )}
+                {overUserLimit && (
+                  <AlertCircle className="h-4 w-4 text-red-500 shrink-0" title="Limite excedido" />
                 )}
               </div>
             )}
@@ -1513,12 +1516,15 @@ export default function UsersManagementPage() {
                   const roleInfo = getRoleInfo(effectiveRole)
                   const RoleIcon = roleInfo.icon
                   const isGestor = user.company_role === 'gestor' || user.role === 'gestor'
+                  const isSelf = user.id === profile?.id
 
                   return (
                     <tr 
                       key={user.id} 
                       className={`transition-all duration-200 ${
-                        isGestor 
+                        isSelf
+                          ? 'bg-gradient-to-r from-[#EBA500]/15 to-amber-50/60 dark:from-[#EBA500]/10 dark:to-amber-900/10 border-l-4 border-[#EBA500]'
+                          : isGestor 
                           ? 'bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 hover:from-[#EBA500]/20 hover:to-[#EBA500]/10 border-l-4 border-[#EBA500]'
                           : 'hover:bg-gradient-to-r hover:from-gray-50/50 dark:hover:from-gray-700/50 hover:to-[#EBA500]/5'
                       }`}
@@ -1560,8 +1566,11 @@ export default function UsersManagementPage() {
                             </span>
                           </div>
                           <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                            <div className="text-xs sm:text-sm font-semibold text-[#373435] dark:text-white truncate">
+                            <div className="text-xs sm:text-sm font-semibold text-[#373435] dark:text-white truncate flex items-center gap-2">
                               {user.full_name || 'Nome não informado'}
+                              {isSelf && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EBA500] text-white leading-none shrink-0">Você</span>
+                              )}
                             </div>
                             <div className="text-xs sm:text-sm text-gray-500 flex items-center truncate">
                               <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
@@ -2009,6 +2018,7 @@ export default function UsersManagementPage() {
                   </button>
 
                   {/* Vincular/Alterar Empresa */}
+                  {selectedUserForActions.id !== profile?.id && (
                   <button
                     onClick={() => {
                       setSelectedUser(selectedUserForActions)
@@ -2029,6 +2039,7 @@ export default function UsersManagementPage() {
                       </p>
                     </div>
                   </button>
+                  )}
 
                   {/* Gerenciar Jornadas */}
                   {(selectedUserForActions.company_role === 'gestor' || selectedUserForActions.role === 'gestor') && (
@@ -2091,7 +2102,7 @@ export default function UsersManagementPage() {
                   )}
 
                   {/* Desvincular da Empresa */}
-                  {selectedUserForActions.companies?.name && (
+                  {selectedUserForActions.companies?.name && selectedUserForActions.id !== profile?.id && (
                     <button
                       onClick={() => {
                         handleUnlinkFromCompany(selectedUserForActions.id)
@@ -2110,6 +2121,7 @@ export default function UsersManagementPage() {
                   )}
 
                   {/* Ativar/Desativar */}
+                  {selectedUserForActions.id !== profile?.id && (
                   <button
                     onClick={() => {
                       handleDeleteUser(selectedUserForActions.id)
@@ -2137,7 +2149,9 @@ export default function UsersManagementPage() {
                       </p>
                     </div>
                   </button>
+                  )}
                   {/* Excluir permanentemente */}
+                  {selectedUserForActions.id !== profile?.id && (
                   <button
                     onClick={() => {
                       closeActionsModal()
@@ -2153,6 +2167,7 @@ export default function UsersManagementPage() {
                       <p className="text-xs text-red-500">Remove todos os dados — ação irreversível</p>
                     </div>
                   </button>
+                  )}
                 </div>
               </div>
 

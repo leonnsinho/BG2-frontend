@@ -125,8 +125,9 @@ exports.handler = async (event) => {
 
         // Determinar plano pelo item da assinatura
         let plan = 'basic'
+        let renewalDate = null
         if (obj.subscription) {
-          // Buscar detalhes da subscription para obter o price_id
+          // Buscar detalhes da subscription para obter o price_id e current_period_end
           const subResponse = await fetch(
             `https://api.stripe.com/v1/subscriptions/${obj.subscription}`,
             { headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` } }
@@ -135,7 +136,16 @@ exports.handler = async (event) => {
             const sub = await subResponse.json()
             const priceId = sub.items?.data?.[0]?.price?.id
             plan = PRICE_TO_PLAN[priceId] || 'individual'
+            renewalDate = sub.current_period_end
+              ? new Date(sub.current_period_end * 1000).toISOString()
+              : null
+            console.log(`Subscription ${obj.subscription}: priceId=${priceId}, plan=${plan}, renewalDate=${renewalDate}`)
+          } else {
+            const errText = await subResponse.text()
+            console.error(`Stripe API error ao buscar subscription ${obj.subscription}: ${subResponse.status} ${errText}`)
           }
+        } else {
+          console.warn('checkout.session.completed sem obj.subscription')
         }
 
         await updateCompany(companyId, {
@@ -143,11 +153,13 @@ exports.handler = async (event) => {
           stripe_subscription_id: obj.subscription,
           subscription_plan: plan,
           subscription_status: 'active',
+          ...(renewalDate ? { subscription_renewal_date: renewalDate, subscription_ends_at: renewalDate } : {}),
         })
         console.log(`Empresa ${companyId} ativada com plano ${plan}`)
         break
       }
 
+      case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         // Assinatura atualizada (mudança de plano, renovação, etc.)
         const customerId = obj.customer
@@ -160,11 +172,15 @@ exports.handler = async (event) => {
         const priceId = obj.items?.data?.[0]?.price?.id
         const plan = PRICE_TO_PLAN[priceId] || 'individual'
         const status = obj.status === 'active' ? 'active' : 'inactive'
+        const renewalDate = obj.current_period_end
+          ? new Date(obj.current_period_end * 1000).toISOString()
+          : null
 
         await updateCompany(companyId, {
           subscription_plan: plan,
           subscription_status: status,
           stripe_subscription_id: obj.id,
+          ...(renewalDate ? { subscription_renewal_date: renewalDate, subscription_ends_at: renewalDate } : {}),
         })
         console.log(`Empresa ${companyId} atualizada: plano=${plan}, status=${status}`)
         break

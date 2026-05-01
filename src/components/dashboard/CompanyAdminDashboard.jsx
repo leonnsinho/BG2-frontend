@@ -528,8 +528,9 @@ export default function CompanyAdminDashboard() {
         .eq('is_active', true)
         .neq('user_id', profile.id)
 
-      const totalUsers = userCompanies?.length || 0
-      const activeUsers = userCompanies?.filter(uc => uc.profiles?.is_active !== false).length || 0
+      // +1 conta o próprio company_admin (excluído da query com .neq)
+      const totalUsers = (userCompanies?.length || 0) + 1
+      const activeUsers = (userCompanies?.filter(uc => uc.profiles?.is_active !== false).length || 0) + 1
 
       // Buscar tarefas da empresa
       const { data: tasks } = await supabase
@@ -649,6 +650,43 @@ export default function CompanyAdminDashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Banner de aviso: empresa acima do limite de usuários do plano */}
+        {profile?.user_companies?.find(uc => uc.is_active)?.companies?.over_user_limit && (
+          <div className="mb-6 sm:mb-8 rounded-2xl border-2 border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-900/20 px-5 py-4 sm:px-6 sm:py-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex items-start gap-3 flex-1">
+                <div className="mt-0.5 flex-shrink-0 w-9 h-9 rounded-xl bg-red-100 dark:bg-red-800/40 flex items-center justify-center">
+                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-red-800 dark:text-red-300 mb-0.5">
+                    Limite de usuários excedido
+                  </h3>
+                  <p className="text-sm text-red-700 dark:text-red-400">
+                    O número de usuários da sua empresa está acima do permitido pelo plano atual.
+                    Os membros da equipe estão com o acesso bloqueado até que a situação seja regularizada.
+                    Remova usuários ou faça upgrade do plano o quanto antes.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 pl-12 sm:pl-0">
+                <Link
+                  to="/admin/users"
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors whitespace-nowrap"
+                >
+                  Gerenciar usuários
+                </Link>
+                <Link
+                  to="/planos"
+                  className="px-4 py-2 rounded-xl border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-800/30 text-sm font-semibold transition-colors whitespace-nowrap"
+                >
+                  Ver planos
+                </Link>
+              </div>
             </div>
           </div>
         )}

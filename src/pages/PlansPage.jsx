@@ -94,6 +94,7 @@ export default function PlansPage() {
 
   const paymentStatus = searchParams.get('payment')
   const trialExpired = searchParams.get('trialExpired') === 'true'
+  const planInativo = searchParams.get('planInativo') === 'true'
   const companyId = profile?.user_companies?.find(uc => uc.is_active)?.company_id
   const isProfileReady = !authLoading && profile?.id && profile?.user_companies !== undefined
 
@@ -278,6 +279,26 @@ export default function PlansPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
       <div className="max-w-6xl mx-auto">
 
+        {/* Banner: plano inativo (plano pago inativo) */}
+        {planInativo && (
+          <div className="mb-8 rounded-2xl border border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20 px-6 py-5">
+            <div className="flex items-start gap-4">
+              <div className="mt-0.5 flex-shrink-0 w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-800/40 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-orange-800 dark:text-orange-300 mb-1">
+                  Seu plano está inativo
+                </h2>
+                <p className="text-sm text-orange-700 dark:text-orange-400">
+                  Por favor, ative o seu plano para continuar usando a plataforma.
+                  Seus dados estão preservados e o acesso é retomado imediatamente após a confirmação do pagamento.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Banner: trial expirado */}
         {trialExpired && (
           <div className="mb-8 rounded-2xl border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 px-6 py-5">
@@ -312,8 +333,8 @@ export default function PlansPage() {
           </div>
         )}
 
-        {/* Botão voltar — oculto quando trial expirado */}
-        {!trialExpired && (
+        {/* Botão voltar — oculto quando trial expirado ou plano inativo */}
+        {!trialExpired && !planInativo && (
           <div className="mb-6">
             <button
               onClick={() => navigate('/dashboard')}
