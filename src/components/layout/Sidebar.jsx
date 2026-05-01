@@ -1279,7 +1279,18 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                   const isAdmin = activeUc?.role === 'company_admin'
                   const plan = activeUc?.companies?.subscription_plan
                   const status = activeUc?.companies?.subscription_status
-                  if (!isAdmin || !plan || status !== 'active') return null
+                  if (!isAdmin || !plan) return null
+                  if (plan === 'free') {
+                    return (
+                      <Link
+                        to="/planos"
+                        className="inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity bg-gray-500/20 text-gray-300 border-gray-500/30"
+                      >
+                        Teste Gratuito
+                      </Link>
+                    )
+                  }
+                  if (status !== 'active') return null
                   const labels = {
                     individual: { label: 'Individual', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
                     profissional: { label: 'Profissional', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },

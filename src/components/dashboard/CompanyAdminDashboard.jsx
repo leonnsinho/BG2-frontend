@@ -298,10 +298,10 @@ const InviteLinkCard = ({ companyId, subscriptionPlan }) => {
   if (loading) {
     return (
       <div className="mb-6 sm:mb-8">
-        <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 shadow-xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 shadow-xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/40 dark:via-indigo-950/40 dark:to-purple-950/40">
           <div className="animate-pulse">
-            <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
-            <div className="h-12 bg-gray-200 rounded"></div>
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
+            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
           </div>
         </div>
       </div>
@@ -314,7 +314,7 @@ const InviteLinkCard = ({ companyId, subscriptionPlan }) => {
     <div className="mb-6 sm:mb-8">
       <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 shadow-xl">
         {/* Fundo com gradiente */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/40 dark:via-indigo-950/40 dark:to-purple-950/40"></div>
         
         {/* Padrão de grid sutil */}
         <div className="absolute inset-0" style={{
@@ -339,10 +339,10 @@ const InviteLinkCard = ({ companyId, subscriptionPlan }) => {
               <LinkIcon className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                 Link de Convite da Empresa
               </h2>
-              <p className="text-xs sm:text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Compartilhe este link para cadastrar novos usuários
               </p>
             </div>
@@ -354,7 +354,7 @@ const InviteLinkCard = ({ companyId, subscriptionPlan }) => {
                 type="text"
                 value={getInviteUrl()}
                 readOnly
-                className="w-full px-4 py-3 pr-12 bg-white border-2 border-gray-200 rounded-xl text-sm font-mono text-gray-700 focus:outline-none focus:border-blue-400 transition-colors"
+                className="w-full px-4 py-3 pr-12 bg-white dark:bg-neutral-800 border-2 border-gray-200 dark:border-neutral-600 rounded-xl text-sm font-mono text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-400 transition-colors"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
                 <LinkIcon className="h-4 w-4 text-gray-400" />
@@ -384,8 +384,8 @@ const InviteLinkCard = ({ companyId, subscriptionPlan }) => {
             </button>
           </div>
           
-          <div className="mt-4 p-3 bg-blue-50/50 border border-blue-200/50 rounded-xl">
-            <p className="text-xs text-blue-800 flex items-start gap-2">
+          <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/20 border border-blue-200/50 dark:border-blue-700/40 rounded-xl">
+            <p className="text-xs text-blue-800 dark:text-blue-300 flex items-start gap-2">
               <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <span>
                 Novos usuários que se cadastrarem usando este link serão automaticamente associados à sua empresa.
@@ -615,7 +615,7 @@ export default function CompanyAdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
 
         {/* Banner de boas-vindas pós-pagamento */}
@@ -841,46 +841,46 @@ export default function CompanyAdminDashboard() {
               </div>
 
               {/* Em Andamento */}
-              <div className="flex items-center justify-between p-3 sm:p-4 bg-blue-50 rounded-lg sm:rounded-xl hover:bg-blue-100 transition-colors">
+              <div className="flex items-center justify-between p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg sm:rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
                 <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <div className="p-1.5 sm:p-2 bg-blue-200 rounded-lg flex-shrink-0">
-                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                  <div className="p-1.5 sm:p-2 bg-blue-200 dark:bg-blue-800/50 rounded-lg flex-shrink-0">
+                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-blue-900 text-sm sm:text-base">Em Andamento</p>
-                    <p className="text-xs sm:text-sm text-blue-600 truncate">Em execução</p>
+                    <p className="font-semibold text-blue-900 dark:text-blue-200 text-sm sm:text-base">Em Andamento</p>
+                    <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 truncate">Em execução</p>
                   </div>
                 </div>
-                <span className="text-xl sm:text-2xl font-bold text-blue-900 flex-shrink-0">{stats.inProgressTasks}</span>
+                <span className="text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-200 flex-shrink-0">{stats.inProgressTasks}</span>
               </div>
 
               {/* Concluídas */}
-              <div className="flex items-center justify-between p-3 sm:p-4 bg-green-50 rounded-lg sm:rounded-xl hover:bg-green-100 transition-colors">
+              <div className="flex items-center justify-between p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg sm:rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors">
                 <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <div className="p-1.5 sm:p-2 bg-green-200 rounded-lg flex-shrink-0">
-                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                  <div className="p-1.5 sm:p-2 bg-green-200 dark:bg-green-800/50 rounded-lg flex-shrink-0">
+                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-green-900 text-sm sm:text-base">Concluídas</p>
-                    <p className="text-xs sm:text-sm text-green-600 truncate">Finalizadas com sucesso</p>
+                    <p className="font-semibold text-green-900 dark:text-green-200 text-sm sm:text-base">Concluídas</p>
+                    <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 truncate">Finalizadas com sucesso</p>
                   </div>
                 </div>
-                <span className="text-xl sm:text-2xl font-bold text-green-900 flex-shrink-0">{stats.completedTasks}</span>
+                <span className="text-xl sm:text-2xl font-bold text-green-900 dark:text-green-200 flex-shrink-0">{stats.completedTasks}</span>
               </div>
 
               {/* Atrasadas */}
               {stats.overdueTasks > 0 && (
-                <div className="flex items-center justify-between p-3 sm:p-4 bg-red-50 rounded-lg sm:rounded-xl border-2 border-red-200 animate-pulse">
+                <div className="flex items-center justify-between p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 rounded-lg sm:rounded-xl border-2 border-red-200 dark:border-red-700/50 animate-pulse">
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                    <div className="p-1.5 sm:p-2 bg-red-200 rounded-lg flex-shrink-0">
-                      <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+                    <div className="p-1.5 sm:p-2 bg-red-200 dark:bg-red-800/50 rounded-lg flex-shrink-0">
+                      <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 dark:text-red-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-red-900 text-sm sm:text-base">Atrasadas</p>
-                      <p className="text-xs sm:text-sm text-red-600 truncate">Requerem atenção urgente</p>
+                      <p className="font-semibold text-red-900 dark:text-red-200 text-sm sm:text-base">Atrasadas</p>
+                      <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 truncate">Requerem atenção urgente</p>
                     </div>
                   </div>
-                  <span className="text-xl sm:text-2xl font-bold text-red-900 flex-shrink-0">{stats.overdueTasks}</span>
+                  <span className="text-xl sm:text-2xl font-bold text-red-900 dark:text-red-200 flex-shrink-0">{stats.overdueTasks}</span>
                 </div>
               )}
             </div>
@@ -901,10 +901,10 @@ export default function CompanyAdminDashboard() {
                   <div className="p-3 bg-[#EBA500]/10 rounded-full w-fit mx-auto mb-3">
                     <Target className="h-8 w-8 sm:h-10 sm:w-10 text-[#EBA500]" />
                   </div>
-                  <p className="text-sm sm:text-base font-semibold text-gray-700 mb-1">
+                  <p className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-200 mb-1">
                     Você ainda não iniciou seu planejamento estratégico.
                   </p>
-                  <p className="text-xs sm:text-sm text-gray-500 mb-4">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4">
                     Defina objetivos, metas e acompanhe o progresso da sua empresa.
                   </p>
                   <Link
@@ -987,7 +987,9 @@ export default function CompanyAdminDashboard() {
         </div>
 
         {/* Biblioteca de Ferramentas */}
-        <QuickAppsCard />
+        <div className="mt-4 sm:mt-5 lg:mt-6">
+          <QuickAppsCard />
+        </div>
 
         {/* Link de Convite da Empresa */}
         {companyId && <InviteLinkCard companyId={companyId} subscriptionPlan={subscriptionPlan} />}
