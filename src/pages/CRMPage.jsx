@@ -1019,6 +1019,13 @@ function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [] }) {
     opacity: isDragging ? 0.3 : 1,
   }
   const statusInfo = STATUS_OPTIONS.find(s => s.value === card.status) || STATUS_OPTIONS[0]
+  const isOverdue = card.status === 'ativo' && card.status_updated_at && (() => {
+    const cardDate = new Date(card.status_updated_at)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    cardDate.setHours(0, 0, 0, 0)
+    return cardDate < today
+  })()
 
   if (isDragOverlay) {
     return (
@@ -1049,11 +1056,21 @@ function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [] }) {
       {...attributes}
       {...listeners}
       onClick={() => onEdit(card)}
-      className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-[#EBA500]/30 transition-all select-none ${isDragging ? 'opacity-30' : ''}`}
+      className={`rounded-xl border shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none
+        ${isDragging ? 'opacity-30' : ''}
+        ${isOverdue
+          ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 hover:border-red-400 dark:hover:border-red-500'
+          : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-[#EBA500]/30'
+        }`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
-          {card.nome_empresa && <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{card.nome_empresa}</p>}
+          {card.nome_empresa && (
+            <div className="flex items-center gap-1">
+              {isOverdue && <AlertCircle className="h-3 w-3 text-red-500 shrink-0" />}
+              <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{card.nome_empresa}</p>
+            </div>
+          )}
           {card.nome_contato && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{card.nome_contato}{card.cargo_contato ? ` · ${card.cargo_contato}` : ''}</p>}
         </div>
         <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.label}</span>
