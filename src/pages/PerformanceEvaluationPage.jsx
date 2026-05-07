@@ -682,12 +682,21 @@ export default function PerformanceEvaluationPage() {
 
   const matrix = getUsersByPosition()
 
+  // Usuários filtrados pela empresa ativa (para stats corretos quando super admin entra numa empresa)
+  const filteredUsersForStats = filterCompany === 'all'
+    ? users
+    : users.filter(u => u.company_id === filterCompany)
+
+  const filteredUserIds = new Set(filteredUsersForStats.map(u => u.id))
+
+  const filteredEvaluations = evaluations.filter(e => filteredUserIds.has(e.user_id))
+
   // Estatísticas
   const stats = {
-    total: users.length,
-    evaluated: evaluations.length,
-    stars: evaluations.filter(e => e.classification === 'star').length,
-    risks: evaluations.filter(e => e.classification === 'risk' || e.classification === 'low_performer').length
+    total: filteredUsersForStats.length,
+    evaluated: filteredEvaluations.length,
+    stars: filteredEvaluations.filter(e => e.classification === 'star').length,
+    risks: filteredEvaluations.filter(e => e.classification === 'risk' || e.classification === 'low_performer').length
   }
 
   if (loading) {
@@ -1127,7 +1136,7 @@ export default function PerformanceEvaluationPage() {
         <div className="mt-6 sm:mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
-            <span className="text-base sm:text-xl">Usuários Não Avaliados ({users.length - stats.evaluated})</span>
+            <span className="text-base sm:text-xl">Usuários Não Avaliados ({stats.total - stats.evaluated})</span>
           </h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
