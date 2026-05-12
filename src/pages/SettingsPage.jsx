@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/useAuth'
@@ -153,6 +154,14 @@ const SettingsPage = () => {
 
   // ─── Plano ───────────────────────────────────────────────────────────────
   const [portalLoading, setPortalLoading] = useState(false)
+  const [slotsToAdd, setSlotsToAdd] = useState(1)
+  const [buyingSlotsLoading, setBuyingSlotsLoading] = useState(false)
+  const [confirmSlotsOpen, setConfirmSlotsOpen] = useState(false)
+  const [slotPrice, setSlotPrice] = useState(null)   // { unit_amount, currency, recurring }
+  const [slotPriceLoading, setSlotPriceLoading] = useState(false)
+  const [slotsToRemove, setSlotsToRemove] = useState(1)
+  const [confirmRemoveSlotsOpen, setConfirmRemoveSlotsOpen] = useState(false)
+  const [removingSlotsLoading, setRemovingSlotsLoading] = useState(false)
 
   const handleOpenPortal = async () => {
     if (!adminCompanyId) return
@@ -169,6 +178,70 @@ const SettingsPage = () => {
     } catch (err) {
       toast.error(err.message)
       setPortalLoading(false)
+    }
+  }
+
+  const fetchSlotPrice = async () => {
+    if (slotPrice) return
+    setSlotPriceLoading(true)
+    try {
+      const res = await fetch('/.netlify/functions/stripe-slot-price')
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao buscar preço')
+      setSlotPrice(data)
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setSlotPriceLoading(false)
+    }
+  }
+
+  const handleOpenConfirmSlots = async () => {
+    setConfirmSlotsOpen(true)
+    await fetchSlotPrice()
+  }
+
+  const handleBuyExtraSlots = async () => {
+    if (!adminCompanyId || slotsToAdd < 1) return
+    setBuyingSlotsLoading(true)
+    try {
+      const res = await fetch('/.netlify/functions/stripe-buy-extra-slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId: adminCompanyId, quantity: slotsToAdd }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao comprar slots')
+      toast.success(`${slotsToAdd} slot${slotsToAdd > 1 ? 's adicionais adicionados' : ' adicional adicionado'} com sucesso!`)
+      setConfirmSlotsOpen(false)
+      setSlotsToAdd(1)
+      await refreshProfile()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setBuyingSlotsLoading(false)
+    }
+  }
+
+  const handleRemoveExtraSlots = async () => {
+    if (!adminCompanyId || slotsToRemove < 1) return
+    setRemovingSlotsLoading(true)
+    try {
+      const res = await fetch('/.netlify/functions/stripe-remove-extra-slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId: adminCompanyId, removeQuantity: slotsToRemove }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao remover slots')
+      toast.success(`${slotsToRemove} slot${slotsToRemove > 1 ? 's removidos' : ' removido'} com sucesso! O crédito proporcional será aplicado na próxima fatura.`)
+      setConfirmRemoveSlotsOpen(false)
+      setSlotsToRemove(1)
+      await refreshProfile()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setRemovingSlotsLoading(false)
     }
   }
 
@@ -1445,7 +1518,246 @@ const SettingsPage = () => {
                         )}
                       </button>
                     </div>
+
+                    {/* Slots adicionais de usuário — somente Premium ativo */}
+                    {currentPlan === 'premium' && currentStatus === 'active' && (() => {
+                      const extraUserSlots = profile?.user_companies?.find(uc => uc.is_active)?.companies?.extra_user_slots || 0
+                      return (
+                        <div className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-900/10 p-5 sm:p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                              <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-bold text-[#373435] dark:text-white">Slots adicionais de usuário</h3>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Capacidade atual: {20 + extraUserSlots} usuários (20 do plano{extraUserSlots > 0 ? ` + ${extraUserSlots} extras` : ''})
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => setSlotsToAdd(s => Math.max(1, s - 1))}
+                                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-bold text-sm transition-colors"
+                              >−</button>
+                              <span className="px-4 py-2 text-sm font-semibold text-[#373435] dark:text-white min-w-[3rem] text-center">
+                                {slotsToAdd}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setSlotsToAdd(s => s + 1)}
+                                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-bold text-sm transition-colors"
+                              >+</button>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 flex-1">
+                              {slotsToAdd} slot{slotsToAdd > 1 ? 's adicionais' : ' adicional'} — nova capacidade: {20 + extraUserSlots + slotsToAdd} usuários
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handleOpenConfirmSlots}
+                              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors whitespace-nowrap"
+                            >
+                              Comprar slots
+                            </button>
+                          </div>
+
+                          {/* Seção de remoção — só aparece quando há slots extras */}
+                          {extraUserSlots > 0 && (
+                            <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-800">
+                              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">Remover slots extras</p>
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                <div className="flex items-center border border-red-300 dark:border-red-700 rounded-xl overflow-hidden">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSlotsToRemove(s => Math.max(1, s - 1))}
+                                    className="px-3 py-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 font-bold text-sm transition-colors"
+                                  >−</button>
+                                  <span className="px-4 py-2 text-sm font-semibold text-[#373435] dark:text-white min-w-[3rem] text-center">
+                                    {slotsToRemove}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSlotsToRemove(s => Math.min(extraUserSlots, s + 1))}
+                                    className="px-3 py-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 font-bold text-sm transition-colors"
+                                  >+</button>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 flex-1">
+                                  Nova capacidade após remoção: {20 + extraUserSlots - slotsToRemove} usuários
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => { setSlotsToRemove(s => Math.min(s, extraUserSlots)); setConfirmRemoveSlotsOpen(true); fetchSlotPrice() }}
+                                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm transition-colors whitespace-nowrap"
+                                >
+                                  Remover slots
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
+                )
+              })()}
+
+              {/* Modal de confirmação de compra de slots */}
+              {confirmSlotsOpen && (() => {
+                const extraUserSlots = profile?.user_companies?.find(uc => uc.is_active)?.companies?.extra_user_slots || 0
+                const fmtCurrency = (amount, currency) => {
+                  const val = (amount / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                  return currency === 'brl' ? `R$ ${val}` : `${currency.toUpperCase()} ${val}`
+                }
+                const unitTotal = slotPrice ? slotPrice.unit_amount * slotsToAdd : null
+                return createPortal(
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => !buyingSlotsLoading && setConfirmSlotsOpen(false)}>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5" onClick={e => e.stopPropagation()}>
+                      {/* Cabeçalho */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                          <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-bold text-[#373435] dark:text-white">Confirmar compra</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Slots adicionais de usuário</p>
+                        </div>
+                      </div>
+
+                      {/* Resumo */}
+                      <div className="rounded-xl bg-gray-50 dark:bg-gray-700/40 divide-y divide-gray-200 dark:divide-gray-600 text-sm">
+                        <div className="flex justify-between items-center px-4 py-3">
+                          <span className="text-gray-500 dark:text-gray-400">Slots a adicionar</span>
+                          <span className="font-semibold text-[#373435] dark:text-white">{slotsToAdd}</span>
+                        </div>
+                        <div className="flex justify-between items-center px-4 py-3">
+                          <span className="text-gray-500 dark:text-gray-400">Nova capacidade</span>
+                          <span className="font-semibold text-[#373435] dark:text-white">{20 + extraUserSlots + slotsToAdd} usuários</span>
+                        </div>
+                        <div className="flex justify-between items-center px-4 py-3">
+                          <span className="text-gray-500 dark:text-gray-400">Preço por slot/mês</span>
+                          <span className="font-semibold text-[#373435] dark:text-white">
+                            {slotPriceLoading ? (
+                              <span className="inline-block w-16 h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse" />
+                            ) : slotPrice ? fmtCurrency(slotPrice.unit_amount, slotPrice.currency) : '—'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center px-4 py-3 bg-blue-50/60 dark:bg-blue-900/20 rounded-b-xl">
+                          <span className="font-semibold text-[#373435] dark:text-white">Total adicionado/mês</span>
+                          <span className="font-bold text-blue-700 dark:text-blue-400 text-base">
+                            {slotPriceLoading ? (
+                              <span className="inline-block w-20 h-4 bg-blue-200 dark:bg-blue-700 rounded animate-pulse" />
+                            ) : unitTotal != null ? fmtCurrency(unitTotal, slotPrice.currency) : '—'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Aviso de cobrança */}
+                      <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+                        O valor será cobrado proporcionalmente ao ciclo atual e incluído na próxima fatura da sua assinatura. A cobrança é recorrente mensal.
+                      </p>
+
+                      {/* Botões */}
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setConfirmSlotsOpen(false)}
+                          disabled={buyingSlotsLoading}
+                          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleBuyExtraSlots}
+                          disabled={buyingSlotsLoading || slotPriceLoading}
+                          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {buyingSlotsLoading ? (
+                            <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />Comprando...</>
+                          ) : (
+                            'Confirmar compra'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                )
+              })()}
+              {confirmRemoveSlotsOpen && (() => {
+                const extraUserSlots = profile?.user_companies?.find(uc => uc.is_active)?.companies?.extra_user_slots || 0
+                const fmtCurrency = (amount, currency) => {
+                  const val = (amount / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                  return currency === 'brl' ? `R$ ${val}` : `${currency.toUpperCase()} ${val}`
+                }
+                const creditTotal = slotPrice ? slotPrice.unit_amount * slotsToRemove : null
+                return createPortal(
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => !removingSlotsLoading && setConfirmRemoveSlotsOpen(false)}>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                          <Users className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-bold text-[#373435] dark:text-white">Confirmar remoção</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Slots adicionais de usuário</p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl bg-gray-50 dark:bg-gray-700/40 divide-y divide-gray-200 dark:divide-gray-600 text-sm">
+                        <div className="flex justify-between items-center px-4 py-3">
+                          <span className="text-gray-500 dark:text-gray-400">Slots a remover</span>
+                          <span className="font-semibold text-red-600 dark:text-red-400">−{slotsToRemove}</span>
+                        </div>
+                        <div className="flex justify-between items-center px-4 py-3">
+                          <span className="text-gray-500 dark:text-gray-400">Slots extras restantes</span>
+                          <span className="font-semibold text-[#373435] dark:text-white">{extraUserSlots - slotsToRemove}</span>
+                        </div>
+                        <div className="flex justify-between items-center px-4 py-3">
+                          <span className="text-gray-500 dark:text-gray-400">Nova capacidade</span>
+                          <span className="font-semibold text-[#373435] dark:text-white">{20 + extraUserSlots - slotsToRemove} usuários</span>
+                        </div>
+                        <div className="flex justify-between items-center px-4 py-3 bg-green-50/60 dark:bg-green-900/10 rounded-b-xl">
+                          <span className="font-semibold text-[#373435] dark:text-white">Crédito estimado/mês</span>
+                          <span className="font-bold text-green-700 dark:text-green-400 text-base">
+                            {slotPriceLoading ? (
+                              <span className="inline-block w-20 h-4 bg-green-200 dark:bg-green-700 rounded animate-pulse" />
+                            ) : creditTotal != null ? fmtCurrency(creditTotal, slotPrice.currency) : '—'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+                        Um crédito proporcional ao tempo restante do ciclo atual será aplicado na próxima fatura. Os usuários já cadastrados <span className="font-semibold text-gray-600 dark:text-gray-300">não serão removidos automaticamente</span> — você precisará desativá-los manualmente se a nova capacidade for ultrapassada.
+                      </p>
+
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setConfirmRemoveSlotsOpen(false)}
+                          disabled={removingSlotsLoading}
+                          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveExtraSlots}
+                          disabled={removingSlotsLoading}
+                          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {removingSlotsLoading ? (
+                            <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />Removendo...</>
+                          ) : (
+                            'Confirmar remoção'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
                 )
               })()}
             </div>

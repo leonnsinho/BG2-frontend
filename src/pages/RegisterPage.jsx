@@ -67,7 +67,7 @@ export function RegisterPage() {
       
       const { data, error } = await supabase
         .from('companies')
-        .select('id, name, subscription_plan')
+        .select('id, name, subscription_plan, extra_user_slots')
         .eq('invite_token', token)
         .single()
 
@@ -91,7 +91,8 @@ export function RegisterPage() {
         .eq('is_active', true)
 
       const PLAN_LIMITS = { free: 1, individual: 1, profissional: 10, premium: 20, enterprise: 999999 }
-      const limit = PLAN_LIMITS[data.subscription_plan] ?? 1
+      const extraSlots = data.subscription_plan === 'premium' ? (data.extra_user_slots || 0) : 0
+      const limit = (PLAN_LIMITS[data.subscription_plan] ?? 1) + extraSlots
       if ((count ?? 0) >= limit) {
         setError(`Esta empresa atingiu o limite de ${limit} usuário(s) do plano ${data.subscription_plan}. Entre em contato com o administrador para fazer upgrade.`)
         return

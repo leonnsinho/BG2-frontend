@@ -9,6 +9,9 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ecmgbinyotuxhiniadom.supabase.co'
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
+// Price ID do add-on de slot adicional de usuário
+const EXTRA_SLOT_PRICE_ID = 'price_1TWJRsFUmTFSWkItAVIMKFkb'
+
 // Mapeamento Price ID → subscription_plan da tabela companies
 const PRICE_TO_PLAN = {
   'price_1TReTdFUmTFSWkItrIiOcTop': 'individual',   // Individual mensal
@@ -161,7 +164,7 @@ exports.handler = async (event) => {
 
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
-        // Assinatura atualizada (mudança de plano, renovação, etc.)
+        // Assinatura atualizada (mudança de plano, renovação, slots extras, etc.)
         const customerId = obj.customer
         const companyId = await findCompanyByCustomerId(customerId)
         if (!companyId) {
@@ -169,20 +172,27 @@ exports.handler = async (event) => {
           break
         }
 
-        const priceId = obj.items?.data?.[0]?.price?.id
+        // Determinar plano pelo primeiro item que não seja slot extra
+        const planItem = obj.items?.data?.find(item => item.price?.id !== EXTRA_SLOT_PRICE_ID)
+        const priceId = planItem?.price?.id
         const plan = PRICE_TO_PLAN[priceId] || 'individual'
         const status = obj.status === 'active' ? 'active' : 'inactive'
         const renewalDate = obj.current_period_end
           ? new Date(obj.current_period_end * 1000).toISOString()
           : null
 
+        // Sincronizar extra_user_slots a partir do item de slot extra
+        const slotItem = obj.items?.data?.find(item => item.price?.id === EXTRA_SLOT_PRICE_ID)
+        const extraUserSlots = slotItem ? (slotItem.quantity || 0) : 0
+
         await updateCompany(companyId, {
           subscription_plan: plan,
           subscription_status: status,
           stripe_subscription_id: obj.id,
+          extra_user_slots: extraUserSlots,
           ...(renewalDate ? { subscription_renewal_date: renewalDate, subscription_ends_at: renewalDate } : {}),
         })
-        console.log(`Empresa ${companyId} atualizada: plano=${plan}, status=${status}`)
+        console.log(`Empresa ${companyId} atualizada: plano=${plan}, status=${status}, extra_user_slots=${extraUserSlots}`)
         break
       }
 

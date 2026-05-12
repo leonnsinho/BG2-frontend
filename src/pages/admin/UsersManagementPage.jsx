@@ -222,7 +222,8 @@ export default function UsersManagementPage() {
     const co = getCurrentUserCompany()
     if (!co) return null
     const plan = co.subscription_plan || 'free'
-    const limit = PLAN_USER_LIMITS[plan] ?? 1
+    const extraSlots = plan === 'premium' ? (co.extra_user_slots || 0) : 0
+    const limit = (PLAN_USER_LIMITS[plan] ?? 1) + extraSlots
     const companyUsers = users.filter(u => u.companies?.id === co.id)
     const current = companyUsers.length
     return { plan, limit, current }

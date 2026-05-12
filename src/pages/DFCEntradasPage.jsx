@@ -738,8 +738,9 @@ function DFCEntradasPage() {
 
       if (error) throw error
 
-      // Recarregar parcelas
-      const parcelasData = await fetchParcelas(selectedEntradaParcelas.id)
+      // Recarregar parcelas (funciona tanto no modal de parcelas quanto no modal de edição)
+      const paiId = selectedEntradaParcelas?.id || editingId
+      const parcelasData = await fetchParcelas(paiId)
       
       // Calcular novo valor total somando todas as parcelas
       const valorTotal = parcelasData.reduce((sum, p) => sum + parseFloat(p.valor), 0)
@@ -748,18 +749,20 @@ function DFCEntradasPage() {
       const { error: updatePaiError } = await supabase
         .from('dfc_entradas')
         .update({ valor: valorTotal })
-        .eq('id', selectedEntradaParcelas.id)
+        .eq('id', paiId)
       
       if (updatePaiError) throw updatePaiError
       
       setParcelas(parcelasData)
-      setSelectedEntradaParcelas({
-        ...selectedEntradaParcelas,
-        valor: valorTotal
-      })
+      if (selectedEntradaParcelas) {
+        setSelectedEntradaParcelas({ ...selectedEntradaParcelas, valor: valorTotal })
+      }
+      if (editingId) {
+        setFormData(prev => ({ ...prev, valor: valorTotal }))
+      }
       
-      // Recarregar lista de entradas para atualizar estatísticas
-      await fetchEntradas()
+      // Atualizar valor do pai na lista local sem recarregar tudo
+      setEntradas(prev => prev.map(e => e.id === paiId ? { ...e, valor: valorTotal } : e))
       
       toast.success('Parcela atualizada!')
       
@@ -885,32 +888,18 @@ function DFCEntradasPage() {
 
         if (error) throw error
 
-        // Se for parcelado, atualizar todas as parcelas filhas
+        // Se for parcelado, atualizar apenas campos categóricos nas parcelas filhas
+        // valor/vencimento/mes de cada parcela são gerenciados individualmente pelo usuário
         if (isParcelado && parcelas.length > 0) {
-          const valorTotal = parseFloat(formData.valor)
-          const valorParcela = valorTotal / numeroParcelas
-          const dataVencimentoBase = new Date(formData.vencimento + 'T00:00:00')
-          const mesBase = new Date(formData.mes + '-01T00:00:00')
-
-          // Atualizar cada parcela
           for (let i = 0; i < parcelas.length; i++) {
             const parcela = parcelas[i]
-            const vencimentoParcela = new Date(dataVencimentoBase)
-            vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i)
-            
-            const mesParcela = new Date(mesBase)
-            mesParcela.setMonth(mesParcela.getMonth() + i)
-
             const { error: errorParcela } = await supabase
               .from('dfc_entradas')
               .update({
                 categoria: formData.categoria,
                 item_id: formData.item_id,
                 descricao: `${formData.descricao} - Parcela ${i + 1}/${numeroParcelas}`,
-                valor: valorParcela,
                 moeda: formData.moeda,
-                mes: mesParcela.toISOString().substring(0, 10),
-                vencimento: vencimentoParcela.toISOString().substring(0, 10)
               })
               .eq('id', parcela.id)
 
@@ -1026,7 +1015,30 @@ function DFCEntradasPage() {
       }
 
       closeModal()
-      fetchEntradas()
+      // Para edição, atualiza o estado local sem recarregar (evita flash)
+      // Para criação, recarrega para obter dados relacionados (companies, dfc_itens, etc.)
+      if (editingId) {
+        setEntradas(prev => prev.map(e => {
+          if (e.id === editingId) {
+            return {
+              ...e,
+              categoria: formData.categoria,
+              item_id: formData.item_id,
+              descricao: formData.descricao,
+              valor: parseFloat(formData.valor),
+              moeda: formData.moeda,
+              mes: formData.mes + '-01',
+              vencimento: formData.vencimento,
+            }
+          }
+          if (e.lancamento_pai_id === editingId) {
+            return { ...e, categoria: formData.categoria, item_id: formData.item_id, moeda: formData.moeda }
+          }
+          return e
+        }))
+      } else {
+        fetchEntradas()
+      }
     } catch (error) {
       console.error('Erro ao salvar entrada:', error)
       toast.error('Erro ao salvar entrada: ' + error.message)
@@ -1731,15 +1743,6 @@ function DFCEntradasPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
-                        {entrada.is_parcelado && (
-                          <button
-                            onClick={() => openParcelasModal(entrada)}
-                            className="text-blue-600 hover:text-blue-800"
-                            title="Ver parcelas"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </button>
-                        )}
                         {entrada.dfc_entradas_documentos?.[0]?.count > 0 && (
                           <button
                             onClick={() => openDocumentosModal(entrada)}
@@ -2165,58 +2168,89 @@ function DFCEntradasPage() {
                   </div>
                 )}
 
-                {/* Visualização de Parcelas ao Editar Lançamento Parcelado */}
+                {/* Edição de Parcelas ao Editar Lançamento Parcelado */}
                 {editingId && isParcelado && parcelas.length > 0 && (
-                  <div className="border border-blue-200 rounded-xl p-4 bg-blue-50/30">
-                    <div className="mb-3">
-                      <h4 className="text-sm font-semibold text-gray-900 flex items-center">
-                        <FileText className="h-4 w-4 mr-2 text-blue-600" />
-                        Lançamento Parcelado - {numeroParcelas} parcelas
-                      </h4>
-                      <p className="text-xs text-gray-600 mt-1">
-                        Ao salvar, todas as parcelas serão atualizadas automaticamente
-                      </p>
-                    </div>
-
-                    <div className="bg-white border border-blue-200 rounded-lg p-3 max-h-64 overflow-y-auto">
-                      <p className="text-xs font-semibold text-gray-700 mb-2">
-                        Preview das {numeroParcelas} parcelas:
-                      </p>
-                      <div className="space-y-1.5">
-                        {parcelas.slice(0, 12).map((parcela, i) => {
-                          const dataVencimentoBase = new Date(formData.vencimento + 'T00:00:00')
-                          const mesBase = new Date(formData.mes + '-01T00:00:00')
-                          const vencimentoParcela = new Date(dataVencimentoBase)
-                          vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i)
-                          const mesParcela = new Date(mesBase)
-                          mesParcela.setMonth(mesParcela.getMonth() + i)
-                          const valorParcela = parseFloat(formData.valor) / numeroParcelas
-
-                          return (
-                            <div key={parcela.id} className="flex items-center justify-between text-xs py-1.5 px-2 bg-gray-50 rounded">
-                              <span className="text-gray-900 font-medium">
-                                Parcela {i + 1}/{numeroParcelas}
-                              </span>
-                              <div className="flex items-center space-x-3 text-gray-600">
-                                <span>
-                                  {mesParcela.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
-                                </span>
-                                <span>
-                                  Venc: {vencimentoParcela.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                                </span>
-                                <span className="font-semibold text-blue-600">
-                                  {formatCurrency(valorParcela, formData.moeda)}
-                                </span>
+                  <div className="border border-blue-200 dark:border-blue-800 rounded-xl p-4 bg-blue-50/30 dark:bg-blue-900/10">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center mb-1">
+                      <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                      Parcelas — edite vencimento e valor individualmente
+                    </h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Clique no lápis de cada parcela para editar. Ao salvar o formulário acima, apenas categoria/item/descrição serão atualizados.</p>
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {parcelas.map((parcela, index) => {
+                        const hoje = new Date()
+                        const venc = new Date(parcela.vencimento + 'T00:00:00')
+                        const vencida = venc < hoje
+                        const proximoVenc = index === 0 || (parcelas[index - 1] && new Date(parcelas[index - 1].vencimento + 'T00:00:00') < hoje && venc >= hoje)
+                        return (
+                          <div
+                            key={parcela.id}
+                            className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
+                              vencida
+                                ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
+                                : proximoVenc
+                                ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'
+                                : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-3 flex-1">
+                              <div className={`flex items-center justify-center w-9 h-9 rounded-lg font-bold text-sm shrink-0 ${
+                                vencida ? 'bg-red-100 text-red-600' : proximoVenc ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-600'
+                              }`}>
+                                {parcela.parcela_numero}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-gray-900 dark:text-white mb-0.5">
+                                  Parcela {parcela.parcela_numero}/{parcelas.length}
+                                  {vencida && <span className="ml-1.5 px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-700">Vencida</span>}
+                                  {proximoVenc && !vencida && <span className="ml-1.5 px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">Próximo</span>}
+                                </p>
+                                <div className="flex items-center space-x-3 text-xs text-gray-600 dark:text-gray-400">
+                                  <div className="flex items-center">
+                                    <Calendar className="h-3 w-3 mr-1" />
+                                    <span>{formatMonth(parcela.mes)}</span>
+                                  </div>
+                                  <div className="flex items-center">
+                                    <DollarSign className="h-3 w-3 mr-1" />
+                                    {editingParcelaId === parcela.id ? (
+                                      <input
+                                        type="date"
+                                        value={editingVencimento}
+                                        onChange={(e) => setEditingVencimento(e.target.value)}
+                                        className="px-1.5 py-0.5 border border-blue-300 dark:border-blue-600 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-white"
+                                      />
+                                    ) : (
+                                      <span>Venc: {formatDate(parcela.vencimento)}</span>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          )
-                        })}
-                        {numeroParcelas > 12 && (
-                          <p className="text-xs text-gray-500 text-center pt-1">
-                            ... e mais {numeroParcelas - 12} parcelas
-                          </p>
-                        )}
-                      </div>
+                            <div className="ml-3 flex items-center space-x-2 shrink-0">
+                              {editingParcelaId === parcela.id ? (
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={editingValor}
+                                  onChange={(e) => setEditingValor(e.target.value)}
+                                  className="w-28 px-2 py-1.5 border border-blue-300 dark:border-blue-600 rounded-lg text-right text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-white"
+                                  placeholder="0.00"
+                                />
+                              ) : (
+                                <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(parcela.valor, parcela.moeda)}</p>
+                              )}
+                              {editingParcelaId === parcela.id ? (
+                                <div className="flex space-x-1">
+                                  <button type="button" onClick={() => handleSaveParcela(parcela.id)} className="p-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all" title="Salvar"><Check className="h-3.5 w-3.5" /></button>
+                                  <button type="button" onClick={handleCancelEdit} className="p-1.5 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-all" title="Cancelar"><X className="h-3.5 w-3.5" /></button>
+                                </div>
+                              ) : (
+                                <button type="button" onClick={() => handleEditParcela(parcela)} className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all" title="Editar parcela"><Edit2 className="h-3.5 w-3.5" /></button>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 )}
