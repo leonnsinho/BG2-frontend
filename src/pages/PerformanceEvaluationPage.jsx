@@ -29,7 +29,8 @@ import {
   Clock,
   Trash2,
   UserX,
-  Download
+  Download,
+  UserPlus
 } from 'lucide-react'
 
 const CLASSIFICATIONS = {
@@ -64,6 +65,9 @@ export default function PerformanceEvaluationPage() {
   const [confirmDialog, setConfirmDialog] = useState(null)
   const [availableTags, setAvailableTags] = useState([])
   const [userTagsMap, setUserTagsMap] = useState({})
+  const [externalEvaluations, setExternalEvaluations] = useState([])
+  const [showExternalNameModal, setShowExternalNameModal] = useState(false)
+  const [externalNameInput, setExternalNameInput] = useState('')
 
   // Obter empresa do usuário atual se for company_admin
   const getCurrentUserCompany = () => {
@@ -199,6 +203,23 @@ export default function PerformanceEvaluationPage() {
       setEvaluations(Object.values(latestEvaluations) || [])
       setCompanies(companiesData)
 
+      // Carregar avaliações de pessoas externas (não cadastradas)
+      let extQuery = supabase
+        .from('external_performance_evaluations')
+        .select('*')
+        .order('evaluation_date', { ascending: false })
+      if (!isSuperAdmin()) {
+        const cuc = getCurrentUserCompany()
+        if (cuc) extQuery = extQuery.eq('company_id', cuc.id)
+      }
+      const { data: extEvalData } = await extQuery
+      const latestExtEvals = {}
+      ;(extEvalData || []).forEach(ev => {
+        const key = `${ev.company_id}::${ev.external_name}`
+        if (!latestExtEvals[key]) latestExtEvals[key] = ev
+      })
+      setExternalEvaluations(Object.values(latestExtEvals))
+
       // Carregar tags da empresa atual
       const tagCompanyId = isSuperAdmin()
         ? (searchParams.get('company') || searchParams.get('companyId') || null)
@@ -266,14 +287,23 @@ export default function PerformanceEvaluationPage() {
   const openHistoryModal = async (selectedUser) => {
     setSelectedUser(selectedUser)
     try {
-      const { data, error } = await supabase
-        .from('performance_evaluations')
-        .select('*')
-        .eq('user_id', selectedUser.id)
-        .order('evaluation_date', { ascending: false })
-
-      if (error) throw error
-      setUserHistory(data || [])
+      let result
+      if (selectedUser.isExternal) {
+        result = await supabase
+          .from('external_performance_evaluations')
+          .select('*')
+          .eq('external_name', selectedUser.full_name)
+          .eq('company_id', selectedUser.company_id)
+          .order('evaluation_date', { ascending: false })
+      } else {
+        result = await supabase
+          .from('performance_evaluations')
+          .select('*')
+          .eq('user_id', selectedUser.id)
+          .order('evaluation_date', { ascending: false })
+      }
+      if (result.error) throw result.error
+      setUserHistory(result.data || [])
       setShowHistoryModal(true)
     } catch (error) {
       console.error('Erro ao carregar histórico:', error)
@@ -290,6 +320,30 @@ export default function PerformanceEvaluationPage() {
         evaluationForm.performance_level,
         evaluationForm.potential_level
       )
+
+      // Avaliação de pessoa externa (não cadastrada)
+      if (selectedUser.isExternal) {
+        const { error } = await supabase
+          .from('external_performance_evaluations')
+          .insert({
+            external_name: selectedUser.full_name,
+            evaluator_id: user.id,
+            company_id: selectedUser.company_id,
+            performance_level: evaluationForm.performance_level,
+            potential_level: evaluationForm.potential_level,
+            classification,
+            evaluation_date: evaluationForm.evaluation_date,
+            notes: evaluationForm.notes,
+            strengths: evaluationForm.strengths,
+            areas_for_improvement: evaluationForm.areas_for_improvement,
+            development_plan: evaluationForm.development_plan
+          })
+        if (error) throw error
+        setShowEvaluationModal(false)
+        await loadData()
+        toast.alert('✅ Avaliação salva com sucesso!')
+        return
+      }
 
       const evaluationData = {
         user_id: selectedUser.id,
@@ -361,19 +415,27 @@ export default function PerformanceEvaluationPage() {
       onConfirm: async () => {
         setConfirmDialog(null)
         try {
-          // Deletar histórico relacionado
-          await supabase
-            .from('performance_evaluation_history')
-            .delete()
-            .eq('evaluation_id', evaluationId)
+          if (selectedUser?.isExternal) {
+            const { error } = await supabase
+              .from('external_performance_evaluations')
+              .delete()
+              .eq('id', evaluationId)
+            if (error) throw error
+          } else {
+            // Deletar histórico relacionado
+            await supabase
+              .from('performance_evaluation_history')
+              .delete()
+              .eq('evaluation_id', evaluationId)
 
-          // Deletar a avaliação
-          const { error } = await supabase
-            .from('performance_evaluations')
-            .delete()
-            .eq('id', evaluationId)
+            // Deletar a avaliação
+            const { error } = await supabase
+              .from('performance_evaluations')
+              .delete()
+              .eq('id', evaluationId)
 
-          if (error) throw error
+            if (error) throw error
+          }
 
           // Atualizar histórico do usuário
           const updatedHistory = userHistory.filter(e => e.id !== evaluationId)
@@ -402,19 +464,28 @@ export default function PerformanceEvaluationPage() {
       onConfirm: async () => {
         setConfirmDialog(null)
         try {
-          // Deletar todos os históricos do usuário
-          await supabase
-            .from('performance_evaluation_history')
-            .delete()
-            .eq('user_id', selectedUser.id)
+          if (selectedUser.isExternal) {
+            const { error } = await supabase
+              .from('external_performance_evaluations')
+              .delete()
+              .eq('external_name', selectedUser.full_name)
+              .eq('company_id', selectedUser.company_id)
+            if (error) throw error
+          } else {
+            // Deletar todos os históricos do usuário
+            await supabase
+              .from('performance_evaluation_history')
+              .delete()
+              .eq('user_id', selectedUser.id)
 
-          // Deletar todas as avaliações do usuário
-          const { error } = await supabase
-            .from('performance_evaluations')
-            .delete()
-            .eq('user_id', selectedUser.id)
+            // Deletar todas as avaliações do usuário
+            const { error } = await supabase
+              .from('performance_evaluations')
+              .delete()
+              .eq('user_id', selectedUser.id)
 
-          if (error) throw error
+            if (error) throw error
+          }
 
           setShowHistoryModal(false)
           await loadData()
@@ -425,6 +496,38 @@ export default function PerformanceEvaluationPage() {
         }
       }
     })
+  }
+
+  const openExternalEvalModal = () => {
+    setExternalNameInput('')
+    setShowExternalNameModal(true)
+  }
+
+  const confirmExternalName = () => {
+    const name = externalNameInput.trim()
+    if (!name) return
+    const companyId = !isSuperAdmin()
+      ? getCurrentUserCompany()?.id
+      : (filterCompany !== 'all' ? filterCompany : null)
+    const companyName = companies.find(c => c.id === companyId)?.name || getCurrentUserCompany()?.name || ''
+    setSelectedUser({
+      id: `ext::${companyId}::${name}`,
+      full_name: name,
+      company_name: companyName,
+      company_id: companyId,
+      isExternal: true
+    })
+    setEvaluationForm({
+      performance_level: 2,
+      potential_level: 2,
+      evaluation_date: new Date().toISOString().split('T')[0],
+      notes: '',
+      strengths: '',
+      areas_for_improvement: '',
+      development_plan: ''
+    })
+    setShowExternalNameModal(false)
+    setShowEvaluationModal(true)
   }
 
   const exportarPDF = async () => {
@@ -677,6 +780,25 @@ export default function PerformanceEvaluationPage() {
       }
     })
 
+    // Incluir pessoas externas avaliadas na matriz
+    externalEvaluations.forEach(ev => {
+      const matchesSearch = !searchTerm || ev.external_name.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesCompany = filterCompany === 'all' || ev.company_id === filterCompany
+      if (!matchesSearch || !matchesCompany) return
+      const key = `${ev.performance_level}-${ev.potential_level}`
+      if (matrix[key]) {
+        const companyName = companies.find(c => c.id === ev.company_id)?.name || ''
+        matrix[key].push({
+          id: `ext::${ev.company_id}::${ev.external_name}`,
+          full_name: ev.external_name,
+          company_name: companyName ? `${companyName} · Externo` : 'Externo',
+          company_id: ev.company_id,
+          isExternal: true,
+          evaluation: ev
+        })
+      }
+    })
+
     return matrix
   }
 
@@ -716,14 +838,24 @@ export default function PerformanceEvaluationPage() {
       {/* Header Simplificado */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
         <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-2 sm:p-3 bg-primary-500 rounded-xl sm:rounded-2xl">
-              <Grid3x3 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-2 sm:p-3 bg-primary-500 rounded-xl sm:rounded-2xl">
+                <Grid3x3 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Nine Box - Avaliação de Desempenho</h1>
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">Gestão de talentos e alinhamento cultural da equipe</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Nine Box - Avaliação de Desempenho</h1>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">Gestão de talentos e alinhamento cultural da equipe</p>
-            </div>
+            <button
+              onClick={openExternalEvalModal}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold text-xs sm:text-sm transition-colors shadow-sm whitespace-nowrap shrink-0"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span className="hidden sm:inline">Avaliar Externo</span>
+              <span className="sm:hidden">Externo</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1166,6 +1298,52 @@ export default function PerformanceEvaluationPage() {
           </div>
         </div>
 
+      {/* Modal Nome Pessoa Externa */}
+      {showExternalNameModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2.5 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
+                <UserPlus className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Avaliar Pessoa Externa</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Pessoa não cadastrada no sistema</p>
+              </div>
+            </div>
+            <div className="mb-5">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                Nome completo da pessoa
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={externalNameInput}
+                onChange={e => setExternalNameInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') confirmExternalName(); if (e.key === 'Escape') setShowExternalNameModal(false) }}
+                placeholder="Ex: João da Silva"
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={confirmExternalName}
+                disabled={!externalNameInput.trim()}
+                className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white rounded-xl font-semibold text-sm transition-colors"
+              >
+                Continuar para Avaliação
+              </button>
+              <button
+                onClick={() => setShowExternalNameModal(false)}
+                className="px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold text-sm transition-colors border border-gray-200 dark:border-gray-600"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Avaliação */}
       {showEvaluationModal && selectedUser && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 z-50 animate-fadeIn">
@@ -1175,10 +1353,15 @@ export default function PerformanceEvaluationPage() {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2 sm:gap-4">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl flex items-center justify-center border-2 border-white/30">
-                    <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                    {selectedUser.isExternal
+                      ? <UserPlus className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                      : <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />}
                   </div>
                   <div>
-                    <h2 className="text-lg sm:text-2xl font-bold mb-0.5 sm:mb-1">{selectedUser.full_name}</h2>
+                    <h2 className="text-lg sm:text-2xl font-bold mb-0.5 sm:mb-1 flex items-center gap-2">
+                      {selectedUser.full_name}
+                      {selectedUser.isExternal && <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">Externo</span>}
+                    </h2>
                     <div className="flex items-center gap-2 text-primary-100 text-xs sm:text-sm">
                       <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
                       <span className="text-sm">{selectedUser.company_name}</span>
@@ -1417,7 +1600,9 @@ export default function PerformanceEvaluationPage() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold mb-1">Histórico de Avaliações</h2>
-                    <p className="text-primary-100">{selectedUser.full_name} - {selectedUser.company_name}</p>
+                    <p className="text-primary-100">
+                      {selectedUser.full_name}{selectedUser.isExternal ? ' · Externo' : ''} — {selectedUser.company_name}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

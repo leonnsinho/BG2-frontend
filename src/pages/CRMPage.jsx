@@ -24,7 +24,7 @@ import {
   Building2, User, Phone, Mail, MapPin, Tag, DollarSign,
   MessageSquare, Paperclip, ChevronDown, Check, AlertCircle,
   Kanban, Search, Filter, MoreHorizontal, Download, ArrowLeft, LayoutGrid,
-  Users, Package, Import, ChevronRight, Globe, Briefcase, ArrowUpRight, FileSpreadsheet, FileText
+  Users, Package, Import, ChevronRight, Globe, Briefcase, ArrowUpRight, FileSpreadsheet, FileText, Pencil
 } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -187,6 +187,15 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     setNewObsText('')
   }
   const removeObservation = (id) => setObservations(prev => prev.filter(o => o.id !== id))
+  const [editingObsId, setEditingObsId] = useState(null)
+  const [editingObsText, setEditingObsText] = useState('')
+  const startEditObs = (obs) => { setEditingObsId(obs.id); setEditingObsText(obs.text) }
+  const cancelEditObs = () => { setEditingObsId(null); setEditingObsText('') }
+  const saveEditObs = (id) => {
+    if (!editingObsText.trim()) return
+    setObservations(prev => prev.map(o => o.id === id ? { ...o, text: editingObsText.trim() } : o))
+    cancelEditObs()
+  }
 
   // entity data
   const [leads, setLeads] = useState([])
@@ -922,14 +931,40 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                 {observations.map(obs => (
                   <div key={obs.id} className="flex gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">{obs.text}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        {new Date(obs.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                      {editingObsId === obs.id ? (
+                        <>
+                          <textarea
+                            autoFocus
+                            className={INP + ' resize-none w-full text-xs'}
+                            rows={3}
+                            value={editingObsText}
+                            onChange={e => setEditingObsText(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveEditObs(obs.id); if (e.key === 'Escape') cancelEditObs() }}
+                          />
+                          <div className="flex gap-2 mt-1.5">
+                            <button type="button" onClick={() => saveEditObs(obs.id)} disabled={!editingObsText.trim()} className="px-2.5 py-1 text-[10px] font-semibold bg-[#EBA500] hover:bg-[#d99500] disabled:opacity-40 text-white rounded-lg transition-colors">Salvar</button>
+                            <button type="button" onClick={cancelEditObs} className="px-2.5 py-1 text-[10px] font-semibold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">Cancelar</button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">{obs.text}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            {new Date(obs.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </>
+                      )}
                     </div>
-                    <button type="button" onClick={() => removeObservation(obs.id)} className="shrink-0 p-1 hover:bg-red-50 rounded-lg transition-colors self-start">
-                      <X className="h-3.5 w-3.5 text-gray-300 hover:text-red-400" />
-                    </button>
+                    {editingObsId !== obs.id && (
+                      <div className="flex flex-col gap-0.5 shrink-0 self-start">
+                        <button type="button" onClick={() => startEditObs(obs)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                          <Pencil className="h-3 w-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
+                        </button>
+                        <button type="button" onClick={() => removeObservation(obs.id)} className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                          <X className="h-3 w-3 text-gray-300 hover:text-red-400" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
