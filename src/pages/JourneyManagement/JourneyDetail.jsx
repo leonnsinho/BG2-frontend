@@ -92,7 +92,7 @@ const JourneyDetail = () => {
       bgHover: 'hover:bg-[#EBA500]/20',
       categories: ['Recrutamento e Seleção', 'Desenvolvimento', 'Performance', 'Cultura Organizacional']
     },
-    'receita-crm': {
+    'receita': {
       name: 'Jornada Receita',
       description: 'Gestão comercial, vendas, relacionamento com clientes e geração de receita',
       icon: TrendingUp,

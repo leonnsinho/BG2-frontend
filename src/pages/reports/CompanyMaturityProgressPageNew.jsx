@@ -46,7 +46,7 @@ const CompanyMaturityProgressPageNew = () => {
     'd6d46578-9071-484b-99c0-24039fee5d0a': { name: 'Jornada Estratégica', color: '#3B82F6', slug: 'estrategica' },
     '2988b17f-3a22-42fd-a1c1-0b8826c30144': { name: 'Jornada Financeira', color: '#10B981', slug: 'financeira' },
     'e4a4f8e2-5c3d-4b1a-9f7e-8d9c6b2a1f3e': { name: 'Jornada Pessoas & Cultura', color: '#8B5CF6', slug: 'pessoas-cultura' },
-    'a7b9c1d3-2e4f-5g6h-7i8j-9k0l1m2n3o4p': { name: 'Jornada Receita & CRM', color: '#F59E0B', slug: 'receita-crm' },
+    'a7b9c1d3-2e4f-5g6h-7i8j-9k0l1m2n3o4p': { name: 'Jornada Receita & CRM', color: '#F59E0B', slug: 'receita' },
     'f5e4d3c2-b1a9-8h7g-6f5e-4d3c2b1a0987': { name: 'Jornada Operacional', color: '#EF4444', slug: 'operacional' }
   }
 

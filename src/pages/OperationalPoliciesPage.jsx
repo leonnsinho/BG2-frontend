@@ -8,6 +8,7 @@ import EmojiIconPicker from '../components/EmojiIconPicker'
 import BlockCardModal from '../components/BlockCardModal'
 import { renderIcon } from '../utils/iconRenderer'
 import { useSearchParams } from 'react-router-dom' // 🔥 NOVO: Para ler query params
+import { useToolPermissions } from '../hooks/useToolPermissions'
 import { 
   FileText, 
   FolderOpen,
@@ -38,8 +39,18 @@ import {
 } from 'lucide-react'
 import { formatDate } from '../utils/dateUtils'
 
+// Mapeamento slug da jornada → slug da ferramenta politicas-*
+const JOURNEY_TOOL_SLUG = {
+  'estrategica': 'politicas-estrategica',
+  'financeira': 'politicas-financeira',
+  'pessoas-cultura': 'politicas-pessoas-cultura',
+  'receita': 'politicas-receita',
+  'operacional': 'politicas-operacional',
+}
+
 export default function OperationalPoliciesPage() {
   const { profile } = useAuth()
+  const { hasToolAccessStrict, loading: toolPermissionsLoading } = useToolPermissions()
   const [searchParams] = useSearchParams() // 🔥 NOVO: Hook para ler URL
   const [journeys, setJourneys] = useState([])
   const [selectedJourney, setSelectedJourney] = useState(null)
@@ -137,6 +148,10 @@ export default function OperationalPoliciesPage() {
   const openTabs = getCurrentJourneyTabs().openTabs
   const activeTabId = getCurrentJourneyTabs().activeTabId
 
+  // Ocultar navegação entre jornadas para user e company_admin (usam o sidebar)
+  const showJourneyNav = profile?.role !== 'user' &&
+    !profile?.user_companies?.some(uc => uc.is_active && uc.role === 'company_admin')
+
   // 🔥 NOVO: Verificar se há companyId na URL (Super Admin) ou usar do perfil
   const urlCompanyId = searchParams.get('companyId')
   const userCompanyId = urlCompanyId || profile?.user_companies?.find(uc => 
@@ -149,10 +164,10 @@ export default function OperationalPoliciesPage() {
     console.log('🔗 URL Company ID:', urlCompanyId)
     console.log('🎯 Journey param:', searchParams.get('journey'))
     
-    if (userCompanyId) {
+    if (userCompanyId && !toolPermissionsLoading) {
       loadJourneys()
     }
-  }, [profile, userCompanyId, urlCompanyId, searchParams])
+  }, [profile, userCompanyId, urlCompanyId, searchParams, toolPermissionsLoading])
 
   useEffect(() => {
     if (selectedJourney && userCompanyId) {
@@ -224,25 +239,47 @@ export default function OperationalPoliciesPage() {
         throw error
       }
 
-      console.log('✅ Jornadas carregadas:', data?.length)
-      setJourneys(data || [])
-      
-      // 🔥 NOVO: Verificar se há jornada especificada na URL
+      let filteredData = data || []
+
+      // Para usuários comuns, filtrar apenas as jornadas atribuídas via RPC
+      const isAdmin = profile?.role === 'super_admin' ||
+        profile?.user_companies?.some(uc => uc.is_active && uc.role === 'company_admin')
+
+      if (!isAdmin && profile?.id) {
+        // Se o pai (politicas-gestao) estiver bloqueado, nenhuma jornada é acessível via ferramenta
+        const parentAllowed = hasToolAccessStrict('politicas-gestao')
+        // Jornada acessível se tiver ferramenta politicas-* permitida OU journey assignment ativo
+        const toolAccessibleSlugs = new Set(
+          parentAllowed
+            ? filteredData
+                .filter(j => hasToolAccessStrict(JOURNEY_TOOL_SLUG[j.slug]))
+                .map(j => j.slug)
+            : []
+        )
+        const { data: effectiveJourneys } = await supabase
+          .rpc('get_user_effective_journeys', { p_user_id: profile.id })
+        const assignmentSlugs = new Set((effectiveJourneys || []).map(j => j.journey_slug))
+        const accessibleSlugs = new Set([...toolAccessibleSlugs, ...assignmentSlugs])
+        filteredData = filteredData.filter(j => accessibleSlugs.has(j.slug))
+        console.log('🔒 Jornadas filtradas (ferramenta + atribuição):', filteredData.length, [...accessibleSlugs])
+      }
+
+      console.log('✅ Jornadas disponíveis:', filteredData.length)
+      setJourneys(filteredData)
+
+      // Verificar se há jornada especificada na URL
       const journeyParam = searchParams.get('journey')
-      
-      if (journeyParam && data && data.length > 0) {
-        // Procurar jornada pelo slug
-        const journeyFromUrl = data.find(j => j.slug === journeyParam)
+
+      if (journeyParam && filteredData.length > 0) {
+        const journeyFromUrl = filteredData.find(j => j.slug === journeyParam)
         if (journeyFromUrl) {
           console.log('🎯 Selecionando jornada da URL:', journeyFromUrl.name)
           setSelectedJourney(journeyFromUrl)
         } else {
-          // Se não encontrar, selecionar a primeira
-          setSelectedJourney(data[0])
+          setSelectedJourney(filteredData[0])
         }
-      } else if (data && data.length > 0) {
-        // Se não há parâmetro na URL, selecionar a primeira
-        setSelectedJourney(data[0])
+      } else if (filteredData.length > 0) {
+        setSelectedJourney(filteredData[0])
       }
     } catch (error) {
       console.error('Erro ao carregar jornadas:', error)
@@ -2144,8 +2181,8 @@ export default function OperationalPoliciesPage() {
 
         {selectedJourney && (
           <>
-            {/* 🔥 NOVO: Navegação entre jornadas (APENAS SUPER ADMIN) */}
-            {profile?.role === 'super_admin' && journeys.length > 0 && (
+            {/* Navegação entre jornadas (quando há mais de uma disponível) */}
+            {journeys.length > 1 && showJourneyNav && (
               <div className="mb-4 sm:mb-6">
                 <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-2 sm:mb-3">

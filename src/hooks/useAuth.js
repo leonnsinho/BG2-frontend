@@ -172,7 +172,7 @@ export function usePermissions() {
       'financeira': 'gestor_financeiro',
       'estrategica': 'gestor_estrategico', 
       'pessoas-cultura': 'gestor_pessoas_cultura',
-      'receita-crm': 'gestor_vendas_marketing',
+      'receita': 'gestor_vendas_marketing',
       'operacional': 'gestor_operacional'
     }
     
@@ -188,14 +188,14 @@ export function usePermissions() {
     /* CÓDIGO ANTIGO COMENTADO:
     // Super admin e gestor geral têm acesso a tudo
     if (isSuperAdmin() || hasRole('gestor')) {
-      return ['estrategica', 'financeira', 'pessoas-cultura', 'receita-crm', 'operacional']
+      return ['estrategica', 'financeira', 'pessoas-cultura', 'receita', 'operacional']
     }
     
     const journeys = []
     if (hasRole('gestor_financeiro')) journeys.push('financeira')
     if (hasRole('gestor_estrategico')) journeys.push('estrategica') 
     if (hasRole('gestor_pessoas_cultura')) journeys.push('pessoas-cultura')
-    if (hasRole('gestor_vendas_marketing')) journeys.push('receita-crm')
+    if (hasRole('gestor_vendas_marketing')) journeys.push('receita')
     if (hasRole('gestor_operacional')) journeys.push('operacional')
     
     return journeys

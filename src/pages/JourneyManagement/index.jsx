@@ -76,9 +76,9 @@ const JourneyManagementOverview = () => {
       categories: ['Recrutamento e Seleção', 'Desenvolvimento', 'Performance', 'Cultura Organizacional']
     },
     {
-      id: 'receita-crm',
+      id: 'receita',
       name: 'Jornada Receita',
-      slug: 'receita-crm',
+      slug: 'receita',
       description: 'Gestão comercial, vendas, relacionamento com clientes e geração de receita',
       icon: TrendingUp,
       color: '#373435',

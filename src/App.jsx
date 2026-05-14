@@ -550,7 +550,7 @@ function AppRoutes() {
       <Route 
         path="/reports/execucao-estrategica" 
         element={
-          <ProtectedRoute requiredRole={['company_admin']} requiredToolSlug="performance-reports">
+          <ProtectedRoute requiredRole={['company_admin', 'user']} requiredToolSlug="performance-reports">
             <RelatorioExecucaoEstrategicaPage />
           </ProtectedRoute>
         }
@@ -560,7 +560,7 @@ function AppRoutes() {
       <Route 
         path="/reports/produtividade-usuario" 
         element={
-          <ProtectedRoute requiredRole={['company_admin']} requiredToolSlug="performance-reports">
+          <ProtectedRoute requiredRole={['company_admin', 'user']} requiredToolSlug="performance-reports">
             <RelatorioProdutividadeUsuarioPage />
           </ProtectedRoute>
         }
@@ -570,7 +570,7 @@ function AppRoutes() {
       <Route 
         path="/reports/evolucao-kpis" 
         element={
-          <ProtectedRoute requiredRole={['company_admin']} requiredToolSlug="performance-reports">
+          <ProtectedRoute requiredRole={['company_admin', 'user']} requiredToolSlug="performance-reports">
             <RelatorioEvolucaoKPIsPage />
           </ProtectedRoute>
         }

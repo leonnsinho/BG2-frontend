@@ -65,7 +65,7 @@ const CompanyMaturityProgressPage = () => {
     'estrategica': '#3B82F6',
     'financeira': '#10B981',
     'pessoas-cultura': '#8B5CF6',
-    'receita-crm': '#F59E0B',
+    'receita': '#F59E0B',
     'operacional': '#EF4444'
   }
 
@@ -207,7 +207,7 @@ const CompanyMaturityProgressPage = () => {
             estrategica: 0,
             financeira: 0,
             'pessoas-cultura': 0,
-            'receita-crm': 0,
+            'receita': 0,
             operacional: 0
           }
         }
@@ -281,7 +281,7 @@ const CompanyMaturityProgressPage = () => {
           estrategica: 0,
           financeira: 0,
           'pessoas-cultura': 0,
-          'receita-crm': 0,
+          'receita': 0,
           operacional: 0,
           count: {}
         }
@@ -346,8 +346,8 @@ const CompanyMaturityProgressPage = () => {
     if (maturityData.length >= 2) {
       const first = maturityData[0]
       const last = maturityData[maturityData.length - 1]
-      const firstAvg = (first.estrategica + first.financeira + first['pessoas-cultura'] + first['receita-crm'] + first.operacional) / 5
-      const lastAvg = (last.estrategica + last.financeira + last['pessoas-cultura'] + last['receita-crm'] + last.operacional) / 5
+      const firstAvg = (first.estrategica + first.financeira + first['pessoas-cultura'] + first['receita'] + first.operacional) / 5
+      const lastAvg = (last.estrategica + last.financeira + last['pessoas-cultura'] + last['receita'] + last.operacional) / 5
       growthRate = firstAvg > 0 ? Math.round(((lastAvg - firstAvg) / firstAvg) * 100) : 0
     }
 
@@ -369,7 +369,7 @@ const CompanyMaturityProgressPage = () => {
       { journey: 'Estratégica', maturity: latest.estrategica || 0, fullMark: 100 },
       { journey: 'Financeira', maturity: latest.financeira || 0, fullMark: 100 },
       { journey: 'Pessoas', maturity: latest['pessoas-cultura'] || 0, fullMark: 100 },
-      { journey: 'Receita', maturity: latest['receita-crm'] || 0, fullMark: 100 },
+      { journey: 'Receita', maturity: latest['receita'] || 0, fullMark: 100 },
       { journey: 'Operacional', maturity: latest.operacional || 0, fullMark: 100 }
     ]
   }
@@ -383,7 +383,7 @@ const CompanyMaturityProgressPage = () => {
       d.estrategica,
       d.financeira,
       d['pessoas-cultura'],
-      d['receita-crm'],
+      d['receita'],
       d.operacional
     ])
 
@@ -589,7 +589,7 @@ const CompanyMaturityProgressPage = () => {
                   <Line type="monotone" dataKey="estrategica" stroke="#3B82F6" strokeWidth={2} name="Estratégica" />
                   <Line type="monotone" dataKey="financeira" stroke="#10B981" strokeWidth={2} name="Financeira" />
                   <Line type="monotone" dataKey="pessoas-cultura" stroke="#8B5CF6" strokeWidth={2} name="Pessoas" />
-                  <Line type="monotone" dataKey="receita-crm" stroke="#F59E0B" strokeWidth={2} name="Receita" />
+                  <Line type="monotone" dataKey="receita" stroke="#F59E0B" strokeWidth={2} name="Receita" />
                   <Line type="monotone" dataKey="operacional" stroke="#EF4444" strokeWidth={2} name="Operacional" />
                 </LineChart>
               </ResponsiveContainer>
@@ -658,7 +658,7 @@ const CompanyMaturityProgressPage = () => {
                 <Area type="monotone" dataKey="estrategica" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} name="Estratégica" />
                 <Area type="monotone" dataKey="financeira" stackId="1" stroke="#10B981" fill="#10B981" fillOpacity={0.6} name="Financeira" />
                 <Area type="monotone" dataKey="pessoas-cultura" stackId="1" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.6} name="Pessoas" />
-                <Area type="monotone" dataKey="receita-crm" stackId="1" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.6} name="Receita" />
+                <Area type="monotone" dataKey="receita" stackId="1" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.6} name="Receita" />
                 <Area type="monotone" dataKey="operacional" stackId="1" stroke="#EF4444" fill="#EF4444" fillOpacity={0.6} name="Operacional" />
               </AreaChart>
             </ResponsiveContainer>

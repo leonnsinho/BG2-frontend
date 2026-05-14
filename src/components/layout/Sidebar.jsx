@@ -292,7 +292,8 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
               { name: 'Estratégica', href: '/operational-policies?journey=estrategica' },
               { name: 'Financeira', href: '/operational-policies?journey=financeira' },
               { name: 'Pessoas & Cultura', href: '/operational-policies?journey=pessoas-cultura' },
-              { name: 'Receita', href: '/operational-policies?journey=receita' }
+              { name: 'Receita', href: '/operational-policies?journey=receita' },
+              { name: 'Operacional', href: '/operational-policies?journey=operacional' }
             ]
           }
         ]
@@ -301,9 +302,8 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       {
         name: 'Performance',
         icon: TrendingUp,
-        href: '/indicators',
+        href: '/reports/execucao-estrategica',
         children: [
-          { name: 'Indicadores de Gestão', href: '/indicators' },
           {
             name: 'Relatórios de planejamento estratégico',
             href: '/reports/execucao-estrategica',
@@ -339,9 +339,9 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
     ]
   }
 
-  // 🔥 Usuário comum - APENAS Dashboard e Minhas Tarefas (se tiver empresa)
+  // Usuário comum — estrutura modular espelhando company_admin
   const userItems = [...baseItems]
-  
+
   // Se o usuário está associado a uma empresa (via user_companies)
   const hasCompany = profile?.company_id || (profile?.user_companies && profile.user_companies.length > 0)
 
@@ -352,6 +352,97 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       href: '/tarefas',
       roles: ['user']
     })
+
+    if (toolPermissions) {
+      const check = toolPermissions
+
+      // Módulo Estratégia
+      const estrategiaChildren = [
+        check('journey-overview') && { name: 'Diagnóstico do Negócio', href: '/journey-management/overview' },
+        check('business-model') && { name: 'Modelo de Negócio', href: '/business-model' },
+      ].filter(Boolean)
+      if (estrategiaChildren.length > 0) {
+        userItems.push({
+          name: 'Estratégia',
+          icon: Target,
+          href: '/journey-management/overview',
+          children: estrategiaChildren,
+        })
+      }
+
+      // Módulo Execução
+      // Para o papel 'user', os sub-itens de Políticas de Gestão são controlados
+      // pelas permissões de ferramentas individuais (politicas-financeira, etc.)
+      // que o admin configura — sem necessidade de journey assignments separados.
+      const policiesJourneyMap = [
+        { slug: 'estrategica', name: 'Estratégica', toolSlug: 'politicas-estrategica' },
+        { slug: 'financeira', name: 'Financeira', toolSlug: 'politicas-financeira' },
+        { slug: 'pessoas-cultura', name: 'Pessoas & Cultura', toolSlug: 'politicas-pessoas-cultura' },
+        { slug: 'receita', name: 'Receita', toolSlug: 'politicas-receita' },
+        { slug: 'operacional', name: 'Operacional', toolSlug: 'politicas-operacional' },
+      ]
+      // Se o pai (politicas-gestao) estiver bloqueado, todos os filhos são bloqueados
+      const journeyChildrenForPolicies = check('politicas-gestao')
+        ? policiesJourneyMap
+            .filter(j => check(j.toolSlug))
+            .map(j => ({ name: j.name, href: `/operational-policies?journey=${j.slug}` }))
+        : []
+      const execucaoChildren = [
+        check('planejamento-estrategico') && { name: 'Planejamento Estratégico', href: '/planejamento-estrategico' },
+        journeyChildrenForPolicies.length > 0 && {
+          name: 'Políticas de Gestão',
+          href: '/operational-policies',
+          ...(journeyChildrenForPolicies.length > 0 && { children: journeyChildrenForPolicies }),
+        },
+      ].filter(Boolean)
+      if (execucaoChildren.length > 0) {
+        userItems.push({
+          name: 'Execução',
+          icon: Kanban,
+          href: execucaoChildren[0].href,
+          children: execucaoChildren,
+        })
+      }
+
+      // Módulo Ferramentas
+      const ferramentasChildren = [
+        check('crm') && { name: 'CRM', href: '/crm', image: '/crm.png', gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadowColor: 'rgba(59, 130, 246, 0.4)' },
+        check('dfc-complete') && { name: 'Fluxo de Caixa', href: '/dfc', image: '/fluxo de caixa.png', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', shadowColor: 'rgba(16, 185, 129, 0.4)' },
+        check('performance-evaluation') && { name: 'Avaliação de Desempenho', href: '/performance-evaluation', image: '/avaliação de desempenho.png', gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)', shadowColor: 'rgba(168, 85, 247, 0.4)' },
+        check('management-indicators') && { name: 'Indicadores de Gestão', href: '/indicators', image: '/indicadores de gestão.png', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', shadowColor: 'rgba(245, 158, 11, 0.4)' },
+      ].filter(Boolean)
+      if (ferramentasChildren.length > 0) {
+        userItems.push({
+          name: 'Ferramentas',
+          icon: Grid3x3,
+          href: ferramentasChildren[0].href,
+          children: ferramentasChildren,
+        })
+      }
+
+      // Módulo Performance (relatórios de planejamento)
+      const performanceChildrenForUser = check('modulo-performance')
+        ? [
+            check('performance-reports') && {
+              name: 'Relatórios de Planejamento Estratégico',
+              href: '/reports/execucao-estrategica',
+              children: [
+                { name: 'Execução Estratégica', href: '/reports/execucao-estrategica' },
+                { name: 'Produtividade por Usuário', href: '/reports/produtividade-usuario' },
+                { name: 'Evolução dos KPIs', href: '/reports/evolucao-kpis' },
+              ],
+            },
+          ].filter(Boolean)
+        : []
+      if (performanceChildrenForUser.length > 0) {
+        userItems.push({
+          name: 'Performance',
+          icon: TrendingUp,
+          href: '/reports/execucao-estrategica',
+          children: performanceChildrenForUser,
+        })
+      }
+    }
   }
 
   return userItems
@@ -363,7 +454,7 @@ const getJourneyChildren = (accessibleJourneys) => {
     { key: 'estrategica', name: 'Estratégica', href: '/jornadas/estrategica' },
     { key: 'financeira', name: 'Financeira', href: '/jornadas/financeira' },
     { key: 'pessoas-cultura', name: 'Pessoas & Cultura', href: '/jornadas/pessoas' },
-    { key: 'receita-crm', name: 'Receita', href: '/jornadas/receita' },
+    { key: 'receita', name: 'Receita', href: '/jornadas/receita' },
     { key: 'operacional', name: 'Operacional', href: '/jornadas/operacional' }
   ]
 
@@ -392,7 +483,7 @@ const getManagerSpecificItems = (accessibleJourneys = []) => {
   }
 
   // Se tem jornada de receita/CRM - Acesso ao CRM
-  if (accessibleJourneys.includes('receita-crm')) {
+  if (accessibleJourneys.includes('receita')) {
     items.push({
       name: 'CRM & Vendas',
       icon: Users,
@@ -431,7 +522,7 @@ const getJourneyDisplayName = (journey) => {
     'estrategica': 'Estratégica',
     'financeira': 'Financeira', 
     'pessoas-cultura': 'Pessoas & Cultura',
-    'receita-crm': 'Receita',
+    'receita': 'Receita',
     'operacional': 'Operacional'
   }
   return journeyNames[journey] || journey
@@ -443,8 +534,17 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const { getAccessibleJourneys } = useAuthPermissions()
   const permissions = usePermissions()
   const { pendingCount } = useMaturityApprovals() // 🔥 NOVO: Hook de aprovações pendentes
-  const { hasToolAccess, loading: toolPermissionsLoading } = useToolPermissions() // 🔥 NOVO: Hook de permissões de ferramentas
-  const [expandedItems, setExpandedItems] = React.useState(['Jornadas'])
+  const { hasToolAccess, hasToolAccessStrict, loading: toolPermissionsLoading } = useToolPermissions()
+  const [expandedItems, setExpandedItems] = React.useState(() => {
+    const path = window.location.pathname + window.location.search
+    const items = ['Jornadas']
+    if (path.startsWith('/planejamento-estrategico') || path.startsWith('/operational-policies')) items.push('Execução')
+    if (path.startsWith('/journey-management') || path.startsWith('/business-model')) items.push('Estratégia')
+    if (path.startsWith('/indicators')) items.push('Ferramentas')
+    if (path.startsWith('/crm') || path.startsWith('/dfc') || path.startsWith('/performance-evaluation')) items.push('Ferramentas')
+    if (path.startsWith('/reports/')) items.push('Performance')
+    return items
+  })
   const [expandedSubItems, setExpandedSubItems] = React.useState(() => {
     // Auto-expandir se a rota atual for de um sub-sub-item
     const path = window.location.pathname + window.location.search
@@ -574,47 +674,66 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     loadAvatarUrl()
   }, [profile?.avatar_url])
 
-  // Carregar jornadas acessíveis sempre que o perfil mudar (sistema simplificado)
+  // Ref para saber se o componente ainda está montado
+  const isMountedRef = React.useRef(true)
   React.useEffect(() => {
-    let isMounted = true
-    
-    const loadAccessibleJourneys = async () => {
-      if (!profile?.id) {
-        if (isMounted) {
-          // Sistema simplificado: sem perfil = sem jornadas
-          setAccessibleJourneys([])
-          setJourneysLoading(false)
-        }
-        return
-      }
+    isMountedRef.current = true
+    return () => { isMountedRef.current = false }
+  }, [])
 
-      // SISTEMA SIMPLIFICADO: Sempre recarregar jornadas (sem cache)
-      try {
-        if (isMounted) setJourneysLoading(true)
-        const journeys = await getAccessibleJourneys()
-        
-        if (isMounted) {
-          setAccessibleJourneys(journeys)
-          setJourneysLoaded(true)
-        }
-      } catch (error) {
-        if (isMounted) {
-          // Sistema simplificado: erro = sem jornadas (não usa fallback de role)
-          setAccessibleJourneys([])
-          setJourneysLoaded(true)
-        }
-      } finally {
-        if (isMounted) setJourneysLoading(false)
-      }
+  // Função extraída para poder chamar de múltiplos lugares
+  const loadJourneyAccess = React.useCallback(async () => {
+    if (!profile?.id) {
+      setAccessibleJourneys([])
+      setJourneysLoading(false)
+      return
     }
+    try {
+      setJourneysLoading(true)
+      const journeys = await getAccessibleJourneys()
+      if (isMountedRef.current) {
+        setAccessibleJourneys(journeys)
+        setJourneysLoaded(true)
+      }
+    } catch (error) {
+      if (isMountedRef.current) {
+        setAccessibleJourneys([])
+        setJourneysLoaded(true)
+      }
+    } finally {
+      if (isMountedRef.current) setJourneysLoading(false)
+    }
+  }, [profile?.id, getAccessibleJourneys])
 
-    loadAccessibleJourneys()
+  // Carregar quando o perfil mudar
+  React.useEffect(() => {
+    loadJourneyAccess()
+  }, [profile?.id])
 
-    // Cleanup function
+  // Realtime + foco: atualiza jornadas quando atribuições mudam
+  React.useEffect(() => {
+    if (!profile?.id) return
+
+    // Re-fetch quando o usuário volta para a aba
+    const onFocus = () => loadJourneyAccess()
+    window.addEventListener('focus', onFocus)
+
+    // Supabase realtime: escuta mudanças na tabela de atribuições
+    const channel = supabase
+      .channel(`journey_assignments_${profile.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_journey_assignments',
+        filter: `user_id=eq.${profile.id}`,
+      }, () => loadJourneyAccess())
+      .subscribe()
+
     return () => {
-      isMounted = false
+      window.removeEventListener('focus', onFocus)
+      supabase.removeChannel(channel)
     }
-  }, [profile?.id]) // Removido journeysLoaded para sempre recarregar
+  }, [profile?.id, loadJourneyAccess])
 
   // Obter itens de navegação baseados no usuário atual
   const navigationItems = React.useMemo(() => {
@@ -655,7 +774,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     }
     
     // Usuários vinculados: interface normal
-    const items = getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess)
+    const items = getNavigationItems(profile, permissions, accessibleJourneys, journeysLoading, pendingCount, hasToolAccessStrict)
 
     // Filtrar itens baseado nas permissões de ferramentas
     const filteredItems = items.filter(item => {
@@ -683,7 +802,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     })
 
     return filteredItems
-  }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess])
+  }, [profile?.role, profile?.user_companies?.length, accessibleJourneys, journeysLoading, pendingCount, hasToolAccess, hasToolAccessStrict])
 
   const toggleExpanded = (itemName) => {
     setExpandedItems(prev => 
@@ -693,12 +812,29 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     )
   }
 
-  // Auto-expandir sub-itens com base na rota atual
+  // Auto-expandir módulos pai e sub-itens com base na rota atual
   React.useEffect(() => {
-    if (location.pathname.startsWith('/operational-policies')) {
+    const path = location.pathname + location.search
+    if (path.startsWith('/planejamento-estrategico') || path.startsWith('/operational-policies')) {
+      setExpandedItems(prev => prev.includes('Execução') ? prev : [...prev, 'Execução'])
+    }
+    if (path.startsWith('/journey-management') || path.startsWith('/business-model')) {
+      setExpandedItems(prev => prev.includes('Estratégia') ? prev : [...prev, 'Estratégia'])
+    }
+    if (path.startsWith('/indicators')) {
+      setExpandedItems(prev => prev.includes('Ferramentas') ? prev : [...prev, 'Ferramentas'])
+    }
+    if (path.startsWith('/crm') || path.startsWith('/dfc') || path.startsWith('/performance-evaluation')) {
+      setExpandedItems(prev => prev.includes('Ferramentas') ? prev : [...prev, 'Ferramentas'])
+    }
+    if (path.startsWith('/reports/')) {
+      setExpandedItems(prev => prev.includes('Performance') ? prev : [...prev, 'Performance'])
+      setExpandedSubItems(prev => prev.includes('Relat\u00f3rios de Planejamento Estrat\u00e9gico') ? prev : [...prev, 'Relat\u00f3rios de Planejamento Estrat\u00e9gico'])
+    }
+    if (path.startsWith('/operational-policies')) {
       setExpandedSubItems(prev => prev.includes('Políticas de Gestão') ? prev : [...prev, 'Políticas de Gestão'])
     }
-  }, [location.pathname])
+  }, [location.pathname, location.search])
 
   const isCurrentPath = (href) => {
     // Se o href contém query parameters, comparar pathname + search

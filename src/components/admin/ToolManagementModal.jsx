@@ -19,7 +19,9 @@ import {
   Kanban,
   Save,
   Users,
-  Settings
+  Settings,
+  Map,
+  ArrowLeft
 } from 'lucide-react'
 
 const TOOL_ICONS = {
@@ -60,11 +62,18 @@ const POLITICAS_CHILDREN_SLUGS = [
 
 // Slugs dos sub-módulos de Performance (renderizados aninhados dentro do card pai)
 const PERFORMANCE_CHILDREN_SLUGS = [
-  'management-indicators',
   'performance-reports',
 ]
 
-export default function ToolManagementModal({ user, onClose, companyId }) {
+const JOURNEY_META = {
+  'estrategica':    { name: 'Jornada Estratégica',      icon: Target },
+  'financeira':     { name: 'Jornada Financeira',       icon: DollarSign },
+  'pessoas-cultura':{ name: 'Jornada Pessoas e Cultura', icon: Users },
+  'receita':    { name: 'Jornada Receita',           icon: TrendingUp },
+  'operacional':    { name: 'Jornada Operacional',       icon: Settings },
+}
+
+export default function ToolManagementModal({ user, onClose, companyId, onBack }) {
   const [tools, setTools] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -72,10 +81,15 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
   // { [toolSlug]: 'allow' | 'deny' | 'remove' } — changes not yet saved
   const [pendingChanges, setPendingChanges] = useState({})
 
+  // Journey state
+  const [journeyList, setJourneyList] = useState([]) // { id, name, slug, is_assigned }
+  const [pendingJourneyChanges, setPendingJourneyChanges] = useState({}) // { [slug]: 'assign' | 'revoke' }
+
   useEffect(() => {
     setTimeout(() => setAnimating(true), 10)
     if (companyId) {
       loadTools()
+      loadJourneys()
     } else {
       console.error('Company ID não fornecido')
       toast.error('Erro: Empresa não identificada')
@@ -176,9 +190,50 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
     })
   }
 
+  const loadJourneys = async () => {
+    try {
+      const [{ data: journeysData }, { data: assignmentsData }] = await Promise.all([
+        supabase.from('journeys').select('id, name, slug').order('name'),
+        supabase
+          .from('user_journey_assignments')
+          .select('journey_id, is_active')
+          .eq('user_id', user.id)
+          .eq('company_id', companyId)
+          .eq('is_active', true),
+      ])
+
+      const activeIds = new Set((assignmentsData || []).map(a => a.journey_id))
+      setJourneyList(
+        (journeysData || []).map(j => ({ ...j, is_assigned: activeIds.has(j.id) }))
+      )
+    } catch (err) {
+      console.error('[ToolModal] Erro ao carregar jornadas:', err)
+    }
+  }
+
+  const getEffectiveJourneyAssigned = (journey) => {
+    const pending = pendingJourneyChanges[journey.slug]
+    if (!pending) return journey.is_assigned
+    return pending === 'assign'
+  }
+
+  const handleJourneyAction = (journey, action) => {
+    const isNoop = action === 'assign' ? journey.is_assigned : !journey.is_assigned
+    setPendingJourneyChanges(prev => {
+      const next = { ...prev }
+      if (isNoop) {
+        delete next[journey.slug]
+      } else {
+        next[journey.slug] = action
+      }
+      return next
+    })
+  }
+
   const handleSave = async () => {
     const entries = Object.entries(pendingChanges)
-    if (entries.length === 0) {
+    const journeyEntries = Object.entries(pendingJourneyChanges)
+    if (entries.length === 0 && journeyEntries.length === 0) {
       handleClose()
       return
     }
@@ -249,9 +304,42 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
         }
       }
 
+      // Save journey changes
+      console.log('[ToolModal] Journey changes to save:', journeyEntries, 'journeyList:', journeyList.map(j => j.slug), 'companyId:', companyId)
+      for (const [slug, action] of journeyEntries) {
+        const journey = journeyList.find(j => j.slug === slug)
+        if (!journey) {
+          console.warn('[ToolModal] Journey not found in list:', slug, '— skipping')
+          continue
+        }
+        console.log('[ToolModal] Saving journey:', slug, action, { journeyId: journey.id, userId: user.id, companyId })
+        if (action === 'assign') {
+          const { data: assignData, error } = await supabase.rpc('assign_journey_to_user', {
+            p_user_id: user.id,
+            p_journey_id: journey.id,
+            p_company_id: companyId,
+          })
+          console.log('[ToolModal] assign_journey_to_user response:', { assignData, error })
+          if (error) throw error
+          if (!assignData) throw new Error(`assign_journey_to_user retornou null para jornada "${slug}"`)
+          if (!assignData.success) throw new Error(assignData.error || `Falha ao atribuir jornada "${slug}"`)
+        } else {
+          const { data: rpcData, error } = await supabase.rpc('remove_journey_assignment', {
+            p_user_id: user.id,
+            p_journey_id: journey.id,
+            p_company_id: companyId,
+          })
+          console.log('[ToolModal] remove_journey_assignment response:', { rpcData, error })
+          if (error) throw error
+          if (!rpcData) throw new Error(`remove_journey_assignment retornou null para jornada "${slug}"`)
+          if (!rpcData.success) throw new Error(rpcData.error || `Falha ao remover jornada "${slug}"`)
+        }
+      }
+
       toast.success('Permissões salvas com sucesso!')
       setPendingChanges({})
-      await loadTools()
+      setPendingJourneyChanges({})
+      await Promise.all([loadTools(), loadJourneys()])
     } catch (error) {
       console.error('[ToolModal] Erro ao salvar permissões:', error)
       toast.error(error.message || 'Erro ao salvar permissões')
@@ -263,6 +351,11 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
   const handleClose = () => {
     setAnimating(false)
     setTimeout(onClose, 200)
+  }
+
+  const handleBack = () => {
+    setAnimating(false)
+    setTimeout(() => { onClose(); onBack?.() }, 200)
   }
 
   const getToolIcon = (iconName) => {
@@ -301,15 +394,49 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
     }
   }
 
-  // Agrupar por categoria usando o estado efetivo (DB + alterações locais pendentes)
-  const hasPendingChanges = Object.keys(pendingChanges).length > 0
+  const hasPendingChanges = Object.keys(pendingChanges).length > 0 || Object.keys(pendingJourneyChanges).length > 0
 
-  // dfc-entradas/saidas são sub-ferramentas do dfc-complete
-  // management-indicators e performance-reports são filhos de modulo-performance
-  const HIDDEN_SLUGS = ['dfc-entradas', 'dfc-saidas', ...PERFORMANCE_CHILDREN_SLUGS, ...POLITICAS_CHILDREN_SLUGS]
+  const DFC_CHILDREN_SLUGS = ['dfc-entradas', 'dfc-saidas']
+  const HIDDEN_SLUGS = [...DFC_CHILDREN_SLUGS, ...PERFORMANCE_CHILDREN_SLUGS, ...POLITICAS_CHILDREN_SLUGS]
   const flatTools = tools
     .map(getEffectiveTool)
     .filter(t => !HIDDEN_SLUGS.includes(t.tool_slug))
+
+  // Grupos espelhando a estrutura do sidebar
+  const MODULE_GROUPS = [
+    {
+      name: 'Estratégia',
+      icon: Target,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+      borderColor: 'border-blue-200 dark:border-blue-800',
+      slugs: ['journey-overview', 'business-model'],
+    },
+    {
+      name: 'Execução',
+      icon: Kanban,
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+      borderColor: 'border-amber-200 dark:border-amber-800',
+      slugs: ['planejamento-estrategico', 'politicas-gestao'],
+    },
+    {
+      name: 'Performance',
+      icon: TrendingUp,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+      borderColor: 'border-purple-200 dark:border-purple-800',
+      slugs: ['modulo-performance'],
+    },
+    {
+      name: 'Ferramentas',
+      icon: LayoutGrid,
+      color: 'text-gray-600',
+      bgColor: 'bg-gray-50 dark:bg-gray-700/40',
+      borderColor: 'border-gray-200 dark:border-gray-600',
+      slugs: ['crm', 'dfc-complete', 'performance-evaluation', 'management-indicators'],
+    },
+  ]
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4 overflow-hidden">
@@ -322,7 +449,17 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
         {/* Header */}
         <div className="flex-shrink-0 px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 pr-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1 pr-2">
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all flex-shrink-0"
+                  title="Voltar"
+                >
+                  <ArrowLeft className="h-5 w-5 text-gray-400" />
+                </button>
+              )}
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#EBA500] to-[#d49400] flex items-center justify-center shadow-lg flex-shrink-0">
                 <Wrench className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
               </div>
@@ -363,18 +500,30 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
                 </div>
               </div>
 
-              {/* Ferramentas */}
-              <div className="grid gap-2 sm:gap-3">
-                {flatTools.map((tool) => {
+              {/* Ferramentas por Módulo */}
+              {MODULE_GROUPS.map((group) => {
+                const groupTools = flatTools.filter(t => group.slugs.includes(t.tool_slug))
+                if (groupTools.length === 0) return null
+                const GroupIcon = group.icon
+                return (
+                  <div key={group.name} className="space-y-2 sm:space-y-3">
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${group.bgColor} ${group.borderColor}`}>
+                      <GroupIcon className={`h-3.5 w-3.5 ${group.color} flex-shrink-0`} />
+                      <h3 className={`text-xs font-bold uppercase tracking-wider ${group.color}`}>{group.name}</h3>
+                    </div>
+                    <div className="grid gap-2 sm:gap-3 ml-1">
+                      {groupTools.map((tool) => {
                   const Icon = getToolIcon(tool.tool_icon)
                   const status = getPermissionStatus(tool)
                   const StatusIcon = status.icon
 
-                  // Sub-módulos aninhados (ex: filhos de Políticas de Gestão ou Módulo Performance)
+                  // Sub-módulos aninhados (Políticas de Gestão, Performance ou DFC)
                   const childTools = tool.tool_slug === 'politicas-gestao'
                     ? tools.map(getEffectiveTool).filter(t => POLITICAS_CHILDREN_SLUGS.includes(t.tool_slug))
                     : tool.tool_slug === 'modulo-performance'
                     ? tools.map(getEffectiveTool).filter(t => PERFORMANCE_CHILDREN_SLUGS.includes(t.tool_slug))
+                    : tool.tool_slug === 'dfc-complete'
+                    ? tools.map(getEffectiveTool).filter(t => DFC_CHILDREN_SLUGS.includes(t.tool_slug))
                     : []
 
                   return (
@@ -448,6 +597,68 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
                         </div>
                       </div>
 
+                      {/* Jornadas — aninhadas em Planejamento Estratégico */}
+                      {tool.tool_slug === 'planejamento-estrategico' && journeyList.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {journeyList.map((journey) => {
+                            const isJourneyAssigned = getEffectiveJourneyAssigned(journey)
+                            const isJourneyPending = !!pendingJourneyChanges[journey.slug]
+                            const JourneyIcon = JOURNEY_META[journey.slug]?.icon || Map
+                            return (
+                              <div
+                                key={journey.id}
+                                className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-2 flex items-center gap-2"
+                              >
+                                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center flex-shrink-0 ${
+                                  isJourneyAssigned ? 'bg-emerald-50 dark:bg-emerald-900/40 border-emerald-200 dark:border-emerald-700' : 'bg-gray-50 dark:bg-gray-600 border-gray-100 dark:border-gray-500'
+                                }`}>
+                                  <JourneyIcon className={`h-3.5 w-3.5 ${isJourneyAssigned ? 'text-emerald-600' : 'text-gray-500'}`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{journey.name}</p>
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    {isJourneyAssigned ? (
+                                      <Check className="h-2.5 w-2.5 flex-shrink-0 text-emerald-600" />
+                                    ) : (
+                                      <Ban className="h-2.5 w-2.5 flex-shrink-0 text-gray-400" />
+                                    )}
+                                    <span className={`text-[9px] font-medium truncate ${isJourneyAssigned ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                      {isJourneyAssigned ? 'Atribuída' : 'Não atribuída'}{isJourneyPending ? ' *' : ''}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <button
+                                    onClick={() => handleJourneyAction(journey, 'assign')}
+                                    disabled={saving || isJourneyAssigned}
+                                    className={`p-1 rounded-lg transition-all active:scale-95 ${
+                                      isJourneyAssigned
+                                        ? 'bg-green-600 text-white shadow-sm'
+                                        : 'bg-gray-50 dark:bg-gray-600 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 border border-green-200 dark:border-green-700'
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    title="Atribuir jornada"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleJourneyAction(journey, 'revoke')}
+                                    disabled={saving || !isJourneyAssigned}
+                                    className={`p-1 rounded-lg transition-all active:scale-95 ${
+                                      !isJourneyAssigned
+                                        ? 'bg-red-600 text-white shadow-sm'
+                                        : 'bg-gray-50 dark:bg-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 border border-red-200 dark:border-red-700'
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    title="Desatribuir jornada"
+                                  >
+                                    <Ban className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
                       {/* Sub-módulos aninhados (Políticas de Gestão) */}
                       {childTools.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -520,7 +731,10 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
                     </div>
                   )
                 })}
-              </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
@@ -530,8 +744,11 @@ export default function ToolManagementModal({ user, onClose, companyId }) {
           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0">
             <p className="text-xs sm:text-sm text-gray-500 text-center sm:text-left">
               {hasPendingChanges
-                ? <span className="text-amber-600 font-medium">{Object.keys(pendingChanges).length} alteraç{Object.keys(pendingChanges).length === 1 ? 'ão' : 'ões'} não salva{Object.keys(pendingChanges).length === 1 ? '' : 's'}</span>
-                : <>{tools.length} ferramenta{tools.length !== 1 ? 's' : ''} disponível{tools.length !== 1 ? 'is' : ''}</>
+                ? (() => {
+                    const total = Object.keys(pendingChanges).length + Object.keys(pendingJourneyChanges).length
+                    return <span className="text-amber-600 font-medium">{total} alteraç{total === 1 ? 'ão' : 'ões'} não salva{total === 1 ? '' : 's'}</span>
+                  })()
+                : <>{tools.length} ferramenta{tools.length !== 1 ? 's' : ''} · {journeyList.length} jornada{journeyList.length !== 1 ? 's' : ''}</>
               }
             </p>
             <div className="flex gap-2">

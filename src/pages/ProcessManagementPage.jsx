@@ -234,7 +234,7 @@ export default function ProcessManagementPage() {
                 <option value="estrategica">Estratégica</option>
                 <option value="financeira">Financeira</option>
                 <option value="pessoas-cultura">Pessoas e Cultura</option>
-                <option value="receita-crm">Receita</option>
+                <option value="receita">Receita</option>
                 <option value="operacional">Operacional</option>
               </select>
             </div>

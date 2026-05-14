@@ -1536,31 +1536,10 @@ const SettingsPage = () => {
                             </div>
                           </div>
                           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                            <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden">
-                              <button
-                                type="button"
-                                onClick={() => setSlotsToAdd(s => Math.max(1, s - 1))}
-                                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-bold text-sm transition-colors"
-                              >−</button>
-                              <span className="px-4 py-2 text-sm font-semibold text-[#373435] dark:text-white min-w-[3rem] text-center">
-                                {slotsToAdd}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setSlotsToAdd(s => s + 1)}
-                                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-bold text-sm transition-colors"
-                              >+</button>
+                            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 text-sm font-semibold cursor-not-allowed select-none">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                              Compra de slots temporariamente indisponível
                             </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 flex-1">
-                              {slotsToAdd} slot{slotsToAdd > 1 ? 's adicionais' : ' adicional'} — nova capacidade: {20 + extraUserSlots + slotsToAdd} usuários
-                            </p>
-                            <button
-                              type="button"
-                              onClick={handleOpenConfirmSlots}
-                              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors whitespace-nowrap"
-                            >
-                              Comprar slots
-                            </button>
                           </div>
 
                           {/* Seção de remoção — só aparece quando há slots extras */}

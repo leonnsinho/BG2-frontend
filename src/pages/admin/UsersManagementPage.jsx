@@ -36,7 +36,9 @@ import {
   Plus,
   Clock,
   RefreshCw,
-  Send
+  Send,
+  UserCog,
+  ArrowLeft
 } from 'lucide-react'
 import { formatDate } from '../../utils/dateUtils'
 import ToolManagementModal from '../../components/admin/ToolManagementModal'
@@ -591,6 +593,17 @@ export default function UsersManagementPage() {
       setShowActionsModal(false)
       setSelectedUserForActions(null)
     }, 200)
+  }
+
+  const hideActionsModal = () => {
+    setActionsModalAnimating(false)
+    setTimeout(() => setShowActionsModal(false), 200)
+    // selectedUserForActions is intentionally kept for back-navigation
+  }
+
+  const reopenActionsModal = () => {
+    setShowActionsModal(true)
+    setTimeout(() => setActionsModalAnimating(true), 10)
   }
 
   const assignJourney = async (journeyId) => {
@@ -1500,9 +1513,6 @@ export default function UsersManagementPage() {
                     Empresa
                   </th>
                   <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
-                    Jornadas
-                  </th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
                     Tags
                   </th>
                   <th className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-[#373435] dark:text-gray-300 uppercase tracking-wider">
@@ -1617,17 +1627,6 @@ export default function UsersManagementPage() {
                         </div>
                       </td>
                       
-                      {/* Coluna Jornadas */}
-                      <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-                        {(user.company_role === 'gestor' || user.role === 'gestor') ? (
-                          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-sm">
-                            {getManualAssignments(user.id).length}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-gray-400">-</span>
-                        )}
-                      </td>
-
                       {/* Coluna Tags */}
                       <td className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
                         {(userTagsMap[user.id] || []).length > 0 ? (
@@ -1854,6 +1853,7 @@ export default function UsersManagementPage() {
             onLink={handleLinkToCompany}
             loading={updating}
             currentUserProfile={profile}
+            onBack={reopenActionsModal}
           />
         )}
 
@@ -2005,7 +2005,7 @@ export default function UsersManagementPage() {
                     onClick={() => {
                       setSelectedUser(selectedUserForActions)
                       setIsEditModalOpen(true)
-                      closeActionsModal()
+                      hideActionsModal()
                     }}
                     className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-50 to-blue-100/30 dark:from-blue-900/20 dark:to-blue-800/10 hover:from-blue-100 hover:to-blue-200/50 dark:hover:from-blue-900/30 dark:hover:to-blue-800/20 border border-blue-200/50 dark:border-blue-700/30 hover:border-blue-300 dark:hover:border-blue-600/50 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none active:scale-[0.98]"
                   >
@@ -2024,7 +2024,7 @@ export default function UsersManagementPage() {
                     onClick={() => {
                       setSelectedUser(selectedUserForActions)
                       setIsLinkModalOpen(true)
-                      closeActionsModal()
+                      hideActionsModal()
                     }}
                     className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-50 to-purple-100/30 dark:from-purple-900/20 dark:to-purple-800/10 hover:from-purple-100 hover:to-purple-200/50 dark:hover:from-purple-900/30 dark:hover:to-purple-800/20 border border-purple-200/50 dark:border-purple-700/30 hover:border-purple-300 dark:hover:border-purple-600/50 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none active:scale-[0.98]"
                   >
@@ -2042,32 +2042,13 @@ export default function UsersManagementPage() {
                   </button>
                   )}
 
-                  {/* Gerenciar Jornadas */}
-                  {(selectedUserForActions.company_role === 'gestor' || selectedUserForActions.role === 'gestor') && (
-                    <button
-                      onClick={() => {
-                        openJourneyModal(selectedUserForActions)
-                        closeActionsModal()
-                      }}
-                      className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-50 to-emerald-100/30 dark:from-emerald-900/20 dark:to-emerald-800/10 hover:from-emerald-100 hover:to-emerald-200/50 dark:hover:from-emerald-900/30 dark:hover:to-emerald-800/20 border border-emerald-200/50 dark:border-emerald-700/30 hover:border-emerald-300 dark:hover:border-emerald-600/50 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none active:scale-[0.98]"
-                    >
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                        <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
-                      </div>
-                      <div className="flex-1 text-left min-w-0">
-                        <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">Gerenciar Jornadas</p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">{getManualAssignments(selectedUserForActions.id).length} atribuída(s)</p>
-                      </div>
-                    </button>
-                  )}
-
-                  {/* Gerenciar Ferramentas */}
+                  {/* Gerenciar Ferramentas (inclui Jornadas) */}
                   {selectedUserForActions.companies?.id && (
                     <button
                       onClick={() => {
                         setSelectedUserForTools(selectedUserForActions)
                         setShowToolModal(true)
-                        closeActionsModal()
+                        hideActionsModal()
                       }}
                       className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-50 to-amber-100/30 dark:from-amber-900/20 dark:to-amber-800/10 hover:from-amber-100 hover:to-amber-200/50 dark:hover:from-amber-900/30 dark:hover:to-amber-800/20 border border-amber-200/50 dark:border-amber-700/30 hover:border-amber-300 dark:hover:border-amber-600/50 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none active:scale-[0.98]"
                     >
@@ -2086,7 +2067,7 @@ export default function UsersManagementPage() {
                     <button
                       onClick={() => {
                         openTagModal(selectedUserForActions)
-                        closeActionsModal()
+                        hideActionsModal()
                       }}
                       className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-violet-50 to-violet-100/30 dark:from-violet-900/20 dark:to-violet-800/10 hover:from-violet-100 hover:to-violet-200/50 dark:hover:from-violet-900/30 dark:hover:to-violet-800/20 border border-violet-200/50 dark:border-violet-700/30 hover:border-violet-300 dark:hover:border-violet-600/50 transition-all duration-200 group hover:shadow-md dark:hover:shadow-none active:scale-[0.98]"
                     >
@@ -2195,6 +2176,7 @@ export default function UsersManagementPage() {
             }}
             onSave={handleUpdateUser}
             loading={updating}
+            onBack={reopenActionsModal}
           />
         )}
 
@@ -2339,6 +2321,7 @@ export default function UsersManagementPage() {
           user={selectedUserForTools}
           companyId={selectedUserForTools.companies?.id}
           onClose={() => setShowToolModal(false)}
+          onBack={reopenActionsModal}
         />
       )}
 
@@ -2351,6 +2334,7 @@ export default function UsersManagementPage() {
           userTagsMap={userTagsMap}
           animating={tagModalAnimating}
           onClose={closeTagModal}
+          onBack={() => { closeTagModal(); setTimeout(reopenActionsModal, 250) }}
           onCreateTag={createTag}
           onDeleteTag={deleteTag}
           onToggleTag={toggleTagAssignment}
@@ -2361,7 +2345,7 @@ export default function UsersManagementPage() {
 }
 
 // ─── Tag Modal ───────────────────────────────────────────────────────────────
-function TagModal({ targetUser, companyId, tags, userTagsMap, animating, onClose, onCreateTag, onDeleteTag, onToggleTag }) {
+function TagModal({ targetUser, companyId, tags, userTagsMap, animating, onClose, onBack, onCreateTag, onDeleteTag, onToggleTag }) {
   const [newTagName, setNewTagName] = useState('')
   const [newTagColor, setNewTagColor] = useState(TAG_COLORS[5]) // blue default
   const [creating, setCreating] = useState(false)
@@ -2391,6 +2375,15 @@ function TagModal({ targetUser, companyId, tags, userTagsMap, animating, onClose
         {/* Header */}
         <div className="flex-shrink-0 px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition-all flex-shrink-0"
+                title="Voltar"
+              >
+                <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+              </button>
+            )}
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-lg">
               <Tag className="w-6 h-6 text-white" />
             </div>
@@ -2507,10 +2500,26 @@ function TagModal({ targetUser, companyId, tags, userTagsMap, animating, onClose
 }
 
 // Componente Modal de Edição
-function EditUserModal({ user, onClose, onSave, loading }) {
+function EditUserModal({ user, onClose, onSave, loading, onBack }) {
   const [fullName, setFullName] = useState(user.full_name || '')
   const [email, setEmail] = useState(user.email || '')
+  const [animating, setAnimating] = useState(false)
   const emailChanged = email.trim() !== (user.email || '').trim()
+
+  useEffect(() => {
+    const t = setTimeout(() => setAnimating(true), 10)
+    return () => clearTimeout(t)
+  }, [])
+
+  const handleClose = () => {
+    setAnimating(false)
+    setTimeout(onClose, 200)
+  }
+
+  const handleBack = () => {
+    setAnimating(false)
+    setTimeout(() => { onClose(); onBack?.() }, 200)
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -2528,99 +2537,171 @@ function EditUserModal({ user, onClose, onSave, loading }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity" onClick={onClose}>
-          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-        </div>
-
-        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <form onSubmit={handleSubmit}>
-            <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-                Editar Usuário
-              </h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Nome Completo
-                  </label>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Nome completo do usuário"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#EBA500] dark:bg-gray-700 dark:text-white"
-                    autoFocus
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="email@empresa.com"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#EBA500] dark:bg-gray-700 dark:text-white"
-                    required
-                  />
-                  {emailChanged && (
-                    <p className="mt-1 text-xs text-amber-600">⚠️ O email será atualizado no sistema de autenticação.</p>
-                  )}
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Função:</strong> {user.role || 'user'}
-                  </p>
-                  {user.companies?.name && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      <strong>Empresa:</strong> {user.companies.name}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full sm:ml-3 sm:w-auto px-6 py-2 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 text-[#EBA500] rounded-2xl hover:from-[#EBA500]/20 hover:to-[#EBA500]/10 border border-[#EBA500]/30 font-medium transition-all duration-200"
-              >
-                {loading ? 'Salvando...' : 'Salvar'}
-              </button>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-200 ${
+        animating ? 'bg-gray-900/60 backdrop-blur-sm' : 'bg-gray-900/0'
+      }`}
+      onClick={handleClose}
+    >
+      <div
+        className={`w-full max-w-md bg-white dark:bg-gray-800 rounded-3xl shadow-2xl transition-all duration-200 ${
+          animating ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            {onBack && (
               <button
                 type="button"
-                onClick={onClose}
-                className="mt-3 w-full sm:mt-0 sm:w-auto px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-[#373435] dark:text-gray-200 rounded-2xl hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
+                onClick={handleBack}
+                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+                title="Voltar"
               >
-                Cancelar
+                <ArrowLeft className="h-5 w-5 text-gray-400" />
               </button>
+            )}
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+              <UserCog className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
-          </form>
+            <div className="min-w-0">
+              <h2 className="font-semibold text-gray-900 dark:text-white text-base">Editar Usuário</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[220px]">
+                {user.full_name || user.email}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+          >
+            <X className="h-5 w-5 text-gray-400" />
+          </button>
         </div>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Nome Completo
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Nome completo do usuário"
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 transition-colors"
+              autoFocus
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="email@empresa.com"
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 transition-colors"
+              required
+            />
+            {emailChanged && (
+              <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+                ⚠️ O email será atualizado no sistema de autenticação.
+              </p>
+            )}
+          </div>
+
+          {(user.companies?.name || user.role) && (
+            <div className="bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 rounded-xl p-3.5 space-y-1">
+              {user.role && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">Função:</span> {user.role}
+                </p>
+              )}
+              {user.companies?.name && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">Empresa:</span> {user.companies.name}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Botões */}
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors text-sm"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2.5 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 font-semibold transition-colors disabled:opacity-50 text-sm"
+            >
+              {loading ? 'Salvando...' : 'Salvar alterações'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
 }
 
 // Componente Modal de Vinculação
-function LinkUserModal({ user, companies, onClose, onLink, loading, currentUserProfile }) {
+const LINK_ROLE_OPTIONS = [
+  {
+    value: 'user',
+    label: 'Usuário',
+    desc: 'Acesso controlado por permissões de ferramentas',
+    icon: Users,
+    color: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-50 dark:bg-blue-900/30',
+  },
+  {
+    value: 'company_admin',
+    label: 'Admin da Empresa',
+    desc: 'Gerencia usuários, convites e configurações',
+    icon: Shield,
+    color: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-900/30',
+  },
+]
+
+function LinkUserModal({ user, companies, onClose, onLink, loading, currentUserProfile, onBack }) {
   const isEdit = Boolean(user.companies?.id)
   const [selectedCompanyId, setSelectedCompanyId] = useState(user.companies?.id || '')
-  const [selectedRole, setSelectedRole] = useState(user.company_role || 'user')
-  
-  // Verificar se o usuário atual é super_admin
+  // Se o role atual for 'gestor' (removido), padrão para 'user'
+  const [selectedRole, setSelectedRole] = useState(
+    ['user', 'company_admin'].includes(user.company_role) ? user.company_role : 'user'
+  )
+  const [animating, setAnimating] = useState(false)
+
   const isSuperAdmin = currentUserProfile?.role === 'super_admin'
-  
-  // Company admin só pode alterar role, não a empresa
   const canChangeCompany = isSuperAdmin
+
+  useEffect(() => {
+    const t = setTimeout(() => setAnimating(true), 10)
+    return () => clearTimeout(t)
+  }, [])
+
+  const handleClose = () => {
+    setAnimating(false)
+    setTimeout(onClose, 200)
+  }
+
+  const handleBack = () => {
+    setAnimating(false)
+    setTimeout(() => { onClose(); onBack?.() }, 200)
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -2628,100 +2709,147 @@ function LinkUserModal({ user, companies, onClose, onLink, loading, currentUserP
       toast.alert('Por favor, selecione uma empresa')
       return
     }
-    
-    const userId = user.id
-    console.log('Modal: Tentando vincular usuário ID:', userId, 'Dados do usuário:', {
-      id: user.id,
-      email: user.email
-    })
-    
-    onLink(userId, selectedCompanyId, selectedRole)
+    onLink(user.id, selectedCompanyId, selectedRole)
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity" onClick={onClose}>
-          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-        </div>
-
-        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <form onSubmit={handleSubmit}>
-            <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-                {isEdit 
-                  ? (canChangeCompany 
-                      ? `Alterar a empresa e função de ${user.full_name || user.email}`
-                      : `Alterar a função de ${user.full_name || user.email}`)
-                  : `Vincular ${user.full_name || user.email} a uma empresa`
-                }
-              </h3>
-              
-              <div className="mb-4">
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Empresa
-                  </label>
-                  {canChangeCompany ? (
-                    <select
-                      value={selectedCompanyId}
-                      onChange={(e) => setSelectedCompanyId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200"
-                      required
-                    >
-                      <option value="">Selecione uma empresa...</option>
-                      {companies.map((company) => (
-                        <option key={company.id} value={company.id}>
-                          {company.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 rounded-md text-gray-700 dark:text-gray-300">
-                      {companies.find(c => c.id === selectedCompanyId)?.name || 'Nenhuma empresa'}
-                    </div>
-                  )}
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Função na Empresa
-                  </label>
-                  <select
-                    value={selectedRole}
-                    onChange={(e) => setSelectedRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200"
-                  >
-                    <option value="user">Usuário</option>
-                    <option value="company_admin">Admin da Empresa</option>
-                    <option value="gestor">Gestor Geral</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full sm:ml-3 sm:w-auto px-6 py-2 bg-gradient-to-r from-[#EBA500]/10 to-[#EBA500]/5 text-[#EBA500] rounded-2xl hover:from-[#EBA500]/20 hover:to-[#EBA500]/10 border border-[#EBA500]/30 font-medium transition-all duration-200"
-              >
-                {loading 
-                  ? (isEdit ? 'Alterando...' : 'Vinculando...') 
-                  : (isEdit ? 'Alterar' : 'Vincular')
-                }
-              </button>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-200 ${
+        animating ? 'bg-gray-900/60 backdrop-blur-sm' : 'bg-gray-900/0'
+      }`}
+      onClick={handleClose}
+    >
+      <div
+        className={`w-full max-w-md bg-white dark:bg-gray-800 rounded-3xl shadow-2xl transition-all duration-200 ${
+          animating ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            {onBack && (
               <button
                 type="button"
-                onClick={onClose}
-                className="mt-3 w-full sm:mt-0 sm:w-auto px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-[#373435] dark:text-gray-200 rounded-2xl hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200"
+                onClick={handleBack}
+                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+                title="Voltar"
               >
-                Cancelar
+                <ArrowLeft className="h-5 w-5 text-gray-400" />
               </button>
+            )}
+            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+              <Building2 className="h-5 w-5 text-[#EBA500]" />
             </div>
-          </form>
+            <div className="min-w-0">
+              <h2 className="font-semibold text-gray-900 dark:text-white text-base">
+                {isEdit ? 'Alterar Empresa / Função' : 'Vincular à Empresa'}
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[220px]">
+                {user.full_name || user.email}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+          >
+            <X className="h-5 w-5 text-gray-400" />
+          </button>
         </div>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+
+          {/* Empresa */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Empresa
+            </label>
+            {canChangeCompany ? (
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 transition-colors"
+              >
+                <option value="">Selecione uma empresa...</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            ) : (
+              <div className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 text-sm">
+                {companies.find((c) => c.id === selectedCompanyId)?.name || '—'}
+              </div>
+            )}
+          </div>
+
+          {/* Função — cards de rádio */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Função
+            </label>
+            <div className="space-y-2">
+              {LINK_ROLE_OPTIONS.map((opt) => {
+                const Icon = opt.icon
+                const active = selectedRole === opt.value
+                return (
+                  <label
+                    key={opt.value}
+                    className={`flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all select-none ${
+                      active
+                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-600 shadow-sm'
+                        : 'bg-gray-50 dark:bg-gray-700/30 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="role"
+                      value={opt.value}
+                      checked={active}
+                      onChange={() => setSelectedRole(opt.value)}
+                      className="sr-only"
+                    />
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${opt.bg}`}>
+                      <Icon className={`h-4 w-4 ${opt.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{opt.label}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{opt.desc}</p>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${
+                      active ? 'border-[#EBA500] bg-[#EBA500]' : 'border-gray-300 dark:border-gray-500'
+                    }`}>
+                      {active && <div className="w-full h-full rounded-full flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                      </div>}
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Botões */}
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors text-sm"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2.5 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 font-semibold transition-colors disabled:opacity-50 text-sm"
+            >
+              {loading ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Vincular'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

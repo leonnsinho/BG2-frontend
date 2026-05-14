@@ -22,7 +22,7 @@ const JOURNEY_ICONS = {
   'estrategica': Target,
   'financeira': TrendingUp,
   'pessoas-cultura': Users,
-  'receita-crm': DollarSign,
+  'receita': DollarSign,
   'operacional': Settings
 }
 

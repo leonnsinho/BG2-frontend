@@ -80,7 +80,7 @@ const ProcessManagementModal = ({
       case 'pessoas-cultura':
         prefix = 'PES'
         break
-      case 'receita-crm':
+      case 'receita':
         prefix = 'REC'
         break
       case 'operacional':
