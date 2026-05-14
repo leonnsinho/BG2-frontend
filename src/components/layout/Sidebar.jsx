@@ -365,7 +365,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         userItems.push({
           name: 'Estratégia',
           icon: Target,
-          href: '/journey-management/overview',
+          href: estrategiaChildren[0].href,
           children: estrategiaChildren,
         })
       }

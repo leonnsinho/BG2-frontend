@@ -16,7 +16,6 @@ import ConfirmModal from '../../components/ui/ConfirmModal'
 import SuperAdminBanner from '../SuperAdminBanner'
 import DraggableProcessList from './DraggableProcessList'
 import toast from '@/lib/toast'
-import confirmDialog from '@/lib/confirm'
 import { calculateProcessProgress } from '../../services/processMaturityService'
 import { useSearchParams } from 'react-router-dom' // 🔥 NOVO: Para ler query params
 
@@ -1177,7 +1176,7 @@ const PlanejamentoEstrategico = () => {
     }))
   }
 
-  const excluirTarefasSelecionadas = async (processoId) => {
+  const excluirTarefasSelecionadas = (processoId) => {
     const selecionadas = tarefasSelecionadas[processoId] || []
     
     if (selecionadas.length === 0) {
@@ -1185,31 +1184,30 @@ const PlanejamentoEstrategico = () => {
       return
     }
 
-    if (!await confirmDialog(`Tem certeza que deseja excluir ${selecionadas.length} ação(ões)?`, { danger: true })) {
-      return
-    }
-
-    try {
-      // Deletar todas as tarefas selecionadas
-      for (const tarefaId of selecionadas) {
-        await deleteTask(tarefaId)
+    setConfirmDialog({
+      title: 'Excluir Ações Selecionadas',
+      message: `Tem certeza que deseja excluir ${selecionadas.length} ação(ões) selecionada(s)?`,
+      confirmLabel: 'Excluir',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          for (const tarefaId of selecionadas) {
+            await deleteTask(tarefaId)
+          }
+          await loadTasks()
+          await reloadProcessProgress(processoId)
+          setTarefasSelecionadas(prev => ({
+            ...prev,
+            [processoId]: []
+          }))
+          toast.success(`✅ ${selecionadas.length} ação(ões) excluída(s) com sucesso!`)
+        } catch (error) {
+          console.error('❌ Erro ao excluir ações:', error)
+          toast.error('Erro ao excluir ações: ' + error.message)
+        }
       }
-
-      // Recarregar tarefas e progresso
-      await loadTasks()
-      await reloadProcessProgress(processoId)
-
-      // Limpar seleção
-      setTarefasSelecionadas(prev => ({
-        ...prev,
-        [processoId]: []
-      }))
-
-      toast.success(`✅ ${selecionadas.length} ação(ões) excluída(s) com sucesso!`)
-    } catch (error) {
-      console.error('❌ Erro ao excluir ações:', error)
-      toast.error('Erro ao excluir ações: ' + error.message)
-    }
+    })
   }
 
   // Funções para adicionar tarefa inline

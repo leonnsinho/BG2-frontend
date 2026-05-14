@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
 import toast from '@/lib/toast'
-import confirmDialog from '@/lib/confirm'
 import { X, FileText, CheckSquare, Paperclip, Plus, Save, Trash2, Edit2, Download, ExternalLink, GripVertical, Bold, Italic, Link as LinkIcon, List, Heading, Upload, Loader2, Eye } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { renderIcon } from '../utils/iconRenderer'
@@ -233,19 +232,25 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
     setSaving(false)
   }
 
-  const handleDeleteChecklist = async (checklistId) => {
-    if (!await confirmDialog('Deseja realmente deletar esta checklist?')) return
-
-    setSaving(true)
-    const { error } = await supabase
-      .from('policy_checklists')
-      .delete()
-      .eq('id', checklistId)
-
-    if (!error) {
-      setChecklists(checklists.filter(c => c.id !== checklistId))
-    }
-    setSaving(false)
+  const handleDeleteChecklist = (checklistId) => {
+    setConfirmDialog({
+      title: 'Deletar Checklist',
+      message: 'Deseja realmente deletar esta checklist?',
+      confirmLabel: 'Deletar',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        setSaving(true)
+        const { error } = await supabase
+          .from('policy_checklists')
+          .delete()
+          .eq('id', checklistId)
+        if (!error) {
+          setChecklists(checklists.filter(c => c.id !== checklistId))
+        }
+        setSaving(false)
+      }
+    })
   }
 
   const handleAddChecklistItem = async (checklistId, itemText) => {
@@ -626,28 +631,32 @@ export default function BlockCardModal({ block, isOpen, isInline = false, onClos
     setSaving(false)
   }
 
-  const handleDeleteAttachment = async (attachmentId, filePath) => {
-    if (!await confirmDialog('Deseja realmente deletar este anexo?')) return
-
-    setSaving(true)
-
-    // Deletar arquivo do storage se não for link
-    if (filePath && !filePath.startsWith('http')) {
-      await supabase.storage
-        .from('policy-attachments')
-        .remove([filePath])
-    }
-
-    // Deletar do banco
-    const { error } = await supabase
-      .from('policy_attachments')
-      .delete()
-      .eq('id', attachmentId)
-
-    if (!error) {
-      setAttachments(attachments.filter(a => a.id !== attachmentId))
-    }
-    setSaving(false)
+  const handleDeleteAttachment = (attachmentId, filePath) => {
+    setConfirmDialog({
+      title: 'Deletar Anexo',
+      message: 'Deseja realmente deletar este anexo?',
+      confirmLabel: 'Deletar',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        setSaving(true)
+        // Deletar arquivo do storage se não for link
+        if (filePath && !filePath.startsWith('http')) {
+          await supabase.storage
+            .from('policy-attachments')
+            .remove([filePath])
+        }
+        // Deletar do banco
+        const { error } = await supabase
+          .from('policy_attachments')
+          .delete()
+          .eq('id', attachmentId)
+        if (!error) {
+          setAttachments(attachments.filter(a => a.id !== attachmentId))
+        }
+        setSaving(false)
+      }
+    })
   }
 
   const calculateChecklistProgress = (checklist) => {

@@ -953,7 +953,7 @@ function DFCPage() {
   const handleSaveParcela = async (parcelaId) => {
     try {
       const valorNumerico = parseFloat(editingValor)
-      if (isNaN(valorNumerico) || valorNumerico <= 0) {
+      if (isNaN(valorNumerico) || valorNumerico < 0) {
         toast.error('Digite um valor válido')
         return
       }
@@ -1666,7 +1666,7 @@ function DFCPage() {
                       {saida.is_parcelado && (
                         <div className="mt-1">
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                            {saida.numero_parcelas}x de {formatCurrency(saida.valor / saida.numero_parcelas)}
+                            Parcelado em {saida.numero_parcelas}x
                           </span>
                         </div>
                       )}
