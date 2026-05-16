@@ -420,7 +420,7 @@ export default function CRMLeadDetailPage() {
                     </div>
                     {card.crm_boards?.id && (
                       <button
-                        onClick={() => navigate('/crm', { state: { boardId: card.crm_boards.id } })}
+                        onClick={() => navigate('/crm', { state: { boardId: card.crm_boards.id, cardId: card.id } })}
                         className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#EBA500] border border-[#EBA500]/30 rounded-lg hover:bg-amber-50 transition-colors"
                       >
                         Ver <ChevronRight className="h-3 w-3" />

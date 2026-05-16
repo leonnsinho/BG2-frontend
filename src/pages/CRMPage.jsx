@@ -2497,6 +2497,21 @@ export default function CRMPage() {
     }
   }, [boards, location.state])
 
+  // Auto-abrir card específico após o board carregar (vindo de state.cardId)
+  const autoOpenCardDone = useRef(false)
+  useEffect(() => {
+    const cardId = location.state?.cardId
+    if (!cardId || autoOpenCardDone.current || loading || !selectedBoard) return
+    for (const [columnId, colCards] of Object.entries(cards)) {
+      const found = colCards.find(c => c.id === cardId)
+      if (found) {
+        setCardModal({ card: found, columnId })
+        autoOpenCardDone.current = true
+        break
+      }
+    }
+  }, [location.state?.cardId, cards, loading, selectedBoard])
+
   const loadBoards = async () => {
     setBoardsLoading(true)
     try {

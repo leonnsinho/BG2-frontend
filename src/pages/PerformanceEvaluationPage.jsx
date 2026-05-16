@@ -15,6 +15,7 @@ import {
   Save,
   X,
   ChevronRight,
+  ChevronDown,
   FileText,
   Calendar,
   Plus,
@@ -68,6 +69,10 @@ export default function PerformanceEvaluationPage() {
   const [externalEvaluations, setExternalEvaluations] = useState([])
   const [showExternalNameModal, setShowExternalNameModal] = useState(false)
   const [externalNameInput, setExternalNameInput] = useState('')
+  const [listSearch, setListSearch] = useState('')
+  const [listFilterTags, setListFilterTags] = useState([])
+  const [showOnlyUnevaluated, setShowOnlyUnevaluated] = useState(false)
+  const [showListTagDropdown, setShowListTagDropdown] = useState(false)
 
   // Obter empresa do usuário atual se for company_admin
   const getCurrentUserCompany = () => {
@@ -208,6 +213,7 @@ export default function PerformanceEvaluationPage() {
         .from('external_performance_evaluations')
         .select('*')
         .order('evaluation_date', { ascending: false })
+        .order('created_at', { ascending: false })
       if (!isSuperAdmin()) {
         const cuc = getCurrentUserCompany()
         if (cuc) extQuery = extQuery.eq('company_id', cuc.id)
@@ -813,12 +819,48 @@ export default function PerformanceEvaluationPage() {
 
   const filteredEvaluations = evaluations.filter(e => filteredUserIds.has(e.user_id))
 
-  // Estatísticas
+  const filteredExternalEvals = externalEvaluations.filter(ev =>
+    filterCompany === 'all' || ev.company_id === filterCompany
+  )
+
+  // Lista geral de usuários (seção inferior)
+  const filteredListUsers = [
+    ...filteredUsersForStats
+      .filter(u => {
+        const matchesSearch = !listSearch ||
+          u.full_name?.toLowerCase().includes(listSearch.toLowerCase()) ||
+          u.email?.toLowerCase().includes(listSearch.toLowerCase())
+        const matchesTag = listFilterTags.length === 0 ||
+          listFilterTags.every(tid => (userTagsMap[u.id] || []).some(t => t.id === tid))
+        const isEvaluated = !!getUserEvaluation(u.id)
+        return matchesSearch && matchesTag && (!showOnlyUnevaluated || !isEvaluated)
+      })
+      .map(u => ({
+        ...u,
+        evaluation: getUserEvaluation(u.id) || null,
+        isExternal: false,
+      })),
+    ...(!showOnlyUnevaluated && listFilterTags.length === 0
+      ? filteredExternalEvals
+          .filter(ev => !listSearch || ev.external_name.toLowerCase().includes(listSearch.toLowerCase()))
+          .map(ev => ({
+            id: `ext::${ev.company_id}::${ev.external_name}`,
+            full_name: ev.external_name,
+            email: null,
+            company_id: ev.company_id,
+            companies: { name: companies.find(c => c.id === ev.company_id)?.name || '' },
+            evaluation: ev,
+            isExternal: true,
+          }))
+      : []),
+  ].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''))
+
+  // Estatísticas (inclui pessoas externas avaliadas)
   const stats = {
-    total: filteredUsersForStats.length,
-    evaluated: filteredEvaluations.length,
-    stars: filteredEvaluations.filter(e => e.classification === 'star').length,
-    risks: filteredEvaluations.filter(e => e.classification === 'risk' || e.classification === 'low_performer').length
+    total: filteredUsersForStats.length + filteredExternalEvals.length,
+    evaluated: filteredEvaluations.length + filteredExternalEvals.length,
+    stars: filteredEvaluations.filter(e => e.classification === 'star').length + filteredExternalEvals.filter(e => e.classification === 'star').length,
+    risks: filteredEvaluations.filter(e => e.classification === 'risk' || e.classification === 'low_performer').length + filteredExternalEvals.filter(e => e.classification === 'risk' || e.classification === 'low_performer').length
   }
 
   if (loading) {
@@ -1264,38 +1306,145 @@ export default function PerformanceEvaluationPage() {
           </div>
         </div>
 
-        {/* Lista de usuários não avaliados */}
+        {/* Lista geral de usuários */}
         <div className="mt-6 sm:mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
-            <span className="text-base sm:text-xl">Usuários Não Avaliados ({stats.total - stats.evaluated})</span>
+            <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <span className="text-base sm:text-xl">Lista de Usuários ({filteredListUsers.length})</span>
           </h2>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-            {users
-              .filter(u => !getUserEvaluation(u.id))
-              .filter(u => {
-                const matchesSearch = u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
-                const matchesCompany = filterCompany === 'all' || u.company_id === filterCompany
-                const matchesTag = filterTag.length === 0 || filterTag.every(tid => (userTagsMap[u.id] || []).some(t => t.id === tid))
-                return matchesSearch && matchesCompany && matchesTag
-              })
-              .map(u => (
-                <div
-                  key={u.id}
-                  onClick={() => openEvaluationModal(u)}
-                  className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer border border-gray-200 dark:border-gray-600"
+
+          {/* Filtros */}
+          <div className="flex flex-wrap items-center gap-3 mb-5">
+            {/* Busca */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por nome ou e-mail..."
+                value={listSearch}
+                onChange={e => setListSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+
+            {/* Filtro por tag */}
+            {availableTags.length > 0 && (
+              <div className="relative">
+                {showListTagDropdown && (
+                  <div className="fixed inset-0 z-10" onClick={() => setShowListTagDropdown(false)} />
+                )}
+                <button
+                  onClick={() => setShowListTagDropdown(v => !v)}
+                  className={`relative z-20 flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-colors ${
+                    listFilterTags.length > 0
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                      : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                  }`}
                 >
-                  <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">{u.email}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 truncate">{u.companies?.name}</p>
-                  <button className="mt-2 text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium">
-                    Avaliar →
-                  </button>
-                </div>
-              ))}
+                  <Filter className="h-4 w-4" />
+                  Tags{listFilterTags.length > 0 ? ` (${listFilterTags.length})` : ''}
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+                {showListTagDropdown && (
+                  <div className="absolute left-0 top-full mt-1 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl min-w-[180px] p-2 space-y-1">
+                    {availableTags.map(tag => (
+                      <label key={tag.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={listFilterTags.includes(tag.id)}
+                          onChange={() => setListFilterTags(prev =>
+                            prev.includes(tag.id) ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
+                          )}
+                          className="rounded"
+                        />
+                        <span
+                          className="text-xs font-medium px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: tag.color ? `${tag.color}20` : '#E5E7EB', color: tag.color || '#374151' }}
+                        >
+                          {tag.name}
+                        </span>
+                      </label>
+                    ))}
+                    {listFilterTags.length > 0 && (
+                      <button
+                        onClick={() => setListFilterTags([])}
+                        className="w-full mt-1 text-xs text-red-600 hover:text-red-700 py-1 border-t border-gray-100 dark:border-gray-700"
+                      >
+                        Limpar filtro
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Apenas não avaliados */}
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showOnlyUnevaluated}
+                onChange={e => setShowOnlyUnevaluated(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">Apenas não avaliados</span>
+            </label>
           </div>
+
+          {filteredListUsers.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">Nenhum usuário encontrado.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {filteredListUsers.map(u => {
+                const classInfo = u.evaluation ? CLASSIFICATIONS[u.evaluation.classification] : null
+                const tags = !u.isExternal ? (userTagsMap[u.id] || []) : []
+                return (
+                  <div
+                    key={u.id}
+                    onClick={() => openEvaluationModal(u)}
+                    className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3 sm:p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer border border-gray-200 dark:border-gray-600"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{u.full_name}</p>
+                      {u.isExternal && (
+                        <span className="shrink-0 text-[10px] bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded-full font-medium">Externo</span>
+                      )}
+                    </div>
+                    {u.email && <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1">{u.email}</p>}
+                    {u.companies?.name && <p className="text-xs text-gray-400 dark:text-gray-500 truncate mb-2">{u.companies.name}</p>}
+                    {tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {tags.slice(0, 3).map(tag => (
+                          <span
+                            key={tag.id}
+                            className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                            style={{ backgroundColor: tag.color ? `${tag.color}20` : '#E5E7EB', color: tag.color || '#374151' }}
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
+                        {tags.length > 3 && <span className="text-[10px] text-gray-400">+{tags.length - 3}</span>}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between mt-auto">
+                      {classInfo ? (
+                        <span
+                          className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${classInfo.color}20`, color: classInfo.color }}
+                        >
+                          {classInfo.label}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-orange-600 font-medium">Não avaliado</span>
+                      )}
+                      <span className="text-xs text-primary-600 hover:text-primary-700 font-medium">
+                        {classInfo ? 'Reavaliar →' : 'Avaliar →'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
       {/* Modal Nome Pessoa Externa */}
