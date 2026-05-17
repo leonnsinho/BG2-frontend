@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermissions } from '../hooks/useAuth'
 import { useUserContext } from '../contexts/UserContext'
@@ -28,7 +28,8 @@ import {
   Upload,
   Image as ImageIcon,
   X,
-  Wallet
+  Wallet,
+  Zap
 } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -89,6 +90,7 @@ const PLAN_LABELS = {
 const SettingsPage = () => {
   const { user, profile, refreshProfile } = useAuth()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const permissions = usePermissions()
   const { preferences: contextPreferences, updatePreference } = useUserContext()
 
@@ -1518,6 +1520,32 @@ const SettingsPage = () => {
                         )}
                       </button>
                     </div>
+
+                    {/* Upgrade para plano anual */}
+                    {['profissional', 'premium'].includes(currentPlan) && currentStatus === 'active' && (
+                      <div className="rounded-2xl border border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50/40 dark:from-green-900/20 dark:to-emerald-900/10 p-5 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                              <Zap className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-bold text-[#373435] dark:text-white">Migre para o plano anual</h3>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Economize até 2 meses pagando anualmente.
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => navigate('/planos?billing=annual')}
+                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold text-sm transition-colors whitespace-nowrap"
+                          >
+                            <Zap className="w-4 h-4" />
+                            Ver planos anuais
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Slots adicionais de usuário — somente Premium ativo */}
                     {currentPlan === 'premium' && currentStatus === 'active' && (() => {

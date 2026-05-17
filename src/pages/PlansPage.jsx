@@ -95,6 +95,13 @@ export default function PlansPage() {
   const paymentStatus = searchParams.get('payment')
   const trialExpired = searchParams.get('trialExpired') === 'true'
   const planInativo = searchParams.get('planInativo') === 'true'
+
+  // Inicializa modo de cobrança via URL param (?billing=annual)
+  useEffect(() => {
+    if (searchParams.get('billing') === 'annual') {
+      setBilling('annual')
+    }
+  }, [])
   const companyId = profile?.user_companies?.find(uc => uc.is_active)?.company_id
   const isProfileReady = !authLoading && profile?.id && profile?.user_companies !== undefined
 
