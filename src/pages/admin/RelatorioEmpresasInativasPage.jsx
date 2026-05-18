@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
+import { exportTableToPdf } from '../../utils/exportPdf'
 import {
   Building2,
   Search,
@@ -12,6 +13,7 @@ import {
   Mail,
   ExternalLink,
   RefreshCw,
+  FileDown,
 } from 'lucide-react'
 
 function daysSince(dateStr) {
@@ -127,6 +129,30 @@ export default function RelatorioEmpresasInativasPage() {
     return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
   }
 
+  const handleExportPdf = () => {
+    exportTableToPdf({
+      title: 'Empresas Inativas Pós-Teste',
+      subtitle: search ? `Busca: "${search}"` : `Total: ${companies.length} empresas`,
+      stats: [
+        { label: 'Total inativas', value: companies.length },
+        { label: 'Inativas < 30 dias', value: recentlyInactive },
+        { label: 'Média dias pós-trial', value: `${avgDays}d` },
+        { label: 'Exibindo (com filtro)', value: filtered.length },
+      ],
+      head: ['Empresa', 'Admin', 'E-mail admin', 'Criada em', 'Dias pós-trial', 'Status', 'Usuários'],
+      body: filtered.map(c => [
+        c.name,
+        c.admin?.full_name || '—',
+        c.admin?.email || '—',
+        formatDate(c.created_at),
+        `${c.daysPostTrial}d sem plano`,
+        c.subscription_status,
+        String(c.usersCount),
+      ]),
+      filename: `empresas-inativas-${new Date().toISOString().slice(0, 10)}`,
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
       {/* Header */}
@@ -197,6 +223,14 @@ export default function RelatorioEmpresasInativasPage() {
           >
             <RefreshCw className="h-4 w-4" />
             Atualizar
+          </button>
+          <button
+            onClick={handleExportPdf}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
+          >
+            <FileDown className="h-4 w-4" />
+            Exportar PDF
           </button>
         </div>
 

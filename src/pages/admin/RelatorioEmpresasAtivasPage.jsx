@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
+import { exportTableToPdf } from '../../utils/exportPdf'
 import {
   Building2,
   Search,
@@ -15,6 +16,7 @@ import {
   ExternalLink,
   RefreshCw,
   ChevronDown,
+  FileDown,
 } from 'lucide-react'
 
 const PLANS = {
@@ -127,6 +129,33 @@ export default function RelatorioEmpresasAtivasPage() {
 
   const selectedPlanLabel = filterPlan === 'all' ? 'Todos os planos' : (PLANS[filterPlan]?.label ?? filterPlan)
 
+  const handleExportPdf = () => {
+    const subtitle = filterPlan !== 'all'
+      ? `Plano: ${selectedPlanLabel} · ${filtered.length} empresa(s)`
+      : `Total: ${companies.length} empresas ativas`
+
+    const statsArr = Object.entries(PLANS)
+      .filter(([key]) => planCounts[key] > 0)
+      .map(([key, plan]) => ({ label: plan.label, value: planCounts[key] }))
+
+    exportTableToPdf({
+      title: 'Empresas Ativas por Plano',
+      subtitle,
+      stats: statsArr,
+      head: ['Empresa', 'Plano', 'Admin', 'E-mail admin', 'Cliente desde', 'Renovação', 'Usuários'],
+      body: filtered.map(c => [
+        c.name,
+        PLANS[c.subscription_plan]?.label ?? c.subscription_plan,
+        c.admin?.full_name || '—',
+        c.admin?.email || '—',
+        formatDate(c.created_at),
+        c.subscription_renewal_date ? formatDate(c.subscription_renewal_date) : '—',
+        String(c.usersCount),
+      ]),
+      filename: `empresas-ativas-${new Date().toISOString().slice(0, 10)}`,
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
       {/* Header */}
@@ -223,6 +252,14 @@ export default function RelatorioEmpresasAtivasPage() {
           >
             <RefreshCw className="h-4 w-4" />
             Atualizar
+          </button>
+          <button
+            onClick={handleExportPdf}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
+          >
+            <FileDown className="h-4 w-4" />
+            Exportar PDF
           </button>
         </div>
 

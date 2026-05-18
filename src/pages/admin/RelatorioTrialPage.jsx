@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../services/supabase'
+import { exportTableToPdf } from '../../utils/exportPdf'
 import {
   Building2,
   Search,
@@ -15,6 +16,7 @@ import {
   XCircle,
   AlertCircle,
   Hourglass,
+  FileDown,
 } from 'lucide-react'
 
 const TRIAL_DAYS = 14
@@ -172,6 +174,32 @@ export default function RelatorioTrialPage() {
   const conversionRate = counts.total > 0
     ? Math.round((counts.active / counts.total) * 100)
     : 0
+
+  const handleExportPdf = () => {
+    const subtitle = `Período: ${selectedPeriod.label} · Conversão: ${conversionRate}%`
+    exportTableToPdf({
+      title: 'Histórico de Trials',
+      subtitle,
+      stats: [
+        { label: 'Total no período', value: counts.total },
+        { label: 'Ainda em trial',    value: counts.trial },
+        { label: 'Converteram',       value: counts.active },
+        { label: 'Não converteram',   value: counts.inactive },
+        { label: 'Taxa de conversão', value: `${conversionRate}%` },
+      ],
+      head: ['Empresa', 'Admin', 'E-mail admin', 'Início trial', 'Fim trial', 'Status', 'Usuários'],
+      body: filtered.map(c => [
+        c.name,
+        c.admin?.full_name || '—',
+        c.admin?.email || '—',
+        formatDate(c.created_at),
+        formatDate(c.trialEnd),
+        STATUS_INFO[c.subscription_status]?.label ?? c.subscription_status,
+        String(c.usersCount),
+      ]),
+      filename: `trials-${new Date().toISOString().slice(0, 10)}`,
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
@@ -342,6 +370,14 @@ export default function RelatorioTrialPage() {
           >
             <RefreshCw className="h-4 w-4" />
             Atualizar
+          </button>
+          <button
+            onClick={handleExportPdf}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
+          >
+            <FileDown className="h-4 w-4" />
+            Exportar PDF
           </button>
         </div>
 
