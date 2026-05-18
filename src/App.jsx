@@ -68,6 +68,9 @@ import RelatorioExecucaoEstrategicaPage from './pages/reports/RelatorioExecucaoE
 import RelatorioProdutividadeUsuarioPage from './pages/reports/RelatorioProdutividadeUsuarioPage'
 import RelatorioEvolucaoKPIsPage from './pages/reports/RelatorioEvolucaoKPIsPage'
 import RelatorioPrevisibilidadeCaixaPage from './pages/reports/RelatorioPrevisibilidadeCaixaPage'
+import RelatorioEmpresasInativasPage from './pages/admin/RelatorioEmpresasInativasPage'
+import RelatorioEmpresasAtivasPage from './pages/admin/RelatorioEmpresasAtivasPage'
+import RelatorioTrialPage from './pages/admin/RelatorioTrialPage'
 import BusinessModelPage from './pages/BusinessModelPage'
 import { useAuth } from './contexts/AuthContext'
 import { ToastContainer } from './components/ui/FeedbackComponents'
@@ -519,6 +522,30 @@ function AppRoutes() {
       />
 
       {/* Rotas de Relatórios (Super Admin e Company Admin) */}
+      <Route 
+        path="/reports/empresas-inativas" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <RelatorioEmpresasInativasPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/reports/empresas-ativas" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <RelatorioEmpresasAtivasPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/reports/trials" 
+        element={
+          <ProtectedRoute requiredRole={['super_admin']}>
+            <RelatorioTrialPage />
+          </ProtectedRoute>
+        }
+      />
       <Route 
         path="/reports/user-activity" 
         element={

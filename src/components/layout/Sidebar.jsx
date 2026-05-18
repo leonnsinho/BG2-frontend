@@ -166,13 +166,13 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
         href: '/indicators'
       },
       {
-        name: 'Relatórios de Uso',
+        name: 'Relatórios',
         icon: BarChart3,
-        href: '/reports',
+        href: '/reports/empresas-inativas',
         children: [
-          { name: 'Atividade de Usuários', href: '/reports/user-activity' },
-          { name: 'Uso por Empresa', href: '/reports/company-usage' },
-          { name: 'Métricas da Plataforma', href: '/reports/platform-metrics' }
+          { name: 'Empresas Inativas Pós-Teste', href: '/reports/empresas-inativas' },
+          { name: 'Empresas Ativas por Plano', href: '/reports/empresas-ativas' },
+          { name: 'Histórico de Trials', href: '/reports/trials' },
         ]
       },
       {
