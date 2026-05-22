@@ -202,12 +202,11 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   const [products, setProducts] = useState([])
   const [contacts, setContacts] = useState([])
   const [selectedLead, setSelectedLead] = useState(null)
-  const [selectedContact, setSelectedContact] = useState(null)
   const [lineItems, setLineItems] = useState([]) // { lineId, dbId, product_id, product, nome_produto, valor_unitario, quantidade, desconto_percentual, valor_linha }
+  const [contactItems, setContactItems] = useState([]) // { itemId, dbId, contact_id, contact, nome, cargo, email, telefone }
 
-  // expand/collapse fields under importers
+  // expand/collapse fields under lead importer
   const [expandLead, setExpandLead] = useState(!card?.lead_id)
-  const [expandContact, setExpandContact] = useState(!card?.contact_id)
 
   // create-inline sub-modal
   const [createMode, setCreateMode] = useState(null) // 'lead' | 'product' | 'contact'
@@ -219,6 +218,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     if (card?.id) {
       loadAttachments(card.id)
       loadLineItems(card.id)
+      loadContactItems(card.id)
       loadCardTags(card.id)
     }
   }, [])
@@ -263,8 +263,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     setProducts(pList)
     setContacts(cList)
     // pre-select if editing
-    if (card?.lead_id)    setSelectedLead(lList.find(x => x.id === card.lead_id) || null)
-    if (card?.contact_id) setSelectedContact(cList.find(x => x.id === card.contact_id) || null)
+    if (card?.lead_id) setSelectedLead(lList.find(x => x.id === card.lead_id) || null)
   }
 
   const loadAttachments = async (cardId) => {
@@ -344,23 +343,52 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     }))
   }
 
-  const pickContact = (contact) => {
-    setSelectedContact(contact)
-    if (contact) {
-      setForm(p => ({
-        ...p,
-        contact_id: contact.id,
-        nome_contato: contact.nome || p.nome_contato,
-        cargo_contato: contact.cargo || p.cargo_contato,
-        email_contato: contact.email || p.email_contato,
-        telefone_contato: contact.telefone || p.telefone_contato,
-      }))
-      setExpandContact(false)
-    } else {
-      setForm(p => ({ ...p, contact_id: null }))
-      setExpandContact(true)
+  const loadContactItems = async (cardId) => {
+    const { data } = await supabase
+      .from('crm_card_contacts')
+      .select('*, crm_contacts(nome, cargo, email, telefone)')
+      .eq('card_id', cardId)
+      .order('created_at')
+    if (data && data.length > 0) {
+      setContactItems(data.map(row => ({
+        itemId: row.id,
+        dbId: row.id,
+        contact_id: row.contact_id,
+        contact: row.crm_contacts || null,
+        nome: row.nome,
+        cargo: row.cargo || '',
+        email: row.email || '',
+        telefone: row.telefone || '',
+      })))
+    } else if (card?.contact_id || card?.nome_contato) {
+      // Legacy fallback: card has contact in old single fields
+      setContactItems([{
+        itemId: crypto.randomUUID(),
+        dbId: null,
+        contact_id: card.contact_id || null,
+        contact: null,
+        nome: card.nome_contato || '',
+        cargo: card.cargo_contato || '',
+        email: card.email_contato || '',
+        telefone: card.telefone_contato || '',
+      }])
     }
   }
+
+  const addContactItem = (contact) => {
+    setContactItems(prev => [...prev, {
+      itemId: crypto.randomUUID(),
+      dbId: null,
+      contact_id: contact?.id || null,
+      contact: contact || null,
+      nome: contact?.nome || '',
+      cargo: contact?.cargo || '',
+      email: contact?.email || '',
+      telefone: contact?.telefone || '',
+    }])
+  }
+
+  const removeContactItem = (itemId) => setContactItems(prev => prev.filter(ci => ci.itemId !== itemId))
 
   // Inline create helpers
   const openCreate = (mode) => {
@@ -404,7 +432,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         if (error) throw error
         const updated = [...contacts, data]
         setContacts(updated)
-        pickContact(data)
+        addContactItem(data)
       }
       toast.success('Criado com sucesso!')
       setCreateMode(null)
@@ -413,7 +441,8 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   }
 
   const handleSave = async () => {
-    if (!form.nome_empresa?.trim() && !form.nome_contato?.trim()) {
+    const firstContactName = contactItems[0]?.nome
+    if (!form.nome_empresa?.trim() && !firstContactName?.trim()) {
       toast.error('Informe ao menos o nome da empresa ou do contato')
       return
     }
@@ -424,14 +453,16 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         ? (totalItems || null)
         : (form.valor_oportunidade !== '' ? parseFloat(String(form.valor_oportunidade).replace(/[^\d.,]/g, '').replace(',', '.')) || null : null)
 
+      const firstContact = contactItems[0] || null
       const payload = {
         company_id: companyId,
         column_id: form.column_id || columnId,
         nome_empresa: form.nome_empresa?.trim() || null,
-        nome_contato: form.nome_contato?.trim() || null,
-        cargo_contato: form.cargo_contato?.trim() || null,
-        email_contato: form.email_contato?.trim() || null,
-        telefone_contato: form.telefone_contato?.trim() || null,
+        // Backward compat: keep primary contact fields from first contactItem
+        nome_contato: firstContact?.nome?.trim() || null,
+        cargo_contato: firstContact?.cargo?.trim() || null,
+        email_contato: firstContact?.email?.trim() || null,
+        telefone_contato: firstContact?.telefone?.trim() || null,
         origem_lead: form.origem_lead || null,
         cidade_estado: form.cidade_estado?.trim() || null,
         segmento: form.segmento?.trim() || null,
@@ -440,7 +471,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         status: form.status || 'ativo',
         status_updated_at: form.status_updated_at || new Date().toISOString(),
         lead_id: form.lead_id || null,
-        contact_id: form.contact_id || null,
+        contact_id: firstContact?.contact_id || null,
         updated_at: new Date().toISOString(),
       }
       let saved
@@ -472,6 +503,21 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         const { error: liErr } = await supabase.from('crm_card_products').insert(rows)
         if (liErr) throw liErr
       }
+      // Save contact items
+      await supabase.from('crm_card_contacts').delete().eq('card_id', cardId)
+      if (contactItems.length > 0) {
+        const contactRows = contactItems.map(ci => ({
+          card_id: cardId,
+          company_id: companyId,
+          contact_id: ci.contact_id || null,
+          nome: ci.nome || '',
+          cargo: ci.cargo || null,
+          email: ci.email || null,
+          telefone: ci.telefone || null,
+        }))
+        const { error: ciErr } = await supabase.from('crm_card_contacts').insert(contactRows)
+        if (ciErr) throw ciErr
+      }
       toast.success(isNew ? 'Card criado!' : 'Card atualizado!')
       // Sync tags
       await supabase.from('crm_card_tags').delete().eq('card_id', saved.id)
@@ -479,7 +525,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         await supabase.from('crm_card_tags').insert([...selectedTagIds].map(tagId => ({ card_id: saved.id, tag_id: tagId })))
       }
       const savedTagObjects = allTags.filter(t => selectedTagIds.has(t.id))
-      onSaved(saved, isNew, savedTagObjects)
+      onSaved(saved, isNew, savedTagObjects, contactItems)
     } catch (e) {
       toast.error('Erro ao salvar: ' + e.message)
     } finally {
@@ -769,50 +815,65 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
           {/* CONTATO */}
           <section>
             <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-              <User className="h-3.5 w-3.5" /> Contato
+              <User className="h-3.5 w-3.5" /> Contatos
+              {contactItems.length > 0 && (
+                <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+                  {contactItems.length}
+                </span>
+              )}
             </h4>
+
+            {/* Lista de contatos adicionados */}
+            {contactItems.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {contactItems.map((ci, idx) => (
+                  <div key={ci.itemId} className="p-3 bg-purple-50/60 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800/40">
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <User className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">
+                          {ci.nome || `Contato ${idx + 1}`}
+                        </span>
+                        {ci.cargo && <span className="text-[10px] text-gray-400 shrink-0">· {ci.cargo}</span>}
+                      </div>
+                      <button type="button" onClick={() => removeContactItem(ci.itemId)}
+                        className="shrink-0 p-1 hover:bg-red-100 rounded-lg transition-colors">
+                        <X className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                      {ci.email && (
+                        <a href={`mailto:${ci.email}`} className="flex items-center gap-1 text-[10px] text-purple-600 hover:underline truncate col-span-2">
+                          <Mail className="h-3 w-3 shrink-0" />{ci.email}
+                        </a>
+                      )}
+                      {ci.telefone && (
+                        <span className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                          <Phone className="h-3 w-3 shrink-0" />{ci.telefone}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Picker para adicionar mais contatos */}
             <ImportOrCreatePicker
               title="Contato"
               Icon={User}
               colorClass="border-purple-200 text-purple-700"
-              items={selectedLead ? contacts.filter(c => c.lead_id === selectedLead.id) : contacts}
-              selected={selectedContact}
-              onSelect={pickContact}
+              items={(selectedLead ? contacts.filter(c => c.lead_id === selectedLead.id) : contacts).filter(
+                c => !contactItems.some(ci => ci.contact_id === c.id)
+              )}
+              selected={null}
+              onSelect={c => { if (c) addContactItem(c) }}
               onCreateClick={() => openCreate('contact')}
               renderItem={c => c.nome + (c.cargo ? ` · ${c.cargo}` : '') + (c.crm_leads?.nome_empresa ? ` (${c.crm_leads.nome_empresa})` : '')}
               filterItem={c => [c.nome, c.cargo, c.email, c.telefone, c.crm_leads?.nome_empresa].filter(Boolean).join(' ')}
-              renderSelected={c => <><span className="font-semibold">{c.nome}</span>{c.cargo && <span className="text-xs text-gray-400 ml-1">· {c.cargo}</span>}</>}
-              placeholder={selectedLead ? `Contatos de ${selectedLead.nome_empresa}...` : 'Importar contato existente...'}
+              renderSelected={() => null}
+              placeholder={contactItems.length > 0 ? 'Adicionar outro contato...' : (selectedLead ? `Contatos de ${selectedLead.nome_empresa}...` : 'Adicionar contato...')}
             />
-            {/* Editable fields — toggle */}
-            <button
-              type="button"
-              onClick={() => setExpandContact(v => !v)}
-              className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#EBA500] transition-colors"
-            >
-              <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expandContact ? 'rotate-180' : ''}`} />
-              {expandContact ? 'Ocultar campos' : 'Editar dados manualmente'}
-            </button>
-            {expandContact && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome do Contato</label>
-                  <input className={INP} value={form.nome_contato} onChange={e => setForm(p => ({...p, nome_contato: e.target.value}))} placeholder="João Silva" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cargo</label>
-                  <input className={INP} value={form.cargo_contato} onChange={e => setForm(p => ({...p, cargo_contato: e.target.value}))} placeholder="Diretor Comercial" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">E-mail</label>
-                  <input type="email" className={INP} value={form.email_contato} onChange={e => setForm(p => ({...p, email_contato: e.target.value}))} placeholder="joao@empresa.com" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Telefone</label>
-                  <input type="tel" className={INP} value={form.telefone_contato} onChange={e => setForm(p => ({...p, telefone_contato: e.target.value}))} placeholder="(11) 99999-9999" />
-                </div>
-              </div>
-            )}
           </section>
 
           {/* PRODUTO / OPORTUNIDADE */}
@@ -1046,7 +1107,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
 }
 
 // ─── KanbanCard (draggable) ───────────────────────────────────────────────
-function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [] }) {
+function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [], contacts = [] }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id, data: { type: 'card', card } })
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -1106,7 +1167,12 @@ function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [] }) {
               <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{card.nome_empresa}</p>
             </div>
           )}
-          {card.nome_contato && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{card.nome_contato}{card.cargo_contato ? ` · ${card.cargo_contato}` : ''}</p>}
+          {(contacts.length > 0 ? contacts : (card.nome_contato ? [{ nome: card.nome_contato, cargo: card.cargo_contato }] : [])).map((c, i) => (
+            <p key={i} className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
+              <User className="h-3 w-3 shrink-0 text-purple-400" />
+              {c.nome}{c.cargo ? ` · ${c.cargo}` : ''}
+            </p>
+          ))}
         </div>
         <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.label}</span>
       </div>
@@ -1134,7 +1200,7 @@ function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [] }) {
 }
 
 // ─── KanbanColumn ─────────────────────────────────────────────────────────────
-function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDeleteColumn, activeCardId, cardTagsMap = {} }) {
+function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDeleteColumn, activeCardId, cardTagsMap = {}, cardContactsMap = {} }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id, data: { type: 'column', columnId: column.id } })
   const { attributes, listeners, setNodeRef: setColRef, transform, transition, isDragging } = useSortable({
     id: `col-${column.id}`, data: { type: 'column', column },
@@ -1191,7 +1257,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
           <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
             <div className="space-y-2">
               {cards.map(card => (
-                <KanbanCard key={card.id} card={card} onEdit={onEditCard} tags={cardTagsMap[card.id] || []} />
+                <KanbanCard key={card.id} card={card} onEdit={onEditCard} tags={cardTagsMap[card.id] || []} contacts={cardContactsMap[card.id] || []} />
               ))}
             </div>
           </SortableContext>
@@ -2470,6 +2536,7 @@ export default function CRMPage() {
   const [filterTags, setFilterTags] = useState([])              // tag IDs selecionadas
   const [boardTags, setBoardTags] = useState([])                // todas as tags da empresa
   const [cardTagsMap, setCardTagsMap] = useState({})            // { cardId: Tag[] }
+  const [cardContactsMap, setCardContactsMap] = useState({})    // { cardId: Contact[] }
   const [confirmDialog, setConfirmDialog] = useState(null) // { title, message, onConfirm }
 
   const [searchParams] = useSearchParams()
@@ -2537,6 +2604,7 @@ export default function CRMPage() {
     setFilterTags([])
     setBoardTags([])
     setCardTagsMap({})
+    setCardContactsMap({})
     setLoading(true)
     setColumns([])
     setCards({})
@@ -2560,11 +2628,14 @@ export default function CRMPage() {
         if (cardRes.error) throw cardRes.error
         cardData = cardRes.data || []
       }
-      // Carrega tags em paralelo com o agrupamento
-      const [tagsRes, ctRes] = await Promise.all([
+      // Carrega tags e contatos em paralelo com o agrupamento
+      const [tagsRes, ctRes, ccRes] = await Promise.all([
         supabase.from('crm_tags').select('*').eq('company_id', companyId).order('name'),
         cardData.length > 0
           ? supabase.from('crm_card_tags').select('card_id, tag_id, crm_tags(*)').in('card_id', cardData.map(c => c.id))
+          : Promise.resolve({ data: [] }),
+        cardData.length > 0
+          ? supabase.from('crm_card_contacts').select('*').in('card_id', cardData.map(c => c.id)).order('created_at')
           : Promise.resolve({ data: [] }),
       ])
       setBoardTags(tagsRes.data || [])
@@ -2574,6 +2645,12 @@ export default function CRMPage() {
         ctMap[ct.card_id].push(ct.crm_tags)
       })
       setCardTagsMap(ctMap)
+      const ccMap = {}
+      ;(ccRes.data || []).forEach(cc => {
+        if (!ccMap[cc.card_id]) ccMap[cc.card_id] = []
+        ccMap[cc.card_id].push(cc)
+      })
+      setCardContactsMap(ccMap)
 
       const grouped = {}
       cols.forEach(c => { grouped[c.id] = [] })
@@ -2599,6 +2676,7 @@ export default function CRMPage() {
     setFilterTags([])
     setBoardTags([])
     setCardTagsMap({})
+    setCardContactsMap({})
     setEditingTitle(false)
   }
 
@@ -2696,7 +2774,7 @@ export default function CRMPage() {
   }
 
   // ── Card CRUD ──────────────────────────────────────────────────────────────
-  const handleCardSaved = (saved, isNew, savedTags = []) => {
+  const handleCardSaved = (saved, isNew, savedTags = [], savedContacts = []) => {
     setCards(prev => {
       const updated = { ...prev }
       // Remove from old column if moved
@@ -2712,6 +2790,7 @@ export default function CRMPage() {
       return updated
     })
     setCardTagsMap(prev => ({ ...prev, [saved.id]: savedTags }))
+    setCardContactsMap(prev => ({ ...prev, [saved.id]: savedContacts }))
     setCardModal(null)
   }
 
@@ -3254,6 +3333,7 @@ export default function CRMPage() {
                     column={col}
                     cards={filteredCards(col.id)}
                     cardTagsMap={cardTagsMap}
+                    cardContactsMap={cardContactsMap}
                     onAddCard={(colId) => setCardModal({ columnId: colId })}
                     onEditCard={(card) => setCardModal({ card, columnId: card.column_id })}
                     onEditColumn={(col) => setColumnModal(col)}
@@ -3275,7 +3355,7 @@ export default function CRMPage() {
           </div>
 
           <DragOverlay>
-            {activeCard && <KanbanCard card={activeCard} onEdit={() => {}} isDragOverlay tags={cardTagsMap[activeCard.id] || []} />}
+            {activeCard && <KanbanCard card={activeCard} onEdit={() => {}} isDragOverlay tags={cardTagsMap[activeCard.id] || []} contacts={cardContactsMap[activeCard.id] || []} />}
             {activeColumn && (
               <div className="w-72 bg-white rounded-2xl border-2 border-[#EBA500]/50 shadow-2xl p-3 opacity-90">
                 <div className="flex items-center gap-2">
