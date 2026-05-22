@@ -87,6 +87,14 @@ export default function CRMLeadsPage() {
       if (editing) {
         const { error } = await supabase.from('crm_leads').update(payload).eq('id', editing.id)
         if (error) throw error
+        // Cascade lead changes to all linked pipeline cards
+        const cardPatch = { nome_empresa: payload.nome_empresa || null }
+        if (payload.segmento != null) cardPatch.segmento = payload.segmento || null
+        if (payload.origem_lead != null) cardPatch.origem_lead = payload.origem_lead || null
+        if (payload.cidade || payload.estado) {
+          cardPatch.cidade_estado = [payload.cidade, payload.estado].filter(Boolean).join(' / ') || null
+        }
+        await supabase.from('crm_cards').update(cardPatch).eq('lead_id', editing.id)
       } else {
         payload.created_by = user?.id
         const { data: inserted, error } = await supabase.from('crm_leads').insert([payload]).select('id').single()

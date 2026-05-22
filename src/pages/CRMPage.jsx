@@ -262,8 +262,12 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     setLeads(lList)
     setProducts(pList)
     setContacts(cList)
-    // pre-select if editing
-    if (card?.lead_id) setSelectedLead(lList.find(x => x.id === card.lead_id) || null)
+    // pre-select if editing — use pickLead so form fields are synced from fresh DB data
+    if (card?.lead_id) {
+      const foundLead = lList.find(x => x.id === card.lead_id) || null
+      if (foundLead) pickLead(foundLead)
+      else setSelectedLead(null)
+    }
   }
 
   const loadAttachments = async (cardId) => {
@@ -478,13 +482,27 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
       if (isNew) {
         payload.created_by = user?.id
         payload.position = 9999
-        const { data, error } = await supabase.from('crm_cards').insert([payload]).select().single()
+        const { data, error } = await supabase.from('crm_cards').insert([payload]).select('*, crm_leads(id, nome_empresa, segmento, cidade, estado, origem_lead)').single()
         if (error) throw error
         saved = data
       } else {
-        const { data, error } = await supabase.from('crm_cards').update(payload).eq('id', card.id).select().single()
+        const { data, error } = await supabase.from('crm_cards').update(payload).eq('id', card.id).select('*, crm_leads(id, nome_empresa, segmento, cidade, estado, origem_lead)').single()
         if (error) throw error
         saved = data
+      }
+      // Write back lead fields when card is linked to a lead
+      if (payload.lead_id) {
+        const leadPatch = { nome_empresa: payload.nome_empresa || null }
+        if (payload.segmento) leadPatch.segmento = payload.segmento
+        if (payload.origem_lead) leadPatch.origem_lead = payload.origem_lead
+        if (payload.cidade_estado?.trim()) {
+          const parts = payload.cidade_estado.split('/')
+          leadPatch.cidade = parts[0]?.trim() || null
+          leadPatch.estado = parts[1]?.trim() || null
+        }
+        await supabase.from('crm_leads').update(leadPatch).eq('id', payload.lead_id)
+        // Patch saved.crm_leads so the preview card reflects the new data immediately
+        saved = { ...saved, crm_leads: { ...(saved.crm_leads || {}), id: payload.lead_id, ...leadPatch } }
       }
       // Save line items
       const cardId = saved.id
@@ -1115,6 +1133,12 @@ function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [], contacts =
     opacity: isDragging ? 0.3 : 1,
   }
   const statusInfo = STATUS_OPTIONS.find(s => s.value === card.status) || STATUS_OPTIONS[0]
+  // Prefer joined lead data when available (stays fresh after lead edits)
+  const displayEmpresa = card.crm_leads?.nome_empresa || card.nome_empresa
+  const displaySegmento = card.crm_leads?.segmento || card.segmento
+  const displayCidadeEstado = card.crm_leads
+    ? [card.crm_leads.cidade, card.crm_leads.estado].filter(Boolean).join(' / ') || card.cidade_estado
+    : card.cidade_estado
   const isOverdue = card.status === 'ativo' && card.status_updated_at && (() => {
     const cardDate = new Date(card.status_updated_at)
     const today = new Date()
@@ -1128,8 +1152,13 @@ function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [], contacts =
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-2xl p-3 rotate-1 scale-105 cursor-grabbing">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
-            {card.nome_empresa && <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{card.nome_empresa}</p>}
-            {card.nome_contato && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{card.nome_contato}{card.cargo_contato ? ` · ${card.cargo_contato}` : ''}</p>}
+            {displayEmpresa && <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{displayEmpresa}</p>}
+            {(contacts.length > 0 ? contacts : (card.nome_contato ? [{ nome: card.nome_contato, cargo: card.cargo_contato }] : [])).map((c, i) => (
+              <p key={i} className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
+                <User className="h-3 w-3 shrink-0 text-purple-400" />
+                {c.nome}{c.cargo ? ` · ${c.cargo}` : ''}
+              </p>
+            ))}
           </div>
           <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.label}</span>
         </div>
@@ -1161,10 +1190,10 @@ function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [], contacts =
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
-          {card.nome_empresa && (
+          {displayEmpresa && (
             <div className="flex items-center gap-1">
               {isOverdue && <AlertCircle className="h-3 w-3 text-red-500 shrink-0" />}
-              <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{card.nome_empresa}</p>
+              <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{displayEmpresa}</p>
             </div>
           )}
           {(contacts.length > 0 ? contacts : (card.nome_contato ? [{ nome: card.nome_contato, cargo: card.cargo_contato }] : [])).map((c, i) => (
@@ -1176,10 +1205,10 @@ function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [], contacts =
         </div>
         <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.label}</span>
       </div>
-      {(card.segmento || card.cidade_estado) && (
+      {(displaySegmento || displayCidadeEstado) && (
         <div className="flex flex-wrap gap-1 mb-1.5">
-          {card.segmento && <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded-full">{card.segmento}</span>}
-          {card.cidade_estado && <span className="text-[10px] bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{card.cidade_estado}</span>}
+          {displaySegmento && <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded-full">{displaySegmento}</span>}
+          {displayCidadeEstado && <span className="text-[10px] bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{displayCidadeEstado}</span>}
         </div>
       )}
       {tags.length > 0 && (
@@ -2622,7 +2651,7 @@ export default function CRMPage() {
       if (colIds.length > 0) {
         const cardRes = await supabase
           .from('crm_cards')
-          .select('*')
+          .select('*, crm_leads(id, nome_empresa, segmento, cidade, estado, origem_lead)')
           .in('column_id', colIds)
           .order('position')
         if (cardRes.error) throw cardRes.error
@@ -2914,6 +2943,17 @@ export default function CRMPage() {
       const list = finalCards[cid] || []
       await Promise.all(list.map((c, i) => supabase.from('crm_cards').update({ position: i }).eq('id', c.id)))
     }
+
+    // Update the moved card's column_id in React state so UI reflects it immediately
+    setCards(prev => {
+      const updated = {}
+      for (const [cid, colCards] of Object.entries(prev)) {
+        updated[cid] = colCards.map(c =>
+          c.id === active.id ? { ...c, column_id: targetColId } : c
+        )
+      }
+      return updated
+    })
   }
 
   // ── Filtered view ─────────────────────────────────────────────────────────
