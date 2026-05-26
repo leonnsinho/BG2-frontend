@@ -2556,6 +2556,7 @@ export default function CRMPage() {
   const [cardModal, setCardModal] = useState(null)   // null | { card?: Card, columnId: string }
   const [columnModal, setColumnModal] = useState(null) // null | column object
   const boardScrollRef = useRef(null)
+  const tagDropdownRef = useRef(null)
 
   const [activeCard, setActiveCard] = useState(null)
   const [activeColumn, setActiveColumn] = useState(null)
@@ -2564,9 +2565,44 @@ export default function CRMPage() {
   const [filterPeriod, setFilterPeriod] = useState({ from: '', to: '' }) // filtro por status_updated_at
   const [filterTags, setFilterTags] = useState([])              // tag IDs selecionadas
   const [boardTags, setBoardTags] = useState([])                // todas as tags da empresa
+  const [tagDropdownOpen, setTagDropdownOpen] = useState(false)
+  const [editingTagId, setEditingTagId] = useState(null)
+  const [editingTagName, setEditingTagName] = useState('')
+  const [editingTagColor, setEditingTagColor] = useState('#6366f1')
   const [cardTagsMap, setCardTagsMap] = useState({})            // { cardId: Tag[] }
   const [cardContactsMap, setCardContactsMap] = useState({})    // { cardId: Contact[] }
   const [confirmDialog, setConfirmDialog] = useState(null) // { title, message, onConfirm }
+
+  const handleUpdateTag = async (tagId) => {
+    if (!editingTagName.trim()) return
+    const { error } = await supabase
+      .from('crm_tags')
+      .update({ name: editingTagName.trim(), color: editingTagColor })
+      .eq('id', tagId)
+    if (error) { toast.error('Erro ao atualizar tag'); return }
+    setBoardTags(p => p.map(t => t.id === tagId ? { ...t, name: editingTagName.trim(), color: editingTagColor } : t)
+      .sort((a, b) => a.name.localeCompare(b.name)))
+    setCardTagsMap(prev => {
+      const next = {}
+      for (const [cid, tags] of Object.entries(prev)) {
+        next[cid] = tags.map(t => t.id === tagId ? { ...t, name: editingTagName.trim(), color: editingTagColor } : t)
+      }
+      return next
+    })
+    setEditingTagId(null)
+  }
+
+  // Close tag dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(e.target)) {
+        setTagDropdownOpen(false)
+        setEditingTagId(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const [searchParams] = useSearchParams()
   const adminCompanyId = searchParams.get('from') === 'admin' ? searchParams.get('companyId') : null
@@ -3176,7 +3212,7 @@ export default function CRMPage() {
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-white dark:bg-gray-900">
       <SuperAdminBanner />
       {/* Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-200/60 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shrink-0">
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200/60 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shrink-0 relative z-20">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 mr-auto">
             <button
@@ -3270,41 +3306,143 @@ export default function CRMPage() {
             />
           </div>
 
-          {/* Tags */}
+          {/* Tags — dropdown multi-select */}
           {boardTags.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide shrink-0">Tags</span>
-              <div className="flex flex-wrap gap-1.5">
-                {boardTags.map(tag => (
-                  <div key={tag.id} className="relative group/tag">
-                    <button
-                      onClick={() => setFilterTags(p => p.includes(tag.id) ? p.filter(x => x !== tag.id) : [...p, tag.id])}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border-2 transition-all pr-5"
-                      style={{
-                        backgroundColor: filterTags.includes(tag.id) ? tag.color + '25' : tag.color + '12',
-                        color: tag.color,
-                        borderColor: filterTags.includes(tag.id) ? tag.color : 'transparent',
-                      }}
-                    >
-                      {filterTags.includes(tag.id) && <Check className="h-2.5 w-2.5" />}
-                      {tag.name}
-                    </button>
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        await supabase.from('crm_tags').delete().eq('id', tag.id)
-                        setBoardTags(p => p.filter(t => t.id !== tag.id))
-                        setFilterTags(p => p.filter(id => id !== tag.id))
-                      }}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover/tag:opacity-100 transition-opacity p-0.5 rounded-full hover:bg-black/10"
-                      style={{ color: tag.color }}
-                      title="Excluir tag"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
+            <div className="relative" ref={tagDropdownRef}>
+              <button
+                onClick={() => setTagDropdownOpen(v => !v)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                  filterTags.length > 0
+                    ? 'bg-amber-50 border-[#EBA500] text-[#EBA500] dark:bg-amber-900/20'
+                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:border-[#EBA500]/50'
+                }`}
+              >
+                <Tag className="h-3.5 w-3.5" />
+                Tags
+                {filterTags.length > 0 && (
+                  <span className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#EBA500] text-white text-[10px] flex items-center justify-center">
+                    {filterTags.length}
+                  </span>
+                )}
+                <ChevronDown className={`h-3 w-3 transition-transform duration-150 ${tagDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {tagDropdownOpen && (
+                <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[220px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Filtrar por tags</span>
+                    {filterTags.length > 0 && (
+                      <button
+                        onClick={() => setFilterTags([])}
+                        className="text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        Limpar
+                      </button>
+                    )}
                   </div>
-                ))}
-              </div>
+                  {/* Tag list */}
+                  <div className="py-1 max-h-64 overflow-y-auto">
+                    {boardTags.map(tag => {
+                      const active = filterTags.includes(tag.id)
+                      const isEditing = editingTagId === tag.id
+                      if (isEditing) {
+                        return (
+                          <div key={tag.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50">
+                            <input
+                              type="color"
+                              value={editingTagColor}
+                              onChange={e => setEditingTagColor(e.target.value)}
+                              className="w-6 h-6 rounded cursor-pointer border-0 p-0 shrink-0"
+                              style={{ background: 'none' }}
+                            />
+                            <input
+                              type="text"
+                              value={editingTagName}
+                              onChange={e => setEditingTagName(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') handleUpdateTag(tag.id); if (e.key === 'Escape') setEditingTagId(null) }}
+                              className="flex-1 text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 outline-none focus:border-[#EBA500]"
+                              autoFocus
+                              placeholder="Nome da tag"
+                            />
+                            <button
+                              onClick={() => handleUpdateTag(tag.id)}
+                              className="p-1 rounded-lg bg-[#EBA500] hover:bg-[#d4940a] transition-colors"
+                              title="Salvar"
+                            >
+                              <Check className="h-3 w-3 text-white" />
+                            </button>
+                            <button
+                              onClick={() => setEditingTagId(null)}
+                              className="p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              title="Cancelar"
+                            >
+                              <X className="h-3 w-3 text-gray-400" />
+                            </button>
+                          </div>
+                        )
+                      }
+                      return (
+                        <div key={tag.id} className="flex items-center justify-between px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 group/row">
+                          <button
+                            onClick={() => setFilterTags(p => active ? p.filter(x => x !== tag.id) : [...p, tag.id])}
+                            className="flex items-center gap-2 flex-1 min-w-0"
+                          >
+                            <span
+                              className="w-4 h-4 rounded flex items-center justify-center shrink-0 border-2 transition-all"
+                              style={{
+                                backgroundColor: active ? tag.color + '30' : 'transparent',
+                                borderColor: active ? tag.color : '#d1d5db',
+                              }}
+                            >
+                              {active && <Check className="h-2.5 w-2.5" style={{ color: tag.color }} />}
+                            </span>
+                            <span
+                              className="text-xs font-medium px-2 py-0.5 rounded-full truncate"
+                              style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                            >
+                              {tag.name}
+                            </span>
+                          </button>
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingTagId(tag.id)
+                                setEditingTagName(tag.name)
+                                setEditingTagColor(tag.color)
+                              }}
+                              className="p-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                              title="Editar tag"
+                            >
+                              <Pencil className="h-3 w-3 text-gray-400 hover:text-blue-500" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setConfirmDialog({
+                                  title: 'Excluir tag',
+                                  message: `Tem certeza que deseja excluir a tag "${tag.name}"? Ela será removida de todos os cards.`,
+                                  onConfirm: async () => {
+                                    await supabase.from('crm_tags').delete().eq('id', tag.id)
+                                    setBoardTags(p => p.filter(t => t.id !== tag.id))
+                                    setFilterTags(p => p.filter(id => id !== tag.id))
+                                    setConfirmDialog(null)
+                                  },
+                                })
+                              }}
+                              className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                              title="Excluir tag"
+                            >
+                              <X className="h-3 w-3 text-gray-400 hover:text-red-500" />
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

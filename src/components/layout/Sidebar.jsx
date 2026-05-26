@@ -189,9 +189,7 @@ const getNavigationItems = (profile, permissions, accessibleJourneys = [], journ
       {
         name: 'API',
         icon: Key,
-        href: '/admin/api-keys',
-        disabled: true,
-        badge: 'Em breve'
+        href: '/admin/api-keys'
       }
     ]
   }
