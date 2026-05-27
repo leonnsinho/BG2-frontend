@@ -29,7 +29,8 @@ import {
   Image as ImageIcon,
   X,
   Wallet,
-  Zap
+  Zap,
+  Lock
 } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -685,7 +686,7 @@ const SettingsPage = () => {
     { id: 'profile', name: 'Perfil', icon: User },
     { id: 'password', name: 'Senha', icon: Key },
     ...(isCompanyAdmin ? [{ id: 'empresa', name: 'Empresa', icon: Building2 }] : []),
-    ...(isCompanyAdmin ? [{ id: 'plano', name: 'Plano', icon: CreditCard }] : []),
+    ...(isCompanyAdmin ? [{ id: 'plano', name: 'Plano', icon: CreditCard, disabled: true }] : []),
   ]
 
   if (permissions.isLoading) {
@@ -716,6 +717,19 @@ const SettingsPage = () => {
             <div className="flex gap-2 bg-white/80 dark:bg-gray-800 backdrop-blur-sm p-2 rounded-3xl shadow-sm border border-gray-200/50 dark:border-gray-700 min-w-max sm:min-w-0">
               {tabs.map((tab) => {
                 const Icon = tab.icon
+                if (tab.disabled) {
+                  return (
+                    <div
+                      key={tab.id}
+                      className="flex items-center px-4 sm:px-6 py-3 rounded-2xl text-xs sm:text-sm font-medium whitespace-nowrap min-h-[44px] cursor-not-allowed opacity-50 text-[#373435] dark:text-gray-400 select-none gap-1.5"
+                      title="Temporariamente indisponível"
+                    >
+                      <Icon className="h-4 w-4 text-gray-400" />
+                      {tab.name}
+                      <Lock className="h-3 w-3 text-gray-400 ml-0.5" />
+                    </div>
+                  )
+                }
                 return (
                   <button
                     key={tab.id}
@@ -1564,10 +1578,32 @@ const SettingsPage = () => {
                             </div>
                           </div>
                           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 text-sm font-semibold cursor-not-allowed select-none">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                              Compra de slots temporariamente indisponível
+                            <div className="flex items-center border border-blue-300 dark:border-blue-700 rounded-xl overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => setSlotsToAdd(s => Math.max(1, s - 1))}
+                                className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold text-sm transition-colors"
+                              >−</button>
+                              <span className="px-4 py-2 text-sm font-semibold text-[#373435] dark:text-white min-w-[3rem] text-center">
+                                {slotsToAdd}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setSlotsToAdd(s => s + 1)}
+                                className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold text-sm transition-colors"
+                              >+</button>
                             </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 flex-1">
+                              Nova capacidade: {20 + extraUserSlots + slotsToAdd} usuários
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handleOpenConfirmSlots}
+                              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors whitespace-nowrap"
+                            >
+                              <Users className="w-4 h-4" />
+                              Adicionar slots
+                            </button>
                           </div>
 
                           {/* Seção de remoção — só aparece quando há slots extras */}
