@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../services/supabase'
 
@@ -203,7 +203,7 @@ export function usePermissions() {
   }
   
   // Função para obter jornadas efetivas (apenas atribuições manuais no sistema simplificado)
-  const getAccessibleJourneys = async () => {
+  const getAccessibleJourneys = useCallback(async () => {
     try {
       if (!profile?.id) {
         return []
@@ -226,7 +226,7 @@ export function usePermissions() {
       console.error('❌ Erro ao buscar jornadas:', error)
       return []
     }
-  }
+  }, [profile?.id])
   
   // Função para obter jornadas atribuídas manualmente (igual à função principal no sistema simplificado)
   const getManuallyAssignedJourneys = async () => {

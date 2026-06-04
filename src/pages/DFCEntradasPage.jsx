@@ -1223,7 +1223,7 @@ function DFCEntradasPage() {
       const categoria = categorias.find(c => c.id === e.categoria)
       return [
         e.companies?.name || '-',
-        categoria?.sigla || e.categoria,
+        categoria?.nome || e.categoria,
         e.item,
         e.descricao,
         parseFloat(e.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),

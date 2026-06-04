@@ -20,7 +20,6 @@ import {
   Calendar,
   Plus,
   Search,
-  Filter,
   User,
   Building2,
   ThumbsUp,
@@ -31,6 +30,9 @@ import {
   Trash2,
   UserX,
   Download,
+  RefreshCw,
+  Tag,
+  Edit2,
   UserPlus
 } from 'lucide-react'
 
@@ -60,19 +62,24 @@ export default function PerformanceEvaluationPage() {
   const [exporting, setExporting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCompany, setFilterCompany] = useState('all')
-  const [filterTag, setFilterTag] = useState([])
   const [companies, setCompanies] = useState([])
   const [userRole, setUserRole] = useState(null)
   const [confirmDialog, setConfirmDialog] = useState(null)
-  const [availableTags, setAvailableTags] = useState([])
-  const [userTagsMap, setUserTagsMap] = useState({})
   const [externalEvaluations, setExternalEvaluations] = useState([])
   const [showExternalNameModal, setShowExternalNameModal] = useState(false)
   const [externalNameInput, setExternalNameInput] = useState('')
   const [listSearch, setListSearch] = useState('')
-  const [listFilterTags, setListFilterTags] = useState([])
   const [showOnlyUnevaluated, setShowOnlyUnevaluated] = useState(false)
-  const [showListTagDropdown, setShowListTagDropdown] = useState(false)
+  const [avatarUrls, setAvatarUrls] = useState({})
+
+  // Sistema local de tags Nine Box
+  const [nineBoxTags, setNineBoxTags] = useState([]) // [{ id, name, color }]
+  const [userNineBoxTags, setUserNineBoxTags] = useState({}) // { [userId]: [tagId, ...] }
+  const [showTagManager, setShowTagManager] = useState(false)
+  const [editingTag, setEditingTag] = useState(null) // null = criando, { id, name, color } = editando
+  const [tagForm, setTagForm] = useState({ name: '', color: '#3B82F6' })
+  const [assigningTagsFor, setAssigningTagsFor] = useState(null) // userId aberto para atribuição
+  const [savingTag, setSavingTag] = useState(false)
 
   // Obter empresa do usuário atual se for company_admin
   const getCurrentUserCompany = () => {
@@ -96,6 +103,67 @@ export default function PerformanceEvaluationPage() {
       loadData()
     }
   }, [profile, searchParams])
+
+  // Carregar tags do banco quando users estiver pronto
+  useEffect(() => {
+    if (users.length > 0 && getCompanyId()) {
+      loadNineBoxTags()
+    }
+  }, [users, filterCompany])
+
+  const loadNineBoxTags = async () => {
+    const companyId = getCompanyId()
+    if (!companyId) return
+
+    try {
+      // Carregar tags
+      const { data: tagsData } = await supabase
+        .from('nine_box_tags')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('name')
+      
+      if (tagsData) setNineBoxTags(tagsData)
+
+      // Carregar atribuições
+      const { data: assignments } = await supabase
+        .from('nine_box_user_tags')
+        .select('tag_id, user_id')
+        .eq('company_id', companyId)
+
+      if (assignments) {
+        const map = {}
+        assignments.forEach(a => {
+          if (!map[a.user_id]) map[a.user_id] = []
+          map[a.user_id].push(a.tag_id)
+        })
+        setUserNineBoxTags(map)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar tags Nine Box:', error)
+    }
+  }
+
+  // Carregar URLs assinadas dos avatares
+  useEffect(() => {
+    const loadAvatars = async () => {
+      const urls = {}
+      for (const u of users) {
+        if (u.avatar_url) {
+          const { data } = await supabase.storage
+            .from('profile-avatars')
+            .createSignedUrl(u.avatar_url, 3600)
+          if (data?.signedUrl) {
+            urls[u.id] = data.signedUrl
+          }
+        }
+      }
+      setAvatarUrls(urls)
+    }
+    if (users.length > 0) {
+      loadAvatars()
+    }
+  }, [users])
 
   // Form state
   const [evaluationForm, setEvaluationForm] = useState({
@@ -225,26 +293,6 @@ export default function PerformanceEvaluationPage() {
         if (!latestExtEvals[key]) latestExtEvals[key] = ev
       })
       setExternalEvaluations(Object.values(latestExtEvals))
-
-      // Carregar tags da empresa atual
-      const tagCompanyId = isSuperAdmin()
-        ? (searchParams.get('company') || searchParams.get('companyId') || null)
-        : getCurrentUserCompany()?.id
-      if (tagCompanyId) {
-        const { data: tagsData } = await supabase
-          .rpc('get_company_tags', { p_company_id: tagCompanyId })
-        setAvailableTags(tagsData || [])
-
-        const { data: assignments } = await supabase
-          .rpc('get_company_tag_assignments', { p_company_id: tagCompanyId })
-        const map = {}
-        ;(assignments || []).forEach(a => {
-          if (!map[a.user_id]) map[a.user_id] = []
-          const tag = (tagsData || []).find(t => t.id === a.tag_id)
-          if (tag && !map[a.user_id].some(t => t.id === tag.id)) map[a.user_id].push(tag)
-        })
-        setUserTagsMap(map)
-      }
 
       // Verificar se há um parâmetro company ou companyId na URL
       const companyFromUrl = searchParams.get('company') || searchParams.get('companyId')
@@ -774,8 +822,7 @@ export default function PerformanceEvaluationPage() {
       const matchesSearch = u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           u.email?.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesCompany = filterCompany === 'all' || u.company_id === filterCompany
-      const matchesTag = filterTag.length === 0 || filterTag.every(tid => (userTagsMap[u.id] || []).some(t => t.id === tid))
-      return matchesSearch && matchesCompany && matchesTag
+      return matchesSearch && matchesCompany
     })
 
     filteredUsers.forEach(u => {
@@ -830,17 +877,15 @@ export default function PerformanceEvaluationPage() {
         const matchesSearch = !listSearch ||
           u.full_name?.toLowerCase().includes(listSearch.toLowerCase()) ||
           u.email?.toLowerCase().includes(listSearch.toLowerCase())
-        const matchesTag = listFilterTags.length === 0 ||
-          listFilterTags.every(tid => (userTagsMap[u.id] || []).some(t => t.id === tid))
         const isEvaluated = !!getUserEvaluation(u.id)
-        return matchesSearch && matchesTag && (!showOnlyUnevaluated || !isEvaluated)
+        return matchesSearch && (!showOnlyUnevaluated || !isEvaluated)
       })
       .map(u => ({
         ...u,
         evaluation: getUserEvaluation(u.id) || null,
         isExternal: false,
       })),
-    ...(!showOnlyUnevaluated && listFilterTags.length === 0
+    ...(!showOnlyUnevaluated
       ? filteredExternalEvals
           .filter(ev => !listSearch || ev.external_name.toLowerCase().includes(listSearch.toLowerCase()))
           .map(ev => ({
@@ -863,9 +908,129 @@ export default function PerformanceEvaluationPage() {
     risks: filteredEvaluations.filter(e => e.classification === 'risk' || e.classification === 'low_performer').length + filteredExternalEvals.filter(e => e.classification === 'risk' || e.classification === 'low_performer').length
   }
 
+  // ─── Gerenciador de Tags Nine Box ───
+  const getCompanyId = () => {
+    if (isSuperAdmin() && filterCompany !== 'all') return filterCompany
+    return getCurrentUserCompany()?.id || null
+  }
+
+  const openTagManager = () => {
+    setEditingTag(null)
+    setTagForm({ name: '', color: '#3B82F6' })
+    setShowTagManager(true)
+  }
+
+  const handleSaveTag = async () => {
+    if (!tagForm.name.trim() || savingTag) return
+    const companyId = getCompanyId()
+    if (!companyId) return
+    setSavingTag(true)
+
+    try {
+      if (editingTag) {
+        const { error } = await supabase
+          .from('nine_box_tags')
+          .update({ name: tagForm.name.trim(), color: tagForm.color })
+          .eq('id', editingTag.id)
+        if (error) {
+          if (error.code === '23505') toast.alert('Já existe uma tag com esse nome nesta empresa')
+          else toast.alert('Erro ao atualizar tag')
+          return
+        }
+        setNineBoxTags(prev => prev.map(t => t.id === editingTag.id ? { ...t, name: tagForm.name.trim(), color: tagForm.color } : t))
+      } else {
+        const { data, error } = await supabase
+          .from('nine_box_tags')
+          .insert({ company_id: companyId, name: tagForm.name.trim(), color: tagForm.color })
+          .select()
+          .single()
+        if (error) {
+          if (error.code === '23505') toast.alert('Já existe uma tag com esse nome nesta empresa')
+          else toast.alert('Erro ao criar tag')
+          return
+        }
+        setNineBoxTags(prev => [...prev, data])
+      }
+      setEditingTag(null)
+      setTagForm({ name: '', color: '#3B82F6' })
+    } finally {
+      setSavingTag(false)
+    }
+  }
+
+  const handleEditTag = (tag) => {
+    setEditingTag(tag)
+    setTagForm({ name: tag.name, color: tag.color })
+  }
+
+  const handleDeleteTag = (tagId) => {
+    const tag = nineBoxTags.find(t => t.id === tagId)
+    const count = getUserTagCount(tagId)
+    setConfirmDialog({
+      title: 'Excluir tag?',
+      message: `A tag "${tag?.name}" será removida${count > 0 ? ` de ${count} usuário(s)` : ''}. Esta ação não pode ser desfeita.`,
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        const { error } = await supabase
+          .from('nine_box_tags')
+          .delete()
+          .eq('id', tagId)
+        if (error) { console.error('Erro ao deletar tag:', error); return }
+        setNineBoxTags(prev => prev.filter(t => t.id !== tagId))
+        setUserNineBoxTags(prev => {
+          const next = { ...prev }
+          Object.keys(next).forEach(uid => {
+            next[uid] = next[uid].filter(tid => tid !== tagId)
+          })
+          return next
+        })
+      }
+    })
+  }
+
+  const toggleUserTag = async (userId, tagId) => {
+    // Não permitir tags em pessoas externas (ID sintético)
+    if (userId.startsWith('ext::')) return
+    const companyId = getCompanyId()
+    if (!companyId) return
+    const current = userNineBoxTags[userId] || []
+    const hasTag = current.includes(tagId)
+
+    if (hasTag) {
+      const { error } = await supabase
+        .from('nine_box_user_tags')
+        .delete()
+        .eq('tag_id', tagId)
+        .eq('user_id', userId)
+      if (error) { console.error('Erro ao remover tag do usuário:', error); return }
+    } else {
+      const { error } = await supabase
+        .from('nine_box_user_tags')
+        .insert({ tag_id: tagId, user_id: userId, company_id: companyId, assigned_by: user?.id })
+      if (error) { console.error('Erro ao atribuir tag ao usuário:', error); return }
+    }
+
+    setUserNineBoxTags(prev => {
+      const cur = prev[userId] || []
+      const next = hasTag ? cur.filter(tid => tid !== tagId) : [...cur, tagId]
+      return { ...prev, [userId]: next }
+    })
+  }
+
+  const getUserTags = (userId) => {
+    const tagIds = userNineBoxTags[userId] || []
+    return tagIds.map(tid => nineBoxTags.find(t => t.id === tid)).filter(Boolean)
+  }
+
+  const getUserTagCount = (tagId) => {
+    return Object.values(userNineBoxTags).filter(tags => tags.includes(tagId)).length
+  }
+
+  const PRESET_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#6366F1', '#14B8A6']
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Carregando avaliações...</p>
@@ -875,7 +1040,7 @@ export default function PerformanceEvaluationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       <SuperAdminBanner />
       {/* Header Simplificado */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
@@ -890,14 +1055,25 @@ export default function PerformanceEvaluationPage() {
                 <p className="text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">Gestão de talentos e alinhamento cultural da equipe</p>
               </div>
             </div>
+            <div className="flex items-center gap-2">
+            {getCompanyId() && (
+            <button
+              onClick={openTagManager}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold text-xs sm:text-sm transition-colors whitespace-nowrap shrink-0"
+            >
+              <Tag className="h-4 w-4" />
+              <span className="hidden sm:inline">Tags</span>
+            </button>
+            )}
             <button
               onClick={openExternalEvalModal}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold text-xs sm:text-sm transition-colors shadow-sm whitespace-nowrap shrink-0"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold text-xs sm:text-sm transition-colors whitespace-nowrap shrink-0"
             >
               <UserPlus className="h-4 w-4" />
               <span className="hidden sm:inline">Avaliar Externo</span>
               <span className="sm:hidden">Externo</span>
             </button>
+            </div>
           </div>
         </div>
       </div>
@@ -975,7 +1151,7 @@ export default function PerformanceEvaluationPage() {
           </div>
 
           {/* ── Right: Nine Box Matrix ── */}
-          <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+          <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
           {/* Container com scroll horizontal no mobile */}
           <div className="overflow-x-auto -mx-3 sm:mx-0">
             <div className="min-w-[520px] px-3 sm:px-0">
@@ -1027,17 +1203,29 @@ export default function PerformanceEvaluationPage() {
                             onClick={() => openHistoryModal(u)}
                             className="bg-white dark:bg-gray-700 rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-600 cursor-pointer"
                           >
-                            <div className="flex items-center justify-between gap-1 sm:gap-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[10px] sm:text-xs font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
-                                <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">{u.company_name}</p>
-                              </div>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                              {avatarUrls[u.id] ? (
+                                <img src={avatarUrls[u.id]} alt={u.full_name} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover shrink-0" />
+                              ) : (
+                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center shrink-0">
+                                  <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-400 dark:text-gray-500" />
+                                </div>
+                              )}
+                              <p className="flex-1 min-w-0 text-[10px] sm:text-xs font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
+                              {getUserTags(u.id).length > 0 && (
+                                <span className="flex gap-0.5 shrink-0">
+                                  {getUserTags(u.id).slice(0, 2).map(tag => (
+                                    <span key={tag.id} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} title={tag.name} />
+                                  ))}
+                                  {getUserTags(u.id).length > 2 && <span className="text-[8px] text-gray-400 leading-none">+{getUserTags(u.id).length - 2}</span>}
+                                </span>
+                              )}
                               <button
                                 onClick={(e) => { e.stopPropagation(); openEvaluationModal(u); }}
-                                className="text-[9px] sm:text-xs bg-primary-500 hover:bg-primary-600 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded transition-colors whitespace-nowrap"
-                                title="Nova avaliação"
+                                className="shrink-0 p-1 text-primary-500 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
+                                title="Reavaliar"
                               >
-                                Reavaliar
+                                <RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                               </button>
                             </div>
                           </div>
@@ -1088,17 +1276,29 @@ export default function PerformanceEvaluationPage() {
                             onClick={() => openHistoryModal(u)}
                             className="bg-white dark:bg-gray-700 rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-600 cursor-pointer"
                           >
-                            <div className="flex items-center justify-between gap-1 sm:gap-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[10px] sm:text-xs font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
-                                <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">{u.company_name}</p>
-                              </div>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                              {avatarUrls[u.id] ? (
+                                <img src={avatarUrls[u.id]} alt={u.full_name} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover shrink-0" />
+                              ) : (
+                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center shrink-0">
+                                  <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-400 dark:text-gray-500" />
+                                </div>
+                              )}
+                              <p className="flex-1 min-w-0 text-[10px] sm:text-xs font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
+                              {getUserTags(u.id).length > 0 && (
+                                <span className="flex gap-0.5 shrink-0">
+                                  {getUserTags(u.id).slice(0, 2).map(tag => (
+                                    <span key={tag.id} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} title={tag.name} />
+                                  ))}
+                                  {getUserTags(u.id).length > 2 && <span className="text-[8px] text-gray-400 leading-none">+{getUserTags(u.id).length - 2}</span>}
+                                </span>
+                              )}
                               <button
                                 onClick={(e) => { e.stopPropagation(); openEvaluationModal(u); }}
-                                className="text-[9px] sm:text-xs bg-primary-500 hover:bg-primary-600 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded transition-colors whitespace-nowrap"
-                                title="Nova avaliação"
+                                className="shrink-0 p-1 text-primary-500 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
+                                title="Reavaliar"
                               >
-                                Reavaliar
+                                <RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                               </button>
                             </div>
                           </div>
@@ -1149,17 +1349,29 @@ export default function PerformanceEvaluationPage() {
                             onClick={() => openHistoryModal(u)}
                             className="bg-white dark:bg-gray-700 rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-600 cursor-pointer"
                           >
-                            <div className="flex items-center justify-between gap-1 sm:gap-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[10px] sm:text-xs font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
-                                <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">{u.company_name}</p>
-                              </div>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                              {avatarUrls[u.id] ? (
+                                <img src={avatarUrls[u.id]} alt={u.full_name} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover shrink-0" />
+                              ) : (
+                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center shrink-0">
+                                  <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-400 dark:text-gray-500" />
+                                </div>
+                              )}
+                              <p className="flex-1 min-w-0 text-[10px] sm:text-xs font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
+                              {getUserTags(u.id).length > 0 && (
+                                <span className="flex gap-0.5 shrink-0">
+                                  {getUserTags(u.id).slice(0, 2).map(tag => (
+                                    <span key={tag.id} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} title={tag.name} />
+                                  ))}
+                                  {getUserTags(u.id).length > 2 && <span className="text-[8px] text-gray-400 leading-none">+{getUserTags(u.id).length - 2}</span>}
+                                </span>
+                              )}
                               <button
                                 onClick={(e) => { e.stopPropagation(); openEvaluationModal(u); }}
-                                className="text-[9px] sm:text-xs bg-primary-500 hover:bg-primary-600 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded transition-colors whitespace-nowrap"
-                                title="Nova avaliação"
+                                className="shrink-0 p-1 text-primary-500 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
+                                title="Reavaliar"
                               >
-                                Reavaliar
+                                <RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                               </button>
                             </div>
                           </div>
@@ -1191,123 +1403,10 @@ export default function PerformanceEvaluationPage() {
         </div>
       </div>
 
-        {/* Filtros e Estatísticas - Abaixo da Matriz */}
-<div className="mt-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">Filtros e Estatísticas</h2>
-          
-          {/* Filtros */}
-          <div className="flex flex-col gap-3 mb-6">
-            {/* Linha 1: busca + empresa */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar usuário..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-                />
-              </div>
-
-              {/* Filtro de empresa - apenas para super_admin */}
-              {userRole === 'super_admin' && (
-                <select
-                  value={filterCompany}
-                  onChange={(e) => setFilterCompany(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm sm:text-base bg-white dark:bg-gray-700 dark:text-gray-200"
-                >
-                  <option value="all">Todas as empresas</option>
-                  {companies.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Linha 2: filtro de tags */}
-            {availableTags.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={() => setFilterTag([])}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                    filterTag.length === 0
-                      ? 'bg-gray-800 text-white border-gray-800'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  Todas as tags
-                </button>
-                {availableTags.map(tag => {
-                  const selected = filterTag.includes(tag.id)
-                  return (
-                    <button
-                      key={tag.id}
-                      onClick={() => setFilterTag(prev =>
-                        prev.includes(tag.id) ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
-                      )}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                        selected ? 'text-white border-transparent shadow-md' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-gray-400'
-                      }`}
-                      style={selected ? { backgroundColor: tag.color, borderColor: tag.color } : { color: tag.color }}
-                    >
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color }} />
-                      {tag.name}
-                    </button>
-                  )
-                })}
-                {filterTag.length > 0 && (
-                  <span className="text-xs text-gray-400 ml-1">
-                    {filterTag.length} tag{filterTag.length > 1 ? 's' : ''} selecionada{filterTag.length > 1 ? 's' : ''} (AND)
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Estatísticas - apenas mobile (no desktop ficam na coluna esquerda) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:hidden gap-3 mb-6">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
-              <div className="flex items-center gap-2">
-                <Users className="h-6 w-6 text-blue-600 shrink-0" />
-                <div>
-                  <p className="text-[11px] text-blue-600 font-medium">Total</p>
-                  <p className="text-xl font-bold text-blue-900">{stats.total}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">
-              <div className="flex items-center gap-2">
-                <FileText className="h-6 w-6 text-green-600 shrink-0" />
-                <div>
-                  <p className="text-[11px] text-green-600 font-medium">Avaliados</p>
-                  <p className="text-xl font-bold text-green-900">{stats.evaluated}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-3 border border-yellow-200">
-              <div className="flex items-center gap-2">
-                <Award className="h-6 w-6 text-yellow-600 shrink-0" />
-                <div>
-                  <p className="text-[11px] text-yellow-600 font-medium">Estrelas</p>
-                  <p className="text-xl font-bold text-yellow-900">{stats.stars}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-6 w-6 text-red-600 shrink-0" />
-                <div>
-                  <p className="text-[11px] text-red-600 font-medium">Em Risco</p>
-                  <p className="text-xl font-bold text-red-900">{stats.risks}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 pb-6">
 
         {/* Lista geral de usuários */}
-        <div className="mt-6 sm:mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+        <div className="mt-6 sm:mt-8 bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
             <span className="text-base sm:text-xl">Lista de Usuários ({filteredListUsers.length})</span>
@@ -1327,57 +1426,6 @@ export default function PerformanceEvaluationPage() {
               />
             </div>
 
-            {/* Filtro por tag */}
-            {availableTags.length > 0 && (
-              <div className="relative">
-                {showListTagDropdown && (
-                  <div className="fixed inset-0 z-10" onClick={() => setShowListTagDropdown(false)} />
-                )}
-                <button
-                  onClick={() => setShowListTagDropdown(v => !v)}
-                  className={`relative z-20 flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-colors ${
-                    listFilterTags.length > 0
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                      : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-                  }`}
-                >
-                  <Filter className="h-4 w-4" />
-                  Tags{listFilterTags.length > 0 ? ` (${listFilterTags.length})` : ''}
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-                {showListTagDropdown && (
-                  <div className="absolute left-0 top-full mt-1 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl min-w-[180px] p-2 space-y-1">
-                    {availableTags.map(tag => (
-                      <label key={tag.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={listFilterTags.includes(tag.id)}
-                          onChange={() => setListFilterTags(prev =>
-                            prev.includes(tag.id) ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
-                          )}
-                          className="rounded"
-                        />
-                        <span
-                          className="text-xs font-medium px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: tag.color ? `${tag.color}20` : '#E5E7EB', color: tag.color || '#374151' }}
-                        >
-                          {tag.name}
-                        </span>
-                      </label>
-                    ))}
-                    {listFilterTags.length > 0 && (
-                      <button
-                        onClick={() => setListFilterTags([])}
-                        className="w-full mt-1 text-xs text-red-600 hover:text-red-700 py-1 border-t border-gray-100 dark:border-gray-700"
-                      >
-                        Limpar filtro
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Apenas não avaliados */}
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
@@ -1395,57 +1443,182 @@ export default function PerformanceEvaluationPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {filteredListUsers.map(u => {
-                const classInfo = u.evaluation ? CLASSIFICATIONS[u.evaluation.classification] : null
-                const tags = !u.isExternal ? (userTagsMap[u.id] || []) : []
+                const userTags = getUserTags(u.id)
                 return (
                   <div
                     key={u.id}
-                    onClick={() => openEvaluationModal(u)}
-                    className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3 sm:p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer border border-gray-200 dark:border-gray-600"
+                    className="bg-gray-50 dark:bg-gray-700 rounded-2xl p-3 sm:p-4 border border-gray-200 dark:border-gray-600 group"
                   >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{u.full_name}</p>
-                      {u.isExternal && (
-                        <span className="shrink-0 text-[10px] bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded-full font-medium">Externo</span>
+                    {/* Avatar + Nome + Botão */}
+                    <div className="flex items-center gap-3">
+                      {avatarUrls[u.id] ? (
+                        <img
+                          src={avatarUrls[u.id]}
+                          alt={u.full_name}
+                          className="w-10 h-10 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center shrink-0">
+                          <User className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                        </div>
                       )}
+                      <p className="flex-1 min-w-0 text-sm font-semibold text-gray-900 dark:text-white truncate">
+                        {u.full_name}
+                      </p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openEvaluationModal(u); }}
+                        className="shrink-0 px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                      >
+                        Avaliar
+                      </button>
                     </div>
-                    {u.email && <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1">{u.email}</p>}
-                    {u.companies?.name && <p className="text-xs text-gray-400 dark:text-gray-500 truncate mb-2">{u.companies.name}</p>}
-                    {tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {tags.slice(0, 3).map(tag => (
-                          <span
-                            key={tag.id}
-                            className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                            style={{ backgroundColor: tag.color ? `${tag.color}20` : '#E5E7EB', color: tag.color || '#374151' }}
-                          >
-                            {tag.name}
-                          </span>
-                        ))}
-                        {tags.length > 3 && <span className="text-[10px] text-gray-400">+{tags.length - 3}</span>}
+
+                    {/* Tags + Botão de atribuir (apenas usuários internos) */}
+                    {!u.isExternal && (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      {userTags.map(tag => (
+                        <span
+                          key={tag.id}
+                          className="text-[10px] px-1.5 py-0.5 rounded-full font-medium cursor-pointer hover:opacity-80"
+                          style={{ backgroundColor: tag.color ? `${tag.color}20` : '#E5E7EB', color: tag.color || '#374151' }}
+                          onClick={(e) => { e.stopPropagation(); toggleUserTag(u.id, tag.id) }}
+                          title="Clique para remover"
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setAssigningTagsFor(assigningTagsFor === u.id ? null : u.id) }}
+                        className="shrink-0 p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+                        title="Atribuir tags"
+                      >
+                        <Tag className="h-3 w-3 text-gray-400" />
+                      </button>
+                    </div>
+                    )}
+
+                    {/* Dropdown de atribuição de tags */}
+                    {!u.isExternal && assigningTagsFor === u.id && nineBoxTags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1 p-2 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500">
+                        {nineBoxTags.map(tag => {
+                          const hasTag = userTags.some(t => t.id === tag.id)
+                          return (
+                            <button
+                              key={tag.id}
+                              onClick={(e) => { e.stopPropagation(); toggleUserTag(u.id, tag.id) }}
+                              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium transition-all ${
+                                hasTag ? 'opacity-100 ring-1 ring-offset-1' : 'opacity-40 hover:opacity-70'
+                              }`}
+                              style={{ backgroundColor: tag.color ? `${tag.color}20` : '#E5E7EB', color: tag.color || '#374151' }}
+                            >
+                              {tag.name}
+                            </button>
+                          )
+                        })}
                       </div>
                     )}
-                    <div className="flex items-center justify-between mt-auto">
-                      {classInfo ? (
-                        <span
-                          className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: `${classInfo.color}20`, color: classInfo.color }}
-                        >
-                          {classInfo.label}
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-orange-600 font-medium">Não avaliado</span>
-                      )}
-                      <span className="text-xs text-primary-600 hover:text-primary-700 font-medium">
-                        {classInfo ? 'Reavaliar →' : 'Avaliar →'}
-                      </span>
-                    </div>
                   </div>
                 )
               })}
             </div>
           )}
         </div>
+
+      </div>
+
+      {/* Modal Gerenciador de Tags */}
+      {showTagManager && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => setShowTagManager(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-xl">
+                  <Tag className="h-5 w-5 text-primary-600" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">Gerenciar Tags</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Tags para classificação Nine Box</p>
+                </div>
+                <button onClick={() => setShowTagManager(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                  <X className="h-5 w-5 text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Lista de tags existentes */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-2">
+              {nineBoxTags.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Nenhuma tag criada ainda.</p>
+              ) : (
+                nineBoxTags.map(tag => (
+                  <div key={tag.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 group">
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                    <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white">{tag.name}</span>
+                    <span className="text-xs text-gray-400">{getUserTagCount(tag.id)} usuários</span>
+                    <button onClick={() => handleEditTag(tag)} className="p-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-primary-600 transition-all">
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => handleDeleteTag(tag.id)} className="p-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 transition-all">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Formulário para criar/editar tag */}
+            <div className="p-5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">
+                {editingTag ? 'Editar tag' : 'Nova tag'}
+              </p>
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={tagForm.name}
+                    onChange={e => setTagForm(prev => ({ ...prev, name: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSaveTag() }}
+                    placeholder="Nome da tag..."
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    autoFocus
+                  />
+                </div>
+                <div className="relative">
+                  <input
+                    type="color"
+                    value={tagForm.color}
+                    onChange={e => setTagForm(prev => ({ ...prev, color: e.target.value }))}
+                    className="w-10 h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer"
+                  />
+                </div>
+                <button
+                  onClick={handleSaveTag}
+                  disabled={!tagForm.name.trim() || savingTag}
+                  className="px-4 py-2 bg-primary-500 hover:bg-primary-600 disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition-colors"
+                >
+                  {savingTag ? 'Salvando...' : editingTag ? 'Salvar' : 'Criar'}
+                </button>
+                {editingTag && (
+                  <button onClick={() => { setEditingTag(null); setTagForm({ name: '', color: '#3B82F6' }) }} className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700">
+                    Cancelar
+                  </button>
+                )}
+              </div>
+              {/* Paleta de cores */}
+              <div className="flex gap-1.5 mt-2">
+                {PRESET_COLORS.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => setTagForm(prev => ({ ...prev, color: c }))}
+                    className="w-6 h-6 rounded-full border-2 transition-all"
+                    style={{ backgroundColor: c, borderColor: tagForm.color === c ? '#1F2937' : 'transparent' }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Nome Pessoa Externa */}
       {showExternalNameModal && (

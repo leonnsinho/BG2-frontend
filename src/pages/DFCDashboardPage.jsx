@@ -1210,23 +1210,23 @@ export default function DFCDashboardPage() {
     let entradasQuery = supabase
       .from('dfc_entradas').select('categoria, item_id, valor, mes, vencimento')
       .gte('vencimento', yearStart).lte('vencimento', yearEnd)
-      .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
+      .or('is_parcelado.not.is.true,lancamento_pai_id.not.is.null')
     if (companyId) entradasQuery = entradasQuery.eq('company_id', companyId)
 
     let saidasQuery = supabase
       .from('dfc_saidas').select('categoria, item_id, valor, mes, vencimento')
       .gte('vencimento', yearStart).lte('vencimento', yearEnd)
-      .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
+      .or('is_parcelado.not.is.true,lancamento_pai_id.not.is.null')
     if (companyId) saidasQuery = saidasQuery.eq('company_id', companyId)
 
     let saldoAntEntradasQ = supabase
       .from('dfc_entradas').select('valor').lt('vencimento', yearStart)
-      .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
+      .or('is_parcelado.not.is.true,lancamento_pai_id.not.is.null')
     if (companyId) saldoAntEntradasQ = saldoAntEntradasQ.eq('company_id', companyId)
 
     let saldoAntSaidasQ = supabase
       .from('dfc_saidas').select('valor').lt('vencimento', yearStart)
-      .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
+      .or('is_parcelado.not.is.true,lancamento_pai_id.not.is.null')
     if (companyId) saldoAntSaidasQ = saldoAntSaidasQ.eq('company_id', companyId)
 
     const [
@@ -1435,71 +1435,157 @@ export default function DFCDashboardPage() {
         for (let c = 2; c <= totalCols; c++) applyStyle(ws.getCell(rowNum, c), styleGray, vals[c - 2])
       }
 
-      // ========= SEÇÃO ENTRADAS =========
-      const entradaTotals = Array(12).fill(0)
+      // ========= ORDEM PRESCRITA DFC =========
+      // Helpers para busca de categoria por nome (sem acento, case-insensitive)
+      const normName = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      const findCatByName = (cats, needle) => cats.find(c => normName(c.nome).includes(normName(needle))) || null
 
-      for (const cat of entradaCats) {
-        const catGroups = entradasGroups[cat.id] || {}
-        const catMonthTotals = Array(12).fill(0)
-
-        Object.values(catGroups).forEach(monthArr => {
-          monthArr.forEach((v, i) => { catMonthTotals[i] += v })
-        })
-        catMonthTotals.forEach((v, i) => { entradaTotals[i] += v })
-
-        // Pular categorias sem dados nem itens atribuídos (mostrar só as que têm transações)
-        const hasData = catMonthTotals.some(v => v > 0)
-        if (!hasData && Object.keys(catGroups).length === 0) continue
-
-        addCatRow('(+)', cat.nome, catMonthTotals)
-        addCatCodeRow(cat.nome.toUpperCase().replace(/\s/g, '.').substring(0, 12))
-
-        for (const [itemId, monthVals] of Object.entries(catGroups)) {
-          const item = itemMap[itemId]
-          addItemRow(item ? item.nome : 'Item', monthVals)
-        }
-
-        addSpacer()
+      // Totais mensais de uma categoria (soma de todos os seus itens)
+      const getCatTotals = (groups, catId) => {
+        if (!catId) return Array(12).fill(0)
+        const totals = Array(12).fill(0)
+        Object.values(groups[catId] || {}).forEach(arr => arr.forEach((v, i) => { totals[i] += v }))
+        return totals
       }
 
-      addTotalRow('(+) RECEITA OPERACIONAL BRUTA', entradaTotals)
+      // Adiciona linhas de itens de uma categoria
+      const addCatItems = (groups, catId) => {
+        if (!catId) return
+        for (const [itemId, monthVals] of Object.entries(groups[catId] || {})) {
+          addItemRow(itemMap[itemId]?.nome || 'Item', monthVals)
+        }
+      }
+
+      // Aritmética de arrays mensais
+      const sumArr = (...arrs) => arrs.reduce((acc, a) => acc.map((v, i) => v + (a[i] || 0)), Array(12).fill(0))
+      const subArr = (base, ...arrs) => arrs.reduce((acc, a) => acc.map((v, i) => v - (a[i] || 0)), [...base])
+
+      // Localizar categorias pelo nome (para ordenação específica DFC)
+      const catRNO        = findCatByName(entradaCats, 'nao operacional')
+      const catROB        = entradaCats.find(c => { const n = normName(c.nome); return n.includes('operacional') && !n.includes('nao') }) || null
+      const catImpostos   = findCatByName(saidaCats,   'imposto')
+      const catCusto      = findCatByName(saidaCats,   'custo')
+      const catComerciais = findCatByName(saidaCats,   'comerciai')
+      const catAdmin      = findCatByName(saidaCats,   'administrativ')
+      const catPessoal    = findCatByName(saidaCats,   'pessoal')
+      const catDespFin    = findCatByName(saidaCats,   'financeira')
+      const catInvest     = findCatByName(saidaCats,   'investimento')
+
+      // IDs das categorias já tratadas explicitamente (para não duplicar no loop genérico)
+      const handledEntradaIds = new Set([catRNO?.id, catROB?.id].filter(Boolean))
+      const handledSaidaIds = new Set([catImpostos?.id, catCusto?.id, catComerciais?.id, catAdmin?.id, catPessoal?.id, catDespFin?.id, catInvest?.id].filter(Boolean))
+
+      // Totais mensais de cada categoria
+      const tRNO        = getCatTotals(entradasGroups, catRNO?.id)
+      const tROB        = getCatTotals(entradasGroups, catROB?.id)
+      const tImpostos   = getCatTotals(saidasGroups,   catImpostos?.id)
+      const tCusto      = getCatTotals(saidasGroups,   catCusto?.id)
+      const tComerciais = getCatTotals(saidasGroups,   catComerciais?.id)
+      const tAdmin      = getCatTotals(saidasGroups,   catAdmin?.id)
+      const tPessoal    = getCatTotals(saidasGroups,   catPessoal?.id)
+      const tDespFin    = getCatTotals(saidasGroups,   catDespFin?.id)
+      const tInvest     = getCatTotals(saidasGroups,   catInvest?.id)
+
+      // Totais de TODAS as entradas (soma de todas as categorias de entrada)
+      const allEntradaTotalsArr = Array(12).fill(0)
+      entradaCats.forEach(cat => {
+        const t = getCatTotals(entradasGroups, cat.id)
+        t.forEach((v, i) => { allEntradaTotalsArr[i] += v })
+      })
+
+      // Totais de TODAS as saídas
+      const allSaidaTotalsArr = Array(12).fill(0)
+      saidaCats.forEach(cat => {
+        const t = getCatTotals(saidasGroups, cat.id)
+        t.forEach((v, i) => { allSaidaTotalsArr[i] += v })
+      })
+
+      // Totais calculados
+      const tROL      = subArr(allEntradaTotalsArr, tImpostos)           // ROL = Todas Entradas - Impostos
+      const tLBruto   = subArr(tROL, tCusto)                           // Lucro Bruto = ROL - Custo
+      const tDespOper = sumArr(tComerciais, tAdmin, tPessoal)           // Despesas Operacionais
+      const tLOper    = subArr(tLBruto, tDespOper)                      // Lucro Operacional = LB - DO
+      const tLLiq     = subArr(tLOper, tDespFin, tInvest)              // Lucro Líquido = LO - DespFin - Invest
+
+      // --- (+) RECEITA NÃO OPERACIONAL ---
+      addCatRow('(+)', catRNO?.nome || 'RECEITA NÃO OPERACIONAL', tRNO)
+      addCatItems(entradasGroups, catRNO?.id)
       addSpacer()
 
-      // ========= SEÇÃO SAÍDAS =========
-      const saidaTotals = Array(12).fill(0)
+      // --- (+) RECEITA OPERACIONAL BRUTA ---
+      addCatRow('(+)', catROB?.nome || 'RECEITA OPERACIONAL BRUTA', tROB)
+      addCatItems(entradasGroups, catROB?.id)
+      addSpacer()
 
-      for (const cat of saidaCats) {
-        const catGroups = saidasGroups[cat.id] || {}
-        const catMonthTotals = Array(12).fill(0)
-
-        Object.values(catGroups).forEach(monthArr => {
-          monthArr.forEach((v, i) => { catMonthTotals[i] += v })
-        })
-        catMonthTotals.forEach((v, i) => { saidaTotals[i] += v })
-
-        const hasData = catMonthTotals.some(v => v > 0)
-        if (!hasData && Object.keys(catGroups).length === 0) continue
-
-        addCatRow('(-)', cat.nome, catMonthTotals)
-        addCatCodeRow(cat.nome.toUpperCase().replace(/\s/g, '.').substring(0, 12))
-
-        for (const [itemId, monthVals] of Object.entries(catGroups)) {
-          const item = itemMap[itemId]
-          addItemRow(item ? item.nome : 'Item', monthVals)
-        }
-
+      // --- Demais categorias de entrada (não tratadas explicitamente) ---
+      for (const cat of entradaCats) {
+        if (handledEntradaIds.has(cat.id)) continue
+        const tCat = getCatTotals(entradasGroups, cat.id)
+        addCatRow('(+)', cat.nome, tCat)
+        addCatItems(entradasGroups, cat.id)
         addSpacer()
       }
 
-      // ========= RESULTADOS FINAIS =========
-      const lucroMonths = entradaTotals.map((v, i) => v - saidaTotals[i])
-      addResultRow('(=) LUCRO LÍQUIDO', lucroMonths)
+      // --- (-) IMPOSTOS ---
+      addCatRow('(-)', catImpostos?.nome || 'IMPOSTOS', tImpostos)
+      addCatItems(saidasGroups, catImpostos?.id)
+      addSpacer()
 
-      // Saldo final cumulativo por mês
+      // --- (=) RECEITA OPERACIONAL LÍQUIDA ---
+      addTotalRow('(=) RECEITA OPERACIONAL LÍQUIDA', tROL)
+      addSpacer()
+
+      // --- (-) CUSTO DO PRODUTO OU SERVIÇO ---
+      addCatRow('(-)', catCusto?.nome || 'CUSTO DO PRODUTO OU SERVIÇO', tCusto)
+      addCatItems(saidasGroups, catCusto?.id)
+      addSpacer()
+
+      // --- (=) LUCRO BRUTO ---
+      addTotalRow('(=) LUCRO BRUTO', tLBruto)
+      addSpacer()
+
+      // --- (-) DESPESAS OPERACIONAIS (header de grupo) ---
+      addCatRow('(-)', 'DESPESAS OPERACIONAIS', tDespOper)
+      addSpacer()
+
+      // --- (-) Despesas Comerciais ---
+      addCatRow('(-)', catComerciais?.nome || 'DESPESAS COMERCIAIS', tComerciais)
+      addCatItems(saidasGroups, catComerciais?.id)
+      addSpacer()
+
+      // --- (-) Despesas Administrativas ---
+      addCatRow('(-)', catAdmin?.nome || 'DESPESAS ADMINISTRATIVAS', tAdmin)
+      addCatItems(saidasGroups, catAdmin?.id)
+      addSpacer()
+
+      // --- (-) Despesas com Pessoal ---
+      addCatRow('(-)', catPessoal?.nome || 'DESPESAS COM PESSOAL', tPessoal)
+      addCatItems(saidasGroups, catPessoal?.id)
+      addSpacer()
+
+      // --- (=) LUCRO OPERACIONAL ---
+      addTotalRow('(=) LUCRO OPERACIONAL', tLOper)
+      addSpacer()
+
+      // --- (-) Despesas Financeiras ---
+      addCatRow('(-)', catDespFin?.nome || 'DESPESAS FINANCEIRAS', tDespFin)
+      addCatItems(saidasGroups, catDespFin?.id)
+      addSpacer()
+
+      // --- (-) Investimento ---
+      addCatRow('(-)', catInvest?.nome || 'INVESTIMENTO', tInvest)
+      addCatItems(saidasGroups, catInvest?.id)
+      addSpacer()
+
+      // --- (=) LUCRO LÍQUIDO ---
+      addTotalRow('(=) LUCRO LÍQUIDO', tLLiq)
+      addSpacer()
+
+      // Saldo final cumulativo por mês (baseado em todos os lançamentos)
       const saldoFinalMonths = []
       let acc = saldoInicial
-      for (const v of lucroMonths) {
-        acc += v
+      for (let m = 0; m < 12; m++) {
+        acc += allEntradaTotalsArr[m] - allSaidaTotalsArr[m]
         saldoFinalMonths.push(acc)
       }
       addResultRow('Saldo final', saldoFinalMonths)
@@ -1735,7 +1821,7 @@ export default function DFCDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Carregando dashboard...</p>
@@ -1745,7 +1831,7 @@ export default function DFCDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-900">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       <SuperAdminBanner />
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
@@ -1764,7 +1850,7 @@ export default function DFCDashboardPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Controle de Período */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
@@ -2033,7 +2119,7 @@ export default function DFCDashboardPage() {
           <Link
             to={buildSubUrl('/dfc/entradas', dataInicio && dataFim ? { dataInicio, dataFim } : {})}
             onClick={() => handleSubNav('/dfc/entradas')}
-            className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border-2 border-green-200 dark:border-green-800 hover:shadow-lg transition-all hover:scale-105"
+            className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-green-200 dark:border-green-800 transition-all hover:scale-105"
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -2058,7 +2144,7 @@ export default function DFCDashboardPage() {
           <Link
             to={buildSubUrl('/dfc/saidas', dataInicio && dataFim ? { dataInicio, dataFim } : {})}
             onClick={() => handleSubNav('/dfc/saidas')}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border-2 border-red-200 dark:border-red-800 hover:shadow-lg transition-all hover:scale-105"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 border-2 border-red-200 dark:border-red-800 transition-all hover:scale-105"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -2083,7 +2169,7 @@ export default function DFCDashboardPage() {
           <Link
             to={buildSubUrl('/dfc/plano-contas')}
             onClick={() => handleSubNav('/dfc/plano-contas')}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border-2 border-blue-200 dark:border-blue-800 hover:shadow-lg transition-all hover:scale-105"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 border-2 border-blue-200 dark:border-blue-800 transition-all hover:scale-105"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -2110,10 +2196,10 @@ export default function DFCDashboardPage() {
         {/* Pagamentos Futuros - A Receber e A Pagar */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* A Receber (Entradas Futuras) */}
-          <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-900/10 rounded-2xl p-6 shadow-lg border-2 border-green-300 dark:border-green-700">
+          <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-900/10 rounded-2xl p-6 border-2 border-green-300 dark:border-green-700">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-500 rounded-xl shadow-md">
+                <div className="p-3 bg-green-500 rounded-xl">
                   <TrendingUp className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -2183,10 +2269,10 @@ export default function DFCDashboardPage() {
           </div>
 
           {/* A Pagar (Saídas Futuras) */}
-          <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-900/10 rounded-2xl p-6 shadow-lg border-2 border-red-300 dark:border-red-700">
+          <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-900/10 rounded-2xl p-6 border-2 border-red-300 dark:border-red-700">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-red-500 rounded-xl shadow-md">
+                <div className="p-3 bg-red-500 rounded-xl">
                   <TrendingDown className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -2258,7 +2344,7 @@ export default function DFCDashboardPage() {
 
 
         {/* Resumo Financeiro */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg border-2 border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4">
             <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
@@ -2350,7 +2436,7 @@ export default function DFCDashboardPage() {
         {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Gráfico de Linha - Fluxo Mensal */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg sm:rounded-xl">
@@ -2426,7 +2512,7 @@ export default function DFCDashboardPage() {
           </div>
 
           {/* Gráfico de Pizza - Saídas por Categoria */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
                 <PieChart className="h-5 w-5 text-purple-600" />
@@ -2462,7 +2548,7 @@ export default function DFCDashboardPage() {
                       const total = categoryData.reduce((s, d) => s + d.value, 0)
                       const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0
                       return (
-                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg px-3 py-2 text-sm">
+                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm">
                           <p className="font-semibold text-gray-800 dark:text-white mb-0.5">{name}</p>
                           <p className="text-gray-600 dark:text-gray-300">{formatCurrency(value)}</p>
                           <p className="text-gray-400 text-xs">{pct}% do total</p>
@@ -2500,7 +2586,7 @@ export default function DFCDashboardPage() {
         </div>
 
         {/* Transações Recentes */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
             <div className="p-1.5 sm:p-2 bg-gray-100 dark:bg-gray-700 rounded-lg sm:rounded-xl">
               <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600 dark:text-gray-400" />

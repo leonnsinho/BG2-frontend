@@ -178,6 +178,37 @@ ON performance_evaluations
 FOR SELECT
 USING (user_id = auth.uid());
 
+-- Política: Usuários da empresa podem criar avaliações para colegas da mesma empresa
+-- e visualizar avaliações que eles próprios registraram.
+CREATE POLICY "Users can insert company evaluations"
+ON performance_evaluations
+FOR INSERT
+WITH CHECK (
+  evaluator_id = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM profiles p
+    WHERE p.id = auth.uid()
+    AND p.role = 'user'
+  )
+  AND company_id IN (
+    SELECT uc.company_id FROM user_companies uc
+    WHERE uc.user_id = auth.uid()
+    AND uc.is_active = true
+  )
+);
+
+CREATE POLICY "Users can view evaluations they created"
+ON performance_evaluations
+FOR SELECT
+USING (
+  evaluator_id = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM profiles p
+    WHERE p.id = auth.uid()
+    AND p.role = 'user'
+  )
+);
+
 CREATE POLICY "Users can view their own history"
 ON performance_evaluation_history
 FOR SELECT

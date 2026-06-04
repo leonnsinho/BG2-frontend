@@ -731,7 +731,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
       window.removeEventListener('focus', onFocus)
       supabase.removeChannel(channel)
     }
-  }, [profile?.id, loadJourneyAccess])
+  }, [profile?.id])
 
   // Obter itens de navegação baseados no usuário atual
   const navigationItems = React.useMemo(() => {

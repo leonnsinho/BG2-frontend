@@ -1185,7 +1185,7 @@ function DFCPage() {
       const categoria = categorias.find(c => c.id === s.categoria)
       return [
         s.companies?.name || '-',
-        categoria?.sigla || s.categoria,
+        categoria?.nome || s.categoria,
         s.item,
         s.descricao,
         parseFloat(s.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),

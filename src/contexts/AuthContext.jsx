@@ -347,6 +347,16 @@ export function AuthProvider({ children }) {
       'Invalid email': 'Email inválido',
       'User already registered': 'Este email já está registrado',
       'Password should be at least 6 characters': 'A senha deve ter pelo menos 6 caracteres',
+      'over_email_send_rate_limit': 'Muitas tentativas de acesso. Aguarde alguns minutos antes de tentar novamente.',
+      'over_request_rate_limit': 'Muitas tentativas de acesso. Aguarde alguns minutos antes de tentar novamente.',
+      'Email rate limit exceeded': 'Muitas tentativas de acesso. Aguarde alguns minutos antes de tentar novamente.',
+    }
+    
+    // Detectar 429 por mensagem (vários formatos possíveis)
+    if (errorMessage?.toLowerCase().includes('rate limit') || 
+        errorMessage?.toLowerCase().includes('too many') ||
+        errorMessage?.toLowerCase().includes('over_')) {
+      return 'Muitas tentativas de acesso. Aguarde alguns minutos antes de tentar novamente.'
     }
     
     return translations[errorMessage] || errorMessage
@@ -364,6 +374,10 @@ export function AuthProvider({ children }) {
       })
 
       if (error) {
+        // Tratar rate limit (429) explicitamente
+        if (error.status === 429 || error.message?.includes('rate limit') || error.message?.includes('too many')) {
+          throw new Error('Muitas tentativas de acesso. Aguarde alguns minutos antes de tentar novamente.')
+        }
         const translatedError = translateAuthError(error.message)
         throw new Error(translatedError)
       }
@@ -628,8 +642,17 @@ export function AuthProvider({ children }) {
     let mounted = true
     
     // Verificar sessão atual de forma otimizada
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!mounted) return
+
+      // Se rate limit (429) foi atingido, limpar sessão e mostrar erro
+      if (error?.status === 429) {
+        console.warn('⚠️ Rate limit de autenticação atingido. Aguardando...')
+        // Limpar token expirado do storage para evitar retry loop
+        supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+        setLoading(false)
+        return
+      }
       
       const currentUser = session?.user ?? null
       setUser(currentUser)
