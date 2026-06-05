@@ -179,21 +179,28 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     try { const p = JSON.parse(raw); if (Array.isArray(p)) return p } catch {}
     return [{ id: crypto.randomUUID(), text: raw, created_at: new Date().toISOString() }]
   })
+  const observationsRef = useRef(observations)
   const [newObsText, setNewObsText] = useState('')
+
+  const updateObservations = (newObs) => {
+    observationsRef.current = newObs
+    setObservations(newObs)
+  }
 
   const addObservation = () => {
     if (!newObsText.trim()) return
-    setObservations(prev => [...prev, { id: crypto.randomUUID(), text: newObsText.trim(), created_at: new Date().toISOString() }])
+    const next = [...observationsRef.current, { id: crypto.randomUUID(), text: newObsText.trim(), created_at: new Date().toISOString() }]
+    updateObservations(next)
     setNewObsText('')
   }
-  const removeObservation = (id) => setObservations(prev => prev.filter(o => o.id !== id))
+  const removeObservation = (id) => updateObservations(observationsRef.current.filter(o => o.id !== id))
   const [editingObsId, setEditingObsId] = useState(null)
   const [editingObsText, setEditingObsText] = useState('')
   const startEditObs = (obs) => { setEditingObsId(obs.id); setEditingObsText(obs.text) }
   const cancelEditObs = () => { setEditingObsId(null); setEditingObsText('') }
   const saveEditObs = (id) => {
     if (!editingObsText.trim()) return
-    setObservations(prev => prev.map(o => o.id === id ? { ...o, text: editingObsText.trim() } : o))
+    updateObservations(observationsRef.current.map(o => o.id === id ? { ...o, text: editingObsText.trim() } : o))
     cancelEditObs()
   }
 
@@ -470,7 +477,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
         origem_lead: form.origem_lead || null,
         cidade_estado: form.cidade_estado?.trim() || null,
         segmento: form.segmento?.trim() || null,
-        observacoes: observations.length > 0 ? JSON.stringify(observations) : null,
+        observacoes: observationsRef.current.length > 0 ? JSON.stringify(observationsRef.current) : null,
         valor_oportunidade: valorOp,
         status: form.status || 'ativo',
         status_updated_at: form.status_updated_at || new Date().toISOString(),

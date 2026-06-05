@@ -1465,7 +1465,7 @@ export default function DFCDashboardPage() {
       const catROB        = entradaCats.find(c => { const n = normName(c.nome); return n.includes('operacional') && !n.includes('nao') }) || null
       const catImpostos   = findCatByName(saidaCats,   'imposto')
       const catCusto      = findCatByName(saidaCats,   'custo')
-      const catComerciais = findCatByName(saidaCats,   'comerciai')
+      const catComerciais = findCatByName(saidaCats,   'comercia')
       const catAdmin      = findCatByName(saidaCats,   'administrativ')
       const catPessoal    = findCatByName(saidaCats,   'pessoal')
       const catDespFin    = findCatByName(saidaCats,   'financeira')

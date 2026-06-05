@@ -128,14 +128,16 @@ export default function PerformanceEvaluationPage() {
       // Carregar atribuições
       const { data: assignments } = await supabase
         .from('nine_box_user_tags')
-        .select('tag_id, user_id')
+        .select('tag_id, user_id, external_user_key')
         .eq('company_id', companyId)
 
       if (assignments) {
         const map = {}
         assignments.forEach(a => {
-          if (!map[a.user_id]) map[a.user_id] = []
-          map[a.user_id].push(a.tag_id)
+          const key = a.user_id || a.external_user_key
+          if (!key) return
+          if (!map[key]) map[key] = []
+          map[key].push(a.tag_id)
         })
         setUserNineBoxTags(map)
       }
@@ -989,27 +991,29 @@ export default function PerformanceEvaluationPage() {
   }
 
   const toggleUserTag = async (userId, tagId) => {
-    // Não permitir tags em pessoas externas (ID sintético)
-    if (userId.startsWith('ext::')) return
+    const isExternal = userId.startsWith('ext::')
     const companyId = getCompanyId()
     if (!companyId) return
+
     const current = userNineBoxTags[userId] || []
     const hasTag = current.includes(tagId)
 
+    // Remover do banco
     if (hasTag) {
-      const { error } = await supabase
-        .from('nine_box_user_tags')
-        .delete()
-        .eq('tag_id', tagId)
-        .eq('user_id', userId)
-      if (error) { console.error('Erro ao remover tag do usuário:', error); return }
+      const query = supabase.from('nine_box_user_tags').delete().eq('tag_id', tagId)
+      if (isExternal) query.eq('external_user_key', userId)
+      else query.eq('user_id', userId)
+      const { error } = await query
+      if (error) { console.error('Erro ao remover tag:', error); return }
     } else {
-      const { error } = await supabase
-        .from('nine_box_user_tags')
-        .insert({ tag_id: tagId, user_id: userId, company_id: companyId, assigned_by: user?.id })
-      if (error) { console.error('Erro ao atribuir tag ao usuário:', error); return }
+      const payload = { tag_id: tagId, company_id: companyId, assigned_by: user?.id }
+      if (isExternal) payload.external_user_key = userId
+      else payload.user_id = userId
+      const { error } = await supabase.from('nine_box_user_tags').insert(payload)
+      if (error) { console.error('Erro ao atribuir tag:', error); return }
     }
 
+    // Atualizar estado local
     setUserNineBoxTags(prev => {
       const cur = prev[userId] || []
       const next = hasTag ? cur.filter(tid => tid !== tagId) : [...cur, tagId]
@@ -1473,8 +1477,7 @@ export default function PerformanceEvaluationPage() {
                       </button>
                     </div>
 
-                    {/* Tags + Botão de atribuir (apenas usuários internos) */}
-                    {!u.isExternal && (
+                    {/* Tags + Botão de atribuir */}
                     <div className="flex items-center gap-1.5 mt-2">
                       {userTags.map(tag => (
                         <span
@@ -1495,10 +1498,9 @@ export default function PerformanceEvaluationPage() {
                         <Tag className="h-3 w-3 text-gray-400" />
                       </button>
                     </div>
-                    )}
 
                     {/* Dropdown de atribuição de tags */}
-                    {!u.isExternal && assigningTagsFor === u.id && nineBoxTags.length > 0 && (
+                    {assigningTagsFor === u.id && nineBoxTags.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1 p-2 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500">
                         {nineBoxTags.map(tag => {
                           const hasTag = userTags.some(t => t.id === tag.id)
