@@ -80,6 +80,11 @@ export default function PerformanceEvaluationPage() {
   const [tagForm, setTagForm] = useState({ name: '', color: '#3B82F6' })
   const [assigningTagsFor, setAssigningTagsFor] = useState(null) // userId aberto para atribuição
   const [savingTag, setSavingTag] = useState(false)
+  const [editExternalName, setEditExternalName] = useState('')
+  const [showEditExternalModal, setShowEditExternalModal] = useState(false)
+  const [editingExternalUserId, setEditingExternalUserId] = useState(null)
+  const [tagFilter, setTagFilter] = useState([]) // IDs das tags selecionadas para filtrar
+  const [showTagFilter, setShowTagFilter] = useState(false)
 
   // Obter empresa do usuário atual se for company_admin
   const getCurrentUserCompany = () => {
@@ -810,6 +815,15 @@ export default function PerformanceEvaluationPage() {
   }
 
   // Agrupar usuários por posição na matriz
+  const getUserTags = (userId) => {
+    const tagIds = userNineBoxTags[userId] || []
+    return tagIds.map(tid => nineBoxTags.find(t => t.id === tid)).filter(Boolean)
+  }
+
+  const getUserTagCount = (tagId) => {
+    return Object.values(userNineBoxTags).filter(tags => tags.includes(tagId)).length
+  }
+
   const getUsersByPosition = () => {
     const matrix = {}
     
@@ -824,7 +838,9 @@ export default function PerformanceEvaluationPage() {
       const matchesSearch = u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           u.email?.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesCompany = filterCompany === 'all' || u.company_id === filterCompany
-      return matchesSearch && matchesCompany
+      const userTagIds = getUserTags(u.id).map(t => t.id)
+      const matchesTags = tagFilter.length === 0 || tagFilter.every(tid => userTagIds.includes(tid))
+      return matchesSearch && matchesCompany && matchesTags
     })
 
     filteredUsers.forEach(u => {
@@ -839,7 +855,10 @@ export default function PerformanceEvaluationPage() {
     externalEvaluations.forEach(ev => {
       const matchesSearch = !searchTerm || ev.external_name.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesCompany = filterCompany === 'all' || ev.company_id === filterCompany
-      if (!matchesSearch || !matchesCompany) return
+      const extId = `ext::${ev.company_id}::${ev.external_name}`
+      const extTagIds = getUserTags(extId).map(t => t.id)
+      const matchesTags = tagFilter.length === 0 || tagFilter.every(tid => extTagIds.includes(tid))
+      if (!matchesSearch || !matchesCompany || !matchesTags) return
       const key = `${ev.performance_level}-${ev.potential_level}`
       if (matrix[key]) {
         const companyName = companies.find(c => c.id === ev.company_id)?.name || ''
@@ -880,7 +899,9 @@ export default function PerformanceEvaluationPage() {
           u.full_name?.toLowerCase().includes(listSearch.toLowerCase()) ||
           u.email?.toLowerCase().includes(listSearch.toLowerCase())
         const isEvaluated = !!getUserEvaluation(u.id)
-        return matchesSearch && (!showOnlyUnevaluated || !isEvaluated)
+        const userTags = getUserTags(u.id).map(t => t.id)
+        const matchesTags = tagFilter.length === 0 || tagFilter.every(tid => userTags.includes(tid))
+        return matchesSearch && matchesTags && (!showOnlyUnevaluated || !isEvaluated)
       })
       .map(u => ({
         ...u,
@@ -889,7 +910,13 @@ export default function PerformanceEvaluationPage() {
       })),
     ...(!showOnlyUnevaluated
       ? filteredExternalEvals
-          .filter(ev => !listSearch || ev.external_name.toLowerCase().includes(listSearch.toLowerCase()))
+          .filter(ev => {
+            if (listSearch && !ev.external_name.toLowerCase().includes(listSearch.toLowerCase())) return false
+            const extId = `ext::${ev.company_id}::${ev.external_name}`
+            const extTags = getUserTags(extId).map(t => t.id)
+            if (tagFilter.length > 0 && !tagFilter.every(tid => extTags.includes(tid))) return false
+            return true
+          })
           .map(ev => ({
             id: `ext::${ev.company_id}::${ev.external_name}`,
             full_name: ev.external_name,
@@ -1021,13 +1048,64 @@ export default function PerformanceEvaluationPage() {
     })
   }
 
-  const getUserTags = (userId) => {
-    const tagIds = userNineBoxTags[userId] || []
-    return tagIds.map(tid => nineBoxTags.find(t => t.id === tid)).filter(Boolean)
+  // ─── Gerenciamento de usuários externos ───
+  const handleDeleteExternalUser = (user) => {
+    const name = user.full_name
+    const companyId = user.company_id
+    const extKey = user.id // ext::companyId::name
+    setConfirmDialog({
+      title: 'Excluir pessoa externa?',
+      message: `"${name}" será removido(a) permanentemente, incluindo todas as avaliações e tags. Esta ação não pode ser desfeita.`,
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        // Deletar avaliações
+        await supabase.from('external_performance_evaluations').delete().eq('external_name', name).eq('company_id', companyId)
+        // Deletar tags
+        await supabase.from('nine_box_user_tags').delete().eq('external_user_key', extKey)
+        // Limpar estado local
+        setUserNineBoxTags(prev => { const next = { ...prev }; delete next[extKey]; return next })
+        // Recarregar dados
+        await loadData()
+        toast.alert('Pessoa externa removida com sucesso!')
+      }
+    })
   }
 
-  const getUserTagCount = (tagId) => {
-    return Object.values(userNineBoxTags).filter(tags => tags.includes(tagId)).length
+  const openEditExternalModal = (user) => {
+    setEditingExternalUserId(user.id)
+    setEditExternalName(user.full_name)
+    setShowEditExternalModal(true)
+  }
+
+  const handleSaveExternalName = async () => {
+    if (!editExternalName.trim()) return
+    const oldKey = editingExternalUserId
+    // Parse: ext::companyId::name (name pode ter ::)
+    const withoutPrefix = oldKey.replace('ext::', '')
+    const firstSep = withoutPrefix.indexOf('::')
+    const companyId = withoutPrefix.substring(0, firstSep)
+    const oldName = withoutPrefix.substring(firstSep + 2)
+    const newKey = `ext::${companyId}::${editExternalName.trim()}`
+
+    // Atualizar avaliações
+    await supabase.from('external_performance_evaluations')
+      .update({ external_name: editExternalName.trim() })
+      .eq('external_name', oldName).eq('company_id', companyId)
+    // Atualizar tags
+    const { error: tagErr } = await supabase.from('nine_box_user_tags')
+      .update({ external_user_key: newKey })
+      .eq('external_user_key', oldKey)
+    if (!tagErr) {
+      setUserNineBoxTags(prev => {
+        const next = { ...prev }
+        if (next[oldKey]) { next[newKey] = next[oldKey]; delete next[oldKey] }
+        return next
+      })
+    }
+    setShowEditExternalModal(false)
+    setEditingExternalUserId(null)
+    await loadData()
+    toast.alert('Nome atualizado com sucesso!')
   }
 
   const PRESET_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#6366F1', '#14B8A6']
@@ -1205,7 +1283,11 @@ export default function PerformanceEvaluationPage() {
                           <div
                             key={u.id}
                             onClick={() => openHistoryModal(u)}
-                            className="bg-white dark:bg-gray-700 rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-600 cursor-pointer"
+                            className={`rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border cursor-pointer ${
+                              u.isExternal
+                                ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700'
+                                : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                            }`}
                           >
                             <div className="flex items-center gap-1.5 sm:gap-2">
                               {avatarUrls[u.id] ? (
@@ -1278,7 +1360,11 @@ export default function PerformanceEvaluationPage() {
                           <div
                             key={u.id}
                             onClick={() => openHistoryModal(u)}
-                            className="bg-white dark:bg-gray-700 rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-600 cursor-pointer"
+                            className={`rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border cursor-pointer ${
+                              u.isExternal
+                                ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700'
+                                : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                            }`}
                           >
                             <div className="flex items-center gap-1.5 sm:gap-2">
                               {avatarUrls[u.id] ? (
@@ -1351,7 +1437,11 @@ export default function PerformanceEvaluationPage() {
                           <div
                             key={u.id}
                             onClick={() => openHistoryModal(u)}
-                            className="bg-white dark:bg-gray-700 rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-600 cursor-pointer"
+                            className={`rounded-lg p-1.5 sm:p-2 shadow-sm hover:shadow-md transition-shadow border cursor-pointer ${
+                              u.isExternal
+                                ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700'
+                                : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                            }`}
                           >
                             <div className="flex items-center gap-1.5 sm:gap-2">
                               {avatarUrls[u.id] ? (
@@ -1430,6 +1520,56 @@ export default function PerformanceEvaluationPage() {
               />
             </div>
 
+            {/* Filtro de Tags */}
+            {nineBoxTags.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowTagFilter(v => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-colors ${
+                    tagFilter.length > 0
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                      : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                  }`}
+                >
+                  <Tag className="h-3.5 w-3.5" />
+                  Tags{tagFilter.length > 0 ? ` (${tagFilter.length})` : ''}
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+                {showTagFilter && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowTagFilter(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg min-w-[200px] p-2 space-y-1">
+                      {nineBoxTags.map(tag => (
+                        <label
+                          key={tag.id}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={tagFilter.includes(tag.id)}
+                            onChange={() => setTagFilter(prev =>
+                              prev.includes(tag.id) ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
+                            )}
+                            className="rounded"
+                          />
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                          <span className="text-sm text-gray-700 dark:text-gray-200">{tag.name}</span>
+                        </label>
+                      ))}
+                      {tagFilter.length > 0 && (
+                        <button
+                          onClick={() => setTagFilter([])}
+                          className="w-full mt-1 text-xs text-red-600 hover:text-red-700 py-1 border-t border-gray-100 dark:border-gray-700"
+                        >
+                          Limpar filtro
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Apenas não avaliados */}
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
@@ -1451,10 +1591,33 @@ export default function PerformanceEvaluationPage() {
                 return (
                   <div
                     key={u.id}
-                    className="bg-gray-50 dark:bg-gray-700 rounded-2xl p-3 sm:p-4 border border-gray-200 dark:border-gray-600 group"
+                    className={`relative rounded-2xl p-3 sm:p-4 border group ${
+                      u.isExternal
+                        ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700'
+                        : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                    }`}
                   >
-                    {/* Avatar + Nome + Botão */}
-                    <div className="flex items-center gap-3">
+                    {/* Botões de editar/apagar para externos - canto superior direito */}
+                    {u.isExternal && (
+                      <div className="absolute -top-2 -right-2 flex gap-0.5 z-10">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openEditExternalModal(u) }}
+                          className="p-1.5 bg-white dark:bg-gray-700 text-gray-500 hover:text-primary-600 border border-gray-200 dark:border-gray-600 rounded-full shadow-sm transition-colors"
+                          title="Editar nome"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteExternalUser(u) }}
+                          className="p-1.5 bg-white dark:bg-gray-700 text-gray-500 hover:text-red-600 border border-gray-200 dark:border-gray-600 rounded-full shadow-sm transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    {/* Avatar + Nome + Ações */}
+                    <div className="flex items-center gap-2">
                       {avatarUrls[u.id] ? (
                         <img
                           src={avatarUrls[u.id]}
@@ -1470,6 +1633,17 @@ export default function PerformanceEvaluationPage() {
                         {u.full_name}
                       </p>
                       <button
+                        onClick={(e) => { e.stopPropagation(); setAssigningTagsFor(assigningTagsFor === u.id ? null : u.id) }}
+                        className={`shrink-0 p-1.5 rounded-lg transition-colors ${
+                          userTags.length > 0
+                            ? 'text-primary-500 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100'
+                            : 'text-gray-400 hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-gray-600'
+                        }`}
+                        title="Gerenciar tags"
+                      >
+                        <Tag className="h-4 w-4" />
+                      </button>
+                      <button
                         onClick={(e) => { e.stopPropagation(); openEvaluationModal(u); }}
                         className="shrink-0 px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white text-xs font-semibold rounded-lg transition-colors"
                       >
@@ -1477,46 +1651,48 @@ export default function PerformanceEvaluationPage() {
                       </button>
                     </div>
 
-                    {/* Tags + Botão de atribuir */}
-                    <div className="flex items-center gap-1.5 mt-2">
-                      {userTags.map(tag => (
-                        <span
-                          key={tag.id}
-                          className="text-[10px] px-1.5 py-0.5 rounded-full font-medium cursor-pointer hover:opacity-80"
-                          style={{ backgroundColor: tag.color ? `${tag.color}20` : '#E5E7EB', color: tag.color || '#374151' }}
-                          onClick={(e) => { e.stopPropagation(); toggleUserTag(u.id, tag.id) }}
-                          title="Clique para remover"
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setAssigningTagsFor(assigningTagsFor === u.id ? null : u.id) }}
-                        className="shrink-0 p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
-                        title="Atribuir tags"
-                      >
-                        <Tag className="h-3 w-3 text-gray-400" />
-                      </button>
-                    </div>
+                    {/* Tags do usuário */}
+                    {userTags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {userTags.map(tag => (
+                          <span
+                            key={tag.id}
+                            className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                            style={{ backgroundColor: tag.color ? `${tag.color}20` : '#E5E7EB', color: tag.color || '#374151' }}
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
-                    {/* Dropdown de atribuição de tags */}
+                    {/* Dropdown de seleção de tags */}
                     {assigningTagsFor === u.id && nineBoxTags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1 p-2 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500">
+                      <div className="mt-2 p-2 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500 space-y-1.5" onClick={e => e.stopPropagation()}>
                         {nineBoxTags.map(tag => {
-                          const hasTag = userTags.some(t => t.id === tag.id)
+                          const checked = userTags.some(t => t.id === tag.id)
                           return (
-                            <button
+                            <label
                               key={tag.id}
-                              onClick={(e) => { e.stopPropagation(); toggleUserTag(u.id, tag.id) }}
-                              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium transition-all ${
-                                hasTag ? 'opacity-100 ring-1 ring-offset-1' : 'opacity-40 hover:opacity-70'
-                              }`}
-                              style={{ backgroundColor: tag.color ? `${tag.color}20` : '#E5E7EB', color: tag.color || '#374151' }}
+                              className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 cursor-pointer"
                             >
-                              {tag.name}
-                            </button>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleUserTag(u.id, tag.id)}
+                                className="rounded"
+                              />
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                              <span className="text-xs text-gray-700 dark:text-gray-200">{tag.name}</span>
+                            </label>
                           )
                         })}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setAssigningTagsFor(null) }}
+                          className="w-full mt-1 py-1.5 bg-primary-500 hover:bg-primary-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                        >
+                          Confirmar
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1548,7 +1724,7 @@ export default function PerformanceEvaluationPage() {
             </div>
 
             {/* Lista de tags existentes */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-2">
+            <div className="max-h-60 overflow-y-auto p-5 space-y-2">
               {nineBoxTags.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-4">Nenhuma tag criada ainda.</p>
               ) : (
@@ -1617,6 +1793,39 @@ export default function PerformanceEvaluationPage() {
                   />
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Nome Pessoa Externa */}
+      {showEditExternalModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => setShowEditExternalModal(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2.5 bg-primary-100 dark:bg-primary-900/30 rounded-xl">
+                <Edit2 className="h-5 w-5 text-primary-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Editar Nome</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Alterar nome da pessoa externa</p>
+              </div>
+            </div>
+            <input
+              type="text"
+              autoFocus
+              value={editExternalName}
+              onChange={e => setEditExternalName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSaveExternalName(); if (e.key === 'Escape') setShowEditExternalModal(false) }}
+              className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm mb-4"
+            />
+            <div className="flex gap-3">
+              <button onClick={handleSaveExternalName} disabled={!editExternalName.trim()} className="flex-1 px-4 py-3 bg-primary-500 hover:bg-primary-600 disabled:opacity-40 text-white rounded-xl font-semibold text-sm transition-colors">
+                Salvar
+              </button>
+              <button onClick={() => setShowEditExternalModal(false)} className="px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold text-sm transition-colors border border-gray-200 dark:border-gray-600">
+                Cancelar
+              </button>
             </div>
           </div>
         </div>
