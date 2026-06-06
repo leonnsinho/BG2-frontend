@@ -1589,6 +1589,7 @@ export default function DFCDashboardPage() {
         saldoFinalMonths.push(acc)
       }
       addResultRow('Saldo final', saldoFinalMonths)
+      ws.getCell(rowNum, totalCols).value = null
 
       // ========= Gerar e baixar o arquivo =========
       const buffer = await workbook.xlsx.writeBuffer()
