@@ -149,9 +149,13 @@ function TrialExpiredGuard({ children }) {
 
   // Redirecionar quando empresa está inativa
   if (isPlanExpired) {
-    const plan = activeUc?.companies?.subscription_plan
-    const param = plan === 'free' ? 'trialExpired=true' : 'planInativo=true'
-    return <Navigate to={`/planos?${param}`} replace />
+    // Aguardar webhook processar: se veio de pagamento Stripe, não redirecionar ainda
+    const isPaymentReturn = window.location.search.includes('payment=success')
+    if (!isPaymentReturn) {
+      const plan = activeUc?.companies?.subscription_plan
+      const param = plan === 'free' ? 'trialExpired=true' : 'planInativo=true'
+      return <Navigate to={`/planos?${param}`} replace />
+    }
   }
 
   if (isCompanyOfflineForUser) {

@@ -34,7 +34,10 @@ import {
   Plus,
   ChevronUp,
   Check,
-  CreditCard
+  CreditCard,
+  Award,
+  Layers,
+  CheckCircle
 } from 'lucide-react'
 import toast from '@/lib/toast'
 
@@ -1594,6 +1597,9 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
     contato_cobranca_data: company.contato_cobranca || { nome: '', cargo: '', email: '', telefone: '' },
     melhor_dia_pagamento: company.melhor_dia_pagamento || '',
     forma_pagamento: company.forma_pagamento || '',
+    subscription_plan: company.subscription_plan || 'free',
+    subscription_status: company.subscription_status || 'active',
+    extra_user_slots: company.extra_user_slots || 0,
     address: company.address || { street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zip: '', country: 'Brasil' }
   })
   const [logoFile, setLogoFile] = useState(null)
@@ -1761,6 +1767,85 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           {/* Conteúdo com Scroll */}
           <div className="p-6 space-y-5 overflow-y-auto flex-1 scrollbar-custom">
+
+          {/* Plano e Assinatura (Super Admin) */}
+          <div>
+            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <Award className="h-5 w-5 text-[#EBA500]" />
+              Plano e Assinatura
+              <span className="text-[10px] font-normal text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">Super Admin</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <Layers className="w-4 h-4 text-purple-600" />
+                  Plano
+                </label>
+                <select
+                  value={formData.subscription_plan}
+                  onChange={(e) => {
+                    const plan = e.target.value
+                    setFormData({
+                      ...formData,
+                      subscription_plan: plan,
+                      subscription_status: plan === 'free' ? 'trial' : (formData.subscription_status === 'trial' ? 'active' : formData.subscription_status)
+                    })
+                  }}
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="free">Free</option>
+                  <option value="profissional">Profissional</option>
+                  <option value="premium">Premium</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+              <div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  Status
+                </label>
+                <select
+                  value={formData.subscription_status}
+                  onChange={(e) => setFormData({...formData, subscription_status: e.target.value})}
+                  disabled={formData.subscription_plan === 'free'}
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] transition-all bg-white dark:bg-gray-700 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <option value="trial">Trial</option>
+                  <option value="active">Ativo</option>
+                  <option value="inactive">Inativo</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Slots de usuário */}
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Slots de Usuário</span>
+                </div>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Atual: {company.extra_user_slots || 0} slots extras
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  max="999"
+                  value={formData.extra_user_slots ?? company.extra_user_slots ?? 0}
+                  onChange={(e) => setFormData({...formData, extra_user_slots: parseInt(e.target.value) || 0})}
+                  className="w-24 px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] bg-white dark:bg-gray-700 dark:text-white text-center"
+                />
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Total: {20 + (formData.extra_user_slots ?? company.extra_user_slots ?? 0)} usuários (20 base + {formData.extra_user_slots ?? company.extra_user_slots ?? 0} extras)
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">
+                Altere manualmente a quantidade de slots. Para o plano Premium, cada slot adicional permite +1 usuário.
+              </p>
+            </div>
+          </div>
 
           {/* Upload de Logo */}
           <div>

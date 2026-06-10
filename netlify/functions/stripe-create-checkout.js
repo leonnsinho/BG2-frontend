@@ -1,9 +1,8 @@
 // Netlify Function: cria uma Stripe Checkout Session
 // Chamada via: POST /.netlify/functions/stripe-create-checkout
-// Body JSON: { priceId, companyId, userId }
+// Body JSON: { priceId, companyId, userId, origin }
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
-const APP_URL = process.env.APP_URL || 'https://bg2-mvp.netlify.app'
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -14,12 +13,13 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'Stripe não configurado' }) }
   }
 
-  let priceId, companyId, userId
+  let priceId, companyId, userId, origin
   try {
     const body = JSON.parse(event.body || '{}')
     priceId = body.priceId
     companyId = body.companyId
     userId = body.userId
+    origin = body.origin
   } catch {
     return { statusCode: 400, body: JSON.stringify({ error: 'Body inválido' }) }
   }
@@ -28,14 +28,16 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'priceId, companyId e userId são obrigatórios' }) }
   }
 
+  const baseUrl = origin || 'https://bg2plan.com.br'
+
   try {
     const params = new URLSearchParams({
       'payment_method_types[0]': 'card',
       'line_items[0][price]': priceId,
       'line_items[0][quantity]': '1',
       mode: 'subscription',
-      'success_url': `${APP_URL}/dashboard?payment=success`,
-      'cancel_url': `${APP_URL}/planos?payment=cancelled`,
+      'success_url': `${baseUrl}/dashboard?payment=success`,
+      'cancel_url': `${baseUrl}/planos?payment=cancelled`,
       'metadata[company_id]': companyId,
       'metadata[user_id]': userId,
       'subscription_data[metadata][company_id]': companyId,

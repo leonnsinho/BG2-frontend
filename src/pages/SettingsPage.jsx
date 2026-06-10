@@ -30,7 +30,8 @@ import {
   X,
   Wallet,
   Zap,
-  Lock
+  Lock,
+  Calendar
 } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -106,6 +107,26 @@ const SettingsPage = () => {
     const t = searchParams.get('tab')
     return ['profile', 'password', 'empresa', 'plano'].includes(t) ? t : 'profile'
   })
+
+  // Detectar retorno do Stripe Checkout (compra de slots)
+  React.useEffect(() => {
+    const slotsResult = searchParams.get('slots')
+    const purchaseId = searchParams.get('purchase')
+    if (slotsResult === 'success' && purchaseId) {
+      toast.success('✅ Pagamento confirmado! Seus slots adicionais foram ativados.')
+      refreshProfile()
+      // Limpar URL
+      const url = new URL(window.location)
+      url.searchParams.delete('slots')
+      url.searchParams.delete('purchase')
+      window.history.replaceState({}, '', url)
+    } else if (slotsResult === 'cancelled') {
+      toast.error('Pagamento cancelado. Nenhum slot foi adicionado.')
+      const url = new URL(window.location)
+      url.searchParams.delete('slots')
+      window.history.replaceState({}, '', url)
+    }
+  }, [searchParams])
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -165,15 +186,17 @@ const SettingsPage = () => {
   const [slotsToRemove, setSlotsToRemove] = useState(1)
   const [confirmRemoveSlotsOpen, setConfirmRemoveSlotsOpen] = useState(false)
   const [removingSlotsLoading, setRemovingSlotsLoading] = useState(false)
+  const [renewalDateDisplay, setRenewalDateDisplay] = useState('')
 
   const handleOpenPortal = async () => {
-    if (!adminCompanyId) return
+    const companyId = adminCompanyId || activeCompanyId
+    if (!companyId) return
     setPortalLoading(true)
     try {
       const res = await fetch('/.netlify/functions/stripe-create-portal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId: adminCompanyId }),
+        body: JSON.stringify({ companyId: companyId }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erro ao abrir portal')
@@ -204,45 +227,129 @@ const SettingsPage = () => {
     await fetchSlotPrice()
   }
 
+  // Empresa ativa (para compras e portal)
+  const activeCompanyId = profile?.user_companies?.find(uc => uc.is_active)?.company_id
+
   const handleBuyExtraSlots = async () => {
-    if (!adminCompanyId || slotsToAdd < 1) return
+    const companyId = adminCompanyId || activeCompanyId
+    if (!companyId || slotsToAdd < 1) return
     setBuyingSlotsLoading(true)
     try {
-      const res = await fetch('/.netlify/functions/stripe-buy-extra-slots', {
+      // Criar checkout session separado (modo payment, não subscription)
+      const res = await fetch('/.netlify/functions/stripe-create-slot-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId: adminCompanyId, quantity: slotsToAdd }),
+        body: JSON.stringify({ companyId: companyId, quantity: slotsToAdd, userId: profile?.id, origin: window.location.origin }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erro ao comprar slots')
-      toast.success(`${slotsToAdd} slot${slotsToAdd > 1 ? 's adicionais adicionados' : ' adicional adicionado'} com sucesso!`)
-      setConfirmSlotsOpen(false)
-      setSlotsToAdd(1)
-      await refreshProfile()
+      if (!res.ok) throw new Error(data.error || 'Erro ao iniciar checkout')
+      // Redirecionar para Stripe Checkout
+      window.location.href = data.url
     } catch (err) {
       toast.error(err.message)
-    } finally {
       setBuyingSlotsLoading(false)
     }
   }
 
+  const handleOpenRemoveSlots = async () => {
+    const currentExtraSlots = profile?.user_companies?.find(uc => uc.is_active)?.companies?.extra_user_slots || 0
+    setSlotsToRemove(s => Math.min(s, currentExtraSlots))
+    setConfirmRemoveSlotsOpen(true)
+    await fetchSlotPrice()
+    const companyId = adminCompanyId || activeCompanyId
+    if (companyId) {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('subscription_renewal_date')
+        .eq('id', companyId)
+        .single()
+      if (company?.subscription_renewal_date) {
+        setRenewalDateDisplay(new Date(company.subscription_renewal_date).toLocaleDateString('pt-BR'))
+      }
+    }
+  }
+
   const handleRemoveExtraSlots = async () => {
-    if (!adminCompanyId || slotsToRemove < 1) return
+    const companyId = adminCompanyId || activeCompanyId
+    if (!companyId || slotsToRemove < 1) return
     setRemovingSlotsLoading(true)
     try {
-      const res = await fetch('/.netlify/functions/stripe-remove-extra-slots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId: adminCompanyId, removeQuantity: slotsToRemove }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erro ao remover slots')
-      toast.success(`${slotsToRemove} slot${slotsToRemove > 1 ? 's removidos' : ' removido'} com sucesso! O crédito proporcional será aplicado na próxima fatura.`)
+      // Buscar assinatura atual para obter data de renovação
+      const { data: company } = await supabase
+        .from('companies')
+        .select('subscription_renewal_date, subscription_plan')
+        .eq('id', companyId)
+        .single()
+
+      const renewalDate = company?.subscription_renewal_date
+      const now = new Date()
+
+      // Buscar compras ativas ordenadas por data de expiração (mais recentes primeiro)
+      const { data: activePurchases } = await supabase
+        .from('user_slot_purchases')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .gt('expires_at', now.toISOString())
+        .order('expires_at', { ascending: false })
+
+      if (!activePurchases || activePurchases.length === 0) {
+        toast.error('Nenhum slot ativo para remover')
+        return
+      }
+
+      // Calcular data alvo: min(renewalDate, now + 30 dias) para garantir validade
+      const targetDate = renewalDate && new Date(renewalDate) > now
+        ? new Date(renewalDate).toISOString()
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+      // Atualizar expires_at dos slots a remover para a data alvo
+      let remaining = slotsToRemove
+      for (const purchase of activePurchases) {
+        if (remaining <= 0) break
+        const toRemove = Math.min(remaining, purchase.quantity)
+        remaining -= toRemove
+
+        if (toRemove === purchase.quantity) {
+          // Remover compra inteira: expirar na data alvo
+          await supabase
+            .from('user_slot_purchases')
+            .update({ expires_at: targetDate })
+            .eq('id', purchase.id)
+        } else {
+          // Remover parcial: reduzir quantidade e criar registro com quantidade removida expirando na data alvo
+          await supabase
+            .from('user_slot_purchases')
+            .update({ quantity: purchase.quantity - toRemove })
+            .eq('id', purchase.id)
+          await supabase
+            .from('user_slot_purchases')
+            .insert({
+              company_id: companyId,
+              quantity: toRemove,
+              unit_price_cents: purchase.unit_price_cents,
+              status: 'active',
+              expires_at: targetDate,
+              purchased_at: purchase.purchased_at,
+            })
+        }
+      }
+
+      // Recalcular total ativo e sincronizar
+      const { data: totalActive } = await supabase
+        .rpc('get_active_extra_user_slots', { p_company_id: companyId })
+      const activeSlots = totalActive || 0
+      await supabase
+        .from('companies')
+        .update({ extra_user_slots: activeSlots })
+        .eq('id', companyId)
+
+      toast.success(`${slotsToRemove} slot${slotsToRemove > 1 ? 's' : ''} será${slotsToRemove > 1 ? 'o' : ''} removido${slotsToRemove > 1 ? 's' : ''} ao final do ciclo. Continuarão ativos até a renovação do plano.`)
       setConfirmRemoveSlotsOpen(false)
       setSlotsToRemove(1)
       await refreshProfile()
     } catch (err) {
-      toast.error(err.message)
+      toast.error(err.message || 'Erro ao remover slots')
     } finally {
       setRemovingSlotsLoading(false)
     }
@@ -1492,6 +1599,8 @@ const SettingsPage = () => {
                 const currentStatus =
                   profile?.user_companies?.find(uc => uc.is_active)?.companies?.subscription_status ||
                   'inactive'
+                const renewalDate =
+                  profile?.user_companies?.find(uc => uc.is_active)?.companies?.subscription_renewal_date
                 const statusColors = {
                   active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
                   inactive: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
@@ -1516,6 +1625,12 @@ const SettingsPage = () => {
                               {statusLabels[currentStatus] ?? currentStatus}
                             </span>
                           </div>
+                          {renewalDate && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              Renova em {new Date(renewalDate).toLocaleDateString('pt-BR')}
+                            </p>
+                          )}
                           <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
                             Gerencie cobranças, faturas e cancelamento no portal Stripe.
                           </p>
@@ -1631,7 +1746,7 @@ const SettingsPage = () => {
                                 </p>
                                 <button
                                   type="button"
-                                  onClick={() => { setSlotsToRemove(s => Math.min(s, extraUserSlots)); setConfirmRemoveSlotsOpen(true); fetchSlotPrice() }}
+                                  onClick={handleOpenRemoveSlots}
                                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm transition-colors whitespace-nowrap"
                                 >
                                   Remover slots
@@ -1698,7 +1813,7 @@ const SettingsPage = () => {
 
                       {/* Aviso de cobrança */}
                       <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-                        O valor será cobrado proporcionalmente ao ciclo atual e incluído na próxima fatura da sua assinatura. A cobrança é recorrente mensal.
+                        O valor será cobrado na hora via cartão de crédito. Cada slot adicional tem validade de 30 dias e é independente do seu plano principal.
                       </p>
 
                       {/* Botões */}
@@ -1762,18 +1877,16 @@ const SettingsPage = () => {
                           <span className="text-gray-500 dark:text-gray-400">Nova capacidade</span>
                           <span className="font-semibold text-[#373435] dark:text-white">{20 + extraUserSlots - slotsToRemove} usuários</span>
                         </div>
-                        <div className="flex justify-between items-center px-4 py-3 bg-green-50/60 dark:bg-green-900/10 rounded-b-xl">
-                          <span className="font-semibold text-[#373435] dark:text-white">Crédito estimado/mês</span>
-                          <span className="font-bold text-green-700 dark:text-green-400 text-base">
-                            {slotPriceLoading ? (
-                              <span className="inline-block w-20 h-4 bg-green-200 dark:bg-green-700 rounded animate-pulse" />
-                            ) : creditTotal != null ? fmtCurrency(creditTotal, slotPrice.currency) : '—'}
+                        <div className="flex justify-between items-center px-4 py-3 bg-amber-50/60 dark:bg-amber-900/10 rounded-b-xl">
+                          <span className="font-semibold text-[#373435] dark:text-white">Disponível até</span>
+                          <span className="font-bold text-amber-700 dark:text-amber-400 text-sm">
+                            {renewalDateDisplay || 'a data de renovação'}
                           </span>
                         </div>
                       </div>
 
                       <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-                        Um crédito proporcional ao tempo restante do ciclo atual será aplicado na próxima fatura. Os usuários já cadastrados <span className="font-semibold text-gray-600 dark:text-gray-300">não serão removidos automaticamente</span> — você precisará desativá-los manualmente se a nova capacidade for ultrapassada.
+                        Os slots continuarão ativos até a data de renovação do plano. Após essa data, serão removidos automaticamente. Os usuários já cadastrados <span className="font-semibold text-gray-600 dark:text-gray-300">não serão removidos</span> — você precisará desativá-los manualmente se a nova capacidade for ultrapassada.
                       </p>
 
                       <div className="flex gap-3">

@@ -119,14 +119,92 @@ exports.handler = async (event) => {
   try {
     switch (type) {
       case 'checkout.session.completed': {
-        // Pagamento confirmado — ativar assinatura
+        // Pagamento confirmado — ativar assinatura OU compra de slots
         const companyId = obj.metadata?.company_id
         if (!companyId) {
           console.error('company_id não encontrado nos metadados da session')
           break
         }
 
-        // Determinar plano pelo item da assinatura
+        // Verificar se é uma compra de slots (modo payment, não subscription)
+        const purchaseId = obj.metadata?.purchase_id
+        if (purchaseId) {
+          try {
+            // Ativar compra de slots: atualizar status + expiração
+            const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            console.log(`Ativando compra de slots ${purchaseId} para empresa ${companyId}`)
+            
+            const slotUpdateRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/user_slot_purchases?id=eq.${encodeURIComponent(purchaseId)}`,
+              {
+                method: 'PATCH',
+                headers: {
+                  apikey: SUPABASE_SERVICE_ROLE_KEY,
+                  Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                  'Content-Type': 'application/json',
+                  Prefer: 'return=minimal',
+                },
+                body: JSON.stringify({
+                  status: 'active',
+                  expires_at: expiresAt,
+                  stripe_payment_intent: obj.payment_intent || null,
+                }),
+              }
+            )
+            if (!slotUpdateRes.ok) {
+              const errText = await slotUpdateRes.text()
+              console.error('Erro ao ativar compra de slots:', slotUpdateRes.status, errText)
+              throw new Error(`Falha ao ativar compra: ${slotUpdateRes.status} ${errText}`)
+            }
+            console.log(`Compra ${purchaseId} ativada com sucesso`)
+
+            // Recalcular extra_user_slots com base nos ativos
+            const activeSlotsRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/rpc/get_active_extra_user_slots`,
+              {
+                method: 'POST',
+                headers: {
+                  apikey: SUPABASE_SERVICE_ROLE_KEY,
+                  Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ p_company_id: companyId }),
+              }
+            )
+            let activeSlots = 0
+            if (activeSlotsRes.ok) {
+              activeSlots = parseInt(await activeSlotsRes.text(), 10) || 0
+            } else {
+              console.error('Erro ao buscar slots ativos:', activeSlotsRes.status, await activeSlotsRes.text())
+            }
+
+            // Sincronizar coluna legacy
+            const updateRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/companies?id=eq.${encodeURIComponent(companyId)}`,
+              {
+                method: 'PATCH',
+                headers: {
+                  apikey: SUPABASE_SERVICE_ROLE_KEY,
+                  Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                  'Content-Type': 'application/json',
+                  Prefer: 'return=minimal',
+                },
+                body: JSON.stringify({ extra_user_slots: activeSlots }),
+              }
+            )
+            if (!updateRes.ok) {
+              console.error('Erro ao sincronizar extra_user_slots:', updateRes.status, await updateRes.text())
+            }
+            
+            console.log(`Compra de slots ${purchaseId} concluída: ${activeSlots} slots ativos para empresa ${companyId}`)
+          } catch (slotErr) {
+            console.error('Erro no processamento de compra de slots:', slotErr)
+            throw slotErr
+          }
+          break
+        }
+
+        // Fluxo normal de assinatura (modo subscription)
         let plan = 'basic'
         let renewalDate = null
         if (obj.subscription) {
@@ -156,9 +234,10 @@ exports.handler = async (event) => {
           stripe_subscription_id: obj.subscription,
           subscription_plan: plan,
           subscription_status: 'active',
-          ...(renewalDate ? { subscription_renewal_date: renewalDate, subscription_ends_at: renewalDate } : {}),
+          subscription_renewal_date: renewalDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          subscription_ends_at: renewalDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         })
-        console.log(`Empresa ${companyId} ativada com plano ${plan}`)
+        console.log(`Empresa ${companyId} ativada com plano ${plan}, renewalDate=${renewalDate || 'calculado +30d'}`)
         break
       }
 
@@ -190,7 +269,8 @@ exports.handler = async (event) => {
           subscription_status: status,
           stripe_subscription_id: obj.id,
           extra_user_slots: extraUserSlots,
-          ...(renewalDate ? { subscription_renewal_date: renewalDate, subscription_ends_at: renewalDate } : {}),
+          subscription_renewal_date: renewalDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          subscription_ends_at: renewalDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         })
         console.log(`Empresa ${companyId} atualizada: plano=${plan}, status=${status}, extra_user_slots=${extraUserSlots}`)
         break

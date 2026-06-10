@@ -589,12 +589,29 @@ const StatCard = memo(({ stat }) => {
 StatCard.displayName = 'StatCard'
 
 const DashboardPage = memo(() => {
-  const { user, profile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const { isSuperAdmin, isGestor, isCompanyAdmin, isUnlinkedUser, loading } = usePermissions()
   const { stats, loading: statsLoading, error: statsError, refresh } = useAdminStats()
   
   // Hook para métricas com progress bars - DEVE estar no topo, antes de condicionais
   const { metrics, weeklyComparison } = useSuperAdminMetrics()
+
+  // Detectar retorno de pagamento Stripe e atualizar perfil
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('payment') === 'success') {
+      // Limpar URL
+      const url = new URL(window.location)
+      url.searchParams.delete('payment')
+      window.history.replaceState({}, '', url)
+      // Recarregar perfil após delay para dar tempo do webhook processar
+      const timer = setTimeout(async () => {
+        await refreshProfile()
+        toast.success('✅ Pagamento confirmado! Bem-vindo ao BG2!', { duration: 5000 })
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [refreshProfile])
 
   // Função para obter saudação baseada no horário
   const getGreeting = () => {

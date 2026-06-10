@@ -265,7 +265,7 @@ export default function PlansPage() {
       const response = await fetch('/.netlify/functions/stripe-create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, companyId: resolvedCompanyId, userId: user.id }),
+        body: JSON.stringify({ priceId, companyId: resolvedCompanyId, userId: user.id, origin: window.location.origin }),
       })
 
       const data = await response.json()

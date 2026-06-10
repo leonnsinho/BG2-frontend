@@ -6,7 +6,7 @@ import { supabase } from '../services/supabase'
 import {
   Clock, X, ArrowLeft, ArrowRight, Save, Phone,
   CreditCard, Users, MapPin, Hash, Upload, Image as ImageIcon,
-  Building2, Check, Wallet, Zap
+  Building2, Check, Wallet, Zap, AlertCircle
 } from 'lucide-react'
 import toast from '@/lib/toast'
 
@@ -128,6 +128,11 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
   const [pfData, setPfData] = useState(EMPTY_PF)
   const [loading, setLoading] = useState(false)
   const [logoFile, setLogoFile] = useState(null)
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate('/login')
+  }
   const [logoPreview, setLogoPreview] = useState(null)
   const [trialCompanyId, setTrialCompanyId] = useState(null)
   const [daysLeft, setDaysLeft] = useState(null)
@@ -477,7 +482,7 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
       {/* ─── Complete Registration Modal ──────────────────────────────────── */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
 
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
@@ -495,16 +500,33 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
                 <button
                   onClick={fillTestData}
                   title="Preencher campos vazios com dados de teste"
-                  className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors"
+                  className="hidden px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors"
                 >
                   Preencher teste
                 </button>
                 )}
-                {daysLeft !== 0 && (
+                {daysLeft !== 0 ? (
                 <button onClick={() => setOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
                   <X className="h-5 w-5 text-gray-500" />
                 </button>
-              )}
+                ) : (
+                <>
+                  <div className="relative group">
+                    <AlertCircle className="h-5 w-5 text-amber-500 cursor-help" />
+                    <div className="absolute right-0 top-full mt-2 w-56 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                      Para continuar utilizando a plataforma, é necessário completar o cadastro da empresa com todos os dados obrigatórios.
+                      <div className="absolute -top-1 right-3 w-2 h-2 bg-gray-900 rotate-45" />
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    title="Sair"
+                    className="px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                  >
+                    Sair
+                  </button>
+                </>
+                )}
               </div>
             </div>
 
