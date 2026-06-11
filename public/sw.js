@@ -1,9 +1,9 @@
 // Service Worker para PWA
-const CACHE_NAME = 'bg2-v10' // Incrementar para forçar atualização
-const APP_VERSION = '5.8.0' // Incrementar quando houver updates - IMPORTANTE: Mudar isso dispara atualização!
+// ⚠️ AO ATUALIZAR: Mude APENAS APP_VERSION. O CACHE_NAME é derivado automaticamente.
+const APP_VERSION = '5.8.1'
+const CACHE_NAME = `bg2-v${APP_VERSION.replace(/\./g, '-')}` // Ex: bg2-v5-8-1
 const urlsToCache = [
   '/',
-  '/index.html',
   '/favicon.png'
 ]
 
@@ -12,9 +12,6 @@ const NEVER_CACHE = [
   '/sw.js',
   '/index.html'
 ]
-
-// Armazenar versão no cache para comparação
-const VERSION_KEY = 'app-version-cache'
 
 // Notificar clientes sobre nova versão disponível
 function notifyClients(message) {
@@ -32,10 +29,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Cache aberto')
-        // Armazenar versão no cache
-        return cache.put(VERSION_KEY, new Response(APP_VERSION))
-          .then(() => cache.addAll(urlsToCache))
+        console.log('📦 Cache aberto:', CACHE_NAME)
+        return cache.addAll(urlsToCache)
       })
       .then(() => {
         console.log('⏭️ Pulando waiting...')
@@ -44,33 +39,21 @@ self.addEventListener('install', (event) => {
   )
 })
 
-// Ativação do Service Worker
+// Ativação do Service Worker — limpa TUDO para garantir versão fresca
 self.addEventListener('activate', (event) => {
   console.log('✅ Service Worker ativado versão:', APP_VERSION)
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
+        // Deletar TODOS os caches (inclusive o atual) para forçar download limpo
+        console.log('🗑️ Limpando todos os caches:', cacheNames)
         return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME) {
-              console.log('🗑️ Deletando cache antigo:', cacheName)
-              return caches.delete(cacheName)
-            }
-          })
+          cacheNames.map((cacheName) => caches.delete(cacheName))
         )
       })
       .then(() => {
         console.log('👑 Assumindo controle de todos os clientes')
         return self.clients.claim()
-      })
-      .then(() => {
-        console.log('📣 Notificando clientes sobre nova versão:', APP_VERSION)
-        notifyClients({
-          type: 'NEW_VERSION',
-          version: APP_VERSION,
-          timestamp: Date.now(),
-          source: 'activate'
-        })
       })
   )
 })
@@ -106,11 +89,12 @@ self.addEventListener('message', (event) => {
 })
 
 // Hosts que nunca devem ser interceptados (APIs externas)
+// Usamos endsWith para evitar falsos matches (ex: fakesupabase.com NÃO match 'supabase.co')
 const PASSTHROUGH_HOSTS = [
-  'supabase.co',
-  'supabase.in',
-  'amazonaws.com',
-  'googleapis.com',
+  '.supabase.co',
+  '.supabase.in',
+  '.amazonaws.com',
+  '.googleapis.com',
   'resend.com',
 ]
 
@@ -125,7 +109,7 @@ self.addEventListener('fetch', (event) => {
 
   // Nunca interceptar chamadas de API externas (Supabase, AWS, etc.)
   // Deixar o browser tratar diretamente para evitar erros de Response
-  if (PASSTHROUGH_HOSTS.some(host => url.hostname.includes(host))) {
+  if (PASSTHROUGH_HOSTS.some(host => url.hostname.endsWith(host))) {
     return
   }
 

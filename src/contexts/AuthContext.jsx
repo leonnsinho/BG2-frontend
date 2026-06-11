@@ -133,8 +133,8 @@ export function AuthProvider({ children }) {
           timestamp: Date.now()
         })
 
-        // Carregar empresas em background (não bloqueia)
-        setTimeout(async () => {
+        // Carregar empresas em background com RETRY (não bloqueia)
+        const loadUserCompanies = async (attempt = 1, maxAttempts = 4) => {
           try {
             const { data: userCompaniesData, error: ucError } = await supabase
               .from('user_companies')
@@ -142,9 +142,7 @@ export function AuthProvider({ children }) {
               .eq('user_id', userId)
               .eq('is_active', true)
 
-            if (ucError) {
-              return
-            }
+            if (ucError) throw ucError
 
             let enrichedUserCompanies = []
             
@@ -178,9 +176,20 @@ export function AuthProvider({ children }) {
             setProfile(fullProfile)
 
           } catch (error) {
-            // Silently ignore background loading errors
+            console.warn(`Tentativa ${attempt}/${maxAttempts} de carregar user_companies falhou:`, error.message)
+            
+            // Retry com exponential backoff: 2s, 4s, 8s
+            if (attempt < maxAttempts) {
+              const delay = Math.min(2000 * Math.pow(2, attempt - 1), 15000)
+              setTimeout(() => loadUserCompanies(attempt + 1, maxAttempts), delay)
+            } else {
+              console.error('Falha definitiva ao carregar user_companies após', maxAttempts, 'tentativas')
+            }
           }
-        }, 100) // Carrega empresas após 100ms
+        }
+
+        // Iniciar carregamento após 100ms
+        setTimeout(() => loadUserCompanies(), 100)
 
         return basicProfile
 

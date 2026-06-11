@@ -29,6 +29,14 @@
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
+        // 🔄 Auto-reload quando o SW detecta e notifica nova versão
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'NEW_VERSION') {
+            console.log('🔄 Nova versão detectada pelo SW, recarregando página...');
+            window.location.reload();
+          }
+        });
+
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
             .then((registration) => {
@@ -37,11 +45,10 @@
               // Verificar atualizações imediatamente
               registration.update();
               
-              // Verificar atualizações periodicamente
+              // Verificar atualizações periodicamente (a cada 30s para máxima frescura)
               setInterval(() => {
-                console.log('🔄 Verificando atualizações do SW...');
                 registration.update();
-              }, 60 * 1000); // A cada 1 minuto
+              }, 30 * 1000);
               
               // Listener para quando uma atualização for encontrada
               registration.addEventListener('updatefound', () => {
@@ -51,7 +58,9 @@
                 newWorker.addEventListener('statechange', () => {
                   console.log('📊 SW State:', newWorker.state);
                   if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    console.log('✅ Nova versão instalada e pronta!');
+                    console.log('✅ Nova versão instalada, recarregando...');
+                    // Pequeno delay para garantir que o SW terminou de ativar
+                    setTimeout(() => window.location.reload(), 300);
                   }
                 });
               });

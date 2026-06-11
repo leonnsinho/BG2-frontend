@@ -40,6 +40,7 @@ import {
   Lock
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
+import { APP_VERSION as BUNDLE_VERSION } from '../../version'
 
 // Variável global para capturar o evento o mais cedo possível
 let globalDeferredPrompt = null
@@ -556,7 +557,9 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0 })
   const [isClosing, setIsClosing] = React.useState(false)
   const [avatarUrl, setAvatarUrl] = React.useState('') // 🔥 NOVO: URL assinada do avatar
-  const [appVersion, setAppVersion] = React.useState('3.0.11') // Versão padrão
+  const [appVersion, setAppVersion] = React.useState(BUNDLE_VERSION) // Fonte única: src/version.js
+  const [dataError, setDataError] = React.useState(false) // 🔥 Erro ao carregar dados
+  const [isRetrying, setIsRetrying] = React.useState(false) // 🔥 Botão de retry
   // Inicializa com o valor global se existir
   const [deferredPrompt, setDeferredPrompt] = React.useState(globalDeferredPrompt)
   const [isInstallable, setIsInstallable] = React.useState(false)
@@ -625,28 +628,8 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     }
   }
 
-  // 🔥 NOVO: Buscar versão do Service Worker
-  React.useEffect(() => {
-    const getVersion = async () => {
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        try {
-          const messageChannel = new MessageChannel()
-          messageChannel.port1.onmessage = (event) => {
-            if (event.data.type === 'VERSION_RESPONSE' && event.data.version) {
-              setAppVersion(event.data.version)
-            }
-          }
-          navigator.serviceWorker.controller.postMessage(
-            { type: 'GET_VERSION' },
-            [messageChannel.port2]
-          )
-        } catch (error) {
-          // Silently ignore version fetch errors
-        }
-      }
-    }
-    getVersion()
-  }, [])
+  // Versão da plataforma vem do bundle (src/version.js) — sempre consistente, nunca do cache/SW
+  // O Service Worker tem sua própria versão para cache busting, mas não afeta o que é exibido
 
   // 🔥 NOVO: Carregar URL assinada do avatar
   React.useEffect(() => {
@@ -688,15 +671,18 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
     }
     try {
       setJourneysLoading(true)
+      setDataError(false) // Reset error on new attempt
       const journeys = await getAccessibleJourneys()
       if (isMountedRef.current) {
         setAccessibleJourneys(journeys)
         setJourneysLoaded(true)
       }
     } catch (error) {
+      console.error('Erro ao carregar jornadas:', error)
       if (isMountedRef.current) {
         setAccessibleJourneys([])
         setJourneysLoaded(true)
+        setDataError(true) // 🔥 Mostrar erro ao usuário
       }
     } finally {
       if (isMountedRef.current) setJourneysLoading(false)
@@ -707,6 +693,21 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   React.useEffect(() => {
     loadJourneyAccess()
   }, [profile?.id])
+
+  // 🔥 Detectar quando user_companies falharam ao carregar (background fetch silencioso)
+  React.useEffect(() => {
+    if (
+      profile?.id &&
+      profile?.role !== 'super_admin' &&
+      !permissions.isUnlinkedUser() &&
+      (!profile?.user_companies || profile.user_companies.length === 0) &&
+      journeysLoaded &&
+      !journeysLoading
+    ) {
+      // Perfil carregou mas sem user_companies → o background fetch provavelmente falhou
+      setDataError(true)
+    }
+  }, [profile?.user_companies, profile?.role, journeysLoaded, journeysLoading])
 
   // Realtime + foco: atualiza jornadas quando atribuições mudam
   React.useEffect(() => {
@@ -996,6 +997,32 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                     <p className="mb-1 font-medium">Aguardando Vinculação</p>
                     <p>Entre em contato com o administrador da sua empresa para solicitar vinculação.</p>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* 🔥 Banner de erro: dados não carregaram (WiFi ruim, timeout, etc) */}
+            {dataError && !journeysLoading && !isCollapsed && (
+              <div className="px-2 sm:px-3 mb-3">
+                <div className="bg-red-500/20 border border-red-500/40 rounded-lg p-3">
+                  <div className="flex items-center mb-2">
+                    <AlertCircle className="w-4 h-4 text-red-400 mr-2 flex-shrink-0" />
+                    <span className="text-xs font-medium text-red-300">Erro de Conexão</span>
+                  </div>
+                  <p className="text-xs text-red-200/80 mb-2">
+                    Não foi possível carregar seus dados de acesso. Isso pode ocorrer por conexão lenta ou instável.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setIsRetrying(true)
+                      // Recarregar a página força o AuthContext a re-buscar user_companies (agora com retry)
+                      window.location.reload()
+                    }}
+                    disabled={isRetrying}
+                    className="w-full px-3 py-1.5 bg-red-500/30 hover:bg-red-500/50 text-red-200 text-xs font-medium rounded-md transition-colors disabled:opacity-50"
+                  >
+                    {isRetrying ? 'Recarregando...' : 'Recarregar página'}
+                  </button>
                 </div>
               </div>
             )}
@@ -1445,6 +1472,17 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
               </div>
             )}
           </div>
+
+          {/* Versão da Plataforma */}
+          <p
+            className={cn(
+              "text-[10px] text-neutral-300/60 text-center select-none",
+              isCollapsed && "text-[9px]"
+            )}
+            title={`Partimap v${appVersion}`}
+          >
+            v{appVersion}
+          </p>
 
           {/* Botão de toggle para desktop quando colapsado - acima do botão Sair */}
           {isCollapsed && (
