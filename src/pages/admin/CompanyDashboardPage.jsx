@@ -1717,8 +1717,49 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
         logoUrl = null
       }
 
-      // 3. Atualizar empresa com novo logo_url
-      const { representante, contato_cobranca_data, is_partner_client, num_colaboradores, ...rest } = formData
+      // 3. Se extra_user_slots foi alterado manualmente, sincronizar user_slot_purchases
+      if (formData.extra_user_slots !== undefined && formData.extra_user_slots !== (company.extra_user_slots || 0)) {
+        const newSlots = parseInt(formData.extra_user_slots) || 0
+        const oldSlots = company.extra_user_slots || 0
+        
+        if (newSlots < oldSlots) {
+          // Reduziu: expirar compras mais antigas até atingir a nova quantidade
+          const toExpire = oldSlots - newSlots
+          const { data: activePurchases } = await supabase
+            .from('user_slot_purchases')
+            .select('*')
+            .eq('company_id', company.id)
+            .eq('status', 'active')
+            .gt('expires_at', new Date().toISOString())
+            .order('expires_at', { ascending: true })
+          
+          let remaining = toExpire
+          for (const purchase of (activePurchases || [])) {
+            if (remaining <= 0) break
+            if (purchase.quantity <= remaining) {
+              await supabase.from('user_slot_purchases').update({ status: 'expired' }).eq('id', purchase.id)
+              remaining -= purchase.quantity
+            } else {
+              await supabase.from('user_slot_purchases').update({ quantity: purchase.quantity - remaining }).eq('id', purchase.id)
+              remaining = 0
+            }
+          }
+        } else if (newSlots > oldSlots) {
+          // Aumentou: criar nova compra manual
+          const addedSlots = newSlots - oldSlots
+          await supabase.from('user_slot_purchases').insert({
+            company_id: company.id,
+            quantity: addedSlots,
+            unit_price_cents: 0,
+            status: 'active',
+            expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 ano
+            purchased_at: new Date().toISOString(),
+          })
+        }
+      }
+
+      // 4. Atualizar empresa com novo logo_url
+      const { representante, contato_cobranca_data, is_partner_client, num_colaboradores, extra_user_slots: _, ...rest } = formData
       await onSave(company.id, {
         ...rest,
         logo_url: logoUrl,
