@@ -7,7 +7,7 @@ export const updateUserActivity = async (supabase, userId) => {
       .from('profiles')
       .select('login_count, first_login_at')
       .eq('id', userId)
-      .single()
+      .maybeSingle() // maybeSingle não quebra se retornar 0 ou múltiplas linhas
 
     if (fetchError) {
       console.error('Erro ao buscar perfil atual:', fetchError)

@@ -793,7 +793,7 @@ const SettingsPage = () => {
     { id: 'profile', name: 'Perfil', icon: User },
     { id: 'password', name: 'Senha', icon: Key },
     ...(isCompanyAdmin ? [{ id: 'empresa', name: 'Empresa', icon: Building2 }] : []),
-    ...(isCompanyAdmin ? [{ id: 'plano', name: 'Plano', icon: CreditCard, disabled: true }] : []),
+    ...(isCompanyAdmin ? [{ id: 'plano', name: 'Plano', icon: CreditCard }] : []),
   ]
 
   if (permissions.isLoading) {
