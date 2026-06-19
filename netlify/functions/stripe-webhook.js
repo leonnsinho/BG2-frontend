@@ -234,10 +234,12 @@ exports.handler = async (event) => {
           stripe_subscription_id: obj.subscription,
           subscription_plan: plan,
           subscription_status: 'active',
-          subscription_renewal_date: renewalDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          subscription_ends_at: renewalDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          ...(renewalDate && {
+            subscription_renewal_date: renewalDate,
+            subscription_ends_at: renewalDate,
+          }),
         })
-        console.log(`Empresa ${companyId} ativada com plano ${plan}, renewalDate=${renewalDate || 'calculado +30d'}`)
+        console.log(`Empresa ${companyId} ativada com plano ${plan}, renewalDate=${renewalDate || 'N/A - será preenchido pelo webhook subscription'}`)
         break
       }
 
@@ -269,10 +271,12 @@ exports.handler = async (event) => {
           subscription_status: status,
           stripe_subscription_id: obj.id,
           extra_user_slots: extraUserSlots,
-          subscription_renewal_date: renewalDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          subscription_ends_at: renewalDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          ...(renewalDate && {
+            subscription_renewal_date: renewalDate,
+            subscription_ends_at: renewalDate,
+          }),
         })
-        console.log(`Empresa ${companyId} atualizada: plano=${plan}, status=${status}, extra_user_slots=${extraUserSlots}`)
+        console.log(`Empresa ${companyId} atualizada: plano=${plan}, status=${status}, extra_user_slots=${extraUserSlots}, renewalDate=${renewalDate || 'N/A'}`)
         break
       }
 

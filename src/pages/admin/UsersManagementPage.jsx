@@ -182,6 +182,7 @@ export default function UsersManagementPage() {
   const [showTagModal, setShowTagModal] = useState(false)
   const [selectedUserForTags, setSelectedUserForTags] = useState(null)
   const [tagModalAnimating, setTagModalAnimating] = useState(false)
+  const [tagFilter, setTagFilter] = useState('')
 
   // Convites pendentes
   const [pendingInvites, setPendingInvites] = useState([])
@@ -1170,11 +1171,12 @@ export default function UsersManagementPage() {
       setCancellingInvite(inviteId)
       const { error } = await supabase
         .from('invites')
-        .delete()
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
         .eq('id', inviteId)
       if (error) throw error
+      // Remover da lista local imediatamente
+      setPendingInvites(prev => prev.filter(i => i.id !== inviteId))
       toast.success(`Convite para ${email} cancelado`)
-      await loadPendingInvites()
     } catch (err) {
       toast.error('Erro ao cancelar convite: ' + err.message)
     } finally {
@@ -1302,6 +1304,12 @@ export default function UsersManagementPage() {
     }
   }
 
+  // Tags disponíveis para o filtro (derivadas do mapa já carregado)
+  const availableTags = Object.values(userTagsMap)
+    .flat()
+    .filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
+    .sort((a, b) => a.name.localeCompare(b.name))
+
   // Filtrar usuários
   const filteredUsers = users.filter(user => {
     const matchesSearch = !searchTerm || 
@@ -1309,15 +1317,16 @@ export default function UsersManagementPage() {
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.companies?.name?.toLowerCase().includes(searchTerm.toLowerCase())
     
-    // Verificar tanto o role global quanto o role da empresa
-    const effectiveRole = user.company_role || user.role
     const matchesRole = !roleFilter || user.role === roleFilter || user.company_role === roleFilter
     const matchesStatus = !statusFilter || user.status === statusFilter
     
     // Filtro de empresa (apenas para super admins)
     const matchesCompany = companyFilter === 'all' || user.companies?.id === companyFilter
 
-    return matchesSearch && matchesRole && matchesStatus && matchesCompany
+    // Filtro de tag
+    const matchesTag = !tagFilter || (userTagsMap[user.id] || []).some(t => t.id === tagFilter)
+
+    return matchesSearch && matchesRole && matchesStatus && matchesCompany && matchesTag
   })
 
   const getRoleInfo = (role) => ROLES[role] || ROLES.user
@@ -1417,17 +1426,6 @@ export default function UsersManagementPage() {
             </div>
             
             <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            >
-              <option value="">Todas as funções</option>
-              {Object.entries(ROLES).map(([key, role]) => (
-                <option key={key} value={key}>{role.label}</option>
-              ))}
-            </select>
-
-            <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -1436,6 +1434,18 @@ export default function UsersManagementPage() {
               <option value="active">Ativo</option>
               <option value="inactive">Inativo</option>
               <option value="pending">Pendente</option>
+            </select>
+
+            {/* Filtro de Tag */}
+            <select
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+              className="px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              <option value="">Todas as tags</option>
+              {availableTags.map(tag => (
+                <option key={tag.id} value={tag.id}>{tag.name}</option>
+              ))}
             </select>
 
             {/* Filtro de Empresa - Apenas para Super Admins */}
@@ -1455,8 +1465,8 @@ export default function UsersManagementPage() {
             <button
               onClick={() => {
                 setSearchTerm('')
-                setRoleFilter('')
                 setStatusFilter('')
+                setTagFilter('')
                 setCompanyFilter('all')
               }}
               className="px-4 py-3 sm:py-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-[#373435] dark:text-gray-200 rounded-2xl hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500 focus:outline-none focus:ring-2 focus:ring-[#373435]/20 font-medium transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
@@ -1859,59 +1869,86 @@ export default function UsersManagementPage() {
 
         {/* Modal de Criar Usuário */}
         {isCreateUserModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-xl font-bold text-[#373435] dark:text-white mb-4">Criar Novo Usuário</h3>
-              
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Email do Usuário
-                  </label>
-                  <input
-                    type="email"
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e.target.value)}
-                    placeholder="usuario@empresa.com"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500] dark:bg-gray-700 dark:text-white"
-                    required
-                    disabled={creatingUser}
-                  />
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={(e) => { if (e.target === e.currentTarget && !creatingUser) { setIsCreateUserModalOpen(false); setNewUserEmail('') } }}
+          >
+            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+              {/* Header */}
+              <div className="px-8 pt-8 pb-6 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#EBA500]/10 flex items-center justify-center flex-shrink-0">
+                    <UserPlus className="h-6 w-6 text-[#EBA500]" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-[#373435] dark:text-white leading-tight">Convidar Usuário</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                      O usuário receberá um email de convite
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <form onSubmit={handleCreateUser}>
+                <div className="px-8 py-6 space-y-5">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      placeholder="usuario@empresa.com"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-gray-50 dark:bg-gray-700/50 dark:text-white placeholder:text-gray-400 transition-all"
+                      required
+                      autoFocus
+                      disabled={creatingUser}
+                    />
+                  </div>
+
+                  {isCompanyAdmin() && !isSuperAdmin() && getCurrentUserCompany() && (
+                    <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-2xl px-4 py-3">
+                      <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-800/40 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <p className="text-sm text-amber-800 dark:text-amber-300">
+                        Será vinculado a <span className="font-semibold">{getCurrentUserCompany()?.name}</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-                  <p className="text-sm text-blue-800 dark:text-blue-300">
-                    <strong>Como funciona:</strong>
-                  </p>
-                  <ul className="text-sm text-blue-700 dark:text-blue-400 mt-2 space-y-1 list-disc list-inside">
-                    <li>Usuário receberá email de convite via Resend</li>
-                    <li>Ao clicar, será direcionado para criar sua senha</li>
-                    {isCompanyAdmin() && !isSuperAdmin() && getCurrentUserCompany() ? (
-                      <li className="font-semibold">Já será vinculado a <strong>{getCurrentUserCompany()?.name}</strong></li>
-                    ) : (
-                      <li>Será vinculado à empresa selecionada no filtro</li>
-                    )}
-                  </ul>
-                </div>
-
-                <div className="flex gap-3">
+                {/* Footer */}
+                <div className="px-8 pb-8 flex gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsCreateUserModalOpen(false)
-                      setNewUserEmail('')
-                    }}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => { setIsCreateUserModalOpen(false); setNewUserEmail('') }}
+                    className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-2xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     disabled={creatingUser}
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-[#EBA500] text-white rounded-lg hover:bg-[#d49400] disabled:opacity-50"
+                    className="flex-1 px-4 py-3 bg-[#EBA500] hover:bg-[#d49400] text-white rounded-2xl font-semibold shadow-sm shadow-amber-200 dark:shadow-none disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                     disabled={creatingUser}
                   >
-                    {creatingUser ? 'Enviando...' : 'Enviar Convite'}
+                    {creatingUser ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                        </svg>
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4" />
+                        Enviar Convite
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

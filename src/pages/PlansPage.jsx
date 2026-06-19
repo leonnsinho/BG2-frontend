@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Check, Zap, Building2, Crown, Briefcase, AlertCircle, CheckCircle } from 'lucide-react'
+import { Check, Zap, Building2, Crown, Briefcase, AlertCircle, CheckCircle, LogOut } from 'lucide-react'
 import { useUserContext } from '../contexts/UserContext'
+import { useAuth } from '../contexts/AuthContext'
 
 const PRICE_IDS = {
   individual: {
@@ -91,6 +92,25 @@ export default function PlansPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user, profile, authLoading } = useUserContext()
+  const { signOut } = useAuth()
+
+  const activeCompany = profile?.user_companies?.find(uc => uc.is_active)?.companies
+  const activePlan   = activeCompany?.subscription_plan   || null
+  const activeStatus = activeCompany?.subscription_status || null
+
+  // Detecta se a assinatura ativa é anual (renovação > 60 dias = anual)
+  const renewalDate = activeCompany?.subscription_renewal_date
+  const isAnnualSubscription = renewalDate
+    ? (new Date(renewalDate) - new Date()) > 60 * 24 * 60 * 60 * 1000
+    : false
+
+  const isActive = (planId) => {
+    if (planId !== activePlan || activeStatus !== 'active') return false
+    // Se o plano não tem versão anual (individual), sempre bate com mensal
+    if (!PRICE_IDS[planId]?.annual) return true
+    // Verifica se o período da aba bate com o período da assinatura ativa
+    return billing === 'annual' ? isAnnualSubscription : !isAnnualSubscription
+  }
 
   const paymentStatus = searchParams.get('payment')
   const trialExpired = searchParams.get('trialExpired') === 'true'
@@ -293,7 +313,7 @@ export default function PlansPage() {
               <div className="mt-0.5 flex-shrink-0 w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-800/40 flex items-center justify-center">
                 <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h2 className="text-base font-semibold text-orange-800 dark:text-orange-300 mb-1">
                   Seu plano está inativo
                 </h2>
@@ -302,6 +322,13 @@ export default function PlansPage() {
                   Seus dados estão preservados e o acesso é retomado imediatamente após a confirmação do pagamento.
                 </p>
               </div>
+              <button
+                onClick={async () => { await signOut(); navigate('/login') }}
+                className="flex-shrink-0 flex items-center gap-2 text-sm text-orange-700 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-200 border border-orange-300 dark:border-orange-600 rounded-lg px-3 py-2 hover:bg-orange-100 dark:hover:bg-orange-800/30 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </button>
             </div>
           </div>
         )}
@@ -414,6 +441,7 @@ export default function PlansPage() {
           {PLANS.map((plan) => {
             const Icon = plan.icon
             const isLoading = loading === plan.id
+            const isCurrentPlan = isActive(plan.id)
             const monthlyEquivalent = billing === 'annual' && plan.price.annual
               ? Math.round(plan.price.annual / 12)
               : null
@@ -422,9 +450,9 @@ export default function PlansPage() {
               <div
                 key={plan.id}
                 data-plan-card
-                onMouseEnter={() => plan.id !== 'enterprise' && setHoveredPlan(plan.id)}
+                onMouseEnter={() => !isCurrentPlan && plan.id !== 'enterprise' && setHoveredPlan(plan.id)}
                 onMouseLeave={() => setHoveredPlan(null)}
-                className={`group relative flex flex-col rounded-2xl border-2 ${plan.borderColor} bg-white dark:bg-gray-800 shadow-sm overflow-hidden cursor-pointer transition-transform duration-300 ${plan.id === 'enterprise' ? 'hover:scale-[1.04] hover:shadow-2xl' : 'hover:scale-[1.01]'}`}
+                className={`group relative flex flex-col rounded-2xl border-2 ${isCurrentPlan ? 'border-emerald-400 dark:border-emerald-500' : plan.borderColor} bg-white dark:bg-gray-800 shadow-sm overflow-hidden transition-transform duration-300 ${isCurrentPlan ? 'cursor-default' : plan.id === 'enterprise' ? 'cursor-pointer hover:scale-[1.04] hover:shadow-2xl' : 'cursor-pointer hover:scale-[1.01]'}`}
               >
                 {/* Gradiente com altura dinâmica: cobre até a metade do card de preço por padrão */}
                 <div
@@ -446,6 +474,11 @@ export default function PlansPage() {
                         <Icon className="h-5 w-5 text-white" />
                       </div>
                       <h2 className="text-xl font-bold text-white">{plan.name}</h2>
+                      {isCurrentPlan && (
+                        <span className="ml-auto flex items-center gap-1 bg-white/20 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                          <Check className="h-3 w-3" /> Ativo
+                        </span>
+                      )}
                     </div>
                     <p className="text-white/80 text-sm leading-snug">{plan.description}</p>
                   </div>
@@ -495,6 +528,11 @@ export default function PlansPage() {
 
                   {/* CTA */}
                   <div className="px-6 pb-6">
+                    {isCurrentPlan ? (
+                      <div className="w-full py-3 rounded-xl font-semibold text-sm text-center bg-emerald-500 text-white flex items-center justify-center gap-2 cursor-default select-none">
+                        <Check className="h-4 w-4" /> Plano Ativo
+                      </div>
+                    ) : (
                     <button
                       onClick={() => handleSubscribe(plan.id)}
                       disabled={isLoading}
@@ -514,6 +552,7 @@ export default function PlansPage() {
                         'Assinar agora'
                       )}
                     </button>
+                    )}
                   </div>
                 </div>
               </div>

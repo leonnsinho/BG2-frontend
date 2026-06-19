@@ -90,7 +90,7 @@ const CompanyDashboardPage = () => {
     representante: { nome: '', email: '', telefone: '', endereco: '', cpf: '' },
     contato_cobranca: { nome: '', cargo: '', email: '', telefone: '' },
     melhor_dia_pagamento: '',
-    forma_pagamento: '',
+    forma_pagamento: '',   // mantido apenas para compatibilidade
     address: {
       street: '',
       number: '',
@@ -169,7 +169,7 @@ const CompanyDashboardPage = () => {
       contribuinte_icms: '', is_partner_client: '',
       representante: { nome: '', email: '', telefone: '', endereco: '', cpf: '' },
       contato_cobranca: { nome: '', cargo: '', email: '', telefone: '' },
-      melhor_dia_pagamento: '', forma_pagamento: '',
+      melhor_dia_pagamento: '', forma_pagamento: '', // legado
       address: { street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zip: '', country: 'Brasil' }
     })
     setCreateLogoFile(null)
@@ -208,7 +208,6 @@ const CompanyDashboardPage = () => {
         telefone: '(11) 92222-3333'
       },
       melhor_dia_pagamento: '10',
-      forma_pagamento: 'boleto',
       address: {
         street: 'Avenida Paulista',
         number: '1000',
@@ -238,7 +237,6 @@ const CompanyDashboardPage = () => {
     if (!createFormData.regime_tributario) { toast.error('Regime tributário é obrigatório'); return }
     if (!createFormData.contribuinte_icms) { toast.error('Contribuinte do ICMS é obrigatório'); return }
     if (!createFormData.melhor_dia_pagamento) { toast.error('Melhor dia para pagamento é obrigatório'); return }
-    if (!createFormData.forma_pagamento) { toast.error('Forma de pagamento é obrigatória'); return }
     if (!createFormData.representante.nome.trim()) { toast.error('Nome do representante legal é obrigatório'); return }
     if (!createFormData.representante.email.trim()) { toast.error('E-mail do representante legal é obrigatório'); return }
     if (!createFormData.representante.telefone.trim()) { toast.error('Telefone do representante legal é obrigatório'); return }
@@ -280,7 +278,6 @@ const CompanyDashboardPage = () => {
         representante_legal: createFormData.representante,
         contato_cobranca: createFormData.contato_cobranca,
         melhor_dia_pagamento: createFormData.melhor_dia_pagamento.trim() || null,
-        forma_pagamento: createFormData.forma_pagamento || null,
         address: Object.values(createFormData.address).some(v => v.trim()) ? createFormData.address : null,
         logo_url: logoUrl,
         created_by: user?.id,
@@ -1112,20 +1109,9 @@ const CompanyDashboardPage = () => {
                     <Wallet className="h-4 w-4 text-[#EBA500]" /> Condições de Pagamento
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                    <div className="sm:col-span-2">
                       <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Melhor Dia para Pagamento *</label>
                       <input type="text" value={createFormData.melhor_dia_pagamento} onChange={e => handleCreateInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: 10" className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Forma de Pagamento *</label>
-                      <select value={createFormData.forma_pagamento} onChange={e => handleCreateInputChange('forma_pagamento', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white">
-                        <option value="">Selecione...</option>
-                        <option value="boleto">Boleto Bancário</option>
-                        <option value="cartao_credito">Cartão de Crédito</option>
-                        <option value="pix">Pix</option>
-                        <option value="transferencia">Transferência Bancária</option>
-                        <option value="debito_automatico">Débito Automático</option>
-                      </select>
                     </div>
                   </div>
                 </div>
@@ -1478,7 +1464,7 @@ const CompanyDashboardPage = () => {
                 )}
 
                 {/* Condições de Pagamento */}
-                {(selectedCompany.melhor_dia_pagamento || selectedCompany.forma_pagamento) && (
+                {selectedCompany.melhor_dia_pagamento && (
                   <div>
                     <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                       <Wallet className="h-5 w-5 text-[#EBA500]" /> Condições de Pagamento
@@ -1488,12 +1474,6 @@ const CompanyDashboardPage = () => {
                         <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <div className="p-2 bg-green-100 rounded-lg"><Calendar className="h-4 w-4 text-green-600" /></div>
                           <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Melhor Dia</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.melhor_dia_pagamento}</p></div>
-                        </div>
-                      )}
-                      {selectedCompany.forma_pagamento && (
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                          <div className="p-2 bg-indigo-100 rounded-lg"><CreditCard className="h-4 w-4 text-indigo-600" /></div>
-                          <div><label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Forma de Pagamento</label><p className="text-gray-900 dark:text-white font-semibold mt-1">{selectedCompany.forma_pagamento}</p></div>
                         </div>
                       )}
                     </div>
@@ -1596,7 +1576,6 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
     representante: company.representante_legal || { nome: '', email: '', telefone: '', endereco: '', cpf: '' },
     contato_cobranca_data: company.contato_cobranca || { nome: '', cargo: '', email: '', telefone: '' },
     melhor_dia_pagamento: company.melhor_dia_pagamento || '',
-    forma_pagamento: company.forma_pagamento || '',
     subscription_plan: company.subscription_plan || 'free',
     subscription_status: company.subscription_status || 'active',
     extra_user_slots: company.extra_user_slots || 0,
@@ -1759,7 +1738,7 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
       }
 
       // 4. Atualizar empresa com novo logo_url
-      const { representante, contato_cobranca_data, is_partner_client, num_colaboradores, extra_user_slots: _, ...rest } = formData
+      const { representante, contato_cobranca_data, is_partner_client, num_colaboradores, forma_pagamento: _fp, extra_user_slots: _, ...rest } = formData
       await onSave(company.id, {
         ...rest,
         logo_url: logoUrl,
@@ -2237,20 +2216,9 @@ function CompanyEditModal({ company, onClose, onSave, loading }) {
               <Wallet className="h-5 w-5 text-[#EBA500]" /> Condições de Pagamento
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Melhor Dia para Pagamento *</label>
                 <input value={formData.melhor_dia_pagamento} onChange={e => handleInputChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: 10" className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Forma de Pagamento *</label>
-                <select value={formData.forma_pagamento} onChange={e => handleInputChange('forma_pagamento', e.target.value)} className="w-full px-3 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500] focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-white">
-                  <option value="">Selecione...</option>
-                  <option value="boleto">Boleto Bancário</option>
-                  <option value="cartao_credito">Cartão de Crédito</option>
-                  <option value="pix">Pix</option>
-                  <option value="transferencia">Transferência Bancária</option>
-                  <option value="debito_automatico">Débito Automático</option>
-                </select>
               </div>
             </div>
           </div>

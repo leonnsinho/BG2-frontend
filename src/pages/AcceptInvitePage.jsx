@@ -285,7 +285,7 @@ const AcceptInvitePage = () => {
             </div>
 
             <Button
-              onClick={() => navigate(`/register?email=${encodeURIComponent(invite.email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+              onClick={() => navigate(`/register?email=${encodeURIComponent(invite.email)}&inviteToken=${encodeURIComponent(token)}`)}
               className="w-full bg-[#EBA500] hover:bg-[#D89500] text-white"
             >
               <UserCheck className="w-4 h-4 mr-2" />

@@ -695,6 +695,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   }, [profile?.id])
 
   // 🔥 Detectar quando user_companies falharam ao carregar (background fetch silencioso)
+  // Também limpa o erro quando os dados finalmente chegam
   React.useEffect(() => {
     if (
       profile?.id &&
@@ -704,8 +705,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
       journeysLoaded &&
       !journeysLoading
     ) {
-      // Perfil carregou mas sem user_companies → o background fetch provavelmente falhou
       setDataError(true)
+    } else if (profile?.user_companies && profile.user_companies.length > 0) {
+      // Dados chegaram — limpar erro
+      setDataError(false)
     }
   }, [profile?.user_companies, profile?.role, journeysLoaded, journeysLoading])
 
@@ -995,7 +998,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                   </div>
                   <div className="text-xs text-yellow-700">
                     <p className="mb-1 font-medium">Aguardando Vinculação</p>
-                    <p>Entre em contato com o administrador da sua empresa para solicitar vinculação.</p>
+                    <p>Sua empresa já tem cadastro? Entre em contato com o administrador da sua conta para solicitar a vinculação.</p>
                   </div>
                 </div>
               </div>
@@ -1004,8 +1007,15 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
             {/* 🔥 Banner de erro: dados não carregaram (WiFi ruim, timeout, etc) */}
             {dataError && !journeysLoading && !isCollapsed && (
               <div className="px-2 sm:px-3 mb-3">
-                <div className="bg-red-500/20 border border-red-500/40 rounded-lg p-3">
-                  <div className="flex items-center mb-2">
+                <div className="bg-red-500/20 border border-red-500/40 rounded-lg p-3 relative">
+                  <button
+                    onClick={() => setDataError(false)}
+                    className="absolute top-2 right-2 text-red-300 hover:text-red-100 transition-colors"
+                    title="Fechar"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                  <div className="flex items-center mb-2 pr-5">
                     <AlertCircle className="w-4 h-4 text-red-400 mr-2 flex-shrink-0" />
                     <span className="text-xs font-medium text-red-300">Erro de Conexão</span>
                   </div>

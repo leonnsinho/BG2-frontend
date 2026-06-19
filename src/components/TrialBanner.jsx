@@ -6,9 +6,25 @@ import { supabase } from '../services/supabase'
 import {
   Clock, X, ArrowLeft, ArrowRight, Save, Phone,
   CreditCard, Users, MapPin, Hash, Upload, Image as ImageIcon,
-  Building2, Check, Wallet, Zap, AlertCircle
+  Building2, Check, Wallet, Zap, AlertCircle, Briefcase, Crown
 } from 'lucide-react'
 import toast from '@/lib/toast'
+
+// ─── Price IDs (mesmos da PlansPage) ─────────────────────────────────────────
+const PRICE_IDS = {
+  individual:   { monthly: 'price_1TReTdFUmTFSWkItrIiOcTop', annual: null },
+  profissional: { monthly: 'price_1TReTrFUmTFSWkIttUUvGSHw', annual: 'price_1TReVGFUmTFSWkItKrsCp0eO' },
+  premium:      { monthly: 'price_1TReU1FUmTFSWkItEZcxgY4B', annual: 'price_1TReUxFUmTFSWkItssYPU7sq' },
+}
+
+// ─── Dados dos planos para exibição no wizard ─────────────────────────────────
+const PLAN_INFO = {
+  [PRICE_IDS.individual.monthly]:   { name: 'Individual',    price: '99',    priceAnnual: null,      color: 'from-gray-500 to-gray-600',      features: ['01 usuário', 'Todos os módulos', 'Todas as ferramentas'] },
+  [PRICE_IDS.profissional.monthly]: { name: 'Profissional',  price: '790',   priceAnnual: '7.900',   color: 'from-[#EBA500] to-amber-600',    features: ['Até 10 usuários', 'Todos os módulos', 'Todas as ferramentas'] },
+  [PRICE_IDS.profissional.annual]:  { name: 'Profissional',  price: '658',   priceAnnual: '7.900',   color: 'from-[#EBA500] to-amber-600',    features: ['Até 10 usuários', 'Todos os módulos', 'Todas as ferramentas'] },
+  [PRICE_IDS.premium.monthly]:      { name: 'Premium',       price: '1.390', priceAnnual: null,      color: 'from-purple-600 to-purple-800',  features: ['10 a 20 usuários', 'Todos os módulos', 'Todas as ferramentas'] },
+  [PRICE_IDS.premium.annual]:       { name: 'Premium',       price: '1.158', priceAnnual: '13.900',  color: 'from-purple-600 to-purple-800',  features: ['10 a 20 usuários', 'Todos os módulos', 'Todas as ferramentas'] },
+}
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const STEPS = [
@@ -18,7 +34,6 @@ const STEPS = [
   { label: 'Fiscal',       icon: Hash },
   { label: 'Representante',icon: Users },
   { label: 'Cobrança',     icon: CreditCard },
-  { label: 'Plano',        icon: Zap },
 ]
 
 const EMPTY_FORM = {
@@ -28,7 +43,7 @@ const EMPTY_FORM = {
   contribuinte_icms: '', is_partner_client: '',
   representante: { nome: '', cargo: '', email: '', telefone: '', endereco: '', cpf: '' },
   contato_cobranca: { nome: '', cargo: '', email: '', telefone: '' },
-  melhor_dia_pagamento: '', forma_pagamento: '',
+  melhor_dia_pagamento: '',
   address: { street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zip: '', country: 'Brasil' }
 }
 
@@ -67,7 +82,6 @@ function companyToForm(c) {
       telefone: cob.telefone || '',
     },
     melhor_dia_pagamento: c.melhor_dia_pagamento || '',
-    forma_pagamento:      c.forma_pagamento      || '',
     address: {
       street:       addr.street       || '',
       number:       addr.number       || '',
@@ -83,7 +97,6 @@ function companyToForm(c) {
 
 const EMPTY_PF = {
   nome: '', cpf: '', rg: '', telefone: '', email: '', email_nf: '',
-  forma_pagamento: '',
   address: { street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zip: '' }
 }
 
@@ -91,7 +104,6 @@ const PF_STEPS = [
   { label: 'Dados Pessoais', icon: Users },
   { label: 'Endereço',       icon: MapPin },
   { label: 'Contato',        icon: Phone },
-  { label: 'Plano',          icon: Zap },
 ]
 
 // ─── TrialBanner ─────────────────────────────────────────────────────────────
@@ -113,12 +125,11 @@ const TEST_DATA = {
   representante: { nome: 'João da Silva', cargo: 'Diretor', email: 'joao@empresateste.com.br', telefone: '(11) 91234-5678', endereco: 'Rua das Flores, 123, Centro, São Paulo - SP', cpf: '123.456.789-00' },
   contato_cobranca: { nome: 'Maria Souza', cargo: 'Financeiro', email: 'financeiro@empresateste.com.br', telefone: '(11) 98765-4321' },
   melhor_dia_pagamento: '10',
-  forma_pagamento: 'pix',
   address: { street: 'Rua das Flores', number: '123', complement: 'Sala 1', neighborhood: 'Centro', city: 'São Paulo', state: 'SP', zip: '01310-100', country: 'Brasil' },
 }
 
 export default function TrialBanner({ sidebarCollapsed = false }) {
-  const { profile, refreshProfile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const navigate = useNavigate()
 
   const [open, setOpen] = useState(false)          // modal aberto
@@ -128,6 +139,11 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
   const [pfData, setPfData] = useState(EMPTY_PF)
   const [loading, setLoading] = useState(false)
   const [logoFile, setLogoFile] = useState(null)
+  const [selectedPlanId, setSelectedPlanId] = useState(null)  // 🔥 Plano escolhido (priceId)
+  const [planSelected, setPlanSelected] = useState(false)     // 🔥 true = wizard, false = plan picker
+  const [billing, setBilling] = useState('monthly')           // 🔥 monthly | annual
+  const [semIE, setSemIE] = useState(false)   // sem Inscrição Estadual
+  const [semIM, setSemIM] = useState(false)   // sem Inscrição Municipal
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -184,7 +200,6 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
           telefone:        data.phone || '',
           email:           data.email || '',
           email_nf:        cob.email || '',
-          forma_pagamento: data.forma_pagamento || '',
           address: {
             street:       addr.street       || '',
             number:       addr.number       || '',
@@ -205,6 +220,8 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
       setFormData(EMPTY_FORM)
     }
     setStep(0)
+    setPlanSelected(false)   // 🔥 Mostrar seleção de plano primeiro
+    setSelectedPlanId(null)  // 🔥 Resetar plano
     setOpen(true)
   }
 
@@ -239,7 +256,6 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
         if (!pfData.telefone.trim())   { toast.error('Telefone é obrigatório'); return false }
         if (!pfData.email.trim())      { toast.error('E-mail é obrigatório'); return false }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pfData.email)) { toast.error('E-mail inválido'); return false }
-        if (!pfData.forma_pagamento)   { toast.error('Forma de pagamento é obrigatória'); return false }
         return true
       default: return true
     }
@@ -254,20 +270,20 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
         cnpj:            pfData.cpf.trim() || null,
         email:           pfData.email.trim(),
         phone:           pfData.telefone.trim() || null,
-        forma_pagamento: pfData.forma_pagamento || null,
         address:         Object.values(pfData.address).some(v => v.trim()) ? pfData.address : null,
         representante_legal: { tipo: 'pf', rg: pfData.rg.trim() || null },
         contato_cobranca: pfData.email_nf.trim() ? { email: pfData.email_nf.trim() } : null,
         updated_at: new Date().toISOString(),
       }
-      const { error } = await supabase.from('companies').update(updateData).eq('id', trialCompanyId)
-      if (error) throw error
-      toast.success('Dados salvos! Agora escolha um plano para ativar sua conta.')
-      setStep(s => s + 1)
+      const { error: upErr, status: upStatus } = await supabase.from('companies').update(updateData).eq('id', trialCompanyId)
+      if (upErr || upStatus === 409) {
+        if (upErr?.code === '23505' || upStatus === 409) throw new Error('CNPJ já está em uso por outra empresa')
+        throw upErr
+      }
       await refreshProfile()
+      await handleStripeCheckout() // 🔥 Vai direto pro Stripe
     } catch (err) {
-      toast.error(`Erro: ${err.message}`)
-    } finally {
+      toast.error(err.message || 'Erro ao salvar. Tente novamente.')
       setLoading(false)
     }
   }
@@ -317,6 +333,8 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
       case 3:
         if (!formData.regime_tributario)  { toast.error('Regime tributário é obrigatório'); return false }
         if (!formData.contribuinte_icms)  { toast.error('Contribuinte do ICMS é obrigatório'); return false }
+        if (!semIE && !formData.inscricao_estadual.trim()) { toast.error('Preencha a Inscrição Estadual ou marque "Não possui"'); return false }
+        if (!semIM && !formData.inscricao_municipal.trim()) { toast.error('Preencha a Inscrição Municipal ou marque "Não possui"'); return false }
         return true
       case 4:
         if (!formData.representante.nome.trim())     { toast.error('Nome do representante é obrigatório'); return false }
@@ -331,7 +349,6 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
         if (!formData.contato_cobranca.email.trim())   { toast.error('E-mail do contato é obrigatório'); return false }
         if (!formData.contato_cobranca.telefone.trim()){ toast.error('Telefone do contato é obrigatório'); return false }
         if (!formData.melhor_dia_pagamento)            { toast.error('Melhor dia para pagamento é obrigatório'); return false }
-        if (!formData.forma_pagamento)                 { toast.error('Forma de pagamento é obrigatória'); return false }
         return true
       default: return true
     }
@@ -372,23 +389,26 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
         representante_legal: formData.representante,
         contato_cobranca:   formData.contato_cobranca,
         melhor_dia_pagamento: formData.melhor_dia_pagamento.trim() || null,
-        forma_pagamento:    formData.forma_pagamento || null,
         address:            Object.values(formData.address).some(v => v?.trim?.()) ? formData.address : null,
         updated_at:         new Date().toISOString(),
         ...(logoUrl !== undefined && { logo_url: logoUrl }),
       }
 
-      const { error } = await supabase.from('companies').update(updateData).eq('id', trialCompanyId)
-      if (error) throw error
+      const { error: upErr, status: upStatus } = await supabase.from('companies').update(updateData).eq('id', trialCompanyId)
+      if (upErr || upStatus === 409) {
+        if (upErr?.code === '23505' || upStatus === 409) {
+          const field = upErr?.details?.match(/Key \((\w+)\)/)?.[1] || ''
+          if (field === 'cnpj' || upErr?.message?.includes('cnpj')) throw new Error('CNPJ já está em uso por outra empresa')
+          throw new Error(upErr?.message || 'Conflito de dados. Verifique os campos e tente novamente.')
+        }
+        throw upErr
+      }
 
-      toast.success('Dados salvos! Agora escolha um plano para ativar sua conta.')
-      setStep(s => s + 1)
       await refreshProfile()
+      await handleStripeCheckout() // 🔥 Vai direto pro Stripe após salvar
     } catch (err) {
       console.error(err)
-      if (err.message?.includes('cnpj')) toast.error('CNPJ já está em uso por outra empresa')
-      else toast.error(`Erro: ${err.message}`)
-    } finally {
+      toast.error(err.message || 'Erro ao salvar. Tente novamente.')
       setLoading(false)
     }
   }
@@ -422,7 +442,6 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
         contribuinte_icms:  fill(prev.contribuinte_icms, TEST_DATA.contribuinte_icms),
         is_partner_client:  fill(prev.is_partner_client, TEST_DATA.is_partner_client),
         melhor_dia_pagamento: fill(prev.melhor_dia_pagamento, TEST_DATA.melhor_dia_pagamento),
-        forma_pagamento:    fill(prev.forma_pagamento, TEST_DATA.forma_pagamento),
         representante:  fill(prev.representante,  TEST_DATA.representante),
         contato_cobranca: fill(prev.contato_cobranca, TEST_DATA.contato_cobranca),
         address:        fill(prev.address, TEST_DATA.address),
@@ -432,6 +451,46 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
   }
 
   const urgentColor = daysLeft !== null && daysLeft <= 3
+
+  // 🔥 Stripe checkout — redireciona com o plano escolhido
+  const handleStripeCheckout = async () => {
+    if (!selectedPlanId || !trialCompanyId) {
+      toast.error('Selecione um plano antes de continuar.')
+      return
+    }
+    const userId = profile?.id || user?.id
+    if (!userId) {
+      toast.error('Sessão expirada. Recarregue a página e tente novamente.')
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    try {
+      const origin = window.location.origin
+      console.log('[Stripe] enviando:', { priceId: selectedPlanId, companyId: trialCompanyId, userId, origin })
+      const response = await fetch('/.netlify/functions/stripe-create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId: selectedPlanId,
+          companyId: trialCompanyId,
+          userId,
+          origin,
+        }),
+      })
+      const data = await response.json()
+      console.log('[Stripe] resposta:', response.status, data)
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error(data.error || 'URL de checkout não recebida')
+      }
+    } catch (err) {
+      toast.error(`Erro ao iniciar pagamento: ${err.message}`)
+      console.error('[Stripe] erro:', err)
+      setLoading(false)
+    }
+  }
 
   // ─── Banner ───────────────────────────────────────────────────────────────
   // Todo o conteúdo é portado para document.body para escapar do subtree inert
@@ -462,7 +521,7 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
                 : 'bg-white text-[#EBA500] hover:bg-amber-50'
             }`}
           >
-            Completar cadastro
+            Escolher plano
           </button>
 
         </div>
@@ -482,10 +541,205 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
       {/* ─── Complete Registration Modal ──────────────────────────────────── */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
 
-            {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+          {/* 🔥 Plan Selection — cards flutuando diretamente no overlay */}
+          {!planSelected ? (
+              <>
+                <style>{`
+                  @keyframes planPopIn {
+                    0%   { transform: scale(0.3); opacity: 0; }
+                    60%  { transform: scale(1.05); opacity: 1; }
+                    100% { transform: scale(1); opacity: 1; }
+                  }
+                  .plan-card-enter {
+                    animation: planPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+                  }
+                `}</style>
+
+                <div className="flex flex-col items-center gap-6">
+                  {/* Título flutuante */}
+                  <div className="text-center">
+                    <h2 className="text-2xl font-bold text-white drop-shadow-lg">Escolha seu Plano</h2>
+                    <p className="text-sm text-white/70 mt-1">Selecione um plano para continuar com o cadastro</p>
+                  </div>
+
+                  {/* Toggle mensal / anual */}
+                  <div className="inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 rounded-full p-1">
+                    <button
+                      onClick={() => setBilling('monthly')}
+                      className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                        billing === 'monthly' ? 'bg-[#EBA500] text-white shadow' : 'text-white/70 hover:text-white'
+                      }`}
+                    >
+                      Mensal
+                    </button>
+                    <button
+                      onClick={() => setBilling('annual')}
+                      className={`px-5 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                        billing === 'annual' ? 'bg-[#EBA500] text-white shadow' : 'text-white/70 hover:text-white'
+                      }`}
+                    >
+                      Anual
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                        billing === 'annual' ? 'bg-white/20 text-white' : 'bg-green-400/20 text-green-300'
+                      }`}>2 meses grátis</span>
+                    </button>
+                  </div>
+
+                  {/* Cards */}
+                  <div className="flex items-center justify-center gap-5">
+                  {[
+                    {
+                      id: 'individual', name: 'Individual', icon: Briefcase,
+                      priceMonthly: '99', priceAnnual: null,
+                      description: 'Para consultores e profissionais autônomos.',
+                      color: 'from-gray-500 to-gray-600', borderColor: 'border-gray-200',
+                      features: ['01 usuário', 'Todos os módulos liberados', 'Todas as ferramentas liberadas'],
+                      delay: 0
+                    },
+                    {
+                      id: 'profissional', name: 'Profissional', icon: Zap,
+                      priceMonthly: '790', priceAnnual: '7.900',
+                      description: 'Para equipes em crescimento.',
+                      color: 'from-[#EBA500] to-amber-600', borderColor: 'border-amber-400',
+                      features: ['Até 10 usuários', 'Todos os módulos liberados', 'Todas as ferramentas liberadas'],
+                      delay: 150
+                    },
+                    {
+                      id: 'premium', name: 'Premium', icon: Crown,
+                      priceMonthly: '1.390', priceAnnual: '13.900',
+                      description: 'Para empresas com operação escalável.',
+                      color: 'from-purple-600 to-purple-800', borderColor: 'border-purple-300',
+                      features: ['De 10 a 20 usuários', 'Todos os módulos liberados', 'Todas as ferramentas liberadas'],
+                      delay: 300
+                    },
+                    {
+                      id: 'enterprise', name: 'Enterprise', icon: Building2,
+                      priceMonthly: null, priceAnnual: null,
+                      description: 'Soluções sob medida para apoiar empresas no amadurecimento da gestão.',
+                      color: 'from-slate-700 to-slate-900', borderColor: 'border-slate-300',
+                      features: ['Tudo do Premium', 'Onboarding dedicado', 'Treinamento da equipe'],
+                      delay: 450
+                    },
+                  ].map((plan, i) => {
+                    const isAnnual = billing === 'annual' && plan.priceAnnual && PRICE_IDS[plan.id]?.annual
+                    const activePriceId = isAnnual ? PRICE_IDS[plan.id].annual : PRICE_IDS[plan.id]?.monthly
+                    const displayPrice = isAnnual
+                      ? String(Math.round(parseFloat(plan.priceAnnual.replace('.','')) / 12)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+                      : plan.priceMonthly
+                    return (
+                    <button
+                      key={plan.id}
+                      onClick={() => {
+                        if (plan.id === 'enterprise') {
+                          window.open('https://wa.me/5511999999999?text=Ol%C3%A1%2C%20gostaria%20de%20conhecer%20o%20plano%20Enterprise%20do%20BG2%20Plan', '_blank')
+                        } else {
+                          setSelectedPlanId(activePriceId); setPlanSelected(true); setStep(0)
+                        }
+                      }}
+                      style={{ animationDelay: `${plan.delay}ms` }}
+                      className={`plan-card-enter group relative flex flex-col rounded-2xl border-2 ${plan.borderColor} bg-white shadow-2xl overflow-hidden cursor-pointer hover:scale-105 hover:shadow-[0_25px_50px_rgba(0,0,0,0.4)] hover:z-10 transition-all duration-300 text-left w-80`}
+                    >
+                      <div className={`absolute inset-x-0 top-0 bg-gradient-to-br ${plan.color} h-24 transition-all duration-500 group-hover:h-full`} />
+                      <div className="relative z-10 flex flex-col h-full">
+                        <div className="px-4 pt-4 pb-5">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="bg-white/20 rounded-lg p-1.5">
+                              <plan.icon className="h-4 w-4 text-white" />
+                            </div>
+                            <h3 className="text-sm font-bold text-white">{plan.name}</h3>
+                          </div>
+                          <p className="text-white/80 text-xs leading-snug">{plan.description}</p>
+                        </div>
+                        <div className="px-4 -mt-3 mb-3">
+                          <div className="bg-white border border-gray-100 rounded-xl shadow-sm px-4 py-3 group-hover:bg-white/15 group-hover:border-white/20 transition-colors duration-500">
+                            {plan.id === 'enterprise' ? (
+                              <p className="text-lg font-bold text-gray-900 group-hover:text-white transition-colors duration-500">
+                                Sob consulta
+                              </p>
+                            ) : (
+                            <div>
+                              <p className="text-lg font-bold text-gray-900 group-hover:text-white transition-colors duration-500">
+                                R$ {displayPrice}<span className="text-sm font-normal text-gray-500 group-hover:text-white/70 transition-colors duration-500">/mês</span>
+                              </p>
+                              {isAnnual && (
+                                <p className="text-xs text-gray-400 group-hover:text-white/60 transition-colors duration-500">R$ {plan.priceAnnual} cobrado anualmente</p>
+                              )}
+                              {!isAnnual && plan.priceAnnual && (
+                                <p className="text-xs text-green-600 group-hover:text-green-300 transition-colors duration-500">Economize 2 meses no anual</p>
+                              )}
+                            </div>
+                            )}
+                          </div>
+                        </div>
+                        <ul className="px-4 space-y-1 flex-1 mb-4">
+                          {plan.features.map(f => (
+                            <li key={f} className="flex items-start gap-2 text-xs text-gray-700 group-hover:text-white/90 transition-colors duration-500">
+                              <Check className="h-3.5 w-3.5 text-[#EBA500] group-hover:text-white shrink-0 mt-0.5 transition-colors duration-500" />
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="px-4 pb-4">
+                          <span className="block w-full py-2 rounded-xl font-semibold text-xs text-center bg-gray-900 text-white group-hover:bg-white group-hover:text-gray-900 transition-all duration-300">
+                            {plan.id === 'enterprise' ? 'Falar no WhatsApp' : `Selecionar ${plan.name}`}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  )})
+                  }
+                  </div>{/* fim cards */}
+                  {daysLeft !== 0 && (
+                    <button onClick={() => setOpen(false)} className="mt-2 flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white transition-colors">
+                      <X className="h-4 w-4" /> Fechar
+                    </button>
+                  )}
+                </div>
+              </>
+          ) : (
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-row overflow-hidden">
+
+              {/* ── Painel lateral: card do plano escolhido ── */}
+              {selectedPlanId && PLAN_INFO[selectedPlanId] && (() => {
+                const p = PLAN_INFO[selectedPlanId]
+                return (
+                  <div className={`relative hidden sm:flex flex-col w-52 shrink-0 bg-gradient-to-br ${p.color} p-5 overflow-hidden`}>
+                    {/* fundo decorativo */}
+                    <div className="absolute -bottom-10 -right-10 w-40 h-40 rounded-full bg-white/10" />
+                    <div className="absolute -top-6 -left-6 w-24 h-24 rounded-full bg-white/10" />
+                    <div className="relative z-10 flex flex-col h-full">
+                      <div className="mb-auto">
+                        <p className="text-white/70 text-[10px] font-semibold uppercase tracking-widest mb-1">Plano selecionado</p>
+                        <h3 className="text-white text-xl font-bold mb-3">{p.name}</h3>
+                        <ul className="space-y-1.5">
+                          {p.features.map(f => (
+                            <li key={f} className="flex items-start gap-2 text-white/90 text-xs">
+                              <Check className="h-3.5 w-3.5 text-white shrink-0 mt-0.5" />
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="mt-6 pt-4 border-t border-white/20">
+                        <p className="text-white/70 text-[10px] mb-0.5">Valor mensal</p>
+                        <p className="text-white text-2xl font-bold">R$ {p.price}</p>
+                        <p className="text-white/60 text-[10px]">/mês</p>
+                      </div>
+                      <button
+                        onClick={() => { setPlanSelected(false); setSelectedPlanId(null) }}
+                        className="mt-4 text-white/60 hover:text-white text-[10px] underline underline-offset-2 transition-colors text-left"
+                      >
+                        Trocar plano
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* ── Wizard (formulário) ── */}
+              <div className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-[#EBA500]/10">
                   <Building2 className="h-5 w-5 text-[#EBA500]" />
@@ -500,7 +754,7 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
                 <button
                   onClick={fillTestData}
                   title="Preencher campos vazios com dados de teste"
-                  className="hidden px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors"
                 >
                   Preencher teste
                 </button>
@@ -615,15 +869,7 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
                       <input type="email" value={pfData.email} onChange={e => handlePfChange('email', e.target.value)} placeholder="seu@email.com" className={inp} /></div>
                     <div className="sm:col-span-2"><label className="block text-xs font-medium text-gray-600 mb-1">E-mail para receber NF / Boleto</label>
                       <input type="email" value={pfData.email_nf} onChange={e => handlePfChange('email_nf', e.target.value)} placeholder="financeiro@email.com (opcional)" className={inp} /></div>
-                    <div className="sm:col-span-2"><label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
-                      <select value={pfData.forma_pagamento} onChange={e => handlePfChange('forma_pagamento', e.target.value)} className={sel}>
-                        <option value="">Selecione...</option>
-                        <option value="boleto">Boleto Bancário</option>
-                        <option value="cartao_credito">Cartão de Crédito</option>
-                        <option value="pix">Pix</option>
-                        <option value="transferencia">Transferência Bancária</option>
-                        <option value="debito_automatico">Débito Automático</option>
-                      </select></div>
+
                   </div>
                 </div>
               )}
@@ -727,10 +973,46 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
                     <Hash className="h-4 w-4 text-[#EBA500]" /> Dados Fiscais
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div><label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Estadual</label>
-                      <input type="text" value={formData.inscricao_estadual} onChange={e => handleChange('inscricao_estadual', e.target.value)} className={inp} /></div>
-                    <div><label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Municipal</label>
-                      <input type="text" value={formData.inscricao_municipal} onChange={e => handleChange('inscricao_municipal', e.target.value)} className={inp} /></div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Estadual {!semIE && <span className="text-red-500">*</span>}</label>
+                      <input
+                        type="text"
+                        value={semIE ? '' : formData.inscricao_estadual}
+                        onChange={e => handleChange('inscricao_estadual', e.target.value)}
+                        disabled={semIE}
+                        placeholder={semIE ? 'Não possui' : ''}
+                        className={`${inp} ${semIE ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : ''}`}
+                      />
+                      <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={semIE}
+                          onChange={e => { setSemIE(e.target.checked); if (e.target.checked) handleChange('inscricao_estadual', '') }}
+                          className="w-3.5 h-3.5 rounded accent-[#EBA500]"
+                        />
+                        <span className="text-xs text-gray-500">Não possui</span>
+                      </label>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Inscrição Municipal {!semIM && <span className="text-red-500">*</span>}</label>
+                      <input
+                        type="text"
+                        value={semIM ? '' : formData.inscricao_municipal}
+                        onChange={e => handleChange('inscricao_municipal', e.target.value)}
+                        disabled={semIM}
+                        placeholder={semIM ? 'Não possui' : ''}
+                        className={`${inp} ${semIM ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : ''}`}
+                      />
+                      <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={semIM}
+                          onChange={e => { setSemIM(e.target.checked); if (e.target.checked) handleChange('inscricao_municipal', '') }}
+                          className="w-3.5 h-3.5 rounded accent-[#EBA500]"
+                        />
+                        <span className="text-xs text-gray-500">Não possui</span>
+                      </label>
+                    </div>
                     <div><label className="block text-xs font-medium text-gray-600 mb-1">Regime Tributário *</label>
                       <select value={formData.regime_tributario} onChange={e => handleChange('regime_tributario', e.target.value)} className={sel}>
                         <option value="">Selecione...</option>
@@ -801,17 +1083,8 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
                       <Wallet className="h-4 w-4 text-[#EBA500]" /> Condições de Pagamento
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Melhor Dia para Pagamento *</label>
+                      <div className="sm:col-span-2"><label className="block text-xs font-medium text-gray-600 mb-1">Melhor Dia para Pagamento *</label>
                         <input type="text" value={formData.melhor_dia_pagamento} onChange={e => handleChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: 10" className={inp} /></div>
-                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
-                        <select value={formData.forma_pagamento} onChange={e => handleChange('forma_pagamento', e.target.value)} className={sel}>
-                          <option value="">Selecione...</option>
-                          <option value="boleto">Boleto Bancário</option>
-                          <option value="cartao_credito">Cartão de Crédito</option>
-                          <option value="pix">Pix</option>
-                          <option value="transferencia">Transferência Bancária</option>
-                          <option value="debito_automatico">Débito Automático</option>
-                        </select></div>
                     </div>
                   </div>
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
@@ -834,44 +1107,36 @@ export default function TrialBanner({ sidebarCollapsed = false }) {
               </button>
 
               {isPf ? (
-                step < PF_STEPS.length - 2 ? (
+                step < PF_STEPS.length - 1 ? (
                   <button type="button" onClick={() => { if (validatePfStep()) setStep(s => s + 1) }}
                     className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
                     Próximo <ArrowRight className="w-4 h-4" />
                   </button>
-                ) : step === PF_STEPS.length - 2 ? (
-                  <button type="button" onClick={handleSubmitPf} disabled={loading}
-                    className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                    {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Salvando...</> : <>Salvar e Continuar <ArrowRight className="w-4 h-4" /></>}
-                  </button>
                 ) : (
-                  <button type="button" onClick={() => { setOpen(false); navigate('/planos') }}
-                    className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
-                    Escolher plano <ArrowRight className="w-4 h-4" />
+                  <button type="button" onClick={handleSubmitPf} disabled={loading}
+                    className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                    {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Salvando...</> : <>Finalizar e Pagar <ArrowRight className="w-4 h-4" /></>}
                   </button>
                 )
               ) : (
-                step < STEPS.length - 2 ? (
+                step < STEPS.length - 1 ? (
                   <button type="button" onClick={nextStep}
                     className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
                     Próximo <ArrowRight className="w-4 h-4" />
                   </button>
-                ) : step === STEPS.length - 2 ? (
-                  <button type="button" onClick={handleSubmit} disabled={loading}
-                    className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                    {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Salvando...</> : <>Salvar e Continuar <ArrowRight className="w-4 h-4" /></>}
-                  </button>
                 ) : (
-                  <button type="button" onClick={() => { setOpen(false); navigate('/planos') }}
-                    className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
-                    Escolher plano <ArrowRight className="w-4 h-4" />
+                  <button type="button" onClick={handleSubmit} disabled={loading}
+                    className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                    {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Salvando...</> : <>Finalizar e Pagar <ArrowRight className="w-4 h-4" /></>}
                   </button>
                 )
               )}
             </div>
 
+            </div>{/* fim flex-1 wizard */}
           </div>
-        </div>
+        )}
+      </div>
       )}
     </>,
     document.body

@@ -33,6 +33,9 @@ export function RegisterPage() {
   const [inviteToken, setInviteToken] = useState(null)
   const [inviteCompany, setInviteCompany] = useState(null)
   const [loadingInvite, setLoadingInvite] = useState(false)
+  // Per-user email invite (from invites table, token param from AcceptInvitePage)
+  const [emailInviteToken, setEmailInviteToken] = useState(searchParams.get('inviteToken') || null)
+  const [emailInviteData, setEmailInviteData] = useState(null)
 
   // Detectar token de convite na URL
   useEffect(() => {
@@ -46,7 +49,33 @@ export function RegisterPage() {
     } else {
       console.log('⚠️ Nenhum token encontrado na URL')
     }
+
+    // Carregar detalhes do convite por email (invites table)
+    const emailToken = searchParams.get('inviteToken')
+    if (emailToken) {
+      loadEmailInviteDetails(emailToken)
+    }
   }, [searchParams])
+
+  const loadEmailInviteDetails = async (token) => {
+    try {
+      const { data, error } = await supabase
+        .from('invite_details')
+        .select('*')
+        .eq('token', token)
+        .eq('status', 'pending')
+        .single()
+      if (!error && data) {
+        setEmailInviteData(data)
+        // Pré-preencher email do convite
+        if (data.email) {
+          setFormData(prev => ({ ...prev, email: data.email }))
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao carregar invite_details:', e)
+    }
+  }
 
   // Debug: monitorar mudanças no formData
   useEffect(() => {
@@ -127,8 +156,8 @@ export function RegisterPage() {
       return false
     }
 
-    // Se não tem convite, companyName é obrigatório
-    if (!inviteToken && !formData.companyName) {
+    // Se não tem convite (nem company token nem email invite), companyName é obrigatório
+    if (!inviteToken && !emailInviteToken && !formData.companyName) {
       setError('Nome da empresa é obrigatório')
       return false
     }
@@ -157,10 +186,16 @@ export function RegisterPage() {
 
     try {
       // Registrar usuário no Supabase Auth
+      // Se veio de convite por email, redirecionar confirmação direto para a página de aceite
+      const emailRedirectTo = emailInviteToken
+        ? `${window.location.origin}/accept-invite?token=${encodeURIComponent(emailInviteToken)}`
+        : undefined
+
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
+          ...(emailRedirectTo ? { emailRedirectTo } : {}),
           data: {
             full_name: formData.fullName,
             role: 'user', // Sempre user, seja via convite ou autoregistro
@@ -178,20 +213,36 @@ export function RegisterPage() {
         // O trigger handle_new_user agora cuida da associação automaticamente
         if (inviteToken && inviteCompany) {
           setSuccess(`✅ Conta criada com sucesso! Você foi adicionado à empresa ${inviteCompany.name}.`)
+        } else if (emailInviteToken && emailInviteData) {
+          setSuccess(`✅ Conta criada! Verifique seu email e clique no link de confirmação. Você será redirecionado automaticamente para ${emailInviteData.company_name}.`)
         } else {
           setSuccess('✅ Conta criada! Verifique seu email para confirmar e ativar sua conta.')
         }
-        
-        // Aguardar 3 segundos e redirecionar para login
-        setTimeout(() => {
-          navigate('/login', { 
-            state: { 
-              email: formData.email,
-              message: 'Verifique seu email e clique no link de confirmação antes de fazer login.',
-              type: 'info'
+
+        // Após registro via convite por email, não redirecionar automaticamente —
+        // o usuário precisa clicar no link do email primeiro
+        if (!emailInviteToken) {
+          setTimeout(() => {
+            if (inviteToken && inviteCompany) {
+              // Conta criada via company invite token → vai ao login normalmente
+              navigate('/login', {
+                state: {
+                  email: formData.email,
+                  message: 'Conta criada! Faça login para continuar.',
+                  type: 'info'
+                }
+              })
+            } else {
+              navigate('/login', {
+                state: {
+                  email: formData.email,
+                  message: 'Verifique seu email e clique no link de confirmação antes de fazer login.',
+                  type: 'info'
+                }
+              })
             }
-          })
-        }, 3000)
+          }, 3000)
+        }
       }
 
     } catch (err) {
@@ -301,7 +352,27 @@ export function RegisterPage() {
             </div>
           )}
 
-          {/* Banner de Convite */}
+          {/* Banner de Convite por email (invites table) */}
+          {emailInviteData && !user && (
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <CheckCircle className="h-5 w-5 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-amber-900 mb-1">
+                    Você foi convidado para {emailInviteData.company_name}
+                  </p>
+                  <p className="text-xs text-amber-700">
+                    {emailInviteData.invited_by_name ? `Convidado por ${emailInviteData.invited_by_name}. ` : ''}
+                    Após criar sua conta e confirmar o email, o vínculo com a empresa será feito automaticamente.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Banner de Convite (invite_token da empresa) */}
           {inviteCompany && !user && (
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4">
               <div className="flex items-start gap-3">
@@ -371,7 +442,8 @@ export function RegisterPage() {
               </div>
             </div>
 
-            {/* Campo Empresa */}
+            {/* Campo Empresa — ocultar quando veio de convite por email (já entra em empresa existente) */}
+            {!emailInviteData && (
             <div className="space-y-2">
               <label htmlFor="companyName" className="text-sm font-medium text-neutral-900 block">
                 Nome da Empresa *
@@ -400,6 +472,7 @@ export function RegisterPage() {
                 )}
               </div>
             </div>
+            )}
 
             {/* Campo Senha */}
             <div className="space-y-2">
