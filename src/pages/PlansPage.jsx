@@ -90,6 +90,12 @@ export default function PlansPage() {
   const [gradientHeights, setGradientHeights] = useState({})
   const priceRefs = useRef({})
   const navigate = useNavigate()
+  // Enterprise contact modal
+  const [showEnterprise, setShowEnterprise] = useState(false)
+  const [entForm, setEntForm] = useState({ empresa: '', nome: '', cargo: '', email: '', whatsapp: '' })
+  const [entLoading, setEntLoading] = useState(false)
+  const [entSuccess, setEntSuccess] = useState(false)
+  const [entError, setEntError] = useState('')
   const [searchParams] = useSearchParams()
   const { user, profile, authLoading } = useUserContext()
   const { signOut } = useAuth()
@@ -245,7 +251,10 @@ export default function PlansPage() {
 
   const handleSubscribe = async (planId) => {
     if (planId === 'enterprise') {
-      window.open('mailto:contato@bg2plan.com.br?subject=Enterprise%20-%20Partimap', '_blank')
+      setEntForm({ empresa: activeCompany?.name || '', nome: profile?.full_name || '', cargo: '', email: profile?.email || user?.email || '', whatsapp: '' })
+      setEntSuccess(false)
+      setEntError('')
+      setShowEnterprise(true)
       return
     }
 
@@ -567,6 +576,119 @@ export default function PlansPage() {
           . Cancele a qualquer momento.
         </p>
       </div>
+
+      {/* Modal Enterprise */}
+      {showEnterprise && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget && !entLoading) { setShowEnterprise(false) } }}
+        >
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
+            {/* Header */}
+            <div className="px-8 pt-8 pb-6 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center flex-shrink-0">
+                  <Crown className="h-6 w-6 text-[#EBA500]" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Plano Enterprise</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Preencha seus dados e entraremos em contato</p>
+                </div>
+                {!entLoading && (
+                  <button onClick={() => setShowEnterprise(false)} className="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {entSuccess ? (
+              <div className="px-8 py-12 text-center">
+                <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+                </div>
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Solicitação enviada!</h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Nossa equipe entrará em contato em breve pelo WhatsApp ou email informado.</p>
+                <button
+                  onClick={() => setShowEnterprise(false)}
+                  className="px-6 py-2.5 bg-[#EBA500] hover:bg-[#d49400] text-white rounded-2xl font-semibold text-sm transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  setEntError('')
+                  setEntLoading(true)
+                  try {
+                    const res = await fetch('/.netlify/functions/send-enterprise-contact', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(entForm),
+                    })
+                    const data = await res.json()
+                    if (!res.ok) throw new Error(data.error || 'Erro ao enviar')
+                    setEntSuccess(true)
+                  } catch (err) {
+                    setEntError(err.message || 'Erro ao enviar. Tente novamente.')
+                  } finally {
+                    setEntLoading(false)
+                  }
+                }}
+              >
+                <div className="px-8 py-6 space-y-4">
+                  {entError && (
+                    <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                      <AlertCircle className="h-4 w-4 shrink-0" /> {entError}
+                    </div>
+                  )}
+                  {[
+                    { field: 'empresa', label: 'Empresa', placeholder: 'Nome da empresa', type: 'text' },
+                    { field: 'nome', label: 'Nome do solicitante', placeholder: 'Seu nome completo', type: 'text' },
+                    { field: 'cargo', label: 'Cargo', placeholder: 'Ex: CEO, Diretor, Gerente', type: 'text' },
+                    { field: 'email', label: 'Email', placeholder: 'seu@email.com.br', type: 'email' },
+                    { field: 'whatsapp', label: 'WhatsApp', placeholder: '(11) 99999-9999', type: 'tel' },
+                  ].map(({ field, label, placeholder, type }) => (
+                    <div key={field} className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</label>
+                      <input
+                        type={type}
+                        required
+                        value={entForm[field]}
+                        onChange={(e) => setEntForm(prev => ({ ...prev, [field]: e.target.value }))}
+                        placeholder={placeholder}
+                        disabled={entLoading}
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-gray-50 dark:bg-gray-700/50 dark:text-white placeholder:text-gray-400 text-sm transition-all disabled:opacity-60"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="px-8 pb-8 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowEnterprise(false)}
+                    disabled={entLoading}
+                    className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-2xl font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={entLoading}
+                    className="flex-1 px-4 py-3 bg-[#EBA500] hover:bg-[#d49400] text-white rounded-2xl font-semibold text-sm shadow-sm disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {entLoading ? (
+                      <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Enviando...</>
+                    ) : 'Enviar solicitação'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
