@@ -5,7 +5,7 @@ import { usePermissions as useAuthPermissions } from '../../hooks/useAuth'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useMaturityApprovals } from '../../hooks/useMaturityApprovals'
 import { useToolPermissions } from '../../hooks/useToolPermissions'
-import { supabase } from '../../services/supabase' // 🔥 NOVO: Import do supabase
+import { supabase, getConnectivityState, onConnectivityChange } from '../../services/supabase'
 import NotificationBadge from '../common/NotificationBadge'
 import { 
   BarChart3, 
@@ -560,6 +560,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   const [appVersion, setAppVersion] = React.useState(BUNDLE_VERSION) // Fonte única: src/version.js
   const [dataError, setDataError] = React.useState(false) // 🔥 Erro ao carregar dados
   const [isRetrying, setIsRetrying] = React.useState(false) // 🔥 Botão de retry
+  const [connectivityState, setConnectivityState] = React.useState(getConnectivityState()) // 🔥 Proxy/VPN status
   // Inicializa com o valor global se existir
   const [deferredPrompt, setDeferredPrompt] = React.useState(globalDeferredPrompt)
   const [isInstallable, setIsInstallable] = React.useState(false)
@@ -693,6 +694,18 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
   React.useEffect(() => {
     loadJourneyAccess()
   }, [profile?.id])
+
+  // 🔥 Monitorar estado de conectividade (proxy/VPN)
+  React.useEffect(() => {
+    const unsub = onConnectivityChange((state) => {
+      setConnectivityState(state)
+      // Se voltou ao normal (direct), limpa erro de dados se existir
+      if (state === 'direct') {
+        setDataError(false)
+      }
+    })
+    return unsub
+  }, [])
 
   // 🔥 Detectar quando user_companies falharam ao carregar (background fetch silencioso)
   // Também limpa o erro quando os dados finalmente chegam
@@ -1033,6 +1046,24 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                   >
                     {isRetrying ? 'Recarregando...' : 'Recarregar página'}
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* 🔥 Banner: Proxy ativo (rede bloqueada — VPN/Firewall/ISP) */}
+            {connectivityState === 'proxy' && !isCollapsed && (
+              <div className="px-2 sm:px-3 mb-3">
+                <div className="bg-amber-500/15 border border-amber-500/30 rounded-lg p-3">
+                  <div className="flex items-center mb-2">
+                    <Shield className="w-4 h-4 text-amber-400 mr-2 flex-shrink-0" />
+                    <span className="text-xs font-medium text-amber-300">Rede com restrição detectada</span>
+                  </div>
+                  <p className="text-xs text-amber-200/70 mb-2">
+                    Sua rede (VPN, firewall ou provedor) está bloqueando o acesso direto. Usando rota alternativa — a navegação pode ficar um pouco mais lenta.
+                  </p>
+                  <p className="text-xs text-amber-200/50">
+                    Para melhor performance, tente acessar sem VPN ou por outra rede (ex: 4G).
+                  </p>
                 </div>
               </div>
             )}

@@ -30,6 +30,8 @@
         "npm:eslint@^9.33.0",
         "npm:exceljs@^4.4.0",
         "npm:globals@^16.3.0",
+        "npm:jspdf-autotable@^5.0.8",
+        "npm:jspdf@^4.2.1",
         "npm:lucide-react@0.543",
         "npm:netlify@^23.5.1",
         "npm:postcss@^8.5.6",
