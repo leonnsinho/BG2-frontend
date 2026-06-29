@@ -54,8 +54,8 @@ export default function UnlinkedUserMessage() {
                   <Clock className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className="font-medium text-[#373435] dark:text-white">Aguardando vinculação</p>
-                  <p className="text-sm text-neutral-500 dark:text-gray-400">Um administrador irá vincular você a uma empresa</p>
+                  <p className="font-medium text-[#373435] dark:text-white">Sua empresa já tem cadastro?</p>
+                  <p className="text-sm text-neutral-500 dark:text-gray-400">Entre em contato com o administrador da sua conta para solicitar vinculação</p>
                 </div>
               </div>
 
@@ -143,8 +143,8 @@ export default function UnlinkedUserMessage() {
               <Clock className="w-7 h-7 text-gray-500 dark:text-gray-400" />
             </div>
             <div>
-              <p className="text-base font-bold text-[#373435] dark:text-white mb-1">Aguardar vinculação</p>
-              <p className="text-sm text-neutral-500 dark:text-gray-400">Um administrador irá vincular você a uma empresa em breve</p>
+              <p className="text-base font-bold text-[#373435] dark:text-white mb-1">Sua empresa já tem cadastro?</p>
+              <p className="text-sm text-neutral-500 dark:text-gray-400">Entre em contato com o administrador da sua conta para solicitar vinculação</p>
             </div>
           </button>
         </div>

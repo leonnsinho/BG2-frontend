@@ -1,6 +1,6 @@
 // Service Worker para PWA
 // ⚠️ AO ATUALIZAR: Mude APENAS APP_VERSION. O CACHE_NAME é derivado automaticamente.
-const APP_VERSION = '5.9.3'
+const APP_VERSION = '5.9.4'
 const CACHE_NAME = `bg2-v${APP_VERSION.replace(/\./g, '-')}` // Ex: bg2-v5-8-1
 const urlsToCache = [
   '/',

@@ -1010,8 +1010,8 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, className }) 
                     <span className="text-xs font-medium text-yellow-800">Status da Conta</span>
                   </div>
                   <div className="text-xs text-yellow-700">
-                    <p className="mb-1 font-medium">Aguardando Vinculação</p>
-                    <p>Sua empresa já tem cadastro? Entre em contato com o administrador da sua conta para solicitar a vinculação.</p>
+                    <p className="mb-1 font-medium">Sua empresa já tem cadastro?</p>
+                    <p>Entre em contato com o administrador da sua conta para solicitar vinculação.</p>
                   </div>
                 </div>
               </div>
