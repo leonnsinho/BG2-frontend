@@ -42,7 +42,7 @@ const STATUS_OPTIONS = [
 ]
 
 const EMPTY_CARD = {
-  nome_empresa: '', nome_contato: '', cargo_contato: '',
+  title: '', nome_empresa: '', nome_contato: '', cargo_contato: '',
   email_contato: '', telefone_contato: '', origem_lead: '',
   cidade_estado: '', segmento: '', observacoes: '',
   valor_oportunidade: '', status: 'ativo',
@@ -468,6 +468,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
       const payload = {
         company_id: companyId,
         column_id: form.column_id || columnId,
+        title: form.title?.trim() || null,
         nome_empresa: form.nome_empresa?.trim() || null,
         // Backward compat: keep primary contact fields from first contactItem
         nome_contato: firstContact?.nome?.trim() || null,
@@ -714,6 +715,18 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
               </select>
             </div>
           )}
+
+          {/* Título do card */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Título do card</label>
+            <input
+              type="text"
+              value={form.title || ''}
+              onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+              placeholder="Ex: Proposta comercial, follow-up..."
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all bg-white"
+            />
+          </div>
 
           {/* Status */}
           <div className="space-y-2">
@@ -1159,7 +1172,8 @@ function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [], contacts =
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-2xl p-3 rotate-1 scale-105 cursor-grabbing">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
-            {displayEmpresa && <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{displayEmpresa}</p>}
+            {card.title && <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate mb-0.5">{card.title}</p>}
+            {displayEmpresa && <p className="text-xs text-gray-600 dark:text-gray-300 truncate">{displayEmpresa}</p>}
             {(contacts.length > 0 ? contacts : (card.nome_contato ? [{ nome: card.nome_contato, cargo: card.cargo_contato }] : [])).map((c, i) => (
               <p key={i} className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
                 <User className="h-3 w-3 shrink-0 text-purple-400" />
@@ -1197,10 +1211,13 @@ function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [], contacts =
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
+          {card.title && (
+            <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate mb-0.5">{card.title}</p>
+          )}
           {displayEmpresa && (
             <div className="flex items-center gap-1">
               {isOverdue && <AlertCircle className="h-3 w-3 text-red-500 shrink-0" />}
-              <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{displayEmpresa}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-300 truncate">{displayEmpresa}</p>
             </div>
           )}
           {(contacts.length > 0 ? contacts : (card.nome_contato ? [{ nome: card.nome_contato, cargo: card.cargo_contato }] : [])).map((c, i) => (

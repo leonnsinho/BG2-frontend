@@ -16,7 +16,7 @@ const EMPTY_FORM = {
   contribuinte_icms: '', is_partner_client: '',
   representante: { nome: '', email: '', telefone: '', endereco: '', cpf: '', cargo: '' },
   contato_cobranca: { nome: '', cargo: '', email: '', telefone: '' },
-  melhor_dia_pagamento: '', forma_pagamento: '',
+  melhor_dia_pagamento: '',
   address: { street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zip: '', country: 'Brasil' }
 }
 
@@ -31,7 +31,6 @@ const STEPS = [
 
 const EMPTY_PF = {
   nome: '', cpf: '', rg: '', telefone: '', email: '', email_nf: '',
-  forma_pagamento: '',
   address: { street: '', number: '', complement: '', neighborhood: '', city: '', state: '', zip: '' }
 }
 
@@ -90,7 +89,6 @@ export default function UserCreateCompanyPage() {
         telefone: '(11) 93456-7890'
       },
       melhor_dia_pagamento: '10',
-      forma_pagamento: 'boleto',
       address: {
         street: 'Avenida Paulista',
         number: '1000',
@@ -157,7 +155,6 @@ export default function UserCreateCompanyPage() {
         if (!pfData.telefone.trim())      { toast.error('Telefone é obrigatório'); return false }
         if (!pfData.email.trim())         { toast.error('E-mail é obrigatório'); return false }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pfData.email)) { toast.error('E-mail inválido'); return false }
-        if (!pfData.forma_pagamento)      { toast.error('Forma de pagamento é obrigatória'); return false }
         return true
       default: return true
     }
@@ -204,7 +201,6 @@ export default function UserCreateCompanyPage() {
         cnpj: pfData.cpf.trim() || null,
         email: pfData.email.trim(),
         phone: pfData.telefone.trim() || null,
-        forma_pagamento: pfData.forma_pagamento || null,
         address: Object.values(pfData.address).some(v => v.trim()) ? pfData.address : null,
         representante_legal: { tipo: 'pf', rg: pfData.rg.trim() || null },
         contato_cobranca: pfData.email_nf.trim() ? { email: pfData.email_nf.trim() } : null,
@@ -265,7 +261,6 @@ export default function UserCreateCompanyPage() {
         if (!formData.contato_cobranca.email.trim())   { toast.error('E-mail do contato de cobranca e obrigatorio'); return false }
         if (!formData.contato_cobranca.telefone.trim()){ toast.error('Telefone do contato de cobranca e obrigatorio'); return false }
         if (!formData.melhor_dia_pagamento)            { toast.error('Melhor dia para pagamento e obrigatorio'); return false }
-        if (!formData.forma_pagamento)                 { toast.error('Forma de pagamento e obrigatoria'); return false }
         return true
       default:
         return true
@@ -307,7 +302,6 @@ export default function UserCreateCompanyPage() {
         representante_legal: formData.representante,
         contato_cobranca: formData.contato_cobranca,
         melhor_dia_pagamento: formData.melhor_dia_pagamento.trim() || null,
-        forma_pagamento: formData.forma_pagamento || null,
         address: Object.values(formData.address).some(v => v.trim()) ? formData.address : null,
         logo_url: logoUrl,
         created_by: user.id,
@@ -914,17 +908,6 @@ export default function UserCreateCompanyPage() {
                       <label className="block text-xs font-medium text-gray-600 mb-1">Melhor Dia para Pagamento *</label>
                       <input type="text" value={formData.melhor_dia_pagamento} onChange={e => handleChange('melhor_dia_pagamento', e.target.value)} placeholder="Ex: 10" className={inp} />
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
-                      <select value={formData.forma_pagamento} onChange={e => handleChange('forma_pagamento', e.target.value)} className={sel}>
-                        <option value="">Selecione...</option>
-                        <option value="boleto">Boleto Bancario</option>
-                        <option value="cartao_credito">Cartao de Credito</option>
-                        <option value="pix">Pix</option>
-                        <option value="transferencia">Transferencia Bancaria</option>
-                        <option value="debito_automatico">Debito Automatico</option>
-                      </select>
-                    </div>
                   </div>
                 </div>
 
@@ -1089,17 +1072,7 @@ export default function UserCreateCompanyPage() {
                         <label className="block text-xs font-medium text-gray-600 mb-1">E-mail para receber NF / Boleto</label>
                         <input type="email" value={pfData.email_nf} onChange={e => handlePfChange('email_nf', e.target.value)} placeholder="financeiro@email.com (deixe em branco para usar o mesmo)" className={inp} />
                       </div>
-                      <div className="sm:col-span-2">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento *</label>
-                        <select value={pfData.forma_pagamento} onChange={e => handlePfChange('forma_pagamento', e.target.value)} className={sel}>
-                          <option value="">Selecione...</option>
-                          <option value="boleto">Boleto Bancário</option>
-                          <option value="cartao_credito">Cartão de Crédito</option>
-                          <option value="pix">Pix</option>
-                          <option value="transferencia">Transferência Bancária</option>
-                          <option value="debito_automatico">Débito Automático</option>
-                        </select>
-                      </div>
+
                     </div>
                   </div>
                 )}

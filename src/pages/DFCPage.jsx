@@ -71,6 +71,8 @@ function DFCPage() {
   const [mesFilter, setMesFilter] = useState('all')
   const [dataInicio, setDataInicio] = useState('')
   const [dataFim, setDataFim] = useState('')
+  const [tempDataInicio, setTempDataInicio] = useState('')
+  const [tempDataFim, setTempDataFim] = useState('')
   const [initialized, setInitialized] = useState(false)
   const [sortCol, setSortCol] = useState('vencimento')
   const [sortDir, setSortDir] = useState('desc')
@@ -358,6 +360,8 @@ function DFCPage() {
     if (dataInicioParam && dataFimParam) {
       setDataInicio(dataInicioParam)
       setDataFim(dataFimParam)
+      setTempDataInicio(dataInicioParam)
+      setTempDataFim(dataFimParam)
     }
   }, [searchParams])
 
@@ -1532,20 +1536,49 @@ function DFCPage() {
                     <label className="text-xs text-gray-600 dark:text-gray-400">Data Início</label>
                     <input
                       type="date"
-                      value={dataInicio}
-                      onChange={(e) => setDataInicio(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      value={tempDataInicio}
+                      onChange={(e) => setTempDataInicio(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#EBA500] focus:border-transparent dark:bg-gray-700 dark:text-white"
                     />
                   </div>
                   <div className="flex-1">
                     <label className="text-xs text-gray-600 dark:text-gray-400">Data Fim</label>
                     <input
                       type="date"
-                      value={dataFim}
-                      onChange={(e) => setDataFim(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      value={tempDataFim}
+                      onChange={(e) => setTempDataFim(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#EBA500] focus:border-transparent dark:bg-gray-700 dark:text-white"
                     />
                   </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setDataInicio(tempDataInicio)
+                      setDataFim(tempDataFim)
+                    }}
+                    disabled={!tempDataInicio || !tempDataFim}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#EBA500] hover:bg-[#d49500] rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Aplicar período"
+                  >
+                    <Search className="w-4 h-4" />
+                    Aplicar
+                  </button>
+                  {(dataInicio || dataFim) && (
+                    <button
+                      onClick={() => {
+                        setDataInicio('')
+                        setDataFim('')
+                        setTempDataInicio('')
+                        setTempDataFim('')
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                      title="Limpar período"
+                    >
+                      <X className="w-4 h-4" />
+                      Limpar
+                    </button>
+                  )}
                 </div>
                 {dataInicio && dataFim && (() => {
                   const [yearI, monthI, dayI] = dataInicio.split('-')
@@ -1553,8 +1586,8 @@ function DFCPage() {
                   const dateI = new Date(parseInt(yearI), parseInt(monthI) - 1, parseInt(dayI))
                   const dateF = new Date(parseInt(yearF), parseInt(monthF) - 1, parseInt(dayF))
                   return (
-                    <p className="text-xs text-red-600 mt-1">
-                      ✓ Período personalizado ativo: {dateI.toLocaleDateString('pt-BR')} até {dateF.toLocaleDateString('pt-BR')}
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                      ✓ Período aplicado: {dateI.toLocaleDateString('pt-BR')} até {dateF.toLocaleDateString('pt-BR')}
                     </p>
                   )
                 })()}

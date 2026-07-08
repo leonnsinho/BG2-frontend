@@ -46,6 +46,8 @@ export default function DFCDashboardPage() {
   const [periodoTipo, setPeriodoTipo] = useState('ultimos6meses') // ultimos30dias, ultimos3meses, ultimos6meses, ultimo12meses, personalizado
   const [dataInicio, setDataInicio] = useState('')
   const [dataFim, setDataFim] = useState('')
+  const [tempDataInicio, setTempDataInicio] = useState('')
+  const [tempDataFim, setTempDataFim] = useState('')
   const [mesesGrafico, setMesesGrafico] = useState(6) // Quantidade de meses para o gráfico de linhas
   
   const [stats, setStats] = useState({
@@ -172,6 +174,9 @@ export default function DFCDashboardPage() {
     if (dataInicioParam && dataFimParam) {
       setDataInicio(dataInicioParam)
       setDataFim(dataFimParam)
+      setTempDataInicio(dataInicioParam)
+      setTempDataFim(dataFimParam)
+      setPeriodoTipo('personalizado')
     }
   }, [searchParams])
 
@@ -2051,13 +2056,8 @@ export default function DFCDashboardPage() {
                   <label className="text-xs text-gray-600 dark:text-gray-400">Data Início</label>
                   <input
                     type="date"
-                    value={dataInicio}
-                    onChange={(e) => {
-                      setDataInicio(e.target.value)
-                      if (e.target.value && dataFim) {
-                        setPeriodoTipo('personalizado')
-                      }
-                    }}
+                    value={tempDataInicio}
+                    onChange={(e) => setTempDataInicio(e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   />
                 </div>
@@ -2065,16 +2065,42 @@ export default function DFCDashboardPage() {
                   <label className="text-xs text-gray-600 dark:text-gray-400">Data Fim</label>
                   <input
                     type="date"
-                    value={dataFim}
-                    onChange={(e) => {
-                      setDataFim(e.target.value)
-                      if (dataInicio && e.target.value) {
-                        setPeriodoTipo('personalizado')
-                      }
-                    }}
+                    value={tempDataFim}
+                    onChange={(e) => setTempDataFim(e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   />
                 </div>
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => {
+                    setDataInicio(tempDataInicio)
+                    setDataFim(tempDataFim)
+                    setPeriodoTipo('personalizado')
+                  }}
+                  disabled={!tempDataInicio || !tempDataFim}
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#EBA500] hover:bg-[#d49500] rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Aplicar período"
+                >
+                  <Search className="w-4 h-4" />
+                  Aplicar
+                </button>
+                {(dataInicio || dataFim) && (
+                  <button
+                    onClick={() => {
+                      setDataInicio('')
+                      setDataFim('')
+                      setTempDataInicio('')
+                      setTempDataFim('')
+                      setPeriodoTipo('ultimos6meses')
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    title="Limpar período"
+                  >
+                    <X className="w-4 h-4" />
+                    Limpar
+                  </button>
+                )}
               </div>
               {periodoTipo === 'personalizado' && dataInicio && dataFim && (() => {
                 const [yearI, monthI, dayI] = dataInicio.split('-')
