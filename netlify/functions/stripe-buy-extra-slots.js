@@ -7,7 +7,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ecmgbinyotuxhiniadom.s
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 // Price ID do produto "Slot adicional de usuário" (recorrente mensal)
-const EXTRA_SLOT_PRICE_ID = 'price_1TWJRsFUmTFSWkItAVIMKFkb'
+const EXTRA_SLOT_PRICE_ID = 'price_1TsmYjFUmTFSWkItCf3kvlDj'
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {

@@ -10,15 +10,15 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ecmgbinyotuxhiniadom.s
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 // Price ID do add-on de slot adicional de usuário
-const EXTRA_SLOT_PRICE_ID = 'price_1TWJRsFUmTFSWkItAVIMKFkb'
+const EXTRA_SLOT_PRICE_ID = 'price_1TsmYjFUmTFSWkItCf3kvlDj'
 
 // Mapeamento Price ID → subscription_plan da tabela companies
 const PRICE_TO_PLAN = {
-  'price_1TReTdFUmTFSWkItrIiOcTop': 'individual',   // Individual mensal
-  'price_1TReTrFUmTFSWkIttUUvGSHw': 'profissional', // Profissional mensal
-  'price_1TReVGFUmTFSWkItKrsCp0eO': 'profissional', // Profissional anual
-  'price_1TReU1FUmTFSWkItEZcxgY4B': 'premium',      // Premium mensal
-  'price_1TReUxFUmTFSWkItssYPU7sq': 'premium',      // Premium anual
+  'price_1TsmYZFUmTFSWkItF8aW3uQl': 'individual',   // Individual mensal
+  'price_1TsmYdFUmTFSWkItqgFmf8BU': 'profissional', // Profissional mensal
+  'price_1TsmYdFUmTFSWkItqvwFamln': 'profissional', // Profissional anual
+  'price_1TsmYfFUmTFSWkItyRk5X3LA': 'premium',      // Premium mensal
+  'price_1TsmYfFUmTFSWkItkyXOmGCS': 'premium',      // Premium anual
 }
 
 // Verifica a assinatura do webhook Stripe (HMAC-SHA256)

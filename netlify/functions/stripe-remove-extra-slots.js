@@ -6,7 +6,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ecmgbinyotuxhiniadom.supabase.co'
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-const EXTRA_SLOT_PRICE_ID = 'price_1TWJRsFUmTFSWkItAVIMKFkb'
+const EXTRA_SLOT_PRICE_ID = 'price_1TsmYjFUmTFSWkItCf3kvlDj'
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {

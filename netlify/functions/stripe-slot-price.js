@@ -2,7 +2,7 @@
 // GET /.netlify/functions/stripe-slot-price
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
-const EXTRA_SLOT_PRICE_ID = 'price_1TWJRsFUmTFSWkItAVIMKFkb'
+const EXTRA_SLOT_PRICE_ID = 'price_1TsmYjFUmTFSWkItCf3kvlDj'
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') {

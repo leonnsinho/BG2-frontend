@@ -6,15 +6,15 @@ import { useAuth } from '../contexts/AuthContext'
 
 const PRICE_IDS = {
   individual: {
-    monthly: 'price_1TReTdFUmTFSWkItrIiOcTop',
+    monthly: 'price_1TsmYZFUmTFSWkItF8aW3uQl',
   },
   profissional: {
-    monthly: 'price_1TReTrFUmTFSWkIttUUvGSHw',
-    annual: 'price_1TReVGFUmTFSWkItKrsCp0eO',
+    monthly: 'price_1TsmYdFUmTFSWkItqgFmf8BU',
+    annual: 'price_1TsmYdFUmTFSWkItqvwFamln',
   },
   premium: {
-    monthly: 'price_1TReU1FUmTFSWkItEZcxgY4B',
-    annual: 'price_1TReUxFUmTFSWkItssYPU7sq',
+    monthly: 'price_1TsmYfFUmTFSWkItyRk5X3LA',
+    annual: 'price_1TsmYfFUmTFSWkItkyXOmGCS',
   },
 }
 

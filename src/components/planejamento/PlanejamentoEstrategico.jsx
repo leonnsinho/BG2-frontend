@@ -569,9 +569,12 @@ const PlanejamentoEstrategico = () => {
   }
 
   const salvarEdicaoTarefa = async (processoId) => {
-    // 🔥 Validar se há pelo menos um responsável
-    if (!editandoTarefa.texto.trim() || responsaveisEdicaoSelecionados.length === 0) {
-      toast.error('Preencha a descrição e selecione pelo menos um responsável')
+    // 🔥 Validar: precisa ter texto E (usuário selecionado OU nome manual)
+    const temManual = tipoResponsavelEdicao === 'manual' && editandoTarefa.responsavel?.trim()
+    const temUsuario = tipoResponsavelEdicao === 'usuario' && responsaveisEdicaoSelecionados.length > 0
+    
+    if (!editandoTarefa.texto.trim() || (!temManual && !temUsuario)) {
+      toast.error('Preencha a descrição e informe pelo menos um responsável')
       return
     }
 
@@ -583,7 +586,10 @@ const PlanejamentoEstrategico = () => {
       const updateData = {
         title: editandoTarefa.texto,
         description: editandoTarefa.texto,
-        due_date: editandoTarefa.dataLimite || null
+        due_date: editandoTarefa.dataLimite || null,
+        // 🔥 Suporte a responsável manual
+        assigned_to_name: tipoResponsavelEdicao === 'manual' ? editandoTarefa.responsavel?.trim() || null : null,
+        assigned_to: null, // Sempre null — responsáveis via task_assignees
       }
       
       console.log('📋 Dados da atualização:', updateData)
@@ -591,8 +597,11 @@ const PlanejamentoEstrategico = () => {
       const resultado = await updateTask(editandoTarefa.id, updateData)
       console.log('✅ Resultado da atualização:', resultado)
       
-      // 🔥 NOVO: Atualizar responsáveis
-      await updateTaskAssignees(editandoTarefa.id, responsaveisEdicaoSelecionados)
+      // 🔥 Atualizar responsáveis (limpa se for manual, mantém se for usuário)
+      await updateTaskAssignees(
+        editandoTarefa.id, 
+        tipoResponsavelEdicao === 'manual' ? [] : responsaveisEdicaoSelecionados
+      )
       console.log('✅ Responsáveis atualizados')
       
       // Recarregar tarefas
@@ -1240,9 +1249,12 @@ const PlanejamentoEstrategico = () => {
     try {
       console.log('💾 Salvando nova ação')
       
-      // 🔥 Validar se há pelo menos um responsável selecionado
-      if (responsaveisSelecionados.length === 0) {
-        toast.alert('⚠️ Selecione pelo menos um responsável para a tarefa')
+      // 🔥 Validar se há pelo menos um responsável (usuário OU manual)
+      const temResponsavelManual = tipoResponsavel === 'manual' && responsavelManual.trim()
+      const temResponsavelUsuario = tipoResponsavel === 'usuario' && responsaveisSelecionados.length > 0
+      
+      if (!temResponsavelManual && !temResponsavelUsuario) {
+        toast.alert('⚠️ Selecione ou digite pelo menos um responsável para a tarefa')
         return
       }
       
@@ -1287,17 +1299,17 @@ const PlanejamentoEstrategico = () => {
       const taskData = {
         title: adicionandoTarefa.descricao || 'Sem título',
         description: adicionandoTarefa.descricao || '',
-        // 🔥 NOVO: Não usar assigned_to, apenas assignedUserIds
+        // 🔥 Suporte a responsável manual OU usuários cadastrados
         assigned_to: null,
-        assigned_to_name: null,
+        assigned_to_name: tipoResponsavel === 'manual' ? responsavelManual.trim() : null,
         process_id: processUUID,
         journey_id: journeyUUID,
         status: adicionandoTarefa.status,
         due_date: adicionandoTarefa.dataLimite || null,
         priority: 3,
         order: nextOrder,
-        // 🔥 NOVO: Array de responsáveis
-        assignedUserIds: responsaveisSelecionados
+        // 🔥 Array de responsáveis (vazio se for manual)
+        assignedUserIds: tipoResponsavel === 'manual' ? [] : responsaveisSelecionados
       }
       
       console.log('📋 Dados da tarefa:', taskData)
@@ -2831,123 +2843,175 @@ const PlanejamentoEstrategico = () => {
             </div>
 
             {/* Body */}
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto max-h-[calc(95vh-180px)] sm:max-h-[calc(90vh-180px)]">
-              {/* Descrição da Ação */}
-              <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
-                  <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
-                  <span>Descrição da Ação *</span>
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+              {/* Descrição */}
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-4">
+                <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  <Edit3 className="h-3.5 w-3.5 text-[#EBA500]" />
+                  Descrição da Ação
+                  <span className="text-red-400 ml-auto text-[10px]">*obrigatório</span>
                 </label>
                 <textarea
                   value={adicionandoTarefa.descricao}
                   onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, descricao: e.target.value })}
-                  placeholder="Descreva a ação..."
+                  placeholder="Descreva a ação a ser realizada..."
                   rows={3}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all resize-none shadow-sm hover:border-gray-300 touch-manipulation"
+                  className="w-full px-4 py-3 text-sm border-0 bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-[#EBA500]/20 focus:outline-none transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm ring-1 ring-gray-200 dark:ring-gray-600 focus:ring-[#EBA500]"
                 />
               </div>
 
-              {/* Tipo de Responsável - REMOVIDO, agora sempre permite múltiplos usuários */}
-
-              {/* Responsáveis (Múltipla Seleção) */}
-              <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
-                  <span>Responsáveis * (selecione um ou mais)</span>
+              {/* Responsáveis */}
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-4">
+                <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                  <Users className="h-3.5 w-3.5 text-[#EBA500]" />
+                  Responsáveis
+                  <span className="text-red-400 ml-auto text-[10px]">*obrigatório</span>
                 </label>
-                <div className="border-2 border-gray-200 dark:border-gray-600 rounded-xl p-3 max-h-48 overflow-y-auto bg-white dark:bg-gray-700">
-                  {usuarios.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">Nenhum usuário disponível</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {usuarios.map(usuario => (
-                        <label
-                          key={usuario.id}
-                          className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-600 ${
-                            responsaveisSelecionados.includes(usuario.id) ? 'bg-[#EBA500]/5 dark:bg-[#EBA500]/10' : ''
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={responsaveisSelecionados.includes(usuario.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setResponsaveisSelecionados([...responsaveisSelecionados, usuario.id])
-                              } else {
-                                setResponsaveisSelecionados(responsaveisSelecionados.filter(id => id !== usuario.id))
-                              }
-                            }}
-                            className="w-4 h-4 text-[#EBA500] border-gray-300 rounded focus:ring-[#EBA500]"
-                          />
-                          <span className="text-sm text-gray-700 dark:text-gray-200">{usuario.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
+                
+                {/* Toggle Pills */}
+                <div className="flex bg-gray-200 dark:bg-gray-600 rounded-xl p-1 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => { setTipoResponsavel('usuario'); setResponsavelManual('') }}
+                    className={`flex-1 py-2 px-3 text-xs font-medium rounded-lg transition-all duration-200 ${
+                      tipoResponsavel === 'usuario'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <Users className="h-3 w-3 inline mr-1" /> Usuário
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setTipoResponsavel('manual'); setResponsaveisSelecionados([]) }}
+                    className={`flex-1 py-2 px-3 text-xs font-medium rounded-lg transition-all duration-200 ${
+                      tipoResponsavel === 'manual'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <Edit3 className="h-3 w-3 inline mr-1" /> Nome livre
+                  </button>
                 </div>
-                {responsaveisSelecionados.length > 0 && (
-                  <p className="text-xs text-[#EBA500] mt-2 flex items-center space-x-1">
+
+                {/* Campo */}
+                {tipoResponsavel === 'usuario' ? (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl ring-1 ring-gray-200 dark:ring-gray-600 overflow-hidden max-h-44 overflow-y-auto">
+                    {usuarios.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4">Nenhum usuário disponível</p>
+                    ) : (
+                      <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                        {usuarios.map(usuario => {
+                          const isSelected = responsaveisSelecionados.includes(usuario.id)
+                          return (
+                            <label
+                              key={usuario.id}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setResponsaveisSelecionados(responsaveisSelecionados.filter(id => id !== usuario.id))
+                                } else {
+                                  setResponsaveisSelecionados([...responsaveisSelecionados, usuario.id])
+                                }
+                              }}
+                              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+                                isSelected ? 'bg-amber-50/50 dark:bg-amber-500/5' : ''
+                              }`}
+                            >
+                              <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                                isSelected ? 'bg-[#EBA500] border-[#EBA500]' : 'border-gray-300 dark:border-gray-500'
+                              }`}>
+                                {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-700 dark:text-gray-200 truncate">{usuario.name}</p>
+                              </div>
+                              {isSelected && (
+                                <span className="text-[10px] font-medium text-[#EBA500] bg-[#EBA500]/10 px-2 py-0.5 rounded-full">Selecionado</span>
+                              )}
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Digite o nome do responsável"
+                      value={responsavelManual}
+                      onChange={(e) => setResponsavelManual(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 text-sm bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-[#EBA500]/20 focus:outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm ring-1 ring-gray-200 dark:ring-gray-600 focus:ring-[#EBA500]"
+                    />
+                  </div>
+                )}
+
+                {tipoResponsavel === 'usuario' && responsaveisSelecionados.length > 0 && (
+                  <p className="text-xs text-[#EBA500] mt-2 flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" />
-                    <span>{responsaveisSelecionados.length} {responsaveisSelecionados.length === 1 ? 'responsável selecionado' : 'responsáveis selecionados'}</span>
+                    <span>{responsaveisSelecionados.length} {responsaveisSelecionados.length === 1 ? 'pessoa selecionada' : 'pessoas selecionadas'}</span>
                   </p>
                 )}
               </div>
 
-              {/* Prazo e Status em Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {/* Prazo */}
-                <div className="group">
-                  <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
-                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
-                    <span>Prazo</span>
+              {/* Prazo e Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-4">
+                  <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                    <Calendar className="h-3.5 w-3.5 text-[#EBA500]" />
+                    Prazo
+                    <span className="text-gray-400 ml-auto text-[10px]">opcional</span>
                   </label>
-                  <input
-                    type="date"
-                    value={adicionandoTarefa.dataLimite}
-                    onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, dataLimite: e.target.value })}
-                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
-                  />
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <input
+                      type="date"
+                      value={adicionandoTarefa.dataLimite}
+                      onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, dataLimite: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 text-sm bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-[#EBA500]/20 focus:outline-none transition-all shadow-sm ring-1 ring-gray-200 dark:ring-gray-600 focus:ring-[#EBA500] [color-scheme:light] dark:[color-scheme:dark]"
+                    />
+                  </div>
                 </div>
 
-                {/* Status */}
-                <div className="group">
-                  <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
-                    <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-[#EBA500]" />
-                    <span>Status Inicial</span>
+                <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-4">
+                  <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[#EBA500]" />
+                    Status Inicial
                   </label>
                   <select
                     value={adicionandoTarefa.status}
                     onChange={(e) => setAdicionandoTarefa({ ...adicionandoTarefa, status: e.target.value })}
-                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-[#EBA500]/50 focus:border-[#EBA500] transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
+                    className="w-full px-4 py-3 text-sm bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-[#EBA500]/20 focus:outline-none transition-all shadow-sm ring-1 ring-gray-200 dark:ring-gray-600 focus:ring-[#EBA500]"
                   >
-                    <option value="pending">Pendente</option>
-                    <option value="in_progress">Em Andamento</option>
-                    <option value="completed">Concluída</option>
+                    <option value="pending">⏳ Pendente</option>
+                    <option value="in_progress">🔄 Em Andamento</option>
+                    <option value="completed">✅ Concluída</option>
                   </select>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+            <div className="border-t border-gray-100 dark:border-gray-700 px-5 sm:px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-2.5 bg-white dark:bg-gray-800">
               <button
                 onClick={() => {
                   setModalTarefaAberto(false)
                   setProcessoParaTarefa(null)
                   cancelarAdicaoTarefa()
                 }}
-                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 transition-all font-semibold flex items-center justify-center space-x-2 min-h-[44px] touch-manipulation"
+                className="w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all flex items-center justify-center gap-2"
               >
                 <X className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Cancelar</span>
+                Cancelar
               </button>
               <button
                 onClick={salvarNovaTarefa}
                 disabled={!adicionandoTarefa.descricao}
-                className="w-full sm:w-auto px-5 sm:px-6 py-2.5 bg-gradient-to-r from-[#EBA500] to-[#D89500] text-white rounded-xl hover:from-[#D89500] hover:to-[#C78400] transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:shadow-none min-h-[44px] touch-manipulation"
+                className="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[#EBA500]/20 hover:shadow-[#EBA500]/30"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Salvar Tarefa</span>
+                Criar Ação
               </button>
             </div>
           </div>
@@ -2956,21 +3020,23 @@ const PlanejamentoEstrategico = () => {
 
       {/* Modal de Editar Ação */}
       {modalEdicaoAberto && tarefaParaEditar && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 animate-fadeIn">
           <div 
-            className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slideUp"
+            className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl shadow-black/10 max-w-xl w-full max-h-[92vh] sm:max-h-[85vh] overflow-hidden animate-slideUp flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg sm:text-2xl font-bold text-white flex items-center space-x-2">
-                  <Edit3 className="h-5 w-5 sm:h-6 sm:w-6" />
-                  <span>Editar Ação</span>
-                </h3>
+            <div className="relative bg-white dark:bg-gray-800 px-5 sm:px-6 pt-5 sm:pt-6 pb-3 flex items-start justify-between border-b border-gray-100 dark:border-gray-700">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                    <Edit3 className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Editar Ação</h3>
+                </div>
                 {processoParaEdicao && (
-                  <p className="text-white/90 text-xs sm:text-sm mt-1 sm:mt-1.5 flex items-center space-x-2">
-                    <Target className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 ml-10 flex items-center gap-1.5 truncate">
+                    <Target className="h-3 w-3 text-blue-400 flex-shrink-0" />
                     <span className="truncate">{processoParaEdicao.nome}</span>
                   </p>
                 )}
@@ -2982,90 +3048,155 @@ const PlanejamentoEstrategico = () => {
                   setProcessoParaEdicao(null)
                   cancelarEdicao()
                 }}
-                className="text-white/80 hover:text-white hover:bg-white/20 rounded-lg p-1.5 sm:p-2 transition-all duration-200 flex-shrink-0"
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-all flex-shrink-0"
               >
-                <X className="h-5 w-5 sm:h-6 sm:w-6" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto max-h-[calc(95vh-180px)] sm:max-h-[calc(90vh-180px)]">
-              {/* Descrição da Ação */}
-              <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
-                  <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                  <span>Descrição da Ação *</span>
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+              {/* Descrição */}
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-4">
+                <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  <Edit3 className="h-3.5 w-3.5 text-blue-500" />
+                  Descrição da Ação
+                  <span className="text-red-400 ml-auto text-[10px]">*obrigatório</span>
                 </label>
                 <textarea
                   value={editandoTarefa.texto}
                   onChange={(e) => setEditandoTarefa({ ...editandoTarefa, texto: e.target.value })}
-                  placeholder="Descreva a ação..."
+                  placeholder="Descreva a ação a ser realizada..."
                   rows={3}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none shadow-sm hover:border-gray-300 touch-manipulation"
+                  className="w-full px-4 py-3 text-sm border-0 bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm ring-1 ring-gray-200 dark:ring-gray-600 focus:ring-blue-500"
                 />
               </div>
 
-              {/* Responsáveis (Múltipla Seleção) */}
-              <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                  <span>Responsáveis * (selecione um ou mais)</span>
+              {/* Responsáveis */}
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-4">
+                <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                  <Users className="h-3.5 w-3.5 text-blue-500" />
+                  Responsáveis
+                  <span className="text-red-400 ml-auto text-[10px]">*obrigatório</span>
                 </label>
-                <div className="border-2 border-gray-200 dark:border-gray-600 rounded-xl p-3 max-h-48 overflow-y-auto bg-white dark:bg-gray-700">
-                  {usuarios.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">Nenhum usuário disponível</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {usuarios.map(usuario => (
-                        <label
-                          key={usuario.id}
-                          className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-600 ${
-                            responsaveisEdicaoSelecionados.includes(usuario.id) ? 'bg-blue-500/5 dark:bg-blue-500/10' : ''
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={responsaveisEdicaoSelecionados.includes(usuario.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setResponsaveisEdicaoSelecionados([...responsaveisEdicaoSelecionados, usuario.id])
-                              } else {
-                                setResponsaveisEdicaoSelecionados(responsaveisEdicaoSelecionados.filter(id => id !== usuario.id))
-                              }
-                            }}
-                            className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-gray-700 dark:text-gray-200">{usuario.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
+                
+                {/* Toggle Pills */}
+                <div className="flex bg-gray-200 dark:bg-gray-600 rounded-xl p-1 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTipoResponsavelEdicao('usuario')
+                      setResponsaveisEdicaoSelecionados([])
+                    }}
+                    className={`flex-1 py-2 px-3 text-xs font-medium rounded-lg transition-all duration-200 ${
+                      tipoResponsavelEdicao === 'usuario'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <Users className="h-3 w-3 inline mr-1" />
+                    Usuário
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTipoResponsavelEdicao('manual')
+                      setResponsaveisEdicaoSelecionados([])
+                      setEditandoTarefa({ ...editandoTarefa, responsavel: '' })
+                    }}
+                    className={`flex-1 py-2 px-3 text-xs font-medium rounded-lg transition-all duration-200 ${
+                      tipoResponsavelEdicao === 'manual'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <Edit3 className="h-3 w-3 inline mr-1" />
+                    Nome livre
+                  </button>
                 </div>
-                {responsaveisEdicaoSelecionados.length > 0 && (
-                  <p className="text-xs text-blue-500 mt-2 flex items-center space-x-1">
+
+                {/* Campo */}
+                {tipoResponsavelEdicao === 'usuario' ? (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl ring-1 ring-gray-200 dark:ring-gray-600 overflow-hidden max-h-44 overflow-y-auto">
+                    {usuarios.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4">Nenhum usuário disponível</p>
+                    ) : (
+                      <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                        {usuarios.map(usuario => {
+                          const isSelected = responsaveisEdicaoSelecionados.includes(usuario.id)
+                          return (
+                            <label
+                              key={usuario.id}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setResponsaveisEdicaoSelecionados(responsaveisEdicaoSelecionados.filter(id => id !== usuario.id))
+                                } else {
+                                  setResponsaveisEdicaoSelecionados([...responsaveisEdicaoSelecionados, usuario.id])
+                                }
+                              }}
+                              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+                                isSelected ? 'bg-blue-50/50 dark:bg-blue-500/5' : ''
+                              }`}
+                            >
+                              <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                                isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 dark:border-gray-500'
+                              }`}>
+                                {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-700 dark:text-gray-200 truncate">{usuario.name}</p>
+                              </div>
+                              {isSelected && (
+                                <span className="text-[10px] font-medium text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded-full">Selecionado</span>
+                              )}
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Digite o nome do responsável"
+                      value={editandoTarefa.responsavel || ''}
+                      onChange={(e) => setEditandoTarefa({ ...editandoTarefa, responsavel: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 text-sm bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm ring-1 ring-gray-200 dark:ring-gray-600 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
+
+                {tipoResponsavelEdicao === 'usuario' && responsaveisEdicaoSelecionados.length > 0 && (
+                  <p className="text-xs text-blue-500 mt-2 flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" />
-                    <span>{responsaveisEdicaoSelecionados.length} {responsaveisEdicaoSelecionados.length === 1 ? 'responsável selecionado' : 'responsáveis selecionados'}</span>
+                    <span>{responsaveisEdicaoSelecionados.length} {responsaveisEdicaoSelecionados.length === 1 ? 'pessoa selecionada' : 'pessoas selecionadas'}</span>
                   </p>
                 )}
               </div>
 
               {/* Prazo */}
-              <div className="group">
-                <label className="block text-xs sm:text-sm font-semibold text-[#373435] dark:text-gray-200 mb-2 flex items-center space-x-2">
-                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                  <span>Prazo</span>
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-4">
+                <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                  Prazo
+                  <span className="text-gray-400 ml-auto text-[10px]">opcional</span>
                 </label>
-                <input
-                  type="date"
-                  value={editandoTarefa.dataLimite}
-                  onChange={(e) => setEditandoTarefa({ ...editandoTarefa, dataLimite: e.target.value })}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm hover:border-gray-300 min-h-[44px] touch-manipulation"
-                />
+                <div className="relative">
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <input
+                    type="date"
+                    value={editandoTarefa.dataLimite}
+                    onChange={(e) => setEditandoTarefa({ ...editandoTarefa, dataLimite: e.target.value })}
+                    className="w-full pl-10 pr-4 py-3 text-sm bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all shadow-sm ring-1 ring-gray-200 dark:ring-gray-600 focus:ring-blue-500 [color-scheme:light] dark:[color-scheme:dark]"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+            <div className="border-t border-gray-100 dark:border-gray-700 px-5 sm:px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-2.5 bg-white dark:bg-gray-800">
               <button
                 onClick={() => {
                   setModalEdicaoAberto(false)
@@ -3073,21 +3204,20 @@ const PlanejamentoEstrategico = () => {
                   setProcessoParaEdicao(null)
                   cancelarEdicao()
                 }}
-                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 transition-all font-semibold flex items-center justify-center space-x-2 min-h-[44px] touch-manipulation"
+                className="w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all flex items-center justify-center gap-2"
               >
                 <X className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Cancelar</span>
+                Cancelar
               </button>
               <button
                 onClick={async () => {
                   console.log('🔵 Botão Salvar clicado')
                   try {
                     await salvarEdicaoTarefa(processoParaEdicao?.id)
-                    // Limpar todos os estados após salvar
                     setModalEdicaoAberto(false)
                     setTarefaParaEditar(null)
                     setProcessoParaEdicao(null)
-                    cancelarEdicao() // Limpar estado de edição
+                    cancelarEdicao()
                     toast.success('✅ Ação editada com sucesso!')
                   } catch (error) {
                     console.error('❌ Erro ao salvar:', error)
@@ -3095,10 +3225,10 @@ const PlanejamentoEstrategico = () => {
                   }
                 }}
                 disabled={!editandoTarefa.texto}
-                className="w-full sm:w-auto px-5 sm:px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:shadow-none min-h-[44px] touch-manipulation"
+                className="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Salvar Alterações</span>
+                Salvar Alterações
               </button>
             </div>
           </div>

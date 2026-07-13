@@ -12,9 +12,9 @@ import toast from '@/lib/toast'
 
 // ─── Price IDs (mesmos da PlansPage) ─────────────────────────────────────────
 const PRICE_IDS = {
-  individual:   { monthly: 'price_1TReTdFUmTFSWkItrIiOcTop', annual: null },
-  profissional: { monthly: 'price_1TReTrFUmTFSWkIttUUvGSHw', annual: 'price_1TReVGFUmTFSWkItKrsCp0eO' },
-  premium:      { monthly: 'price_1TReU1FUmTFSWkItEZcxgY4B', annual: 'price_1TReUxFUmTFSWkItssYPU7sq' },
+  individual:   { monthly: 'price_1TsmYZFUmTFSWkItF8aW3uQl', annual: null },
+  profissional: { monthly: 'price_1TsmYdFUmTFSWkItqgFmf8BU', annual: 'price_1TsmYdFUmTFSWkItqvwFamln' },
+  premium:      { monthly: 'price_1TsmYfFUmTFSWkItyRk5X3LA', annual: 'price_1TsmYfFUmTFSWkItkyXOmGCS' },
 }
 
 // ─── Dados dos planos para exibição no wizard ─────────────────────────────────
