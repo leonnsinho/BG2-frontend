@@ -135,6 +135,7 @@ exports.handler = async (event) => {
       'metadata[user_id]': userId,
       'metadata[purchase_id]': purchaseId,
       'metadata[quantity]': String(quantity),
+      allow_promotion_codes: 'true',
     })
 
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {

@@ -41,6 +41,7 @@ exports.handler = async (event) => {
       'metadata[company_id]': companyId,
       'metadata[user_id]': userId,
       'subscription_data[metadata][company_id]': companyId,
+      allow_promotion_codes: 'true',
     })
 
     const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
