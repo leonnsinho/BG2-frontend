@@ -7,12 +7,14 @@ import { useUserContext } from '../contexts/UserContext'
 import { supabase } from '../services/supabase'
 import toast from '@/lib/toast'
 import { 
-  User, 
-  Mail, 
-  Building2, 
-  Shield, 
-  Key, 
-  Moon, 
+  User,
+  Mail,
+  Building2,
+  Shield,
+  Key,
+  Moon,
+  FileText,
+  ExternalLink,
   Sun, 
   Globe,
   Save,
@@ -794,6 +796,7 @@ const SettingsPage = () => {
     { id: 'password', name: 'Senha', icon: Key },
     ...(isCompanyAdmin ? [{ id: 'empresa', name: 'Empresa', icon: Building2 }] : []),
     ...(isCompanyAdmin ? [{ id: 'plano', name: 'Plano', icon: CreditCard }] : []),
+    { id: 'legal', name: 'Legal', icon: FileText },
   ]
 
   if (permissions.isLoading) {
@@ -1916,6 +1919,67 @@ const SettingsPage = () => {
                   document.body
                 )
               })()}
+            </div>
+          </Card>
+        )}
+
+        {/* Aba Legal */}
+        {activeTab === 'legal' && (
+          <Card className="p-4 sm:p-6 bg-white dark:bg-gray-800 shadow-sm border border-gray-200/50 dark:border-gray-700 rounded-2xl sm:rounded-3xl transform transition-all duration-500 ease-in-out">
+            <div className="grid gap-3">
+              <a
+                href="/politicas-de-privacidade.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-4 rounded-2xl border border-gray-200/70 dark:border-gray-700 hover:border-[#EBA500]/40 hover:bg-[#EBA500]/5 transition-all duration-200 group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 group-hover:bg-[#EBA500]/10 transition-colors duration-200">
+                    <Shield className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-[#EBA500] transition-colors duration-200" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#373435] dark:text-white">Política de Privacidade</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Como coletamos e usamos seus dados</p>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#EBA500] transition-colors duration-200 flex-shrink-0" />
+              </a>
+
+              <a
+                href="/politicas-de-cookies.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-4 rounded-2xl border border-gray-200/70 dark:border-gray-700 hover:border-[#EBA500]/40 hover:bg-[#EBA500]/5 transition-all duration-200 group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 group-hover:bg-[#EBA500]/10 transition-colors duration-200">
+                    <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-[#EBA500] transition-colors duration-200" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#373435] dark:text-white">Política de Cookies</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Quais cookies usamos e como gerenciá-los</p>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#EBA500] transition-colors duration-200 flex-shrink-0" />
+              </a>
+
+              <a
+                href="/termos-de-uso.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-4 rounded-2xl border border-gray-200/70 dark:border-gray-700 hover:border-[#EBA500]/40 hover:bg-[#EBA500]/5 transition-all duration-200 group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 group-hover:bg-[#EBA500]/10 transition-colors duration-200">
+                    <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-[#EBA500] transition-colors duration-200" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#373435] dark:text-white">Termos de Uso</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Condições para uso da plataforma BG2</p>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#EBA500] transition-colors duration-200 flex-shrink-0" />
+              </a>
             </div>
           </Card>
         )}

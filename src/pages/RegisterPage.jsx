@@ -586,6 +586,19 @@ export function RegisterPage() {
               )}
             </button>
 
+            {/* Aviso legal */}
+            <p className="text-xs text-center text-gray-500 leading-relaxed">
+              Ao criar sua conta, você concorda com os nossos{' '}
+              <a href="/termos-de-uso.html" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline font-medium">
+                Termos de Uso
+              </a>
+              {' '}e com a nossa{' '}
+              <a href="/politicas-de-privacidade.html" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline font-medium">
+                Política de Privacidade
+              </a>
+              .
+            </p>
+
             {/* Link para login */}
             <div className="text-center pt-6 border-t border-neutral-100">
               <p className="text-neutral-600 text-sm">
