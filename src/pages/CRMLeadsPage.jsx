@@ -14,6 +14,8 @@ import toast from '@/lib/toast'
 const INP = 'w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/40 focus:border-[#EBA500] bg-white'
 const SEL = INP + ' cursor-pointer'
 
+const norm = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
 const ORIGENS = ['Indicação', 'Inbound', 'Outbound', 'Site/Blog', 'Redes Sociais', 'Evento', 'Parceiro', 'Outro']
 const ESTADOS_BR = [
   'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA',
@@ -53,7 +55,7 @@ export default function CRMLeadsPage() {
 
   const loadLeads = async () => {
     setLoading(true)
-    const { data } = await supabase.from('crm_leads').select('*').eq('company_id', companyId).order('nome_empresa')
+    const { data } = await supabase.from('crm_leads').select('*').eq('company_id', companyId).order('nome_empresa').limit(10000)
     setLeads(data || [])
     setLoading(false)
   }
@@ -227,12 +229,13 @@ export default function CRMLeadsPage() {
   }
 
   const filtered = search.trim()
-    ? leads.filter(l =>
-        (l.nome_empresa || '').toLowerCase().includes(search.toLowerCase()) ||
-        (l.segmento || '').toLowerCase().includes(search.toLowerCase()) ||
-        (l.cidade || '').toLowerCase().includes(search.toLowerCase()) ||
-        (l.estado || '').toLowerCase().includes(search.toLowerCase())
-      )
+    ? leads.filter(l => {
+        const q = norm(search)
+        return norm(l.nome_empresa).includes(q) ||
+          norm(l.segmento).includes(q) ||
+          norm(l.cidade).includes(q) ||
+          norm(l.estado).includes(q)
+      })
     : leads
 
   return (
