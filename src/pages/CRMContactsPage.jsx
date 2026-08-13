@@ -77,6 +77,21 @@ export default function CRMContactsPage() {
       if (editing) {
         const { error } = await supabase.from('crm_contacts').update(payload).eq('id', editing.id)
         if (error) throw error
+
+        // Cascatear alterações para todas as oportunidades vinculadas a este contato
+        const contactPatch = {
+          nome: payload.nome || null,
+          cargo: payload.cargo || null,
+          email: payload.email || null,
+          telefone: payload.telefone || null,
+        }
+        await supabase.from('crm_card_contacts').update(contactPatch).eq('contact_id', editing.id)
+        await supabase.from('crm_cards').update({
+          nome_contato: payload.nome || null,
+          cargo_contato: payload.cargo || null,
+          email_contato: payload.email || null,
+          telefone_contato: payload.telefone || null,
+        }).eq('contact_id', editing.id)
       } else {
         payload.created_by = user?.id
         const { error } = await supabase.from('crm_contacts').insert([payload])

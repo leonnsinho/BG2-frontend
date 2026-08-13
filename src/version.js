@@ -3,4 +3,4 @@
  * ⚠️ FONTE ÚNICA DE VERDADE — Ao atualizar a versão, mude APENAS este arquivo.
  * O valor é compilado diretamente no bundle React (não depende de SW, env ou cache).
  */
-export const APP_VERSION = '6.0.0'
+export const APP_VERSION = '6.0.2'

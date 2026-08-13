@@ -66,6 +66,7 @@ function DFCPage() {
   // Filtros - Inicializar companyFilter com valor da URL se existir
   const initialCompanyFilter = searchParams.get('company') || searchParams.get('companyId') || 'all'
   const [searchTerm, setSearchTerm] = useState('')
+  const [especieFilter, setEspecieFilter] = useState(false)
   const [companyFilter, setCompanyFilter] = useState(initialCompanyFilter)
   const [categoriaFilter, setCategoriaFilter] = useState('all')
   const [mesFilter, setMesFilter] = useState('all')
@@ -107,7 +108,8 @@ function DFCPage() {
     descricao: '',
     valor: '',
     mes: '',
-    vencimento: ''
+    vencimento: '',
+    dinheiro_especie: false
   })
 
   // ─── Parser de importação ───────────────────────────────────────────────────
@@ -1262,7 +1264,9 @@ function DFCPage() {
         matchPeriodo = dataVencimento >= dataInicioPeriodo && dataVencimento <= dataFimPeriodo
       }
       
-      return matchSearch && matchMes && matchPeriodo
+      const matchEspecie = !especieFilter || !!saida.dinheiro_especie
+
+      return matchSearch && matchMes && matchPeriodo && matchEspecie
     }).sort((a, b) => {
       if (sortCol === 'vencimento') {
         const da = a.vencimento || ''
@@ -1276,7 +1280,7 @@ function DFCPage() {
       }
       return 0
     })
-  }, [saidas, searchTerm, mesFilter, dataInicio, dataFim, sortCol, sortDir])
+  }, [saidas, searchTerm, mesFilter, dataInicio, dataFim, sortCol, sortDir, especieFilter])
 
   // Calcular totais
   const totais = useMemo(() => {
@@ -1434,23 +1438,36 @@ function DFCPage() {
         <div className="space-y-6">
           {/* Filtros principais */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div className="relative flex items-center">
+              <Search className="absolute left-3 h-4 w-4 text-gray-400 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                className="w-full h-10 pl-10 pr-3 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
               />
             </div>
+
+            <button
+              type="button"
+              onClick={() => setEspecieFilter(v => !v)}
+              className={`flex items-center justify-center gap-2 h-10 px-4 rounded-2xl border text-sm font-medium transition-all duration-200 ${
+                especieFilter
+                  ? 'bg-amber-100 border-amber-400 text-amber-800 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-300'
+                  : 'bg-white border-gray-300 text-gray-600 hover:border-amber-300 hover:text-amber-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300'
+              }`}
+            >
+              <span>💵</span>
+              Dinheiro em Espécie
+            </button>
 
             {/* Filtro de Empresa - Apenas para Super Admin */}
             {isSuperAdmin() && (
               <select
                 value={companyFilter}
                 onChange={(e) => setCompanyFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-gray-200"
+                className="h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-gray-200"
               >
                 <option value="all">Todas as empresas</option>
                 {companies.map(company => (
@@ -1459,17 +1476,11 @@ function DFCPage() {
               </select>
             )}
             
-            {/* Indicação da empresa para Company Admin */}
-            {isCompanyAdmin() && companyFilter !== 'all' && (
-              <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-2xl text-sm text-blue-700 font-medium">
-                {companies.find(c => c.id === companyFilter)?.name || 'Empresa'}
-              </div>
-            )}
 
             <select
               value={categoriaFilter}
               onChange={(e) => setCategoriaFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-gray-200"
+              className="h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] transition-all dark:bg-gray-700 dark:text-gray-200"
             >
               <option value="all">Todas as categorias</option>
               {categorias.map(cat => (
@@ -1477,8 +1488,7 @@ function DFCPage() {
               ))}
             </select>
 
-            <div className="border-2 border-gray-200 dark:border-gray-600 rounded-2xl p-2 bg-gray-50/50 dark:bg-gray-700/50">
-              <div className="flex gap-2">
+            <div className="flex gap-2">
                 <select
                   value={mesFilter === 'all' ? '' : (mesFilter ? mesFilter.split('-')[1] : '')}
                   onChange={(e) => {
@@ -1489,7 +1499,7 @@ function DFCPage() {
                       setMesFilter(`${ano}-${e.target.value}`)
                     }
                   }}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-gray-200 transition-all"
+                  className="flex-1 h-10 px-3 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-gray-200 transition-all"
                 >
                   <option value="">Mês</option>
                   <option value="01">Janeiro</option>
@@ -1505,7 +1515,7 @@ function DFCPage() {
                   <option value="11">Novembro</option>
                   <option value="12">Dezembro</option>
                 </select>
-                
+
                 <select
                   value={mesFilter === 'all' ? '' : (mesFilter ? mesFilter.split('-')[0] : '')}
                   onChange={(e) => {
@@ -1516,14 +1526,13 @@ function DFCPage() {
                       setMesFilter(`${e.target.value}-${mes}`)
                     }
                   }}
-                  className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-gray-200 transition-all"
+                  className="w-24 h-10 px-3 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] bg-white dark:bg-gray-700 dark:text-gray-200 transition-all"
                 >
                   <option value="">Ano</option>
                   {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
                     <option key={year} value={year}>{year}</option>
                   ))}
                 </select>
-              </div>
             </div>
           </div>
 
@@ -2029,6 +2038,22 @@ function DFCPage() {
                       required
                     />
                   </div>
+                </div>
+
+                {/* Dinheiro em Espécie */}
+                <div className="border border-gray-200 dark:border-gray-600 rounded-xl p-4 bg-amber-50/40 dark:bg-amber-900/10">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!formData.dinheiro_especie}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dinheiro_especie: e.target.checked }))}
+                      className="w-4 h-4 text-[#EBA500] border-gray-300 rounded focus:ring-[#EBA500]"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">Dinheiro em Espécie</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Marque se esta saída foi paga em dinheiro físico</p>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Sistema de Parcelamento - Apenas ao criar novo lançamento */}

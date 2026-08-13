@@ -138,6 +138,21 @@ export default function CRMLeadDetailPage() {
         const { error } = await supabase.from('crm_contacts').update(payload).eq('id', editingContact.id)
         if (error) throw error
         setContacts(p => p.map(c => c.id === editingContact.id ? { ...c, ...payload } : c))
+
+        // Cascatear para todas as oportunidades vinculadas a este contato
+        const contactPatch = {
+          nome: payload.nome || null,
+          cargo: payload.cargo || null,
+          email: payload.email || null,
+          telefone: payload.telefone || null,
+        }
+        await supabase.from('crm_card_contacts').update(contactPatch).eq('contact_id', editingContact.id)
+        await supabase.from('crm_cards').update({
+          nome_contato: payload.nome || null,
+          cargo_contato: payload.cargo || null,
+          email_contato: payload.email || null,
+          telefone_contato: payload.telefone || null,
+        }).eq('contact_id', editingContact.id)
       } else {
         const { data, error } = await supabase.from('crm_contacts').insert([{ ...payload, created_by: profile?.id }]).select().single()
         if (error) throw error

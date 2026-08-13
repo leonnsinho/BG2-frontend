@@ -211,6 +211,8 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   const [selectedLead, setSelectedLead] = useState(null)
   const [lineItems, setLineItems] = useState([]) // { lineId, dbId, product_id, product, nome_produto, valor_unitario, quantidade, desconto_percentual, valor_linha }
   const [contactItems, setContactItems] = useState([]) // { itemId, dbId, contact_id, contact, nome, cargo, email, telefone }
+  const [editingContactItem, setEditingContactItem] = useState(null) // itemId being edited inline
+  const [editingContactForm, setEditingContactForm] = useState({}) // { nome, cargo, email, telefone }
 
   // expand/collapse fields under lead importer
   const [expandLead, setExpandLead] = useState(!card?.lead_id)
@@ -400,6 +402,31 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   }
 
   const removeContactItem = (itemId) => setContactItems(prev => prev.filter(ci => ci.itemId !== itemId))
+
+  const saveContactItemEdit = async (ci) => {
+    const patch = {
+      nome: editingContactForm.nome || null,
+      cargo: editingContactForm.cargo || null,
+      email: editingContactForm.email || null,
+      telefone: editingContactForm.telefone || null,
+    }
+    // Atualiza estado local imediatamente
+    setContactItems(prev => prev.map(c => c.itemId === ci.itemId ? { ...c, ...patch } : c))
+    setEditingContactItem(null)
+
+    // Persiste no crm_contacts se tiver contact_id
+    if (ci.contact_id) {
+      await supabase.from('crm_contacts').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', ci.contact_id)
+      // Cascateia para todos os cards que referenciam este contato
+      await supabase.from('crm_card_contacts').update(patch).eq('contact_id', ci.contact_id)
+      await supabase.from('crm_cards').update({
+        nome_contato: patch.nome,
+        cargo_contato: patch.cargo,
+        email_contato: patch.email,
+        telefone_contato: patch.telefone,
+      }).eq('contact_id', ci.contact_id)
+    }
+  }
 
   // Inline create helpers
   const openCreate = (mode) => {
@@ -866,31 +893,86 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
               <div className="space-y-2 mb-3">
                 {contactItems.map((ci, idx) => (
                   <div key={ci.itemId} className="p-3 bg-purple-50/60 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800/40">
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <User className="h-3.5 w-3.5 text-purple-500 shrink-0" />
-                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">
-                          {ci.nome || `Contato ${idx + 1}`}
-                        </span>
-                        {ci.cargo && <span className="text-[10px] text-gray-400 shrink-0">· {ci.cargo}</span>}
+                    {editingContactItem === ci.itemId ? (
+                      // Formulário de edição inline
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          placeholder="Nome *"
+                          value={editingContactForm.nome || ''}
+                          onChange={e => setEditingContactForm(p => ({ ...p, nome: e.target.value }))}
+                          className="w-full px-2 py-1.5 text-xs border border-purple-300 dark:border-purple-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-400 dark:bg-gray-700 dark:text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Cargo"
+                          value={editingContactForm.cargo || ''}
+                          onChange={e => setEditingContactForm(p => ({ ...p, cargo: e.target.value }))}
+                          className="w-full px-2 py-1.5 text-xs border border-purple-300 dark:border-purple-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-400 dark:bg-gray-700 dark:text-white"
+                        />
+                        <input
+                          type="email"
+                          placeholder="E-mail"
+                          value={editingContactForm.email || ''}
+                          onChange={e => setEditingContactForm(p => ({ ...p, email: e.target.value }))}
+                          className="w-full px-2 py-1.5 text-xs border border-purple-300 dark:border-purple-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-400 dark:bg-gray-700 dark:text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Telefone"
+                          value={editingContactForm.telefone || ''}
+                          onChange={e => setEditingContactForm(p => ({ ...p, telefone: e.target.value }))}
+                          className="w-full px-2 py-1.5 text-xs border border-purple-300 dark:border-purple-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-400 dark:bg-gray-700 dark:text-white"
+                        />
+                        <div className="flex gap-2 pt-1">
+                          <button type="button" onClick={() => saveContactItemEdit(ci)}
+                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                            <Save className="h-3 w-3" /> Salvar
+                          </button>
+                          <button type="button" onClick={() => setEditingContactItem(null)}
+                            className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            Cancelar
+                          </button>
+                        </div>
                       </div>
-                      <button type="button" onClick={() => removeContactItem(ci.itemId)}
-                        className="shrink-0 p-1 hover:bg-red-100 rounded-lg transition-colors">
-                        <X className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                      {ci.email && (
-                        <a href={`mailto:${ci.email}`} className="flex items-center gap-1 text-[10px] text-purple-600 hover:underline truncate col-span-2">
-                          <Mail className="h-3 w-3 shrink-0" />{ci.email}
-                        </a>
-                      )}
-                      {ci.telefone && (
-                        <span className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400 truncate">
-                          <Phone className="h-3 w-3 shrink-0" />{ci.telefone}
-                        </span>
-                      )}
-                    </div>
+                    ) : (
+                      // Visualização normal
+                      <>
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <User className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+                            <span className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">
+                              {ci.nome || `Contato ${idx + 1}`}
+                            </span>
+                            {ci.cargo && <span className="text-[10px] text-gray-400 shrink-0">· {ci.cargo}</span>}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button type="button" onClick={() => {
+                              setEditingContactItem(ci.itemId)
+                              setEditingContactForm({ nome: ci.nome, cargo: ci.cargo, email: ci.email, telefone: ci.telefone })
+                            }} className="p-1 hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded-lg transition-colors">
+                              <Edit2 className="h-3.5 w-3.5 text-gray-400 hover:text-purple-600" />
+                            </button>
+                            <button type="button" onClick={() => removeContactItem(ci.itemId)}
+                              className="p-1 hover:bg-red-100 rounded-lg transition-colors">
+                              <X className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                          {ci.email && (
+                            <a href={`mailto:${ci.email}`} className="flex items-center gap-1 text-[10px] text-purple-600 hover:underline truncate col-span-2">
+                              <Mail className="h-3 w-3 shrink-0" />{ci.email}
+                            </a>
+                          )}
+                          {ci.telefone && (
+                            <span className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                              <Phone className="h-3 w-3 shrink-0" />{ci.telefone}
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

@@ -58,7 +58,9 @@ export default function DFCDashboardPage() {
     saldoFinal: 0,
     entradasMes: 0,
     saidasMes: 0,
-    saldoMes: 0
+    saldoMes: 0,
+    entradasEspecie: 0,
+    saidasEspecie: 0
   })
   const [monthlyData, setMonthlyData] = useState([])
   const [categoryData, setCategoryData] = useState([])
@@ -745,6 +747,9 @@ export default function DFCDashboardPage() {
 
       console.log('📊 Estatísticas do mês:', { entradasMes, saidasMes, saldoMes: entradasMes - saidasMes })
 
+      const entradasEspecie = entradas?.filter(e => e.dinheiro_especie).reduce((sum, e) => sum + (e.valor || 0), 0) || 0
+      const saidasEspecie = saidas?.filter(s => s.dinheiro_especie).reduce((sum, s) => sum + (s.valor || 0), 0) || 0
+
       setStats({
         totalEntradas,
         totalSaidas,
@@ -753,7 +758,9 @@ export default function DFCDashboardPage() {
         saldoFinal,
         entradasMes,
         saidasMes,
-        saldoMes: entradasMes - saidasMes
+        saldoMes: entradasMes - saidasMes,
+        entradasEspecie,
+        saidasEspecie
       })
 
       // Dados mensais para gráfico (últimos 6 meses)
@@ -2157,6 +2164,11 @@ export default function DFCDashboardPage() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
                   Mês atual: {formatCurrency(stats.entradasMes)}
                 </p>
+                {stats.entradasEspecie > 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                    💵 Espécie: {formatCurrency(stats.entradasEspecie)}
+                  </p>
+                )}
               </div>
               <div className="p-4 bg-green-100 rounded-xl">
                 <ArrowUpCircle className="h-8 w-8 text-green-600" />
@@ -2182,6 +2194,11 @@ export default function DFCDashboardPage() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   Mês atual: {formatCurrency(stats.saidasMes)}
                 </p>
+                {stats.saidasEspecie > 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                    💵 Espécie: {formatCurrency(stats.saidasEspecie)}
+                  </p>
+                )}
               </div>
               <div className="p-4 bg-red-100 rounded-xl">
                 <ArrowDownCircle className="h-8 w-8 text-red-600" />

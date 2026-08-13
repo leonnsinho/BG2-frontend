@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import * as XLSX from 'xlsx'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -37,6 +37,10 @@ export default function CRMLeadsPage() {
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [filterSegmento, setFilterSegmento] = useState('')
+  const [filterCidade, setFilterCidade] = useState('')
+  const [filterEstado, setFilterEstado] = useState('')
+  const [filterOrigem, setFilterOrigem] = useState('')
 
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -55,8 +59,22 @@ export default function CRMLeadsPage() {
 
   const loadLeads = async () => {
     setLoading(true)
-    const { data } = await supabase.from('crm_leads').select('*').eq('company_id', companyId).order('nome_empresa').limit(10000)
-    setLeads(data || [])
+    const pageSize = 1000
+    let page = 0
+    let all = []
+    while (true) {
+      const { data, error } = await supabase
+        .from('crm_leads')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome_empresa')
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+      if (error || !data || data.length === 0) break
+      all = all.concat(data)
+      if (data.length < pageSize) break
+      page++
+    }
+    setLeads(all)
     setLoading(false)
   }
 
@@ -228,15 +246,31 @@ export default function CRMLeadsPage() {
     URL.revokeObjectURL(url)
   }
 
-  const filtered = search.trim()
-    ? leads.filter(l => {
+  // Opções únicas derivadas dos dados para os selects
+  const optsSegmento = useMemo(() => [...new Set(leads.map(l => l.segmento).filter(Boolean))].sort(), [leads])
+  const optsCidade   = useMemo(() => [...new Set(leads.map(l => l.cidade).filter(Boolean))].sort(), [leads])
+  const optsEstado   = useMemo(() => [...new Set(leads.map(l => l.estado).filter(Boolean))].sort(), [leads])
+  const optsOrigem   = useMemo(() => [...new Set(leads.map(l => l.origem_lead).filter(Boolean))].sort(), [leads])
+
+  const hasActiveFilters = search.trim() || filterSegmento || filterCidade || filterEstado || filterOrigem
+
+  const filtered = useMemo(() => {
+    return leads.filter(l => {
+      if (search.trim()) {
         const q = norm(search)
-        return norm(l.nome_empresa).includes(q) ||
+        const match = norm(l.nome_empresa).includes(q) ||
           norm(l.segmento).includes(q) ||
           norm(l.cidade).includes(q) ||
           norm(l.estado).includes(q)
-      })
-    : leads
+        if (!match) return false
+      }
+      if (filterSegmento && norm(l.segmento) !== norm(filterSegmento)) return false
+      if (filterCidade   && norm(l.cidade)   !== norm(filterCidade))   return false
+      if (filterEstado   && norm(l.estado)   !== norm(filterEstado))   return false
+      if (filterOrigem   && norm(l.origem_lead) !== norm(filterOrigem)) return false
+      return true
+    })
+  }, [leads, search, filterSegmento, filterCidade, filterEstado, filterOrigem])
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
@@ -296,16 +330,65 @@ export default function CRMLeadsPage() {
               </div>
             </div>
 
-            {/* Search bar */}
+            {/* Search bar + filtros */}
             {!showForm && (
-              <div className="mt-4 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                <input
-                  className="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
-                  placeholder="Buscar por empresa, segmento, cidade ou estado..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
+              <div className="mt-4 space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                  <input
+                    className="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
+                    placeholder="Buscar por empresa, segmento, cidade ou estado..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    value={filterSegmento}
+                    onChange={e => setFilterSegmento(e.target.value)}
+                    className="h-8 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
+                  >
+                    <option value="">Segmento</option>
+                    {optsSegmento.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+
+                  <select
+                    value={filterCidade}
+                    onChange={e => setFilterCidade(e.target.value)}
+                    className="h-8 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
+                  >
+                    <option value="">Cidade</option>
+                    {optsCidade.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+
+                  <select
+                    value={filterEstado}
+                    onChange={e => setFilterEstado(e.target.value)}
+                    className="h-8 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
+                  >
+                    <option value="">Estado</option>
+                    {optsEstado.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+
+                  <select
+                    value={filterOrigem}
+                    onChange={e => setFilterOrigem(e.target.value)}
+                    className="h-8 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
+                  >
+                    <option value="">Origem</option>
+                    {optsOrigem.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+
+                  {hasActiveFilters && (
+                    <button
+                      onClick={() => { setSearch(''); setFilterSegmento(''); setFilterCidade(''); setFilterEstado(''); setFilterOrigem('') }}
+                      className="h-8 px-3 text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-300 rounded-lg transition-colors bg-white dark:bg-gray-700"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
