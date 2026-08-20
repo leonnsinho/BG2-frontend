@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import toast from '@/lib/toast'
 import ConfirmModal from '../components/ui/ConfirmModal'
+import useDragToScroll from '../hooks/useDragToScroll'
 
 function DFCEntradasPage() {
   const { profile } = useAuth()
@@ -83,6 +84,9 @@ function DFCEntradasPage() {
   const tableWrapRef = useRef(null)
   const topBarRef = useRef(null)
   const [scrollWidth, setScrollWidth] = useState(0)
+
+  // Arrastar para rolar horizontalmente (mouse)
+  const dragProps = useDragToScroll()
   
   // Busca de empresa no formulário
   const [companySearch, setCompanySearch] = useState('')
@@ -1676,8 +1680,9 @@ function DFCEntradasPage() {
         </div>
         <div
           ref={tableWrapRef}
+          {...dragProps}
           onScroll={() => { if (topBarRef.current) topBarRef.current.scrollLeft = tableWrapRef.current.scrollLeft }}
-          className="overflow-x-auto"
+          className="overflow-x-auto cursor-grab"
         >
           <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700 dark:to-gray-700/80">

@@ -3036,66 +3036,92 @@ export default function CRMPage() {
     setActiveColumn(null)
     if (!over) return
 
-    // ── column reorder ───────────────────────────────────────────────────────
-    if (active.data.current?.type === 'column') {
-      const activeId = active.id.replace('col-', '')
-      const overId   = over.id.replace('col-', '')
-      const oldIdx = columns.findIndex(c => c.id === activeId)
-      const newIdx = columns.findIndex(c => c.id === overId)
-      if (oldIdx !== newIdx) {
-        const reordered = arrayMove(columns, oldIdx, newIdx)
-        setColumns(reordered)
-        await Promise.all(reordered.map((c, i) =>
-          supabase.from('crm_columns').update({ position: i }).eq('id', c.id)
-        ))
+    try {
+      // ── column reorder ─────────────────────────────────────────────────────
+      if (active.data.current?.type === 'column') {
+        const activeId = active.id.replace('col-', '')
+        const overId   = over.id.replace('col-', '')
+        const oldIdx = columns.findIndex(c => c.id === activeId)
+        const newIdx = columns.findIndex(c => c.id === overId)
+        if (oldIdx !== newIdx) {
+          const reordered = arrayMove(columns, oldIdx, newIdx)
+          setColumns(reordered)
+          const results = await Promise.all(reordered.map((c, i) =>
+            supabase.from('crm_columns').update({ position: i }).eq('id', c.id)
+          ))
+          if (results.some(r => r.error)) throw new Error('Falha ao reordenar colunas')
+        }
+        return
       }
-      return
-    }
 
-    // ── card drop ────────────────────────────────────────────────────────────
-    if (active.data.current?.type !== 'card') return
+      // ── card drop ──────────────────────────────────────────────────────────
+      if (active.data.current?.type !== 'card') return
 
-    const activeCardItem = Object.values(cards).flat().find(c => c.id === active.id)
-    if (!activeCardItem) return
+      const activeCardItem = Object.values(cards).flat().find(c => c.id === active.id)
+      if (!activeCardItem) return
 
-    let targetColId = over.data.current?.type === 'column'
-      ? over.data.current.columnId
-      : Object.keys(cards).find(cid => cards[cid].some(c => c.id === over.id))
+      let targetColId = over.data.current?.type === 'column'
+        ? over.data.current.columnId
+        : Object.keys(cards).find(cid => cards[cid].some(c => c.id === over.id))
 
-    if (!targetColId) targetColId = over.id
+      if (!targetColId) targetColId = over.id
 
-    const finalCards = { ...cards }
-    // Persist new order + column
-    const targetList = [...(finalCards[targetColId] || [])]
+      // Persiste as posições de todas as colunas e garante que o card movido
+      // sempre receba o novo column_id (mesmo se o onDragOver não o moveu no estado)
+      const movedId = active.id
+      const allUpdates = []
+      let movedUpdated = false
 
-    const updates = []
-    targetList.forEach((c, i) => {
-      if (c.id === active.id && c.column_id !== targetColId) {
-        updates.push(supabase.from('crm_cards').update({ column_id: targetColId, position: i, updated_at: new Date().toISOString() }).eq('id', c.id))
-      } else {
-        updates.push(supabase.from('crm_cards').update({ position: i }).eq('id', c.id))
-      }
-    })
-    await Promise.all(updates)
+      Object.entries(cards).forEach(([cid, list]) => {
+        ;(list || []).forEach((c, i) => {
+          if (c.id === movedId) {
+            if (!movedUpdated) {
+              allUpdates.push(
+                supabase.from('crm_cards')
+                  .update({ column_id: targetColId, position: i, updated_at: new Date().toISOString() })
+                  .eq('id', c.id)
+              )
+              movedUpdated = true
+            }
+          } else {
+            allUpdates.push(supabase.from('crm_cards').update({ position: i }).eq('id', c.id))
+          }
+        })
+      })
 
-    // Also reorder other columns that were touched during dragOver
-    const allColIds = Object.keys(finalCards)
-    for (const cid of allColIds) {
-      if (cid === targetColId) continue
-      const list = finalCards[cid] || []
-      await Promise.all(list.map((c, i) => supabase.from('crm_cards').update({ position: i }).eq('id', c.id)))
-    }
-
-    // Update the moved card's column_id in React state so UI reflects it immediately
-    setCards(prev => {
-      const updated = {}
-      for (const [cid, colCards] of Object.entries(prev)) {
-        updated[cid] = colCards.map(c =>
-          c.id === active.id ? { ...c, column_id: targetColId } : c
+      // Fallback: card não estava em nenhuma coluna do estado — atualiza mesmo assim
+      if (!movedUpdated) {
+        const idx = (cards[targetColId] || []).length
+        allUpdates.push(
+          supabase.from('crm_cards')
+            .update({ column_id: targetColId, position: idx, updated_at: new Date().toISOString() })
+            .eq('id', movedId)
         )
       }
-      return updated
-    })
+
+      const results = await Promise.all(allUpdates)
+      const failed = results.find(r => r.error)
+      if (failed) {
+        console.error('Erro ao salvar movimento do card:', failed.error)
+        throw new Error(failed.error?.message || 'Falha ao salvar movimento')
+      }
+
+      // Atualiza o column_id no estado para refletir imediatamente no UI
+      setCards(prev => {
+        const updated = {}
+        for (const [cid, colCards] of Object.entries(prev)) {
+          updated[cid] = colCards.map(c =>
+            c.id === movedId ? { ...c, column_id: targetColId } : c
+          )
+        }
+        return updated
+      })
+    } catch (e) {
+      console.error('Erro ao salvar drag & drop:', e)
+      toast.error('Não foi possível salvar o movimento. Tente novamente.')
+      // Reverte para o estado real do banco, sem recarregar a página
+      if (selectedBoard) openBoard(selectedBoard)
+    }
   }
 
   // ── Filtered view ─────────────────────────────────────────────────────────
