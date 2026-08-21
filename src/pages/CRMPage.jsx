@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import * as XLSX from 'xlsx'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
@@ -1345,7 +1345,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
     transition,
     opacity: isDragging ? 0.4 : 1,
   }
-  const cardIds = cards.map(c => c.id)
+  const cardIds = useMemo(() => cards.map(c => c.id), [cards])
   const totalValue = cards.reduce((s, c) => s + (parseFloat(c.valor_oportunidade) || 0), 0)
 
   return (
@@ -3161,7 +3161,7 @@ export default function CRMPage() {
     return list
   }, [cards, search, filterStatus, filterPeriod, filterTags, cardTagsMap])
 
-  const colIds = columns.map(c => `col-${c.id}`)
+  const colIds = useMemo(() => columns.map(c => `col-${c.id}`), [columns])
   const totalCards = Object.values(cards).flat().length
   const totalValue = Object.values(cards).flat().reduce((s, c) => s + (parseFloat(c.valor_oportunidade) || 0), 0)
 
