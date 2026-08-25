@@ -28,6 +28,24 @@ import { BarChart, Bar, LineChart, Line, PieChart as RechartPie, Pie, Cell, XAxi
 
 const COLORS = ['#EBA500', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1']
 
+// Supabase corta resultados em 1000 linhas por padrão (db.max_rows). Sem paginar,
+// consultas com mais de 1000 registros (comum em empresas com histórico longo)
+// perdem linhas silenciosamente e o saldo calculado fica errado.
+// Ver: 07 Erros e Lições/Saldo DFC errado - limite de 1000 linhas do Supabase (Cerebro)
+const SUPABASE_PAGE_SIZE = 1000
+async function fetchAllRows(buildQuery) {
+  let allRows = []
+  let from = 0
+  while (true) {
+    const { data, error } = await buildQuery().range(from, from + SUPABASE_PAGE_SIZE - 1)
+    if (error) throw error
+    allRows = allRows.concat(data || [])
+    if (!data || data.length < SUPABASE_PAGE_SIZE) break
+    from += SUPABASE_PAGE_SIZE
+  }
+  return allRows
+}
+
 export default function DFCDashboardPage() {
   const { profile } = useAuth()
   const [searchParams] = useSearchParams()
@@ -583,29 +601,27 @@ export default function DFCDashboardPage() {
       console.log('  - Company ID:', companyId)
 
       // ====== CALCULAR SALDO INICIAL (antes do período) ======
-      let saldoAnteriorQuery = supabase
-        .from('dfc_entradas')
-        .select('valor')
-        .lt('vencimento', inicio)
-        .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
+      // Paginado: empresas com mais de 1000 lançamentos anteriores ao período
+      // tinham o saldo inicial calculado errado (linhas além da 1000ª eram descartadas)
+      const entradasAnteriores = await fetchAllRows(() => {
+        let q = supabase
+          .from('dfc_entradas')
+          .select('valor')
+          .lt('vencimento', inicio)
+          .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
+        if (companyId) q = q.eq('company_id', companyId)
+        return q
+      })
 
-      if (companyId) {
-        saldoAnteriorQuery = saldoAnteriorQuery.eq('company_id', companyId)
-      }
-
-      const { data: entradasAnteriores } = await saldoAnteriorQuery
-      
-      let saidasAnteriorQuery = supabase
-        .from('dfc_saidas')
-        .select('valor')
-        .lt('vencimento', inicio)
-        .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
-
-      if (companyId) {
-        saidasAnteriorQuery = saidasAnteriorQuery.eq('company_id', companyId)
-      }
-
-      const { data: saidasAnteriores } = await saidasAnteriorQuery
+      const saidasAnteriores = await fetchAllRows(() => {
+        let q = supabase
+          .from('dfc_saidas')
+          .select('valor')
+          .lt('vencimento', inicio)
+          .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
+        if (companyId) q = q.eq('company_id', companyId)
+        return q
+      })
 
       const totalEntradasAnteriores = entradasAnteriores?.reduce((sum, e) => sum + (e.valor || 0), 0) || 0
       const totalSaidasAnteriores = saidasAnteriores?.reduce((sum, s) => sum + (s.valor || 0), 0) || 0
@@ -617,69 +633,57 @@ export default function DFCDashboardPage() {
         saldoInicial
       })
 
-      // Carregar entradas do período
-      let entradasQuery = supabase
-        .from('dfc_entradas')
-        .select('*')
-        .gte('vencimento', inicio)
-        .lte('vencimento', fim)
-        .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
-        .order('vencimento', { ascending: false })
+      // Carregar entradas do período (paginado - período pode ter mais de 1000 lançamentos)
+      const entradas = await fetchAllRows(() => {
+        let q = supabase
+          .from('dfc_entradas')
+          .select('*')
+          .gte('vencimento', inicio)
+          .lte('vencimento', fim)
+          .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
+          .order('vencimento', { ascending: false })
+        if (companyId) q = q.eq('company_id', companyId)
+        return q
+      })
 
-      if (companyId) {
-        entradasQuery = entradasQuery.eq('company_id', companyId)
-      }
+      console.log('✅ Entradas carregadas:', entradas?.length)
+      if (entradas && entradas.length > 0) {
+        console.log('📝 Primeira entrada:', entradas[0])
+        console.log('📝 Última entrada:', entradas[entradas.length - 1])
+        console.log('📅 Todas as datas de vencimento:', entradas.map(e => e.vencimento).slice(0, 10))
 
-      const { data: entradas, error: entradasError } = await entradasQuery
-
-      if (entradasError) {
-        console.error('❌ Erro ao carregar entradas:', entradasError)
-      } else {
-        console.log('✅ Entradas carregadas:', entradas?.length)
-        if (entradas && entradas.length > 0) {
-          console.log('📝 Primeira entrada:', entradas[0])
-          console.log('📝 Última entrada:', entradas[entradas.length - 1])
-          console.log('📅 Todas as datas de vencimento:', entradas.map(e => e.vencimento).slice(0, 10))
-          
-          // Verificar se há entradas fora do período
-          const foraDoPerido = entradas.filter(e => e.vencimento < inicio || e.vencimento > fim)
-          if (foraDoPerido.length > 0) {
-            console.warn('⚠️ ATENÇÃO: Encontradas', foraDoPerido.length, 'entradas FORA do período!')
-            console.log('Exemplos:', foraDoPerido.slice(0, 3))
-          }
+        // Verificar se há entradas fora do período
+        const foraDoPerido = entradas.filter(e => e.vencimento < inicio || e.vencimento > fim)
+        if (foraDoPerido.length > 0) {
+          console.warn('⚠️ ATENÇÃO: Encontradas', foraDoPerido.length, 'entradas FORA do período!')
+          console.log('Exemplos:', foraDoPerido.slice(0, 3))
         }
       }
 
-      // Carregar saídas do período
-      let saidasQuery = supabase
-        .from('dfc_saidas')
-        .select('*')
-        .gte('vencimento', inicio)
-        .lte('vencimento', fim)
-        .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
-        .order('vencimento', { ascending: false })
+      // Carregar saídas do período (paginado - período pode ter mais de 1000 lançamentos)
+      const saidas = await fetchAllRows(() => {
+        let q = supabase
+          .from('dfc_saidas')
+          .select('*')
+          .gte('vencimento', inicio)
+          .lte('vencimento', fim)
+          .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
+          .order('vencimento', { ascending: false })
+        if (companyId) q = q.eq('company_id', companyId)
+        return q
+      })
 
-      if (companyId) {
-        saidasQuery = saidasQuery.eq('company_id', companyId)
-      }
+      console.log('✅ Saídas carregadas:', saidas?.length)
+      if (saidas && saidas.length > 0) {
+        console.log('📝 Primeira saída:', saidas[0])
+        console.log('📝 Última saída:', saidas[saidas.length - 1])
+        console.log('📅 Todas as datas de vencimento:', saidas.map(s => s.vencimento).slice(0, 10))
 
-      const { data: saidas, error: saidasError } = await saidasQuery
-
-      if (saidasError) {
-        console.error('❌ Erro ao carregar saídas:', saidasError)
-      } else {
-        console.log('✅ Saídas carregadas:', saidas?.length)
-        if (saidas && saidas.length > 0) {
-          console.log('📝 Primeira saída:', saidas[0])
-          console.log('📝 Última saída:', saidas[saidas.length - 1])
-          console.log('📅 Todas as datas de vencimento:', saidas.map(s => s.vencimento).slice(0, 10))
-          
-          // Verificar se há saídas fora do período
-          const foraDoPerido = saidas.filter(s => s.vencimento < inicio || s.vencimento > fim)
-          if (foraDoPerido.length > 0) {
-            console.warn('⚠️ ATENÇÃO: Encontradas', foraDoPerido.length, 'saídas FORA do período!')
-            console.log('Exemplos:', foraDoPerido.slice(0, 3))
-          }
+        // Verificar se há saídas fora do período
+        const foraDoPerido = saidas.filter(s => s.vencimento < inicio || s.vencimento > fim)
+        if (foraDoPerido.length > 0) {
+          console.warn('⚠️ ATENÇÃO: Encontradas', foraDoPerido.length, 'saídas FORA do período!')
+          console.log('Exemplos:', foraDoPerido.slice(0, 3))
         }
       }
 
