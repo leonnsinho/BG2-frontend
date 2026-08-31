@@ -804,7 +804,8 @@ function DFCEntradasPage() {
         valor: entrada.valor,
         moeda: entrada.moeda || 'BRL',
         mes: entrada.mes.substring(0, 7), // Converter YYYY-MM-DD para YYYY-MM
-        vencimento: entrada.vencimento
+        vencimento: entrada.vencimento,
+        dinheiro_especie: !!entrada.dinheiro_especie
       })
       // Buscar documentos da entrada
       const docs = await fetchDocumentos(entrada.id)
@@ -828,7 +829,8 @@ function DFCEntradasPage() {
         valor: '',
         moeda: 'BRL',
         mes: '',
-        vencimento: ''
+        vencimento: '',
+        dinheiro_especie: false
       })
       setDocumentos([])
       setUploadedFiles([])
@@ -855,7 +857,8 @@ function DFCEntradasPage() {
       valor: '',
       moeda: 'BRL',
       mes: '',
-      vencimento: ''
+      vencimento: '',
+      dinheiro_especie: false
     })
   }
 

@@ -2169,9 +2169,14 @@ export default function DFCDashboardPage() {
                   Mês atual: {formatCurrency(stats.entradasMes)}
                 </p>
                 {stats.entradasEspecie > 0 && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
-                    💵 Espécie: {formatCurrency(stats.entradasEspecie)}
-                  </p>
+                  <>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">
+                      💳 Digital: {formatCurrency(stats.totalEntradas - stats.entradasEspecie)}
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                      💵 Espécie: {formatCurrency(stats.entradasEspecie)}
+                    </p>
+                  </>
                 )}
               </div>
               <div className="p-4 bg-green-100 rounded-xl">
@@ -2199,9 +2204,14 @@ export default function DFCDashboardPage() {
                   Mês atual: {formatCurrency(stats.saidasMes)}
                 </p>
                 {stats.saidasEspecie > 0 && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
-                    💵 Espécie: {formatCurrency(stats.saidasEspecie)}
-                  </p>
+                  <>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">
+                      💳 Digital: {formatCurrency(stats.totalSaidas - stats.saidasEspecie)}
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                      💵 Espécie: {formatCurrency(stats.saidasEspecie)}
+                    </p>
+                  </>
                 )}
               </div>
               <div className="p-4 bg-red-100 rounded-xl">
@@ -2425,6 +2435,12 @@ export default function DFCDashboardPage() {
                     <ArrowUpCircle className="h-4 w-4 text-green-600" />
                   </div>
                   <h4 className="text-xl sm:text-2xl font-bold text-green-700">{formatCurrency(stats.totalEntradas)}</h4>
+                  {stats.entradasEspecie > 0 && (
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">💳 Digital: {formatCurrency(stats.totalEntradas - stats.entradasEspecie)}</span>
+                      <span className="text-[11px] text-amber-600 dark:text-amber-400">💵 Espécie: {formatCurrency(stats.entradasEspecie)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-gray-300 dark:border-gray-600"></div>
@@ -2436,6 +2452,12 @@ export default function DFCDashboardPage() {
                     <ArrowDownCircle className="h-4 w-4 text-red-600" />
                   </div>
                   <h4 className="text-xl sm:text-2xl font-bold text-red-700">{formatCurrency(stats.totalSaidas)}</h4>
+                  {stats.saidasEspecie > 0 && (
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">💳 Digital: {formatCurrency(stats.totalSaidas - stats.saidasEspecie)}</span>
+                      <span className="text-[11px] text-amber-600 dark:text-amber-400">💵 Espécie: {formatCurrency(stats.saidasEspecie)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-gray-300 dark:border-gray-600"></div>
@@ -2446,6 +2468,16 @@ export default function DFCDashboardPage() {
                   <h4 className={`text-lg sm:text-xl font-bold ${stats.saldoTotal >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                     {formatCurrency(stats.saldoTotal)}
                   </h4>
+                  {(stats.entradasEspecie > 0 || stats.saidasEspecie > 0) && (
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                        💳 Digital: {formatCurrency((stats.totalEntradas - stats.entradasEspecie) - (stats.totalSaidas - stats.saidasEspecie))}
+                      </span>
+                      <span className="text-[11px] text-amber-600 dark:text-amber-400">
+                        💵 Espécie: {formatCurrency(stats.entradasEspecie - stats.saidasEspecie)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

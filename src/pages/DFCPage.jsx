@@ -661,7 +661,8 @@ function DFCPage() {
         descricao: saida.descricao,
         valor: saida.valor,
         mes: saida.mes.substring(0, 7), // Converter YYYY-MM-DD para YYYY-MM
-        vencimento: saida.vencimento
+        vencimento: saida.vencimento,
+        dinheiro_especie: !!saida.dinheiro_especie
       })
       // Buscar documentos da saída
       const docs = await fetchDocumentos(saida.id)
@@ -684,7 +685,8 @@ function DFCPage() {
         descricao: '',
         valor: '',
         mes: '',
-        vencimento: ''
+        vencimento: '',
+        dinheiro_especie: false
       })
       setDocumentos([])
       setUploadedFiles([])
@@ -710,7 +712,8 @@ function DFCPage() {
       descricao: '',
       valor: '',
       mes: '',
-      vencimento: ''
+      vencimento: '',
+      dinheiro_especie: false
     })
   }
 
