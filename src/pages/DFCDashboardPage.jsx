@@ -2476,13 +2476,15 @@ export default function DFCDashboardPage() {
               <p className={`text-xs mb-3 ${stats.saldoFinal >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 Acumulado total
               </p>
-              <div className={`text-xs px-3 py-2 rounded-lg ${stats.saldoFinal >= 0 ? 'bg-green-200/50 dark:bg-green-800/40 text-green-800 dark:text-green-300' : 'bg-red-200/50 dark:bg-red-800/40 text-red-800 dark:text-red-300'}`}>
-                <strong>Mês atual:</strong> {formatCurrency(stats.saldoMes)}
-              </div>
               {(stats.entradasEspecie > 0 || stats.saidasEspecie > 0) && (
-                <div className="text-xs px-3 py-2 rounded-lg mt-2 bg-amber-100/60 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
-                  <strong>💵 Total em Espécie:</strong> {formatCurrency(stats.entradasEspecie - stats.saidasEspecie)}
-                </div>
+                <>
+                  <div className="text-xs px-3 py-2 rounded-lg mt-2 bg-blue-100/60 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                    <strong>💳 Dinheiro Digital:</strong> {formatCurrency(stats.saldoFinal - (stats.entradasEspecie - stats.saidasEspecie))}
+                  </div>
+                  <div className="text-xs px-3 py-2 rounded-lg mt-2 bg-amber-100/60 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                    <strong>💵 Dinheiro em Espécie:</strong> {formatCurrency(stats.entradasEspecie - stats.saidasEspecie)}
+                  </div>
+                </>
               )}
             </div>
           </div>
