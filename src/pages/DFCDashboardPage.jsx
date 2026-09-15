@@ -78,7 +78,9 @@ export default function DFCDashboardPage() {
     saidasMes: 0,
     saldoMes: 0,
     entradasEspecie: 0,
-    saidasEspecie: 0
+    saidasEspecie: 0,
+    saldoFinalEspecie: 0,
+    saldoFinalDigital: 0
   })
   const [monthlyData, setMonthlyData] = useState([])
   const [categoryData, setCategoryData] = useState([])
@@ -606,7 +608,7 @@ export default function DFCDashboardPage() {
       const entradasAnteriores = await fetchAllRows(() => {
         let q = supabase
           .from('dfc_entradas')
-          .select('valor')
+          .select('valor, dinheiro_especie')
           .lt('vencimento', inicio)
           .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
         if (companyId) q = q.eq('company_id', companyId)
@@ -616,7 +618,7 @@ export default function DFCDashboardPage() {
       const saidasAnteriores = await fetchAllRows(() => {
         let q = supabase
           .from('dfc_saidas')
-          .select('valor')
+          .select('valor, dinheiro_especie')
           .lt('vencimento', inicio)
           .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
         if (companyId) q = q.eq('company_id', companyId)
@@ -626,6 +628,14 @@ export default function DFCDashboardPage() {
       const totalEntradasAnteriores = entradasAnteriores?.reduce((sum, e) => sum + (e.valor || 0), 0) || 0
       const totalSaidasAnteriores = saidasAnteriores?.reduce((sum, s) => sum + (s.valor || 0), 0) || 0
       const saldoInicial = totalEntradasAnteriores - totalSaidasAnteriores
+
+      // Saldo inicial acumulado, separado por espécie x digital — precisa ser calculado
+      // sobre TODO o histórico anterior ao período (não só sobre o período selecionado),
+      // senão a divisão espécie/digital do Saldo Final muda conforme o filtro de data,
+      // mesmo com o Saldo Final total permanecendo igual.
+      const totalEntradasAnterioresEspecie = entradasAnteriores?.filter(e => e.dinheiro_especie).reduce((sum, e) => sum + (e.valor || 0), 0) || 0
+      const totalSaidasAnterioresEspecie = saidasAnteriores?.filter(s => s.dinheiro_especie).reduce((sum, s) => sum + (s.valor || 0), 0) || 0
+      const saldoInicialEspecie = totalEntradasAnterioresEspecie - totalSaidasAnterioresEspecie
 
       console.log('💰 Saldo Inicial (antes do período):', {
         entradasAnteriores: totalEntradasAnteriores,
@@ -754,6 +764,12 @@ export default function DFCDashboardPage() {
       const entradasEspecie = entradas?.filter(e => e.dinheiro_especie).reduce((sum, e) => sum + (e.valor || 0), 0) || 0
       const saidasEspecie = saidas?.filter(s => s.dinheiro_especie).reduce((sum, s) => sum + (s.valor || 0), 0) || 0
 
+      // Saldo Final separado por espécie x digital, acumulado desde o início do histórico
+      // (saldoInicialEspecie já cobre tudo antes do período) — assim o valor não muda
+      // conforme o período selecionado, igual ao Saldo Final total já não muda.
+      const saldoFinalEspecie = saldoInicialEspecie + (entradasEspecie - saidasEspecie)
+      const saldoFinalDigital = saldoFinal - saldoFinalEspecie
+
       setStats({
         totalEntradas,
         totalSaidas,
@@ -764,7 +780,9 @@ export default function DFCDashboardPage() {
         saidasMes,
         saldoMes: entradasMes - saidasMes,
         entradasEspecie,
-        saidasEspecie
+        saidasEspecie,
+        saldoFinalEspecie,
+        saldoFinalDigital
       })
 
       // Dados mensais para gráfico (últimos 6 meses)
@@ -2476,13 +2494,13 @@ export default function DFCDashboardPage() {
               <p className={`text-xs mb-3 ${stats.saldoFinal >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 Acumulado total
               </p>
-              {(stats.entradasEspecie > 0 || stats.saidasEspecie > 0) && (
+              {stats.saldoFinalEspecie !== 0 && (
                 <>
                   <div className="text-xs px-3 py-2 rounded-lg mt-2 bg-blue-100/60 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                    <strong>💳 Dinheiro Digital:</strong> {formatCurrency(stats.saldoFinal - (stats.entradasEspecie - stats.saidasEspecie))}
+                    <strong>💳 Dinheiro Digital:</strong> {formatCurrency(stats.saldoFinalDigital)}
                   </div>
                   <div className="text-xs px-3 py-2 rounded-lg mt-2 bg-amber-100/60 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
-                    <strong>💵 Dinheiro em Espécie:</strong> {formatCurrency(stats.entradasEspecie - stats.saidasEspecie)}
+                    <strong>💵 Dinheiro em Espécie:</strong> {formatCurrency(stats.saldoFinalEspecie)}
                   </div>
                 </>
               )}
