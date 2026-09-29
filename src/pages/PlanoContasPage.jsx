@@ -655,34 +655,11 @@ function PlanoContasPage() {
 
   const confirmDelete = async () => {
     try {
-      // Primeiro, deletar todas as entradas e saídas relacionadas
-      const { error: entradasError } = await supabase
-        .from('dfc_entradas')
-        .delete()
-        .eq('item_id', deletingItem.id)
-
-      if (entradasError) throw entradasError
-
-      const { error: saidasError } = await supabase
-        .from('dfc_saidas')
-        .delete()
-        .eq('item_id', deletingItem.id)
-
-      if (saidasError) throw saidasError
-
-      // Depois, deletar as associações item-empresa
-      const { error: associacoesError } = await supabase
-        .from('dfc_itens_empresas')
-        .delete()
-        .eq('item_id', deletingItem.id)
-
-      if (associacoesError) throw associacoesError
-
-      // Por fim, deletar o item
-      const { error } = await supabase
-        .from('dfc_itens')
-        .delete()
-        .eq('id', deletingItem.id)
+      // Exclusão feita numa função do banco (delete_dfc_item) que verifica a
+      // permissão ANTES de apagar qualquer coisa, evitando a corrida em que
+      // apagar a associação item-empresa antes do item fazia a policy de RLS
+      // bloquear a exclusão do item silenciosamente (ele ficava "global").
+      const { error } = await supabase.rpc('delete_dfc_item', { p_item_id: deletingItem.id })
 
       if (error) throw error
       toast.success('Item excluído com sucesso!')
