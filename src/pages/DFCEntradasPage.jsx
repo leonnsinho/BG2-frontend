@@ -68,7 +68,7 @@ function DFCEntradasPage() {
   // Filtros - Inicializar companyFilter com valor da URL se existir
   const initialCompanyFilter = searchParams.get('company') || searchParams.get('companyId') || 'all'
   const [searchTerm, setSearchTerm] = useState('')
-  const [especieFilter, setEspecieFilter] = useState(false)
+  const [tipoPagamentoFilter, setTipoPagamentoFilter] = useState('todos') // 'todos' | 'especie' | 'digital'
   const [companyFilter, setCompanyFilter] = useState(initialCompanyFilter)
   const [categoriaFilter, setCategoriaFilter] = useState('all')
   const [mesFilter, setMesFilter] = useState('all')
@@ -972,6 +972,7 @@ function DFCEntradasPage() {
           numero_parcelas: numeroParcelas,
           parcela_numero: null, // Pai não tem número de parcela
           lancamento_pai_id: null, // Pai não tem pai
+          dinheiro_especie: !!formData.dinheiro_especie,
           created_by: profile.id
         }
 
@@ -1015,6 +1016,7 @@ function DFCEntradasPage() {
             numero_parcelas: 1,
             parcela_numero: i + 1,
             lancamento_pai_id: paiCriado.id, // Vincula ao pai
+            dinheiro_especie: !!formData.dinheiro_especie,
             created_by: profile.id
           })
         }
@@ -1042,6 +1044,7 @@ function DFCEntradasPage() {
               moeda: formData.moeda,
               mes: formData.mes + '-01',
               vencimento: formData.vencimento,
+              dinheiro_especie: !!formData.dinheiro_especie,
             }
           }
           if (e.lancamento_pai_id === editingId) {
@@ -1309,9 +1312,12 @@ function DFCEntradasPage() {
         matchPeriodo = dataVencimento >= dataInicioPeriodo && dataVencimento <= dataFimPeriodo
       }
       
-      const matchEspecie = !especieFilter || !!entrada.dinheiro_especie
+      const matchTipoPagamento =
+        tipoPagamentoFilter === 'especie' ? !!entrada.dinheiro_especie :
+        tipoPagamentoFilter === 'digital' ? !entrada.dinheiro_especie :
+        true
 
-      return matchSearch && matchMes && matchPeriodo && matchEspecie
+      return matchSearch && matchMes && matchPeriodo && matchTipoPagamento
     }).sort((a, b) => {
       if (sortCol === 'vencimento') {
         const da = a.vencimento || ''
@@ -1325,7 +1331,7 @@ function DFCEntradasPage() {
       }
       return 0
     })
-  }, [entradas, searchTerm, mesFilter, dataInicio, dataFim, sortCol, sortDir, especieFilter])
+  }, [entradas, searchTerm, mesFilter, dataInicio, dataFim, sortCol, sortDir, tipoPagamentoFilter])
 
   // Calcular totais
   const totais = useMemo(() => {
@@ -1509,18 +1515,41 @@ function DFCEntradasPage() {
               />
             </div>
 
-            <button
-              type="button"
-              onClick={() => setEspecieFilter(v => !v)}
-              className={`flex items-center justify-center gap-2 h-10 px-4 rounded-2xl border text-sm font-medium transition-all duration-200 ${
-                especieFilter
-                  ? 'bg-amber-100 border-amber-400 text-amber-800 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-300'
-                  : 'bg-white border-gray-300 text-gray-600 hover:border-amber-300 hover:text-amber-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300'
-              }`}
-            >
-              <span>💵</span>
-              Dinheiro em Espécie
-            </button>
+            <div className="flex items-center h-10 rounded-2xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-1 gap-1">
+              <button
+                type="button"
+                onClick={() => setTipoPagamentoFilter('todos')}
+                className={`flex-1 h-full px-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all duration-200 ${
+                  tipoPagamentoFilter === 'todos'
+                    ? 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-white'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                Todos
+              </button>
+              <button
+                type="button"
+                onClick={() => setTipoPagamentoFilter(v => v === 'especie' ? 'todos' : 'especie')}
+                className={`flex-1 h-full px-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all duration-200 ${
+                  tipoPagamentoFilter === 'especie'
+                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                    : 'text-gray-500 hover:text-amber-700 dark:text-gray-400 dark:hover:text-amber-300'
+                }`}
+              >
+                💵 Espécie
+              </button>
+              <button
+                type="button"
+                onClick={() => setTipoPagamentoFilter(v => v === 'digital' ? 'todos' : 'digital')}
+                className={`flex-1 h-full px-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all duration-200 ${
+                  tipoPagamentoFilter === 'digital'
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+                    : 'text-gray-500 hover:text-blue-700 dark:text-gray-400 dark:hover:text-blue-300'
+                }`}
+              >
+                💳 Digital
+              </button>
+            </div>
 
             {/* Filtro de Empresa - Apenas para Super Admin */}
             {isSuperAdmin() && (
