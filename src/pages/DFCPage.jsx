@@ -678,8 +678,13 @@ function DFCPage() {
     } else {
       setEditingId(null)
       const companyAdminId = getCompanyAdminCompany()
+      // Super admin dentro do portal de uma empresa (ou com filtro de empresa ativo):
+      // pré-selecionar essa empresa em vez de pedir de novo
+      const filteredCompanyId = companyFilter !== 'all' && companies.some(c => c.id === companyFilter)
+        ? companyFilter
+        : null
       setFormData({
-        company_id: companyAdminId || (companies.length === 1 ? companies[0].id : ''),
+        company_id: companyAdminId || filteredCompanyId || (companies.length === 1 ? companies[0].id : ''),
         categoria: '',
         item_id: '',
         descricao: '',
@@ -1262,8 +1267,9 @@ function DFCPage() {
         itemNome.toLowerCase().includes(searchTerm.toLowerCase())
       
       // Filtro por mês de referência
-      const matchMes = mesFilter === 'all' || mesFilter === '' || 
-        saida.mes.substring(0, 7) === mesFilter
+      // Filtro por mês do vencimento (o mesmo mês exibido na tabela)
+      const matchMes = mesFilter === 'all' || mesFilter === '' ||
+        (saida.vencimento || '').substring(0, 7) === mesFilter
       
       // Filtro por período personalizado (usando data de vencimento)
       let matchPeriodo = true
