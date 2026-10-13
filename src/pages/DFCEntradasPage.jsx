@@ -33,6 +33,7 @@ import {
 import toast from '@/lib/toast'
 import ConfirmModal from '../components/ui/ConfirmModal'
 import useDragToScroll from '../hooks/useDragToScroll'
+import { baixarAnexosZip } from '../utils/baixarAnexosZip'
 
 function DFCEntradasPage() {
   const { profile } = useAuth()
@@ -69,6 +70,7 @@ function DFCEntradasPage() {
   const initialCompanyFilter = searchParams.get('company') || searchParams.get('companyId') || 'all'
   const [searchTerm, setSearchTerm] = useState('')
   const [tipoPagamentoFilter, setTipoPagamentoFilter] = useState('todos') // 'todos' | 'especie' | 'digital'
+  const [baixandoAnexos, setBaixandoAnexos] = useState(false)
   const [companyFilter, setCompanyFilter] = useState(initialCompanyFilter)
   const [categoriaFilter, setCategoriaFilter] = useState('all')
   const [mesFilter, setMesFilter] = useState('all')
@@ -1338,6 +1340,59 @@ function DFCEntradasPage() {
     })
   }, [entradas, searchTerm, mesFilter, dataInicio, dataFim, sortCol, sortDir, tipoPagamentoFilter])
 
+  // Lançamentos cujos anexos entram no download em lote: os que estão na lista filtrada
+  // + o lançamento "pai" das parcelas (os anexos de um parcelado ficam no pai, que o filtro de data esconde)
+  const lancamentosParaAnexos = useMemo(() => {
+    const porId = new Map(entradas.map(e => [e.id, e]))
+    const ids = new Set()
+    filteredEntradas.forEach(e => {
+      ids.add(e.id)
+      if (e.lancamento_pai_id) ids.add(e.lancamento_pai_id)
+    })
+    return [...ids].map(id => porId.get(id)).filter(Boolean)
+  }, [entradas, filteredEntradas])
+
+  const totalAnexosFiltrados = useMemo(
+    () => lancamentosParaAnexos.reduce((s, e) => s + (e.dfc_entradas_documentos?.[0]?.count || 0), 0),
+    [lancamentosParaAnexos]
+  )
+
+  const handleBaixarAnexos = async () => {
+    if (baixandoAnexos || totalAnexosFiltrados === 0) return
+    setBaixandoAnexos(true)
+    toast.loading('Preparando anexos...', { id: 'baixar-anexos' })
+    try {
+      const periodo = dataInicio && dataFim ? `_${dataInicio}_a_${dataFim}` : ''
+      const resultado = await baixarAnexosZip({
+        supabase,
+        lancamentos: lancamentosParaAnexos
+          .filter(e => (e.dfc_entradas_documentos?.[0]?.count || 0) > 0)
+          .map(e => ({ id: e.id, vencimento: e.vencimento, descricao: e.descricao })),
+        tabelaDocumentos: 'dfc_entradas_documentos',
+        colunaLancamento: 'entrada_id',
+        nomeZip: `anexos-entradas${periodo}.zip`,
+        onProgress: (feitos, total) =>
+          toast.loading(`Baixando anexos... ${feitos}/${total}`, { id: 'baixar-anexos' })
+      })
+
+      if (resultado.vazio) {
+        toast.error('Nenhum anexo encontrado nos lançamentos filtrados.', { id: 'baixar-anexos' })
+      } else if (resultado.grande) {
+        const mb = (resultado.totalBytes / 1024 / 1024).toFixed(0)
+        toast.error(`Os anexos somam ${mb} MB, acima do limite de 250 MB. Reduza o período e tente novamente.`, { id: 'baixar-anexos' })
+      } else if (resultado.falhas > 0) {
+        toast.error(`${resultado.baixados} anexos baixados, mas ${resultado.falhas} não puderam ser baixados.`, { id: 'baixar-anexos' })
+      } else {
+        toast.success(`${resultado.baixados} anexos baixados!`, { id: 'baixar-anexos' })
+      }
+    } catch (error) {
+      console.error('Erro ao baixar anexos:', error)
+      toast.error('Erro ao baixar os anexos. Tente novamente.', { id: 'baixar-anexos' })
+    } finally {
+      setBaixandoAnexos(false)
+    }
+  }
+
   // Calcular totais
   const totais = useMemo(() => {
     const total = filteredEntradas.reduce((sum, e) => sum + parseFloat(e.valor), 0)
@@ -1682,6 +1737,15 @@ function DFCEntradasPage() {
                       Limpar
                     </button>
                   )}
+                  <button
+                    onClick={handleBaixarAnexos}
+                    disabled={baixandoAnexos || totalAnexosFiltrados === 0}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    title={totalAnexosFiltrados === 0 ? 'Não há anexos nos lançamentos filtrados' : 'Baixar todos os anexos dos lançamentos filtrados (.zip)'}
+                  >
+                    <Paperclip className="w-4 h-4" />
+                    {baixandoAnexos ? 'Baixando...' : `Baixar anexos (${totalAnexosFiltrados})`}
+                  </button>
                 </div>
                 {dataInicio && dataFim && (() => {
                   const [yearI, monthI, dayI] = dataInicio.split('-')

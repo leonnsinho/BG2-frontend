@@ -17,6 +17,7 @@ import {
   PieChart,
   BarChart3,
   ChevronRight,
+  ChevronDown,
   Filter,
   Download,
   History,
@@ -45,6 +46,55 @@ async function fetchAllRows(buildQuery) {
   }
   return allRows
 }
+
+// Busca o logo da empresa na hora da exportação (não depende dos avatars carregados na tela,
+// que só existem para super admin e expiram em 1h) e embute como data URL para o PDF
+// não depender de rede/expiração de link na hora de imprimir.
+async function carregarLogoEmpresa(companyId) {
+  try {
+    const { data: empresa } = await supabase
+      .from('companies')
+      .select('logo_url')
+      .eq('id', companyId)
+      .maybeSingle()
+    const logoPath = empresa?.logo_url
+    if (!logoPath) return null
+
+    let url = logoPath
+    if (!/^https?:\/\//i.test(logoPath)) {
+      const { data, error } = await supabase.storage
+        .from('company-avatars')
+        .createSignedUrl(logoPath, 300)
+      if (error || !data?.signedUrl) return null
+      url = data.signedUrl
+    }
+
+    try {
+      const resp = await fetch(url)
+      if (!resp.ok) return url
+      const blob = await resp.blob()
+      const dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : null)
+        reader.onerror = () => resolve(null)
+        reader.readAsDataURL(blob)
+      })
+      return dataUrl || url
+    } catch {
+      return url
+    }
+  } catch (error) {
+    console.warn('Não foi possível carregar o logo da empresa para o relatório:', error)
+    return null
+  }
+}
+
+const escapeHtml = (v) => String(v ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
 
 export default function DFCDashboardPage() {
   const { profile } = useAuth()
@@ -90,6 +140,7 @@ export default function DFCDashboardPage() {
   const [categoriasMap, setCategoriasMap] = useState({})
   const [showHistoricoModal, setShowHistoricoModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [exportYear, setExportYear] = useState(new Date().getFullYear())
   const [exportFormat, setExportFormat] = useState('excel')
@@ -611,6 +662,7 @@ export default function DFCDashboardPage() {
           .select('valor, dinheiro_especie')
           .lt('vencimento', inicio)
           .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
+          .order('id', { ascending: true }) // ordem estável para a paginação não repetir/perder linhas
         if (companyId) q = q.eq('company_id', companyId)
         return q
       })
@@ -621,6 +673,7 @@ export default function DFCDashboardPage() {
           .select('valor, dinheiro_especie')
           .lt('vencimento', inicio)
           .or('is_parcelado.is.false,lancamento_pai_id.not.is.null') // Lançamentos simples OU parcelas filhas
+          .order('id', { ascending: true }) // ordem estável para a paginação não repetir/perder linhas
         if (companyId) q = q.eq('company_id', companyId)
         return q
       })
@@ -1827,6 +1880,154 @@ export default function DFCDashboardPage() {
     }
   }
 
+  // Relatório de caixa do período selecionado: entradas e saídas juntas, em ordem de data
+  const exportarDFCPeriodo = async () => {
+    const currentCompany = getCurrentUserCompany()
+    const companyId = isSuperAdmin()
+      ? (selectedCompanyId === 'all' ? null : selectedCompanyId)
+      : currentCompany?.id
+
+    if (!companyId) {
+      toast.error('Selecione uma empresa para exportar o DFC do período.')
+      return
+    }
+
+    const companyName = isSuperAdmin()
+      ? (companies.find(c => c.id === companyId)?.name || 'Empresa')
+      : (currentCompany?.name || 'Empresa')
+    const { inicio, fim } = getPeriodoDatas()
+
+    // Abre a janela antes das consultas para o navegador não bloquear o pop-up
+    const win = window.open('', '_blank')
+    if (!win) {
+      toast.error('O navegador bloqueou a nova janela. Permita pop-ups para gerar o PDF.')
+      return
+    }
+    win.document.write('<p style="font-family:Arial,sans-serif;padding:24px;color:#555">Gerando relatório...</p>')
+    toast.loading('Preparando DFC do período...', { id: 'export-periodo' })
+
+    try {
+      const filtroParcelas = 'is_parcelado.is.false,lancamento_pai_id.not.is.null'
+
+      const buscarPeriodo = (tabela) => fetchAllRows(() =>
+        supabase
+          .from(tabela)
+          .select('id, descricao, valor, vencimento, created_at, categoria, item_id')
+          .eq('company_id', companyId)
+          .gte('vencimento', inicio)
+          .lte('vencimento', fim)
+          .or(filtroParcelas)
+          .order('vencimento', { ascending: true })
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })
+      )
+
+      const somarAnteriores = async (tabela) => {
+        const rows = await fetchAllRows(() =>
+          supabase
+            .from(tabela)
+            .select('valor')
+            .eq('company_id', companyId)
+            .lt('vencimento', inicio)
+            .or(filtroParcelas)
+            .order('id', { ascending: true })
+        )
+        return rows.reduce((s, r) => s + (Number(r.valor) || 0), 0)
+      }
+
+      const [entradas, saidas, antEntradas, antSaidas, categorias, itens, logoUrl] = await Promise.all([
+        buscarPeriodo('dfc_entradas'),
+        buscarPeriodo('dfc_saidas'),
+        somarAnteriores('dfc_entradas'),
+        somarAnteriores('dfc_saidas'),
+        fetchAllRows(() => supabase.from('dfc_categorias').select('id, nome').order('id', { ascending: true })),
+        fetchAllRows(() => supabase.from('dfc_itens').select('id, nome').order('id', { ascending: true })),
+        carregarLogoEmpresa(companyId)
+      ])
+
+      const categoriaMap = Object.fromEntries(categorias.map(c => [c.id, c.nome]))
+      const itemMap = Object.fromEntries(itens.map(i => [i.id, i.nome]))
+
+      const linhas = [
+        ...entradas.map(r => ({ ...r, tipo: 'entrada' })),
+        ...saidas.map(r => ({ ...r, tipo: 'saida' }))
+      ].sort((a, b) =>
+        (a.vencimento || '').localeCompare(b.vencimento || '') ||
+        (a.created_at || '').localeCompare(b.created_at || '')
+      )
+
+      const totalEntradas = entradas.reduce((s, r) => s + (Number(r.valor) || 0), 0)
+      const totalSaidas = saidas.reduce((s, r) => s + (Number(r.valor) || 0), 0)
+      const saldoInicialPeriodo = antEntradas - antSaidas
+      const saldoFinalPeriodo = saldoInicialPeriodo + totalEntradas - totalSaidas
+
+      const fmtN = (v) => (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+      const corpo = linhas.length === 0
+        ? '<tr><td colspan="5" style="text-align:center;padding:18px;color:#777">Nenhum lançamento no período.</td></tr>'
+        : linhas.map(l => `<tr>
+  <td class="nw">${escapeHtml(formatDateBR(l.vencimento))}</td>
+  <td>${escapeHtml(l.descricao)}</td>
+  <td>${escapeHtml(itemMap[l.item_id] || '')}<div class="sub">${escapeHtml(categoriaMap[l.categoria] || '')}</div></td>
+  <td class="num">${l.tipo === 'entrada' ? fmtN(l.valor) : ''}</td>
+  <td class="num">${l.tipo === 'saida' ? fmtN(l.valor) : ''}</td>
+</tr>`).join('')
+
+      const geradoEm = new Date().toLocaleString('pt-BR')
+
+      const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>DFC ${escapeHtml(formatDateBR(inicio))} a ${escapeHtml(formatDateBR(fim))} - ${escapeHtml(companyName)}</title>
+<style>
+  @page { size: A4 portrait; margin: 12mm; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #222; margin: 0; font-size: 9pt; }
+  .head { text-align: center; margin-bottom: 16px; }
+  .head img { display: block; margin: 0 auto 10px; max-height: 90px; max-width: 220px; object-fit: contain; }
+  .head .empresa { font-size: 10pt; color: #555; margin-bottom: 4px; }
+  .head h1 { font-size: 15pt; margin: 0; color: #444; }
+  table { border-collapse: collapse; width: 100%; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid; }
+  th { text-align: left; padding: 6px; border-bottom: 2px solid #222; font-size: 9.5pt; }
+  td { padding: 4px 6px; border-bottom: 1px solid #ddd; vertical-align: middle; }
+  th.num, td.num { text-align: right; white-space: nowrap; }
+  .nw { white-space: nowrap; }
+  .sub { font-size: 7.5pt; color: #888; }
+  .tot td { font-weight: bold; }
+  .gerado { margin-top: 14px; font-size: 7.5pt; color: #999; text-align: right; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body>
+<div class="head">
+  ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="">` : ''}
+  <div class="empresa">${escapeHtml(companyName)}</div>
+  <h1>DFC de ${escapeHtml(formatDateBR(inicio))} até ${escapeHtml(formatDateBR(fim))}</h1>
+</div>
+<table>
+  <thead><tr>
+    <th style="width:64px">Data</th><th>Histórico</th><th style="width:150px">Categoria</th>
+    <th class="num" style="width:78px">Entrada</th><th class="num" style="width:78px">Saída</th>
+  </tr></thead>
+  <tbody>
+    ${corpo}
+    <tr class="tot"><td colspan="3">Totais</td><td class="num">${fmtN(totalEntradas)}</td><td class="num">${fmtN(totalSaidas)}</td></tr>
+    <tr class="tot"><td colspan="4">Saldo inicial</td><td class="num">${fmtN(saldoInicialPeriodo)}</td></tr>
+    <tr class="tot"><td colspan="4">Saldo final</td><td class="num">${fmtN(saldoFinalPeriodo)}</td></tr>
+  </tbody>
+</table>
+<div class="gerado">Gerado em ${escapeHtml(geradoEm)}</div>
+<script>window.onload = function () { setTimeout(function () { window.print() }, 300) }</script>
+</body></html>`
+
+      win.document.open()
+      win.document.write(html)
+      win.document.close()
+      toast.success('DFC do período pronto para impressão!', { id: 'export-periodo' })
+    } catch (error) {
+      console.error('Erro ao exportar DFC do período:', error)
+      win.close()
+      toast.error('Erro ao gerar o DFC do período. Tente novamente.', { id: 'export-periodo' })
+    }
+  }
+
   // Função auxiliar para formatar data BR
   const formatDateBR = (dateString) => {
     if (!dateString) return '-'
@@ -1900,13 +2101,39 @@ export default function DFCDashboardPage() {
                 <History className="h-4 w-4" />
                 <span className="font-medium text-sm">Histórico</span>
               </button>
-              <button
-                onClick={() => setShowExportModal(true)}
-                className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors shadow-md hover:shadow-lg flex-1 sm:flex-none"
-              >
-                <Download className="h-4 w-4" />
-                <span className="font-medium text-sm">Exportar</span>
-              </button>
+              <div className="relative flex-1 sm:flex-none">
+                <button
+                  onClick={() => setShowExportMenu(v => !v)}
+                  className="w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors shadow-md hover:shadow-lg"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="font-medium text-sm">Exportar</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+                </button>
+                {showExportMenu && (
+                  <>
+                    <div className="fixed inset-0 z-20" onClick={() => setShowExportMenu(false)} />
+                    <div className="absolute right-0 mt-2 w-64 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden">
+                      <button
+                        onClick={() => { setShowExportMenu(false); setShowExportModal(true) }}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <span className="block text-sm font-medium text-gray-900 dark:text-white">Exportar DFC anual</span>
+                        <span className="block text-xs text-gray-500 dark:text-gray-400">Excel, CSV ou PDF do ano</span>
+                      </button>
+                      <button
+                        onClick={() => { setShowExportMenu(false); exportarDFCPeriodo() }}
+                        className="w-full text-left px-4 py-3 border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <span className="block text-sm font-medium text-gray-900 dark:text-white">Exportar DFC do período</span>
+                        <span className="block text-xs text-gray-500 dark:text-gray-400">
+                          {formatDateBR(getPeriodoDatas().inicio)} até {formatDateBR(getPeriodoDatas().fim)}
+                        </span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
