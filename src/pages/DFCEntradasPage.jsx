@@ -37,7 +37,7 @@ import { baixarAnexosZip } from '../utils/baixarAnexosZip'
 
 function DFCEntradasPage() {
   const { profile } = useAuth()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [entradas, setEntradas] = useState([])
   const [companies, setCompanies] = useState([])
   const [companyAvatars, setCompanyAvatars] = useState({})
@@ -53,6 +53,9 @@ function DFCEntradasPage() {
   // Estados para documentos
   const [uploadedFiles, setUploadedFiles] = useState([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
+  const [salvando, setSalvando] = useState(false)
+  const editarAbertoRef = useRef(null)
+  const salvandoRef = useRef(false)
   const [documentos, setDocumentos] = useState([])
   const [showDocumentosModal, setShowDocumentosModal] = useState(false)
   const [selectedEntradaDocumentos, setSelectedEntradaDocumentos] = useState(null)
@@ -869,8 +872,31 @@ function DFCEntradasPage() {
     })
   }
 
+  // Vindo do modal "A Pagar / A Receber" do dashboard: abre direto o lançamento para edição
+  const editarParam = searchParams.get('editar')
+  useEffect(() => {
+    if (!editarParam || loading) return
+    if (editarAbertoRef.current === editarParam) return
+    editarAbertoRef.current = editarParam
+
+    const alvo = entradas.find(l => l.id === editarParam)
+    if (alvo) {
+      openModal(alvo)
+    } else {
+      toast.error('Lançamento não encontrado na lista.')
+    }
+
+    const novosParams = new URLSearchParams(searchParams)
+    novosParams.delete('editar')
+    setSearchParams(novosParams, { replace: true })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editarParam, entradas, loading])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Impede salvar duas vezes (clique repetido ou Enter) enquanto o envio anterior não terminou
+    if (salvandoRef.current) return
 
     // Validações
     if (!formData.company_id) {
@@ -890,6 +916,8 @@ function DFCEntradasPage() {
       return
     }
 
+    salvandoRef.current = true
+    setSalvando(true)
     try {
       // EDIÇÃO de lançamento
       if (editingId) {
@@ -1065,6 +1093,9 @@ function DFCEntradasPage() {
     } catch (error) {
       console.error('Erro ao salvar entrada:', error)
       toast.error('Erro ao salvar entrada: ' + error.message)
+    } finally {
+      salvandoRef.current = false
+      setSalvando(false)
     }
   }
 
@@ -1086,12 +1117,12 @@ function DFCEntradasPage() {
     try {
       setUploadingFiles(true)
 
-      for (const file of uploadedFiles) {
+      const enviarUm = async (file, indice) => {
         // Gerar nome único para o arquivo
         const timestamp = Date.now()
         const randomStr = Math.random().toString(36).substring(7)
         const fileExt = file.name.split('.').pop()
-        const fileName = `${timestamp}-${randomStr}.${fileExt}`
+        const fileName = `${timestamp}-${indice}-${randomStr}.${fileExt}`
         const filePath = `dfc-documentos/${entradaId}/${fileName}`
 
         // Upload para o Storage
@@ -1116,6 +1147,22 @@ function DFCEntradasPage() {
 
         if (dbError) throw dbError
       }
+
+      // 3 arquivos por vez: bem mais rápido que um a um, sem sobrecarregar a conexão
+      let proximo = 0
+      let primeiroErro = null
+      const trabalhadores = Array.from({ length: Math.min(3, uploadedFiles.length) }, async () => {
+        while (proximo < uploadedFiles.length && !primeiroErro) {
+          const indice = proximo++
+          try {
+            await enviarUm(uploadedFiles[indice], indice)
+          } catch (erroUpload) {
+            primeiroErro = primeiroErro || erroUpload
+          }
+        }
+      })
+      await Promise.all(trabalhadores)
+      if (primeiroErro) throw primeiroErro
 
       toast.success('Documentos enviados com sucesso!')
       setUploadedFiles([])
@@ -2524,10 +2571,14 @@ function DFCEntradasPage() {
               </button>
               <button
                 onClick={handleSubmit}
-                className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 transition-all font-medium"
+                disabled={salvando}
+                aria-busy={salvando}
+                className="flex items-center space-x-2 px-4 py-2 bg-[#EBA500] text-white rounded-xl hover:bg-[#EBA500]/90 transition-all font-medium disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Save className="h-4 w-4" />
-                <span>{editingId ? 'Atualizar' : 'Salvar'}</span>
+                {salvando
+                  ? <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  : <Save className="h-4 w-4" />}
+                <span>{salvando ? (uploadingFiles ? 'Enviando anexos...' : 'Salvando...') : (editingId ? 'Atualizar' : 'Salvar')}</span>
               </button>
             </div>
           </div>

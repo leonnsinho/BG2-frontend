@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import toast from '@/lib/toast'
 import confirmDialog from '@/lib/confirm'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import SuperAdminBanner from '../components/SuperAdminBanner'
+import { montarPlanilhaDFCPeriodo } from '../utils/dfcPeriodoExcel'
 import {
   TrendingDown,
   TrendingUp,
@@ -18,6 +19,7 @@ import {
   BarChart3,
   ChevronRight,
   ChevronDown,
+  Pencil,
   Filter,
   Download,
   History,
@@ -72,13 +74,7 @@ async function carregarLogoEmpresa(companyId) {
     try {
       const resp = await fetch(url)
       if (!resp.ok) return url
-      const blob = await resp.blob()
-      const dataUrl = await new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : null)
-        reader.onerror = () => resolve(null)
-        reader.readAsDataURL(blob)
-      })
+      const dataUrl = await blobParaDataUrl(await resp.blob())
       return dataUrl || url
     } catch {
       return url
@@ -87,6 +83,116 @@ async function carregarLogoEmpresa(companyId) {
     console.warn('Não foi possível carregar o logo da empresa para o relatório:', error)
     return null
   }
+}
+
+function blobParaDataUrl(blob) {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : null)
+    reader.onerror = () => resolve(null)
+    reader.readAsDataURL(blob)
+  })
+}
+
+// Logo da plataforma (public/LOGO 2.png) embutido nos relatórios exportados
+let logoPlataformaCache = null
+async function carregarLogoPlataforma() {
+  if (logoPlataformaCache) return logoPlataformaCache
+  try {
+    const resp = await fetch('/LOGO 2.png')
+    if (!resp.ok) return null
+    const blob = await resp.blob()
+    // Se o arquivo não existir, o SPA devolve o index.html com status 200
+    if (!blob.type.startsWith('image/')) return null
+    logoPlataformaCache = await blobParaDataUrl(blob)
+    return logoPlataformaCache
+  } catch {
+    return null
+  }
+}
+
+// Busca (paginada) tudo que o relatório de caixa do período precisa: lançamentos em ordem de data,
+// totais, saldo inicial/final e nomes de categoria/item. Usado pelo PDF e pelo Excel.
+async function buscarDadosDFCPeriodo(companyId, inicio, fim) {
+  const filtroParcelas = 'is_parcelado.is.false,lancamento_pai_id.not.is.null'
+
+  const buscarPeriodo = (tabela) => fetchAllRows(() =>
+    supabase
+      .from(tabela)
+      .select('id, descricao, valor, vencimento, created_at, categoria, item_id')
+      .eq('company_id', companyId)
+      .gte('vencimento', inicio)
+      .lte('vencimento', fim)
+      .or(filtroParcelas)
+      .order('vencimento', { ascending: true })
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+  )
+
+  const somarAnteriores = async (tabela) => {
+    const rows = await fetchAllRows(() =>
+      supabase
+        .from(tabela)
+        .select('valor')
+        .eq('company_id', companyId)
+        .lt('vencimento', inicio)
+        .or(filtroParcelas)
+        .order('id', { ascending: true })
+    )
+    return rows.reduce((s, r) => s + (Number(r.valor) || 0), 0)
+  }
+
+  const [entradas, saidas, antEntradas, antSaidas, categorias, itens, logoUrl, logoPlataforma] = await Promise.all([
+    buscarPeriodo('dfc_entradas'),
+    buscarPeriodo('dfc_saidas'),
+    somarAnteriores('dfc_entradas'),
+    somarAnteriores('dfc_saidas'),
+    fetchAllRows(() => supabase.from('dfc_categorias').select('id, nome').order('id', { ascending: true })),
+    fetchAllRows(() => supabase.from('dfc_itens').select('id, nome').order('id', { ascending: true })),
+    carregarLogoEmpresa(companyId),
+    carregarLogoPlataforma()
+  ])
+
+  const categoriaMap = Object.fromEntries(categorias.map(c => [c.id, c.nome]))
+  const itemMap = Object.fromEntries(itens.map(i => [i.id, i.nome]))
+
+  const linhas = [
+    ...entradas.map(r => ({ ...r, tipo: 'entrada' })),
+    ...saidas.map(r => ({ ...r, tipo: 'saida' }))
+  ].sort((a, b) =>
+    (a.vencimento || '').localeCompare(b.vencimento || '') ||
+    (a.created_at || '').localeCompare(b.created_at || '')
+  )
+
+  const totalEntradas = entradas.reduce((s, r) => s + (Number(r.valor) || 0), 0)
+  const totalSaidas = saidas.reduce((s, r) => s + (Number(r.valor) || 0), 0)
+  const saldoInicialPeriodo = antEntradas - antSaidas
+  const saldoFinalPeriodo = saldoInicialPeriodo + totalEntradas - totalSaidas
+
+  return { linhas, totalEntradas, totalSaidas, saldoInicialPeriodo, saldoFinalPeriodo, categoriaMap, itemMap, logoUrl, logoPlataforma }
+}
+
+// Converte o logo (data URL) no formato que o ExcelJS aceita, mantendo a proporção.
+// Retorna null se o formato não for suportado (ex.: webp/svg) ou se vier só um link.
+function prepararLogoParaExcel(logoUrl, maxLargura = 150, maxAltura = 60) {
+  return new Promise((resolve) => {
+    const m = /^data:image\/(png|jpe?g|gif);base64,/i.exec(logoUrl || '')
+    if (!m) return resolve(null)
+    const tipo = m[1].toLowerCase()
+    const extension = tipo === 'png' ? 'png' : tipo === 'gif' ? 'gif' : 'jpeg'
+    const img = new Image()
+    img.onload = () => {
+      const escala = Math.min(maxLargura / img.naturalWidth, maxAltura / img.naturalHeight, 1)
+      resolve({
+        base64: logoUrl,
+        extension,
+        width: Math.round(img.naturalWidth * escala),
+        height: Math.round(img.naturalHeight * escala)
+      })
+    }
+    img.onerror = () => resolve(null)
+    img.src = logoUrl
+  })
 }
 
 const escapeHtml = (v) => String(v ?? '')
@@ -141,6 +247,7 @@ export default function DFCDashboardPage() {
   const [showHistoricoModal, setShowHistoricoModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
+  const navigate = useNavigate()
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [exportYear, setExportYear] = useState(new Date().getFullYear())
   const [exportFormat, setExportFormat] = useState('excel')
@@ -337,7 +444,7 @@ export default function DFCDashboardPage() {
       // Próximos 30 dias
       let entradas30Query = supabase
         .from('dfc_entradas')
-        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .select('id, company_id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
         .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false') // Parcelas OU lançamentos simples
         .gt('vencimento', todayISO)
         .lte('vencimento', next30ISO)
@@ -352,7 +459,7 @@ export default function DFCDashboardPage() {
       // Próximos 60 dias
       let entradas60Query = supabase
         .from('dfc_entradas')
-        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .select('id, company_id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
         .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
         .gt('vencimento', todayISO)
         .lte('vencimento', next60ISO)
@@ -367,7 +474,7 @@ export default function DFCDashboardPage() {
       // Próximos 90 dias
       let entradas90Query = supabase
         .from('dfc_entradas')
-        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .select('id, company_id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
         .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
         .gt('vencimento', todayISO)
         .lte('vencimento', next90ISO)
@@ -382,7 +489,7 @@ export default function DFCDashboardPage() {
       // Total futuro
       let entradasTotalQuery = supabase
         .from('dfc_entradas')
-        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .select('id, company_id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
         .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
         .gt('vencimento', todayISO)
         .order('vencimento', { ascending: true })
@@ -398,7 +505,7 @@ export default function DFCDashboardPage() {
       // Próximos 60 dias
       let saidas60Query = supabase
         .from('dfc_saidas')
-        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .select('id, company_id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
         .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
         .gt('vencimento', todayISO)
         .lte('vencimento', next60ISO)
@@ -413,7 +520,7 @@ export default function DFCDashboardPage() {
       // Próximos 30 dias
       let saidas30Query = supabase
         .from('dfc_saidas')
-        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .select('id, company_id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
         .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
         .gt('vencimento', todayISO)
         .lte('vencimento', next30ISO)
@@ -428,7 +535,7 @@ export default function DFCDashboardPage() {
       // Próximos 90 dias
       let saidas90Query = supabase
         .from('dfc_saidas')
-        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .select('id, company_id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
         .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
         .gt('vencimento', todayISO)
         .lte('vencimento', next90ISO)
@@ -443,7 +550,7 @@ export default function DFCDashboardPage() {
       // Total futuro
       let saidasTotalQuery = supabase
         .from('dfc_saidas')
-        .select('id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
+        .select('id, company_id, descricao, valor, vencimento, parcela_numero, mes, lancamento_pai_id, is_parcelado')
         .or('lancamento_pai_id.not.is.null,is_parcelado.eq.false')
         .gt('vencimento', todayISO)
         .order('vencimento', { ascending: true })
@@ -1907,59 +2014,8 @@ export default function DFCDashboardPage() {
     toast.loading('Preparando DFC do período...', { id: 'export-periodo' })
 
     try {
-      const filtroParcelas = 'is_parcelado.is.false,lancamento_pai_id.not.is.null'
-
-      const buscarPeriodo = (tabela) => fetchAllRows(() =>
-        supabase
-          .from(tabela)
-          .select('id, descricao, valor, vencimento, created_at, categoria, item_id')
-          .eq('company_id', companyId)
-          .gte('vencimento', inicio)
-          .lte('vencimento', fim)
-          .or(filtroParcelas)
-          .order('vencimento', { ascending: true })
-          .order('created_at', { ascending: true })
-          .order('id', { ascending: true })
-      )
-
-      const somarAnteriores = async (tabela) => {
-        const rows = await fetchAllRows(() =>
-          supabase
-            .from(tabela)
-            .select('valor')
-            .eq('company_id', companyId)
-            .lt('vencimento', inicio)
-            .or(filtroParcelas)
-            .order('id', { ascending: true })
-        )
-        return rows.reduce((s, r) => s + (Number(r.valor) || 0), 0)
-      }
-
-      const [entradas, saidas, antEntradas, antSaidas, categorias, itens, logoUrl] = await Promise.all([
-        buscarPeriodo('dfc_entradas'),
-        buscarPeriodo('dfc_saidas'),
-        somarAnteriores('dfc_entradas'),
-        somarAnteriores('dfc_saidas'),
-        fetchAllRows(() => supabase.from('dfc_categorias').select('id, nome').order('id', { ascending: true })),
-        fetchAllRows(() => supabase.from('dfc_itens').select('id, nome').order('id', { ascending: true })),
-        carregarLogoEmpresa(companyId)
-      ])
-
-      const categoriaMap = Object.fromEntries(categorias.map(c => [c.id, c.nome]))
-      const itemMap = Object.fromEntries(itens.map(i => [i.id, i.nome]))
-
-      const linhas = [
-        ...entradas.map(r => ({ ...r, tipo: 'entrada' })),
-        ...saidas.map(r => ({ ...r, tipo: 'saida' }))
-      ].sort((a, b) =>
-        (a.vencimento || '').localeCompare(b.vencimento || '') ||
-        (a.created_at || '').localeCompare(b.created_at || '')
-      )
-
-      const totalEntradas = entradas.reduce((s, r) => s + (Number(r.valor) || 0), 0)
-      const totalSaidas = saidas.reduce((s, r) => s + (Number(r.valor) || 0), 0)
-      const saldoInicialPeriodo = antEntradas - antSaidas
-      const saldoFinalPeriodo = saldoInicialPeriodo + totalEntradas - totalSaidas
+      const { linhas, totalEntradas, totalSaidas, saldoInicialPeriodo, saldoFinalPeriodo, categoriaMap, itemMap, logoUrl, logoPlataforma } =
+        await buscarDadosDFCPeriodo(companyId, inicio, fim)
 
       const fmtN = (v) => (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -1980,8 +2036,11 @@ export default function DFCDashboardPage() {
 <style>
   @page { size: A4 portrait; margin: 12mm; }
   body { font-family: Arial, Helvetica, sans-serif; color: #222; margin: 0; font-size: 9pt; }
+  .marcas { text-align: center; margin-bottom: 10px; }
+  .marcas img { display: block; margin: 0 auto; object-fit: contain; }
+  .marcas .plat { max-height: 26px; max-width: 80px; margin-bottom: 10px; }
+  .marcas .cliente { max-height: 90px; max-width: 220px; }
   .head { text-align: center; margin-bottom: 16px; }
-  .head img { display: block; margin: 0 auto 10px; max-height: 90px; max-width: 220px; object-fit: contain; }
   .head .empresa { font-size: 10pt; color: #555; margin-bottom: 4px; }
   .head h1 { font-size: 15pt; margin: 0; color: #444; }
   table { border-collapse: collapse; width: 100%; }
@@ -1996,8 +2055,8 @@ export default function DFCDashboardPage() {
   .gerado { margin-top: 14px; font-size: 7.5pt; color: #999; text-align: right; }
   @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style></head><body>
+${(logoPlataforma || logoUrl) ? `<div class="marcas">${logoPlataforma ? `<img class="plat" src="${escapeHtml(logoPlataforma)}" alt="">` : ''}${logoUrl ? `<img class="cliente" src="${escapeHtml(logoUrl)}" alt="">` : ''}</div>` : ''}
 <div class="head">
-  ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="">` : ''}
   <div class="empresa">${escapeHtml(companyName)}</div>
   <h1>DFC de ${escapeHtml(formatDateBR(inicio))} até ${escapeHtml(formatDateBR(fim))}</h1>
 </div>
@@ -2026,6 +2085,81 @@ export default function DFCDashboardPage() {
       win.close()
       toast.error('Erro ao gerar o DFC do período. Tente novamente.', { id: 'export-periodo' })
     }
+  }
+
+  // Mesmo relatório de caixa do período, em planilha Excel
+  const exportarDFCPeriodoExcel = async () => {
+    const currentCompany = getCurrentUserCompany()
+    const companyId = isSuperAdmin()
+      ? (selectedCompanyId === 'all' ? null : selectedCompanyId)
+      : currentCompany?.id
+
+    if (!companyId) {
+      toast.error('Selecione uma empresa para exportar o DFC do período.')
+      return
+    }
+
+    const companyName = isSuperAdmin()
+      ? (companies.find(c => c.id === companyId)?.name || 'Empresa')
+      : (currentCompany?.name || 'Empresa')
+    const { inicio, fim } = getPeriodoDatas()
+
+    toast.loading('Preparando planilha do período...', { id: 'export-periodo-excel' })
+    try {
+      const [dados, ExcelJS] = await Promise.all([
+        buscarDadosDFCPeriodo(companyId, inicio, fim),
+        import('exceljs').then(m => m.default)
+      ])
+      const [logo, logoPlataforma] = await Promise.all([
+        prepararLogoParaExcel(dados.logoUrl, 200, 90),
+        prepararLogoParaExcel(dados.logoPlataforma, 80, 26)
+      ])
+
+      const workbook = montarPlanilhaDFCPeriodo({ ExcelJS, empresa: companyName, inicio, fim, dados, logo, logoPlataforma })
+
+      const buffer = await workbook.xlsx.writeBuffer()
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `DFC-Periodo-${companyName.replace(/[^a-zA-Z0-9]/g, '_')}-${inicio}_a_${fim}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast.success('Planilha do período exportada!', { id: 'export-periodo-excel' })
+    } catch (error) {
+      console.error('Erro ao exportar DFC do período em Excel:', error)
+      toast.error('Erro ao gerar a planilha do período. Tente novamente.', { id: 'export-periodo-excel' })
+    }
+  }
+
+  // Lápis do modal "A Pagar / A Receber": abre a tela de Saídas/Entradas já com o lançamento em edição.
+  // Parcela de lançamento parcelado abre o lançamento original, onde cada parcela pode ser editada.
+  const abrirLancamentoParaEditar = (item) => {
+    const rota = futurePaymentsDetails.type === 'entradas' ? '/dfc/entradas' : '/dfc/saidas'
+    const companyId = item.company_id
+      || (selectedCompanyId && selectedCompanyId !== 'all' ? selectedCompanyId : getCurrentUserCompany()?.id)
+    const params = new URLSearchParams({ editar: item.lancamento_pai_id || item.id })
+    if (companyId) params.set('companyId', companyId)
+
+    const isAdminCtx = searchParams.get('from') === 'admin' && selectedCompanyId && selectedCompanyId !== 'all'
+    if (isAdminCtx) {
+      params.set('from', 'admin')
+      const existing = sessionStorage.getItem('superAdminContext')
+      if (existing) {
+        try {
+          sessionStorage.setItem('superAdminContext', JSON.stringify({
+            ...JSON.parse(existing),
+            returnUrl: `/dfc?companyId=${selectedCompanyId}&from=admin`
+          }))
+        } catch { /* contexto inválido: segue sem atualizar o retorno */ }
+      }
+    }
+
+    setShowFuturePaymentsModal(false)
+    navigate(`${rota}?${params.toString()}`)
   }
 
   // Função auxiliar para formatar data BR
@@ -2125,7 +2259,16 @@ export default function DFCDashboardPage() {
                         onClick={() => { setShowExportMenu(false); exportarDFCPeriodo() }}
                         className="w-full text-left px-4 py-3 border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                       >
-                        <span className="block text-sm font-medium text-gray-900 dark:text-white">Exportar DFC do período</span>
+                        <span className="block text-sm font-medium text-gray-900 dark:text-white">Exportar DFC do período (PDF)</span>
+                        <span className="block text-xs text-gray-500 dark:text-gray-400">
+                          {formatDateBR(getPeriodoDatas().inicio)} até {formatDateBR(getPeriodoDatas().fim)}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => { setShowExportMenu(false); exportarDFCPeriodoExcel() }}
+                        className="w-full text-left px-4 py-3 border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <span className="block text-sm font-medium text-gray-900 dark:text-white">Exportar DFC do período (Excel)</span>
                         <span className="block text-xs text-gray-500 dark:text-gray-400">
                           {formatDateBR(getPeriodoDatas().inicio)} até {formatDateBR(getPeriodoDatas().fim)}
                         </span>
@@ -3167,12 +3310,27 @@ export default function DFCDashboardPage() {
                             )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className={`text-xl font-bold ${
-                            futurePaymentsDetails.type === 'entradas' ? 'text-green-700' : 'text-red-700'
-                          }`}>
-                            {formatCurrency(item.valor)}
-                          </p>
+                        <div className="flex items-start gap-3">
+                          <div className="text-right">
+                            <p className={`text-xl font-bold ${
+                              futurePaymentsDetails.type === 'entradas' ? 'text-green-700' : 'text-red-700'
+                            }`}>
+                              {formatCurrency(item.valor)}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => abrirLancamentoParaEditar(item)}
+                            title="Editar lançamento"
+                            aria-label="Editar lançamento"
+                            className={`p-2 rounded-lg bg-white dark:bg-gray-700 border transition-colors ${
+                              futurePaymentsDetails.type === 'entradas'
+                                ? 'border-green-200 text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/40'
+                                : 'border-red-200 text-red-700 hover:bg-red-100 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/40'
+                            }`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
                     </div>
