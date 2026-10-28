@@ -959,27 +959,22 @@ export default function DFCDashboardPage() {
         const inicioGrafico = `${mesesAtras.getFullYear()}-${String(mesesAtras.getMonth() + 1).padStart(2, '0')}-${String(mesesAtras.getDate()).padStart(2, '0')}`
         const fimGrafico = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`
         
-        let entradasGraficoQuery = supabase
-          .from('dfc_entradas')
-          .select('valor, vencimento, categoria')
-          .gte('vencimento', inicioGrafico)
-          .lte('vencimento', fimGrafico)
-          .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
-          
-        let saidasGraficoQuery = supabase
-          .from('dfc_saidas')
-          .select('valor, vencimento, categoria')
-          .gte('vencimento', inicioGrafico)
-          .lte('vencimento', fimGrafico)
-          .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
-          
-        if (companyId) {
-          entradasGraficoQuery = entradasGraficoQuery.eq('company_id', companyId)
-          saidasGraficoQuery = saidasGraficoQuery.eq('company_id', companyId)
-        }
-        
-        const { data: entradasGrafico } = await entradasGraficoQuery
-        const { data: saidasGrafico } = await saidasGraficoQuery
+        const consultaGrafico = (tabela) => fetchAllRows(() => {
+          let q = supabase
+            .from(tabela)
+            .select('valor, vencimento, categoria')
+            .gte('vencimento', inicioGrafico)
+            .lte('vencimento', fimGrafico)
+            .or('is_parcelado.is.false,lancamento_pai_id.not.is.null')
+            .order('id', { ascending: true })
+          if (companyId) q = q.eq('company_id', companyId)
+          return q
+        })
+
+        const [entradasGrafico, saidasGrafico] = await Promise.all([
+          consultaGrafico('dfc_entradas'),
+          consultaGrafico('dfc_saidas')
+        ])
         
         entradasParaGrafico = entradasGrafico || []
         saidasParaGrafico = saidasGrafico || []
@@ -1401,40 +1396,36 @@ export default function DFCDashboardPage() {
     const todayStr = new Date().toISOString().split('T')[0]
     const yearEnd = `${year}-12-31` < todayStr ? `${year}-12-31` : todayStr
 
-    let entradasQuery = supabase
-      .from('dfc_entradas').select('categoria, item_id, valor, mes, vencimento')
-      .gte('vencimento', yearStart).lte('vencimento', yearEnd)
-      .or('is_parcelado.not.is.true,lancamento_pai_id.not.is.null')
-    if (companyId) entradasQuery = entradasQuery.eq('company_id', companyId)
+    // O banco devolve no máximo 1000 linhas por consulta: tudo é paginado e com ordem fixa.
+    // Sem isso, empresas com mais de 1000 lançamentos no ano tinham os últimos meses zerados no relatório.
+    const filtroParcelas = 'is_parcelado.not.is.true,lancamento_pai_id.not.is.null'
+    const comEmpresa = (q) => (companyId ? q.eq('company_id', companyId) : q)
 
-    let saidasQuery = supabase
-      .from('dfc_saidas').select('categoria, item_id, valor, mes, vencimento')
-      .gte('vencimento', yearStart).lte('vencimento', yearEnd)
-      .or('is_parcelado.not.is.true,lancamento_pai_id.not.is.null')
-    if (companyId) saidasQuery = saidasQuery.eq('company_id', companyId)
-
-    let saldoAntEntradasQ = supabase
-      .from('dfc_entradas').select('valor').lt('vencimento', yearStart)
-      .or('is_parcelado.not.is.true,lancamento_pai_id.not.is.null')
-    if (companyId) saldoAntEntradasQ = saldoAntEntradasQ.eq('company_id', companyId)
-
-    let saldoAntSaidasQ = supabase
-      .from('dfc_saidas').select('valor').lt('vencimento', yearStart)
-      .or('is_parcelado.not.is.true,lancamento_pai_id.not.is.null')
-    if (companyId) saldoAntSaidasQ = saldoAntSaidasQ.eq('company_id', companyId)
-
-    const [
-      { data: entradas },
-      { data: saidas },
-      { data: allCategorias },
-      { data: allItens },
-      { data: antEntradas },
-      { data: antSaidas }
-    ] = await Promise.all([
-      entradasQuery, saidasQuery,
-      supabase.from('dfc_categorias').select('id, nome, tipo').order('nome'),
-      supabase.from('dfc_itens').select('id, nome').order('nome'),
-      saldoAntEntradasQ, saldoAntSaidasQ
+    const [entradas, saidas, allCategorias, allItens, antEntradas, antSaidas] = await Promise.all([
+      fetchAllRows(() => comEmpresa(
+        supabase.from('dfc_entradas').select('categoria, item_id, valor, mes, vencimento')
+          .gte('vencimento', yearStart).lte('vencimento', yearEnd)
+          .or(filtroParcelas)
+          .order('id', { ascending: true })
+      )),
+      fetchAllRows(() => comEmpresa(
+        supabase.from('dfc_saidas').select('categoria, item_id, valor, mes, vencimento')
+          .gte('vencimento', yearStart).lte('vencimento', yearEnd)
+          .or(filtroParcelas)
+          .order('id', { ascending: true })
+      )),
+      fetchAllRows(() => supabase.from('dfc_categorias').select('id, nome, tipo').order('nome').order('id')),
+      fetchAllRows(() => supabase.from('dfc_itens').select('id, nome').order('nome').order('id')),
+      fetchAllRows(() => comEmpresa(
+        supabase.from('dfc_entradas').select('valor').lt('vencimento', yearStart)
+          .or(filtroParcelas)
+          .order('id', { ascending: true })
+      )),
+      fetchAllRows(() => comEmpresa(
+        supabase.from('dfc_saidas').select('valor').lt('vencimento', yearStart)
+          .or(filtroParcelas)
+          .order('id', { ascending: true })
+      ))
     ])
 
     const saldoInicial =
