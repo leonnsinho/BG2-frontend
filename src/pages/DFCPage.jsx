@@ -33,6 +33,8 @@ import toast from '@/lib/toast'
 import ConfirmModal from '../components/ui/ConfirmModal'
 import useDragToScroll from '../hooks/useDragToScroll'
 import { baixarAnexosZip } from '../utils/baixarAnexosZip'
+import VisualizadorDocumento from '../components/VisualizadorDocumento'
+import { tipoVisualizavel } from '../utils/tipoDocumento'
 
 function DFCPage() {
   const { profile } = useAuth()
@@ -52,6 +54,7 @@ function DFCPage() {
   const [uploadedFiles, setUploadedFiles] = useState([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [salvando, setSalvando] = useState(false)
+  const [documentoVisualizando, setDocumentoVisualizando] = useState(null)
   const editarAbertoRef = useRef(null)
   const salvandoRef = useRef(false)
   const [documentos, setDocumentos] = useState([])
@@ -2460,6 +2463,16 @@ function DFCPage() {
                               </div>
                             </div>
                             <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
+                              {tipoVisualizavel(doc) && (
+                                <button
+                                  type="button"
+                                  onClick={() => setDocumentoVisualizando(doc)}
+                                  className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-all"
+                                  title="Visualizar"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => downloadDocumento(doc)}
@@ -2626,6 +2639,16 @@ function DFCPage() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
+                        {tipoVisualizavel(doc) && (
+                          <button
+                            onClick={() => setDocumentoVisualizando(doc)}
+                            className="flex items-center space-x-1 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
+                            title="Visualizar documento"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="text-sm font-medium">Visualizar</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => downloadDocumento(doc)}
                           className="flex items-center space-x-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
@@ -2990,6 +3013,9 @@ function DFCPage() {
             </div>
           </div>
         </div>
+      )}
+      {documentoVisualizando && (
+        <VisualizadorDocumento documento={documentoVisualizando} onClose={() => setDocumentoVisualizando(null)} />
       )}
       {confirmDialog && (
         <ConfirmModal
