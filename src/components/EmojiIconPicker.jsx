@@ -324,7 +324,7 @@ export default function EmojiIconPicker({ value, onChange, onClose }) {
         </div>
 
         {/* Content */}
-        <div className="w-[350px] max-h-[400px] overflow-hidden">
+        <div className="w-[min(350px,calc(100vw-2rem))] max-h-[400px] overflow-hidden">
           {activeTab === 'emojis' ? (
             <EmojiPicker
               onEmojiClick={handleEmojiClick}

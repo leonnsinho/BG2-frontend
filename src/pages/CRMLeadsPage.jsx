@@ -273,7 +273,7 @@ export default function CRMLeadsPage() {
   }, [leads, search, filterSegmento, filterCidade, filterEstado, filterOrigem])
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="crm-page min-h-screen bg-white dark:bg-gray-900">
       <SuperAdminBanner />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -281,49 +281,49 @@ export default function CRMLeadsPage() {
         {/* ── Breadcrumb ── */}
         <button
           onClick={() => navigate('/crm' + adminSuffix)}
-          className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors pl-12 lg:pl-0 min-h-[40px] lg:min-h-0"
         >
           <ArrowLeft className="h-4 w-4" /> Voltar ao CRM
         </button>
 
         {/* ── Header card ── */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-blue-50/60 dark:from-blue-900/20 to-transparent">
+          <div className="px-4 sm:px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-blue-50/60 dark:from-blue-900/20 to-transparent">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center">
                   <Building2 className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">Leads / Empresas</h1>
+                  <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Leads / Empresas</h1>
                   <p className="text-xs text-gray-400 mt-0.5">{leads.length} lead{leads.length !== 1 ? 's' : ''} cadastrado{leads.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
 
               {/* Action buttons */}
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
                 <input ref={importRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleImportFile} />
                 <button
                   onClick={() => importRef.current?.click()}
                   disabled={importing}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60"
+                  className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2.5 sm:py-2 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60"
                 >
                   <FileSpreadsheet className="h-3.5 w-3.5" /> Importar planilha
                 </button>
-                <button onClick={downloadTemplateXlsx} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors">
+                <button onClick={downloadTemplateXlsx} className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2.5 sm:py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors">
                   <Download className="h-3.5 w-3.5" /> Modelo .xlsx
                 </button>
-                <button onClick={downloadTemplateCsv} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors">
+                <button onClick={downloadTemplateCsv} className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2.5 sm:py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors">
                   <Download className="h-3.5 w-3.5" /> Modelo .csv
                 </button>
                 <button
                   onClick={() => navigate('/crm/contatos' + adminSuffix)}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors"
+                  className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2.5 sm:py-2 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors"
                 >
                   <Users className="h-3.5 w-3.5" /> Ver Contatos
                 </button>
                 {!showForm && (
-                  <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+                  <button onClick={openNew} className="col-span-2 sm:col-span-1 order-first sm:order-none flex items-center justify-center gap-1.5 px-3 py-2.5 sm:py-2 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
                     <Plus className="h-3.5 w-3.5" /> Novo Lead
                   </button>
                 )}
@@ -336,7 +336,7 @@ export default function CRMLeadsPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                   <input
-                    className="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
+                    className="w-full pl-8 pr-4 py-2.5 sm:py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
                     placeholder="Buscar por empresa, segmento, cidade ou estado..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
@@ -347,7 +347,7 @@ export default function CRMLeadsPage() {
                   <select
                     value={filterSegmento}
                     onChange={e => setFilterSegmento(e.target.value)}
-                    className="h-8 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
+                    className="h-10 sm:h-8 flex-1 min-w-[42%] sm:flex-none sm:min-w-0 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
                   >
                     <option value="">Segmento</option>
                     {optsSegmento.map(o => <option key={o} value={o}>{o}</option>)}
@@ -356,7 +356,7 @@ export default function CRMLeadsPage() {
                   <select
                     value={filterCidade}
                     onChange={e => setFilterCidade(e.target.value)}
-                    className="h-8 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
+                    className="h-10 sm:h-8 flex-1 min-w-[42%] sm:flex-none sm:min-w-0 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
                   >
                     <option value="">Cidade</option>
                     {optsCidade.map(o => <option key={o} value={o}>{o}</option>)}
@@ -365,7 +365,7 @@ export default function CRMLeadsPage() {
                   <select
                     value={filterEstado}
                     onChange={e => setFilterEstado(e.target.value)}
-                    className="h-8 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
+                    className="h-10 sm:h-8 flex-1 min-w-[42%] sm:flex-none sm:min-w-0 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
                   >
                     <option value="">Estado</option>
                     {optsEstado.map(o => <option key={o} value={o}>{o}</option>)}
@@ -374,7 +374,7 @@ export default function CRMLeadsPage() {
                   <select
                     value={filterOrigem}
                     onChange={e => setFilterOrigem(e.target.value)}
-                    className="h-8 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
+                    className="h-10 sm:h-8 flex-1 min-w-[42%] sm:flex-none sm:min-w-0 pl-2 pr-6 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white text-gray-600"
                   >
                     <option value="">Origem</option>
                     {optsOrigem.map(o => <option key={o} value={o}>{o}</option>)}
@@ -383,7 +383,7 @@ export default function CRMLeadsPage() {
                   {hasActiveFilters && (
                     <button
                       onClick={() => { setSearch(''); setFilterSegmento(''); setFilterCidade(''); setFilterEstado(''); setFilterOrigem('') }}
-                      className="h-8 px-3 text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-300 rounded-lg transition-colors bg-white dark:bg-gray-700"
+                      className="h-10 sm:h-8 px-3 text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-300 rounded-lg transition-colors bg-white dark:bg-gray-700"
                     >
                       Limpar filtros
                     </button>
@@ -394,7 +394,7 @@ export default function CRMLeadsPage() {
           </div>
 
           {/* ── Body ── */}
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-5">
             {loading ? (
               <div className="flex justify-center py-16">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" />
@@ -403,7 +403,7 @@ export default function CRMLeadsPage() {
               /* ── Form ── */
               <div className="space-y-4 max-w-2xl">
                 <div className="flex items-center gap-2 mb-4">
-                  <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                  <button onClick={() => setShowForm(false)} className="p-2.5 sm:p-1.5 -ml-2 sm:ml-0 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" aria-label="Voltar">
                     <ArrowLeft className="h-4 w-4 text-gray-500" />
                   </button>
                   <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">{editing ? 'Editar Lead' : 'Novo Lead'}</h3>
@@ -417,7 +417,7 @@ export default function CRMLeadsPage() {
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">CNPJ <span className="text-gray-400 font-normal">(opcional)</span></label>
                   <input className={INP} value={form.cnpj || ''} onChange={e => setForm(p => ({ ...p, cnpj: e.target.value }))} placeholder="00.000.000/0000-00" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cidade</label>
                     <input className={INP} value={form.cidade || ''} onChange={e => setForm(p => ({ ...p, cidade: e.target.value }))} placeholder="São Paulo" />
@@ -440,7 +440,7 @@ export default function CRMLeadsPage() {
                       {ORIGENS.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Website</label>
                     <input className={INP} value={form.website || ''} onChange={e => setForm(p => ({ ...p, website: e.target.value }))} placeholder="https://..." />
                   </div>
@@ -457,7 +457,7 @@ export default function CRMLeadsPage() {
                         <p className="text-xs font-bold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
                         <Users className="h-3.5 w-3.5 text-purple-400" /> Contatos
                       </p>
-                      <button type="button" onClick={addNewContact} className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-semibold">
+                      <button type="button" onClick={addNewContact} className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-semibold py-2 sm:py-0">
                         <Plus className="h-3.5 w-3.5" /> Adicionar contato
                       </button>
                     </div>
@@ -467,18 +467,18 @@ export default function CRMLeadsPage() {
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-semibold text-purple-600">Contato {idx + 1}</span>
                             {newContacts.length > 1 && (
-                              <button type="button" onClick={() => removeNewContact(c._key)} className="p-0.5 hover:bg-purple-100 rounded text-purple-300 hover:text-red-400">
+                              <button type="button" onClick={() => removeNewContact(c._key)} className="p-2 sm:p-0.5 -m-1.5 sm:m-0 hover:bg-purple-100 rounded text-purple-300 hover:text-red-400" aria-label="Remover contato">
                                 <X className="h-3.5 w-3.5" />
                               </button>
                             )}
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="col-span-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div className="sm:col-span-2">
                               <input className={INP} value={c.nome} onChange={e => updateNewContact(c._key, 'nome', e.target.value)} placeholder="Nome *" />
                             </div>
                             <input className={INP} value={c.cargo} onChange={e => updateNewContact(c._key, 'cargo', e.target.value)} placeholder="Cargo" />
                             <input type="tel" className={INP} value={c.telefone} onChange={e => updateNewContact(c._key, 'telefone', e.target.value)} placeholder="Telefone" />
-                            <input type="email" className={INP + ' col-span-2'} value={c.email} onChange={e => updateNewContact(c._key, 'email', e.target.value)} placeholder="E-mail" />
+                            <input type="email" className={INP + ' sm:col-span-2'} value={c.email} onChange={e => updateNewContact(c._key, 'email', e.target.value)} placeholder="E-mail" />
                           </div>
                         </div>
                       ))}
@@ -486,9 +486,9 @@ export default function CRMLeadsPage() {
                   </div>
                 )}
 
-                <div className="flex justify-end gap-2 pt-2">
-                  <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
-                  <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
+                <div className="flex gap-2 sm:justify-end pt-2">
+                  <button onClick={() => setShowForm(false)} className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
+                  <button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none justify-center min-h-[44px] sm:min-h-0 flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
                     {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Salvar
                   </button>
                 </div>
@@ -512,7 +512,7 @@ export default function CRMLeadsPage() {
                 {filtered.map(l => (
                   <div
                     key={l.id}
-                    className="flex items-center gap-3 p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 group transition-colors cursor-pointer"
+                    className="flex items-center gap-3 p-3 sm:p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 group transition-colors cursor-pointer"
                     onClick={() => navigate(`/crm/lead/${l.id}` + adminSuffix)}
                   >
                     <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 text-sm font-bold text-blue-600">
@@ -527,16 +527,16 @@ export default function CRMLeadsPage() {
                         <p className="text-xs text-blue-400 truncate mt-0.5">{l.website}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-0.5 sm:gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={e => { e.stopPropagation(); openEdit(l) }}
-                        className="p-1.5 hover:bg-gray-200 rounded-lg" title="Editar"
+                        className="p-2.5 sm:p-1.5 hover:bg-gray-200 rounded-lg" title="Editar" aria-label="Editar"
                       >
                         <Edit2 className="h-3.5 w-3.5 text-gray-500" />
                       </button>
                       <button
                         onClick={e => { e.stopPropagation(); handleDelete(l.id) }}
-                        className="p-1.5 hover:bg-red-50 rounded-lg" title="Remover"
+                        className="p-2.5 sm:p-1.5 hover:bg-red-50 rounded-lg" title="Remover" aria-label="Remover"
                       >
                         <Trash2 className="h-3.5 w-3.5 text-red-400" />
                       </button>
@@ -552,20 +552,20 @@ export default function CRMLeadsPage() {
       {/* ── Import Preview Modal ── */}
       {importPreview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90dvh] flex flex-col">
+            <div className="flex items-start sm:items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-700">
               <div>
                 <h3 className="text-base font-bold text-gray-900 dark:text-white">Confirmar importação de leads</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {importPreview.rows.length} lead{importPreview.rows.length !== 1 ? 's' : ''} encontrado{importPreview.rows.length !== 1 ? 's' : ''}. Revise antes de confirmar.
                 </p>
               </div>
-              <button onClick={() => setImportPreview(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-400 hover:text-gray-600">
+              <button onClick={() => setImportPreview(null)} className="p-2.5 sm:p-2 -mr-1 shrink-0 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-400 hover:text-gray-600" aria-label="Fechar">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-auto px-6 py-4">
-              <table className="w-full text-xs border-collapse">
+            <div className="flex-1 overflow-auto px-4 sm:px-6 py-4">
+              <table className="w-full min-w-[720px] text-xs border-collapse">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-700">
                     {['Empresa', 'CNPJ', 'Cidade', 'UF', 'Contato', 'Cargo', 'Telefone', 'E-mail'].map(h => (
@@ -589,9 +589,9 @@ export default function CRMLeadsPage() {
                 </tbody>
               </table>
             </div>
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-700">
-              <button onClick={() => setImportPreview(null)} className="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors">Cancelar</button>
-              <button onClick={confirmImport} disabled={importing} className="px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 flex items-center gap-2">
+            <div className="flex gap-3 sm:justify-end px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 dark:border-gray-700">
+              <button onClick={() => setImportPreview(null)} className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors">Cancelar</button>
+              <button onClick={confirmImport} disabled={importing} className="flex-1 sm:flex-none justify-center min-h-[44px] sm:min-h-0 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 flex items-center gap-2">
                 {importing
                   ? <span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />
                   : <Upload className="h-3.5 w-3.5" />

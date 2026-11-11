@@ -35,6 +35,7 @@ import useDragToScroll from '../hooks/useDragToScroll'
 import { baixarAnexosZip } from '../utils/baixarAnexosZip'
 import VisualizadorDocumento from '../components/VisualizadorDocumento'
 import { tipoVisualizavel } from '../utils/tipoDocumento'
+import { calcularValoresParcelas, textoValor, descreverParcelas } from '../utils/parcelas'
 
 function DFCPage() {
   const { profile } = useAuth()
@@ -54,6 +55,8 @@ function DFCPage() {
   const [uploadedFiles, setUploadedFiles] = useState([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [salvando, setSalvando] = useState(false)
+  const [parcelasDigitado, setParcelasDigitado] = useState(null)
+  const [parcelasValores, setParcelasValores] = useState({}) // valores editados à mão: { indice: texto }
   const [documentoVisualizando, setDocumentoVisualizando] = useState(null)
   const editarAbertoRef = useRef(null)
   const salvandoRef = useRef(false)
@@ -123,6 +126,12 @@ function DFCPage() {
     vencimento: '',
     dinheiro_especie: false
   })
+  const valoresParcelas = useMemo(
+    () => calcularValoresParcelas(parseFloat(formData.valor), numeroParcelas, parcelasValores),
+    [formData.valor, numeroParcelas, parcelasValores]
+  )
+  // mudou a quantidade de parcelas: volta a dividir igualmente
+  useEffect(() => { setParcelasValores({}) }, [numeroParcelas])
 
   // ─── Parser de importação ───────────────────────────────────────────────────
   const parseOfx = (text) => {
@@ -717,6 +726,7 @@ function DFCPage() {
     setIsParcelado(false)
     setNumeroParcelas(1)
     setParcelasDatas([])
+    setParcelasValores({})
     setParcelas([])
     setFormData({
       company_id: '',
@@ -771,6 +781,10 @@ function DFCPage() {
     }
     if (isParcelado && numeroParcelas < 2) {
       toast.error('Para lançamento parcelado, informe pelo menos 2 parcelas')
+      return
+    }
+    if (isParcelado && !editingId && !valoresParcelas.ok) {
+      toast.error('A soma das parcelas precisa ser igual ao valor total. Ajuste os valores das parcelas.')
       return
     }
 
@@ -848,7 +862,6 @@ function DFCPage() {
       else {
         // Lançamento parcelado - criar registro PAI + parcelas FILHAS
         const valorTotal = parseFloat(formData.valor)
-        const valorParcela = valorTotal / numeroParcelas
         
         // 1. Criar lançamento PAI
         const lancamentoPai = {
@@ -899,7 +912,7 @@ function DFCPage() {
             categoria: formData.categoria,
             item_id: formData.item_id,
             descricao: `${formData.descricao} - Parcela ${i + 1}/${numeroParcelas}`,
-            valor: valorParcela,
+            valor: valoresParcelas.valores[i],
             mes: mesParcela.toISOString().substring(0, 10),
             vencimento: vencimentoParcela,
             is_parcelado: false,
@@ -916,7 +929,7 @@ function DFCPage() {
           .insert(parcelasFilhas)
 
         if (errorFilhas) throw errorFilhas
-        toast.success(`Lançamento parcelado criado: ${numeroParcelas}x de ${formatCurrency(valorParcela)}`)
+        toast.success(`Lançamento parcelado criado: ${descreverParcelas(valoresParcelas.valores, (v) => formatCurrency(v))}`)
       }
 
       closeModal()
@@ -1498,7 +1511,7 @@ function DFCPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
               onClick={exportToCSV}
               className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-all font-medium"
@@ -1707,7 +1720,7 @@ function DFCPage() {
                     />
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => {
                       setDataInicio(tempDataInicio)
@@ -1770,6 +1783,75 @@ function DFCPage() {
           </h2>
         </div>
 
+        {/* Lista em cartões (celular) */}
+        <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+          {filteredSaidas.length === 0 ? (
+            <div className="px-6 py-10 text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Nenhuma saída encontrada. Ajuste os filtros ou registre um novo lançamento.</p>
+            </div>
+          ) : (
+            filteredSaidas.map((saida) => (
+              <div key={saida.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white break-words">{saida.descricao}</p>
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 break-words">
+                      {categorias.find(c => c.id === saida.categoria)?.nome || '-'}
+                      {saida.dfc_itens?.nome ? ` • ${saida.dfc_itens.nome}` : ''}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-base font-bold text-red-600">{formatCurrency(saida.valor)}</p>
+                    {saida.is_parcelado && <p className="text-[11px] text-gray-500">Valor total</p>}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+                  <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-gray-400" />Venc. {formatDate(saida.vencimento)}</span>
+                  <span>Ref. {formatMonth(saida.mes)}</span>
+                  {saida.dinheiro_especie && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Espécie</span>}
+                  {saida.is_parcelado && (
+                    <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-medium">Parcelado em {saida.numero_parcelas}x</span>
+                  )}
+                </div>
+
+                {saida.companies?.name && (
+                  <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <Building2 className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="truncate">{saida.companies.name}</span>
+                  </p>
+                )}
+
+                <div className="flex items-center gap-2 pt-1">
+                  {saida.dfc_saidas_documentos?.[0]?.count > 0 && (
+                    <button
+                      onClick={() => openDocumentosModal(saida)}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 min-h-[44px] rounded-xl border border-blue-200 text-blue-700 text-sm font-medium"
+                    >
+                      <Paperclip className="h-4 w-4" /> Anexos ({saida.dfc_saidas_documentos[0].count})
+                    </button>
+                  )}
+                  <button
+                    onClick={() => openModal(saida)}
+                    aria-label="Editar"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 min-h-[44px] rounded-xl border border-[#EBA500]/40 text-[#B07C00] text-sm font-medium"
+                  >
+                    <Edit2 className="h-4 w-4" /> Editar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(saida.id)}
+                    aria-label="Excluir"
+                    className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-xl border border-red-200 text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden md:block">
         <div
           ref={topBarRef}
           onScroll={() => { if (tableWrapRef.current) tableWrapRef.current.scrollLeft = topBarRef.current.scrollLeft }}
@@ -1920,6 +2002,7 @@ function DFCPage() {
               )}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
 
@@ -2134,7 +2217,7 @@ function DFCPage() {
                 </div>
 
                 {/* Mês e Vencimento */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Mês de Referência *
@@ -2247,8 +2330,14 @@ function DFCPage() {
                             type="number"
                             min="2"
                             max="120"
-                            value={numeroParcelas}
-                            onChange={(e) => setNumeroParcelas(parseInt(e.target.value) || 2)}
+                            value={parcelasDigitado ?? numeroParcelas}
+                            onChange={(e) => {
+                              // permite apagar tudo para digitar um número novo; só aplica quando for válido
+                              setParcelasDigitado(e.target.value)
+                              const n = parseInt(e.target.value, 10)
+                              if (!Number.isNaN(n) && n >= 2) setNumeroParcelas(Math.min(n, 120))
+                            }}
+                            onBlur={() => setParcelasDigitado(null)}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/20 focus:border-[#EBA500] dark:bg-gray-700 dark:text-white"
                             placeholder="Ex: 10"
                           />
@@ -2261,22 +2350,22 @@ function DFCPage() {
                         {formData.valor && formData.vencimento && formData.mes && numeroParcelas >= 2 && (
                           <div className="bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 rounded-lg p-3 max-h-64 overflow-y-auto">
                             <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                              Preview das {numeroParcelas} parcelas (clique na data para editar):
+                              Preview das {numeroParcelas} parcelas (edite a data ou o valor):
                             </p>
                             <div className="space-y-1.5">
                               {Array.from({ length: numeroParcelas }, (_, i) => {
                                 const mesBase = new Date(formData.mes + '-01T00:00:00')
                                 const mesParcela = new Date(mesBase)
                                 mesParcela.setMonth(mesParcela.getMonth() + i)
-                                const valorParcela = parseFloat(formData.valor) / numeroParcelas
+                                const valorParcela = valoresParcelas.valores[i]
                                 const vencimentoParcela = parcelasDatas[i] || formData.vencimento
 
                                 return (
-                                  <div key={i} className="flex items-center justify-between text-xs py-1.5 px-2 bg-gray-50 dark:bg-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                                  <div key={i} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs py-1.5 px-2 bg-gray-50 dark:bg-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                                     <span className="text-gray-900 dark:text-white font-medium">
                                       Parcela {i + 1}/{numeroParcelas}
                                     </span>
-                                    <div className="flex items-center space-x-3 text-gray-600">
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-gray-600">
                                       <span>
                                         {mesParcela.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
                                       </span>
@@ -2293,14 +2382,50 @@ function DFCPage() {
                                           className="px-2 py-0.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-[#EBA500] focus:border-[#EBA500]"
                                         />
                                       </div>
-                                      <span className="font-semibold text-[#EBA500]">
-                                        {formatCurrency(valorParcela)}
-                                      </span>
+                                      <div className="flex items-center space-x-1">
+                                        <span className="text-gray-500">R$</span>
+                                        <input
+                                          type="text"
+                                          inputMode="decimal"
+                                          value={parcelasValores[i] ?? textoValor(valorParcela)}
+                                          onChange={(e) => {
+                                            const texto = e.target.value.replace(/[^0-9.,]/g, '')
+                                            setParcelasValores(prev => {
+                                              const novo = { ...prev }
+                                              novo[i] = texto // vazio é permitido enquanto digita; conta como "não editada"
+                                              return novo
+                                            })
+                                          }}
+                                          onFocus={(e) => e.target.select()}
+                                          onBlur={() => setParcelasValores(prev => {
+                                            if (prev[i] !== '') return prev
+                                            const novo = { ...prev }
+                                            delete novo[i]
+                                            return novo
+                                          })}
+                                          title="Edite o valor: as demais parcelas se ajustam para fechar o total"
+                                          className="w-24 px-2 py-0.5 border border-gray-300 rounded text-xs text-right font-semibold text-[#EBA500] focus:outline-none focus:ring-1 focus:ring-[#EBA500] focus:border-[#EBA500]"
+                                        />
+                                      </div>
                                     </div>
                                   </div>
                                 )
                               })}
                             </div>
+                            {!valoresParcelas.ok && (
+                              <p className="mt-2 text-xs text-red-600">
+                                A soma das parcelas difere do total em {formatCurrency(Math.abs(valoresParcelas.diferenca))}. Ajuste os valores.
+                              </p>
+                            )}
+                            {Object.keys(parcelasValores).length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setParcelasValores({})}
+                                className="mt-2 text-xs text-blue-600 hover:underline"
+                              >
+                                Dividir igualmente de novo
+                              </button>
+                            )}
                           </div>
                         )}
                       </>
@@ -2467,7 +2592,7 @@ function DFCPage() {
                                 <button
                                   type="button"
                                   onClick={() => setDocumentoVisualizando(doc)}
-                                  className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-all"
+                                  className="p-2 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition-all"
                                   title="Visualizar"
                                 >
                                   <Eye className="h-4 w-4" />
@@ -2476,7 +2601,7 @@ function DFCPage() {
                               <button
                                 type="button"
                                 onClick={() => downloadDocumento(doc)}
-                                className="p-1 text-[#EBA500] hover:bg-[#EBA500]/10 rounded transition-all"
+                                className="p-2 sm:p-1 text-[#EBA500] hover:bg-[#EBA500]/10 rounded transition-all"
                                 title="Baixar"
                               >
                                 <Download className="h-4 w-4" />
@@ -2613,7 +2738,7 @@ function DFCPage() {
             </div>
 
             {/* Body */}
-            <div className="p-6 overflow-y-auto max-h-[calc(80vh-140px)]">
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(80vh-140px)]">
               {documentos.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -2622,7 +2747,7 @@ function DFCPage() {
               ) : (
                 <div className="space-y-3">
                   {documentos.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all">
+                    <div key={doc.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all">
                       <div className="flex items-center space-x-3 flex-1 min-w-0">
                         <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
                           <File className="h-6 w-6 text-blue-600" />
@@ -2638,11 +2763,11 @@ function DFCPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
+                      <div className="flex items-center gap-2 sm:ml-4 sm:flex-shrink-0">
                         {tipoVisualizavel(doc) && (
                           <button
                             onClick={() => setDocumentoVisualizando(doc)}
-                            className="flex items-center space-x-1 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-1 min-h-[44px] sm:min-h-0 px-3 py-2 text-gray-700 bg-white sm:bg-transparent border sm:border-0 border-gray-200 hover:bg-gray-100 rounded-lg transition-all"
                             title="Visualizar documento"
                           >
                             <Eye className="h-4 w-4" />
@@ -2651,7 +2776,7 @@ function DFCPage() {
                         )}
                         <button
                           onClick={() => downloadDocumento(doc)}
-                          className="flex items-center space-x-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                          className="flex-1 sm:flex-none flex items-center justify-center gap-1 min-h-[44px] sm:min-h-0 px-3 py-2 text-blue-600 bg-white sm:bg-transparent border sm:border-0 border-blue-200 hover:bg-blue-50 rounded-lg transition-all"
                           title="Baixar documento"
                         >
                           <Download className="h-4 w-4" />
@@ -2663,7 +2788,7 @@ function DFCPage() {
                             message: 'Esta ação não pode ser desfeita.',
                             onConfirm: () => { setConfirmDialog(null); deleteDocumento(doc) }
                           })}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                          className="flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-2 text-red-600 bg-white sm:bg-transparent border sm:border-0 border-red-200 hover:bg-red-50 rounded-lg transition-all"
                           title="Excluir documento"
                         >
                           <Trash2 className="h-4 w-4" />

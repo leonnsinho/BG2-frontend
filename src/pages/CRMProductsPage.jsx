@@ -180,7 +180,7 @@ export default function CRMProductsPage() {
     : products
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="crm-page min-h-screen bg-white dark:bg-gray-900">
       <SuperAdminBanner />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -188,43 +188,43 @@ export default function CRMProductsPage() {
         {/* ── Breadcrumb ── */}
         <button
           onClick={() => navigate('/crm' + adminSuffix)}
-          className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors pl-12 lg:pl-0 min-h-[40px] lg:min-h-0"
         >
           <ArrowLeft className="h-4 w-4" /> Voltar ao CRM
         </button>
 
         {/* ── Header card ── */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-emerald-50/60 dark:from-emerald-900/20 to-transparent">
+          <div className="px-4 sm:px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-emerald-50/60 dark:from-emerald-900/20 to-transparent">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center">
                   <Package className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">Produtos / Serviços</h1>
+                  <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Produtos / Serviços</h1>
                   <p className="text-xs text-gray-400 mt-0.5">{products.length} produto{products.length !== 1 ? 's' : ''} cadastrado{products.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
 
               {/* Action buttons */}
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
                 <input ref={importRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleImportFile} />
                 <button
                   onClick={() => importRef.current?.click()}
                   disabled={importing}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60"
+                  className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2.5 sm:py-2 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors disabled:opacity-60"
                 >
                   <FileSpreadsheet className="h-3.5 w-3.5" /> Importar planilha
                 </button>
-                <button onClick={downloadTemplateXlsx} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors">
+                <button onClick={downloadTemplateXlsx} className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2.5 sm:py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors">
                   <Download className="h-3.5 w-3.5" /> Modelo .xlsx
                 </button>
-                <button onClick={downloadTemplateCsv} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors">
+                <button onClick={downloadTemplateCsv} className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2.5 sm:py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors">
                   <Download className="h-3.5 w-3.5" /> Modelo .csv
                 </button>
                 {!showForm && (
-                  <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+                  <button onClick={openNew} className="col-span-2 sm:col-span-1 order-first sm:order-none flex items-center justify-center gap-1.5 px-3 py-2.5 sm:py-2 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
                     <Plus className="h-3.5 w-3.5" /> Novo Produto
                   </button>
                 )}
@@ -236,7 +236,7 @@ export default function CRMProductsPage() {
               <div className="mt-4 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                 <input
-                  className="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
+                  className="w-full pl-8 pr-4 py-2.5 sm:py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
                   placeholder="Buscar por nome, descrição ou unidade..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
@@ -246,7 +246,7 @@ export default function CRMProductsPage() {
           </div>
 
           {/* ── Body ── */}
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-5">
             {loading ? (
               <div className="flex justify-center py-16">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#EBA500]" />
@@ -255,7 +255,7 @@ export default function CRMProductsPage() {
               /* ── Form ── */
               <div className="space-y-4 max-w-2xl">
                 <div className="flex items-center gap-2 mb-4">
-                  <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                  <button onClick={() => setShowForm(false)} className="p-2.5 sm:p-1.5 -ml-2 sm:ml-0 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" aria-label="Voltar">
                     <ArrowLeft className="h-4 w-4 text-gray-500" />
                   </button>
                   <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">{editing ? 'Editar Produto' : 'Novo Produto'}</h3>
@@ -274,7 +274,7 @@ export default function CRMProductsPage() {
                     placeholder="Detalhes do produto ou serviço..."
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor (R$)</label>
                     <input
@@ -295,9 +295,9 @@ export default function CRMProductsPage() {
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
-                  <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
+                <div className="flex gap-2 sm:justify-end pt-2">
+                  <button onClick={() => setShowForm(false)} className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
+                  <button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none justify-center min-h-[44px] sm:min-h-0 flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
                     {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Salvar
                   </button>
                 </div>
@@ -319,7 +319,7 @@ export default function CRMProductsPage() {
               /* ── List ── */
               <div className="space-y-2">
                 {filtered.map(p => (
-                  <div key={p.id} className="flex items-center gap-3 p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 group transition-colors">
+                  <div key={p.id} className="flex items-center gap-3 p-3 sm:p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 group transition-colors">
                     <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
                       <Package className="h-4 w-4 text-emerald-500" />
                     </div>
@@ -330,11 +330,11 @@ export default function CRMProductsPage() {
                         {p.valor ? fmtMoney(p.valor) + (p.unidade ? ' · ' + p.unidade : '') : 'Sem valor definido'}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(p)} className="p-1.5 hover:bg-gray-200 rounded-lg" title="Editar">
+                    <div className="flex items-center gap-0.5 sm:gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openEdit(p)} className="p-2.5 sm:p-1.5 hover:bg-gray-200 rounded-lg" title="Editar" aria-label="Editar">
                         <Edit2 className="h-3.5 w-3.5 text-gray-500" />
                       </button>
-                      <button onClick={() => handleDelete(p.id)} className="p-1.5 hover:bg-red-50 rounded-lg" title="Remover">
+                      <button onClick={() => handleDelete(p.id)} className="p-2.5 sm:p-1.5 hover:bg-red-50 rounded-lg" title="Remover" aria-label="Remover">
                         <Trash2 className="h-3.5 w-3.5 text-red-400" />
                       </button>
                     </div>
@@ -349,20 +349,20 @@ export default function CRMProductsPage() {
       {/* ── Import Preview Modal ── */}
       {importPreview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90dvh] flex flex-col">
+            <div className="flex items-start sm:items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-700">
               <div>
                 <h3 className="text-base font-bold text-gray-900 dark:text-white">Confirmar importação de produtos</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {importPreview.rows.length} produto{importPreview.rows.length !== 1 ? 's' : ''} encontrado{importPreview.rows.length !== 1 ? 's' : ''}. Revise antes de confirmar.
                 </p>
               </div>
-              <button onClick={() => setImportPreview(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-400 hover:text-gray-600">
+              <button onClick={() => setImportPreview(null)} className="p-2.5 sm:p-2 -mr-1 shrink-0 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-400 hover:text-gray-600" aria-label="Fechar">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-auto px-6 py-4">
-              <table className="w-full text-xs border-collapse">
+            <div className="flex-1 overflow-auto px-4 sm:px-6 py-4">
+              <table className="w-full min-w-[480px] text-xs border-collapse">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-700">
                     {['Nome', 'Descrição', 'Valor', 'Unidade'].map(h => (
@@ -384,9 +384,9 @@ export default function CRMProductsPage() {
                 </tbody>
               </table>
             </div>
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-700">
-              <button onClick={() => setImportPreview(null)} className="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors">Cancelar</button>
-              <button onClick={confirmImport} disabled={importing} className="px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 flex items-center gap-2">
+            <div className="flex gap-3 sm:justify-end px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 dark:border-gray-700">
+              <button onClick={() => setImportPreview(null)} className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors">Cancelar</button>
+              <button onClick={confirmImport} disabled={importing} className="flex-1 sm:flex-none justify-center min-h-[44px] sm:min-h-0 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60 flex items-center gap-2">
                 {importing
                   ? <span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />
                   : <Upload className="h-3.5 w-3.5" />

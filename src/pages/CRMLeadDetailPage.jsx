@@ -179,51 +179,51 @@ export default function CRMLeadDetailPage() {
   if (!lead) return null
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className="crm-page max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
       {/* Back */}
       <button
         onClick={() => navigate('/crm')}
-        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors pl-12 lg:pl-0 min-h-[40px] lg:min-h-0"
       >
         <ArrowLeft className="h-4 w-4" /> Voltar ao CRM
       </button>
 
       {/* ── Lead card ── */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-[#EBA500]/5 to-transparent">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#EBA500]/10 flex items-center justify-center">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-[#EBA500]/5 to-transparent">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-[#EBA500]/10 flex items-center justify-center">
               <Building2 className="h-5 w-5 text-[#EBA500]" />
             </div>
             {editingLead ? (
               <input
-                className="text-lg font-bold text-gray-900 dark:text-white border-b-2 border-[#EBA500] bg-transparent outline-none px-1"
+                className="text-lg font-bold text-gray-900 dark:text-white border-b-2 border-[#EBA500] bg-transparent outline-none px-1 min-w-0 flex-1"
                 value={leadForm.nome_empresa}
                 onChange={e => setLeadForm(p => ({ ...p, nome_empresa: e.target.value }))}
                 autoFocus
               />
             ) : (
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">{lead.nome_empresa}</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white break-words min-w-0">{lead.nome_empresa}</h1>
             )}
           </div>
           <div className="flex items-center gap-2">
             {editingLead ? (
               <>
-                <button onClick={() => setEditingLead(false)} className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
-                <button onClick={saveLead} disabled={savingLead} className="flex items-center gap-2 px-4 py-1.5 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
+                <button onClick={() => setEditingLead(false)} className="px-3 py-2.5 sm:py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
+                <button onClick={saveLead} disabled={savingLead} className="flex items-center gap-2 px-4 py-2.5 sm:py-1.5 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
                   {savingLead ? <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /> : <Save className="h-3.5 w-3.5" />} Salvar
                 </button>
               </>
             ) : (
-              <button onClick={() => setEditingLead(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">
+              <button onClick={() => setEditingLead(true)} className="flex items-center gap-1.5 px-3 py-2.5 sm:py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">
                 <Edit2 className="h-3.5 w-3.5" /> Editar
               </button>
             )}
           </div>
         </div>
 
-        <div className="px-6 py-5">
+        <div className="px-4 sm:px-6 py-5">
           {editingLead ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -282,23 +282,23 @@ export default function CRMLeadDetailPage() {
 
       {/* ── Contacts ── */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-sm font-bold text-gray-800 dark:text-white flex items-center gap-2">
             <User className="h-4 w-4 text-purple-500" /> Contatos ({contacts.length})
           </h2>
           {!showContactForm && (
-            <button onClick={openNewContact} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+            <button onClick={openNewContact} className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 sm:py-1.5 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
               <Plus className="h-3.5 w-3.5" /> Novo Contato
             </button>
           )}
         </div>
 
-        <div className="px-6 py-4">
+        <div className="px-4 sm:px-6 py-4">
           {showContactForm && (
             <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 space-y-3">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{editingContact ? 'Editar contato' : 'Novo contato'}</p>
-                <button onClick={() => setShowContactForm(false)}><X className="h-4 w-4 text-gray-400 hover:text-gray-600" /></button>
+                <button onClick={() => setShowContactForm(false)} className="p-2 -m-2" aria-label="Fechar"><X className="h-4 w-4 text-gray-400 hover:text-gray-600" /></button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -322,9 +322,9 @@ export default function CRMLeadDetailPage() {
                   <textarea className={INP + ' resize-none'} rows={2} value={contactForm.observacoes} onChange={e => setContactForm(p => ({ ...p, observacoes: e.target.value }))} />
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
-                <button onClick={() => setShowContactForm(false)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700">Cancelar</button>
-                <button onClick={saveContact} disabled={savingContact} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
+              <div className="flex gap-2 sm:justify-end">
+                <button onClick={() => setShowContactForm(false)} className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700">Cancelar</button>
+                <button onClick={saveContact} disabled={savingContact} className="flex-1 sm:flex-none justify-center min-h-[44px] sm:min-h-0 flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
                   {savingContact ? <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /> : <Save className="h-3.5 w-3.5" />} Salvar
                 </button>
               </div>
@@ -335,7 +335,7 @@ export default function CRMLeadDetailPage() {
             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
               <User className="h-8 w-8 text-gray-200" />
               <p className="text-sm text-gray-400">Nenhum contato associado.</p>
-              <button onClick={openNewContact} className="text-xs text-[#EBA500] hover:underline">Adicionar contato</button>
+              <button onClick={openNewContact} className="text-xs text-[#EBA500] hover:underline py-2">Adicionar contato</button>
             </div>
           ) : (
             <div className="space-y-2">
@@ -347,14 +347,14 @@ export default function CRMLeadDetailPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 dark:text-white">{c.nome}{c.cargo ? <span className="font-normal text-gray-500 dark:text-gray-400"> · {c.cargo}</span> : ''}</p>
                     <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                      {c.email && <a href={`mailto:${c.email}`} className="text-xs text-blue-500 hover:underline flex items-center gap-1"><Mail className="h-3 w-3" />{c.email}</a>}
+                      {c.email && <a href={`mailto:${c.email}`} className="text-xs text-blue-500 hover:underline flex items-center gap-1 break-all"><Mail className="h-3 w-3" />{c.email}</a>}
                       {c.telefone && <a href={`tel:${c.telefone}`} className="text-xs text-gray-500 flex items-center gap-1"><Phone className="h-3 w-3" />{c.telefone}</a>}
                     </div>
                     {c.observacoes && <p className="text-xs text-gray-400 mt-0.5 truncate">{c.observacoes}</p>}
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => openEditContact(c)} className="p-1.5 hover:bg-gray-200 rounded-lg"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
-                    <button onClick={() => deleteContact(c.id)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
+                  <div className="flex items-center gap-0.5 sm:gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => openEditContact(c)} className="p-2.5 sm:p-1.5 hover:bg-gray-200 rounded-lg" aria-label="Editar contato"><Edit2 className="h-3.5 w-3.5 text-gray-500" /></button>
+                    <button onClick={() => deleteContact(c.id)} className="p-2.5 sm:p-1.5 hover:bg-red-50 rounded-lg" aria-label="Remover contato"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
                   </div>
                 </div>
               ))}
@@ -365,7 +365,7 @@ export default function CRMLeadDetailPage() {
 
       {/* ── Negociações vinculadas ── */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-sm font-bold text-gray-800 dark:text-white flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-green-500" /> Negociações no Pipeline ({cards.length})
           </h2>
@@ -376,7 +376,7 @@ export default function CRMLeadDetailPage() {
 
         {/* Filtros */}
         {cards.length > 0 && (
-          <div className="px-6 pt-4">
+          <div className="px-4 sm:px-6 pt-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
               <input
@@ -384,7 +384,7 @@ export default function CRMLeadDetailPage() {
                 value={cardSearch}
                 onChange={e => setCardSearch(e.target.value)}
                 placeholder="Filtrar por empresa, contato ou produto..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/40 focus:border-[#EBA500] bg-gray-50"
+                className="w-full pl-9 pr-3 py-2.5 sm:py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EBA500]/40 focus:border-[#EBA500] bg-gray-50"
               />
               {cardSearch && (
                 <button onClick={() => setCardSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -395,7 +395,7 @@ export default function CRMLeadDetailPage() {
           </div>
         )}
 
-        <div className="px-6 py-4">
+        <div className="px-4 sm:px-6 py-4">
           {(() => {
             const q = cardSearch.trim().toLowerCase()
             const filtered = q
@@ -436,7 +436,7 @@ export default function CRMLeadDetailPage() {
                     {card.crm_boards?.id && (
                       <button
                         onClick={() => navigate('/crm', { state: { boardId: card.crm_boards.id, cardId: card.id } })}
-                        className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#EBA500] border border-[#EBA500]/30 rounded-lg hover:bg-amber-50 transition-colors"
+                        className="shrink-0 flex items-center gap-1 px-3 py-2.5 sm:px-2.5 sm:py-1.5 text-xs font-medium text-[#EBA500] border border-[#EBA500]/30 rounded-lg hover:bg-amber-50 transition-colors"
                       >
                         Ver <ChevronRight className="h-3 w-3" />
                       </button>
@@ -458,9 +458,9 @@ function InfoItem({ icon, label, value }) {
     <div>
       <p className="text-xs font-medium text-gray-400 flex items-center gap-1 mb-0.5">{icon}{label}</p>
       {typeof value === 'string' || value === undefined || value === null ? (
-        <p className="text-sm text-gray-800">{value || <span className="text-gray-300">—</span>}</p>
+        <p className="text-sm text-gray-800 break-words">{value || <span className="text-gray-300">—</span>}</p>
       ) : (
-        <div className="text-sm text-gray-800">{value}</div>
+        <div className="text-sm text-gray-800 break-all">{value}</div>
       )}
     </div>
   )

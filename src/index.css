@@ -109,6 +109,14 @@
   background: rgba(0,0,0,0.32);
 }
 /* ─────────────────────────────────────────────────────────────────────── */
+/* CRM no celular: iOS dá zoom automático em campos com fonte menor que 16px */
+@media (max-width: 639px) {
+  .crm-page input:not([type='checkbox']):not([type='radio']):not([type='color']):not([type='file']),
+  .crm-page select,
+  .crm-page textarea {
+    font-size: 16px;
+  }
+}
 .kanban-scroll {
   scrollbar-width: thin;
   scrollbar-color: #EBA500 #f1f1f1;

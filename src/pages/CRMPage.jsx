@@ -4,7 +4,8 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   closestCorners,
@@ -24,9 +25,11 @@ import {
   Building2, User, Phone, Mail, MapPin, Tag, DollarSign,
   MessageSquare, Paperclip, ChevronDown, Check, AlertCircle,
   Kanban, Search, Filter, MoreHorizontal, Download, ArrowLeft, LayoutGrid,
-  Users, Package, Import, ChevronRight, Globe, Briefcase, ArrowUpRight, FileSpreadsheet, FileText, Pencil
+  Users, Package, Import, ChevronRight, Globe, Briefcase, ArrowUpRight, FileSpreadsheet, FileText, Pencil, Eye
 } from 'lucide-react'
 import { supabase } from '../services/supabase'
+import VisualizadorDocumento from '../components/VisualizadorDocumento'
+import { tipoVisualizavel } from '../utils/tipoDocumento'
 import { useAuth } from '../contexts/AuthContext'
 import SuperAdminBanner from '../components/SuperAdminBanner'
 import EmojiIconPicker from '../components/EmojiIconPicker'
@@ -87,7 +90,7 @@ function ImportOrCreatePicker({ title, Icon, colorClass, items, selected, onSele
       <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${colorClass} bg-opacity-10`}>
         <Icon className="h-4 w-4 shrink-0" />
         <div className="flex-1 min-w-0 text-sm">{renderSelected(selected)}</div>
-        <button onClick={() => onSelect(null)} className="text-gray-400 hover:text-red-400 transition-colors shrink-0">
+        <button onClick={() => onSelect(null)} className="text-gray-400 hover:text-red-400 transition-colors shrink-0 p-2 -m-2 sm:p-0 sm:m-0" aria-label="Remover seleção">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -100,7 +103,7 @@ function ImportOrCreatePicker({ title, Icon, colorClass, items, selected, onSele
         <button
           type="button"
           onClick={() => { setOpen(o => !o); setSearch('') }}
-          className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl border-2 border-dashed text-sm transition-all ${open ? 'border-[#EBA500] bg-amber-50/40' : 'border-gray-200 hover:border-gray-300 text-gray-500'}`}
+          className={`flex-1 min-w-0 flex items-center gap-2 px-3 py-2.5 sm:py-2 rounded-xl border-2 border-dashed text-sm transition-all ${open ? 'border-[#EBA500] bg-amber-50/40' : 'border-gray-200 hover:border-gray-300 text-gray-500'}`}
         >
           <Import className="h-4 w-4 shrink-0" />
           <span className="flex-1 text-left text-xs">{placeholder}</span>
@@ -109,7 +112,7 @@ function ImportOrCreatePicker({ title, Icon, colorClass, items, selected, onSele
         <button
           type="button"
           onClick={onCreateClick}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-dashed border-gray-200 hover:border-[#EBA500] hover:bg-amber-50/40 text-xs text-gray-500 hover:text-[#EBA500] transition-all shrink-0"
+          className="flex items-center gap-1.5 px-3 py-2.5 sm:py-2 rounded-xl border-2 border-dashed border-gray-200 hover:border-[#EBA500] hover:bg-amber-50/40 text-xs text-gray-500 hover:text-[#EBA500] transition-all shrink-0"
           title={`Criar ${title}`}
         >
           <Plus className="h-3.5 w-3.5" /> Criar
@@ -138,7 +141,7 @@ function ImportOrCreatePicker({ title, Icon, colorClass, items, selected, onSele
             ) : (
               filtered.map(item => (
                 <button key={item.id} type="button" onClick={() => { onSelect(item); handleClose() }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors">
+                  className="w-full flex items-center gap-2 px-3 py-3 sm:py-2 text-left hover:bg-gray-50 transition-colors">
                   <Icon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                   <span className="text-xs text-gray-700 truncate">{renderItem(item)}</span>
                 </button>
@@ -634,10 +637,10 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
     toast.success('Anexo removido')
   }
 
-  const handleDownload = async (att) => {
-    const { data } = await supabase.storage.from('crm-attachments').createSignedUrl(att.file_path, 60)
-    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
-  }
+  const [anexoAberto, setAnexoAberto] = useState(null)
+  const paraVisualizador = (att) => ({ nome_original: att.file_name, storage_path: att.file_path, tipo_arquivo: att.mime_type })
+  // Abre pelo visualizador (links reais funcionam no celular; window.open depois de await é bloqueado)
+  const handleDownload = (att) => setAnexoAberto(att)
 
   const statusInfo = STATUS_OPTIONS.find(s => s.value === form.status) || STATUS_OPTIONS[0]
 
@@ -645,9 +648,9 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   if (createMode) {
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && setCreateMode(null)}>
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[92dvh] overflow-y-auto p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-5">
-            <button onClick={() => setCreateMode(null)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
+            <button onClick={() => setCreateMode(null)} className="p-2.5 sm:p-1.5 -ml-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" aria-label="Voltar"><ArrowLeft className="h-4 w-4 text-gray-500" /></button>
             <h3 className="text-sm font-bold text-gray-800 dark:text-white">
               {createMode === 'lead' ? 'Criar novo Lead' : createMode === 'product' ? 'Criar novo Produto' : 'Criar novo Contato'}
             </h3>
@@ -657,7 +660,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
             <div className="space-y-3">
               <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome da Empresa *</label><input className={INP} value={createForm.nome_empresa} onChange={e => setCreateForm(p=>({...p,nome_empresa:e.target.value}))} placeholder="Acme Corp" /></div>
               <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">CNPJ <span className="text-gray-400 font-normal">(opcional)</span></label><input className={INP} value={createForm.cnpj} onChange={e => setCreateForm(p=>({...p,cnpj:e.target.value}))} placeholder="00.000.000/0000-00" /></div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cidade</label><input className={INP} value={createForm.cidade} onChange={e => setCreateForm(p=>({...p,cidade:e.target.value}))} placeholder="São Paulo" /></div>
                 <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Estado</label><select className={SEL} value={createForm.estado} onChange={e => setCreateForm(p=>({...p,estado:e.target.value}))}><option value="">Selecione...</option>{ESTADOS_BR.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
                 <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Segmento</label><input className={INP} value={createForm.segmento} onChange={e => setCreateForm(p=>({...p,segmento:e.target.value}))} placeholder="Tecnologia" /></div>
@@ -674,7 +677,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
             <div className="space-y-3">
               <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome *</label><input className={INP} value={createForm.nome} onChange={e => setCreateForm(p=>({...p,nome:e.target.value}))} placeholder="Ex: Consultoria" /></div>
               <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Descrição</label><textarea className={INP+' resize-none'} rows={2} value={createForm.descricao} onChange={e => setCreateForm(p=>({...p,descricao:e.target.value}))} /></div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor (R$)</label><input type="number" className={INP} value={createForm.valor} onChange={e => setCreateForm(p=>({...p,valor:e.target.value}))} placeholder="0,00" /></div>
                 <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Unidade</label><input className={INP} value={createForm.unidade} onChange={e => setCreateForm(p=>({...p,unidade:e.target.value}))} placeholder="por mês" /></div>
               </div>
@@ -684,7 +687,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
           {createMode === 'contact' && (
             <div className="space-y-3">
               <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome *</label><input className={INP} value={createForm.nome} onChange={e => setCreateForm(p=>({...p,nome:e.target.value}))} placeholder="João Silva" /></div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cargo</label><input className={INP} value={createForm.cargo} onChange={e => setCreateForm(p=>({...p,cargo:e.target.value}))} placeholder="Diretor" /></div>
                 <div><label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Empresa</label>
                   <select className={SEL} value={createForm.lead_id} onChange={e => setCreateForm(p=>({...p,lead_id:e.target.value}))}>
@@ -697,9 +700,9 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
             </div>
           )}
 
-          <div className="flex justify-end gap-2 mt-5">
-            <button onClick={() => setCreateMode(null)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
-            <button onClick={handleInlineCreate} disabled={createSaving} className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
+          <div className="flex gap-2 sm:justify-end mt-5">
+            <button onClick={() => setCreateMode(null)} className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
+            <button onClick={handleInlineCreate} disabled={createSaving} className="flex-1 sm:flex-none justify-center min-h-[44px] sm:min-h-0 flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl disabled:opacity-60">
               {createSaving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <Save className="h-4 w-4" />} Criar e vincular
             </button>
           </div>
@@ -709,10 +712,10 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center p-0 sm:p-4 bg-black/50 sm:backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white dark:bg-gray-800 sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl h-[100dvh] sm:h-auto max-h-[100dvh] sm:max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-2 sm:py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
           <h2 className="text-base font-bold text-gray-800 dark:text-white flex items-center gap-2">
             <Kanban className="h-4 w-4 text-[#EBA500]" />
             {isNew ? 'Novo Card' : 'Editar Card'}
@@ -720,18 +723,18 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
           <div className="flex items-center gap-2">
             {!isNew && (
               <button onClick={() => setConfirmDelete(true)} disabled={deleting}
-                className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                className="p-3 sm:p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors" aria-label="Excluir card">
                 <Trash2 className="h-4 w-4" />
               </button>
             )}
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors">
+            <button onClick={onClose} className="p-3 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors" aria-label="Fechar">
               <X className="h-5 w-5 text-gray-500" />
             </button>
           </div>
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+        <div className="overflow-y-auto overscroll-contain flex-1 min-h-0 px-4 sm:px-6 py-4 sm:py-5 space-y-5">
 
           {/* Coluna (mover card) */}
           {!isNew && (
@@ -757,12 +760,12 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
 
           {/* Status */}
           <div className="space-y-2">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide w-16 shrink-0">Status</label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {STATUS_OPTIONS.map(s => (
                   <button key={s.value} onClick={() => setForm(p => ({ ...p, status: s.value, status_updated_at: new Date().toISOString() }))}
-                    className={`px-3 py-1 rounded-full text-xs font-medium border-2 transition-all ${form.status === s.value ? s.color + ' border-current' : 'bg-gray-50 text-gray-400 border-transparent hover:border-gray-200'}`}>
+                    className={`px-3.5 py-1.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium border-2 transition-all ${form.status === s.value ? s.color + ' border-current' : 'bg-gray-50 text-gray-400 border-transparent hover:border-gray-200'}`}>
                     {s.label}
                   </button>
                 ))}
@@ -772,7 +775,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
               <label className="text-xs text-gray-400 w-16 shrink-0">Data/hora</label>
               <input
                 type="datetime-local"
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all bg-white"
+                className="flex-1 min-w-0 sm:flex-none px-3 py-2 sm:py-1.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] transition-all bg-white"
                 value={toDatetimeLocal(form.status_updated_at)}
                 onChange={e => setForm(p => ({ ...p, status_updated_at: e.target.value ? new Date(e.target.value).toISOString() : p.status_updated_at }))}
               />
@@ -791,7 +794,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                     key={tag.id}
                     type="button"
                     onClick={() => toggleTag(tag.id)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border-2 transition-all"
+                    className="flex items-center gap-1 px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-full text-xs font-medium border-2 transition-all"
                     style={{
                       backgroundColor: selectedTagIds.has(tag.id) ? tag.color + '25' : tag.color + '10',
                       color: tag.color,
@@ -808,7 +811,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
               <div className="flex items-center gap-2 mt-1">
                 <input
                   autoFocus
-                  className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs flex-1 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500]"
+                  className="min-w-0 px-3 py-2 sm:py-1.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs flex-1 focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500]"
                   value={newTagName}
                   onChange={e => setNewTagName(e.target.value)}
                   placeholder="Nome da tag..."
@@ -820,15 +823,15 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                   onChange={e => setNewTagColor(e.target.value)}
                   className="h-8 w-10 rounded-lg border border-gray-200 cursor-pointer p-0.5 shrink-0"
                 />
-                <button type="button" onClick={handleCreateTag} className="px-3 py-1.5 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors">
+                <button type="button" onClick={handleCreateTag} className="px-3 py-2 sm:py-1.5 text-xs font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors shrink-0">
                   Criar
                 </button>
-                <button type="button" onClick={() => setShowTagCreate(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl">
+                <button type="button" onClick={() => setShowTagCreate(false)} className="p-2.5 sm:p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl shrink-0">
                   <X className="h-3.5 w-3.5 text-gray-400" />
                 </button>
               </div>
             ) : (
-              <button type="button" onClick={() => setShowTagCreate(true)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#EBA500] transition-colors mt-1">
+              <button type="button" onClick={() => setShowTagCreate(true)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#EBA500] transition-colors mt-1 py-2 sm:py-0">
                 <Plus className="h-3.5 w-3.5" /> Nova tag
               </button>
             )}
@@ -855,7 +858,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
             <button
               type="button"
               onClick={() => setExpandLead(v => !v)}
-              className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#EBA500] transition-colors"
+              className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#EBA500] transition-colors py-2 sm:py-0"
             >
               <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expandLead ? 'rotate-180' : ''}`} />
               {expandLead ? 'Ocultar campos' : 'Editar dados manualmente'}
@@ -872,6 +875,7 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Segmento</label>
+                  <input className={INP} value={form.segmento || ''} onChange={e => setForm(p => ({...p, segmento: e.target.value}))} placeholder="Tecnologia, Saúde..." />
                 </div>
               </div>
             )}
@@ -926,11 +930,11 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                         />
                         <div className="flex gap-2 pt-1">
                           <button type="button" onClick={() => saveContactItemEdit(ci)}
-                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                            className="flex items-center gap-1 px-3 py-2.5 sm:py-1.5 text-xs font-semibold bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                             <Save className="h-3 w-3" /> Salvar
                           </button>
                           <button type="button" onClick={() => setEditingContactItem(null)}
-                            className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            className="px-3 py-2.5 sm:py-1.5 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                             Cancelar
                           </button>
                         </div>
@@ -950,11 +954,11 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                             <button type="button" onClick={() => {
                               setEditingContactItem(ci.itemId)
                               setEditingContactForm({ nome: ci.nome, cargo: ci.cargo, email: ci.email, telefone: ci.telefone })
-                            }} className="p-1 hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded-lg transition-colors">
+                            }} className="p-2 sm:p-1 hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded-lg transition-colors">
                               <Edit2 className="h-3.5 w-3.5 text-gray-400 hover:text-purple-600" />
                             </button>
                             <button type="button" onClick={() => removeContactItem(ci.itemId)}
-                              className="p-1 hover:bg-red-100 rounded-lg transition-colors">
+                              className="p-2 sm:p-1 hover:bg-red-100 rounded-lg transition-colors">
                               <X className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
                             </button>
                           </div>
@@ -1017,12 +1021,12 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                         )}
                       </div>
                       <button type="button" onClick={() => removeLineItem(li.lineId)}
-                        className="shrink-0 p-1 hover:bg-red-100 rounded-lg transition-colors">
+                        className="shrink-0 p-2 sm:p-1 hover:bg-red-100 rounded-lg transition-colors">
                         <X className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
                       </button>
                     </div>
                     {/* Fields */}
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div>
                         <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1">Qtd.</label>
                         <input type="text" inputMode="decimal" placeholder="1"
@@ -1123,8 +1127,8 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                             onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveEditObs(obs.id); if (e.key === 'Escape') cancelEditObs() }}
                           />
                           <div className="flex gap-2 mt-1.5">
-                            <button type="button" onClick={() => saveEditObs(obs.id)} disabled={!editingObsText.trim()} className="px-2.5 py-1 text-[10px] font-semibold bg-[#EBA500] hover:bg-[#d99500] disabled:opacity-40 text-white rounded-lg transition-colors">Salvar</button>
-                            <button type="button" onClick={cancelEditObs} className="px-2.5 py-1 text-[10px] font-semibold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">Cancelar</button>
+                            <button type="button" onClick={() => saveEditObs(obs.id)} disabled={!editingObsText.trim()} className="px-3 py-2 sm:px-2.5 sm:py-1 text-[10px] font-semibold bg-[#EBA500] hover:bg-[#d99500] disabled:opacity-40 text-white rounded-lg transition-colors">Salvar</button>
+                            <button type="button" onClick={cancelEditObs} className="px-3 py-2 sm:px-2.5 sm:py-1 text-[10px] font-semibold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">Cancelar</button>
                           </div>
                         </>
                       ) : (
@@ -1138,10 +1142,10 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                     </div>
                     {editingObsId !== obs.id && (
                       <div className="flex flex-col gap-0.5 shrink-0 self-start">
-                        <button type="button" onClick={() => startEditObs(obs)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                        <button type="button" onClick={() => startEditObs(obs)} className="p-2 sm:p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
                           <Pencil className="h-3 w-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
                         </button>
-                        <button type="button" onClick={() => removeObservation(obs.id)} className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                        <button type="button" onClick={() => removeObservation(obs.id)} className="p-2 sm:p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
                           <X className="h-3 w-3 text-gray-300 hover:text-red-400" />
                         </button>
                       </div>
@@ -1163,13 +1167,13 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                 type="button"
                 onClick={addObservation}
                 disabled={!newObsText.trim()}
-                className="shrink-0 self-end px-3 py-2 bg-[#EBA500] hover:bg-[#d99500] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl transition-colors"
+                className="shrink-0 self-end px-3.5 py-3 sm:px-3 sm:py-2 bg-[#EBA500] hover:bg-[#d99500] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl transition-colors"
                 title="Adicionar (Ctrl+Enter)"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">Ctrl+Enter para adicionar rapidamente</p>
+            <p className="hidden sm:block text-[10px] text-gray-400 mt-1">Ctrl+Enter para adicionar rapidamente</p>
           </section>
 
           {/* Anexos */}
@@ -1183,33 +1187,37 @@ function CardModal({ card, columnId, companyId, columns, onClose, onSaved, onDel
                 <div key={att.id} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600">
                   <Paperclip className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                   <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate">{att.file_name}</span>
-                  <span className="text-xs text-gray-400">{att.file_size ? (att.file_size / 1024).toFixed(0) + ' KB' : ''}</span>
-                  <button onClick={() => handleDownload(att)} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
-                    <Download className="h-3.5 w-3.5 text-gray-500" />
+                  <span className="text-xs text-gray-400 shrink-0">{att.file_size ? (att.file_size / 1024).toFixed(0) + ' KB' : ''}</span>
+                  <button onClick={() => handleDownload(att)} className="p-2.5 sm:p-1 hover:bg-gray-200 rounded-lg transition-colors" title={tipoVisualizavel(paraVisualizador(att)) ? 'Visualizar' : 'Baixar'} aria-label={tipoVisualizavel(paraVisualizador(att)) ? 'Visualizar' : 'Baixar'}>
+                    {tipoVisualizavel(paraVisualizador(att)) ? <Eye className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-gray-500" /> : <Download className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-gray-500" />}
                   </button>
-                  <button onClick={() => handleDeleteAttachment(att)} className="p-1 hover:bg-red-50 rounded-lg transition-colors">
-                    <X className="h-3.5 w-3.5 text-red-400" />
+                  <button onClick={() => handleDeleteAttachment(att)} className="p-2.5 sm:p-1 hover:bg-red-50 rounded-lg transition-colors" aria-label="Remover anexo">
+                    <X className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-red-400" />
                   </button>
                 </div>
               ))}
             </div>
             {!isNew && (
-              <label className={`mt-2 flex items-center gap-2 px-3 py-2 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#EBA500]/50 hover:bg-amber-50/30 transition-all text-xs text-gray-400 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+              <label className={`mt-2 flex items-center gap-2 px-3 py-3 sm:py-2 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#EBA500]/50 hover:bg-amber-50/30 transition-all text-xs text-gray-400 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
                 <Upload className="h-3.5 w-3.5" />
-                {uploading ? 'Enviando...' : 'Clique para anexar arquivo (máx. 10MB)'}
+                {uploading ? 'Enviando...' : <><span className="hidden sm:inline">Clique para anexar arquivo</span><span className="sm:hidden">Toque para anexar arquivo</span> (máx. 10MB)</>}
                 <input ref={fileRef} type="file" className="hidden" onChange={handleFileUpload} />
               </label>
             )}
           </section>
         </div>
 
+        {anexoAberto && (
+          <VisualizadorDocumento documento={paraVisualizador(anexoAberto)} bucket="crm-attachments" onClose={() => setAnexoAberto(null)} />
+        )}
+
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2 rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+        <div className="px-4 sm:px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-100 dark:border-gray-700 flex gap-2 sm:justify-end sm:rounded-b-2xl shrink-0">
+          <button onClick={onClose} className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
             Cancelar
           </button>
           <button onClick={handleSave} disabled={loading}
-            className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60">
+            className="flex-1 sm:flex-none justify-center min-h-[44px] sm:min-h-0 flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60">
             {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Salvando...</> : <><Save className="h-4 w-4" />Salvar</>}
           </button>
         </div>
@@ -1284,7 +1292,7 @@ function KanbanCard({ card, onEdit, isDragOverlay = false, tags = [], contacts =
       {...attributes}
       {...listeners}
       onClick={() => onEdit(card)}
-      className={`rounded-xl border shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none
+      className={`rounded-xl border shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none [-webkit-touch-callout:none]
         ${isDragging ? 'opacity-30' : ''}
         ${isOverdue
           ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 hover:border-red-400 dark:hover:border-red-500'
@@ -1349,7 +1357,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
   const totalValue = cards.reduce((s, c) => s + (parseFloat(c.valor_oportunidade) || 0), 0)
 
   return (
-    <div ref={setColRef} style={style} className="flex flex-col w-72 shrink-0 group/col h-full">
+    <div ref={setColRef} style={style} className="flex flex-col w-[82vw] max-w-[20rem] sm:w-72 sm:max-w-none shrink-0 snap-start group/col h-full">
       {/* Column card wrapper */}
 <div className={`flex flex-col min-h-0 h-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-shadow ${isDragging ? 'shadow-xl' : 'hover:shadow-md'}`}>
 
@@ -1358,7 +1366,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
 
         {/* Column header */}
         <div className="flex items-center gap-2 px-3 pt-3 pb-2">
-          <div {...listeners} {...attributes} className="cursor-grab p-1 -ml-1 opacity-0 group-hover/col:opacity-40 transition-all">
+          <div {...listeners} {...attributes} className="cursor-grab p-2 sm:p-1 -ml-2 sm:-ml-1 touch-none opacity-40 sm:opacity-0 sm:group-hover/col:opacity-40 transition-all" aria-label="Arrastar coluna">
             <GripVertical className="h-4 w-4 text-gray-400" />
           </div>
           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: column.color }} />
@@ -1371,11 +1379,11 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
             )}
           </div>
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: column.color + '20', color: column.color }}>{cards.length}</span>
-          <div className="flex items-center gap-0.5 opacity-0 group-hover/col:opacity-100 transition-all">
-            <button onClick={() => onEditColumn(column)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+          <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover/col:opacity-100 transition-all">
+            <button onClick={() => onEditColumn(column)} className="p-2 sm:p-1 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Editar coluna">
               <Edit2 className="h-3.5 w-3.5 text-gray-400" />
             </button>
-            <button onClick={() => onDeleteColumn(column.id)} className="p-1 hover:bg-red-50 rounded-lg transition-colors">
+            <button onClick={() => onDeleteColumn(column.id)} className="p-2 sm:p-1 hover:bg-red-50 rounded-lg transition-colors" aria-label="Excluir coluna">
               <Trash2 className="h-3.5 w-3.5 text-red-400" />
             </button>
           </div>
@@ -1387,7 +1395,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
         {/* Cards drop area */}
         <div ref={setNodeRef}
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          className={`flex-1 min-h-0 overflow-y-auto p-2 [&::-webkit-scrollbar]:hidden transition-colors ${isOver ? 'bg-[#EBA500]/5' : 'bg-transparent'}`}
+          className={`flex-1 min-h-0 overflow-y-auto overscroll-y-contain p-2 [&::-webkit-scrollbar]:hidden transition-colors ${isOver ? 'bg-[#EBA500]/5' : 'bg-transparent'}`}
         >
           <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
             <div className="space-y-2">
@@ -1398,7 +1406,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onEditColumn, onDe
           </SortableContext>
           <button
             onClick={() => onAddCard(column.id)}
-            className="mt-2 w-full flex items-center gap-1.5 px-3 py-2 text-xs text-gray-400 hover:text-[#EBA500] hover:bg-[#EBA500]/5 rounded-xl transition-colors border-2 border-dashed border-transparent hover:border-[#EBA500]/20"
+            className="mt-2 w-full flex items-center gap-1.5 px-3 py-3 sm:py-2 text-xs text-gray-400 hover:text-[#EBA500] hover:bg-[#EBA500]/5 rounded-xl transition-colors border-2 border-dashed border-transparent hover:border-[#EBA500]/20"
           >
             <Plus className="h-3.5 w-3.5" /> Adicionar card
           </button>
@@ -1427,10 +1435,10 @@ function ColumnModal({ column, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xs p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xs p-5 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-bold text-gray-800 dark:text-white">{column?.id ? 'Editar Coluna' : 'Nova Coluna'}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><X className="h-4 w-4 text-gray-400" /></button>
+          <button onClick={onClose} className="p-2.5 sm:p-1 -mr-2 sm:mr-0 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" aria-label="Fechar"><X className="h-4 w-4 text-gray-400" /></button>
         </div>
         <div className="space-y-4">
           <div>
@@ -1448,10 +1456,10 @@ function ColumnModal({ column, onClose, onSaved }) {
             />
           </div>
         </div>
-        <div className="flex justify-end gap-2 mt-6">
-          <button onClick={onClose} className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
+        <div className="flex gap-2 sm:justify-end mt-6">
+          <button onClick={onClose} className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
           <button onClick={handleSave} disabled={saving}
-            className="px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60">
+            className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-60">
             Salvar
           </button>
         </div>
@@ -1474,16 +1482,16 @@ function ConfirmModal({ title, message, confirmLabel = 'Excluir', onConfirm, onC
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{message}</p>
           </div>
         </div>
-        <div className="flex justify-end gap-2 pt-1">
+        <div className="flex gap-2 sm:justify-end pt-1">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors"
+            className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors"
           >
             {confirmLabel}
           </button>
@@ -2672,6 +2680,7 @@ export default function CRMPage() {
   const [filterTags, setFilterTags] = useState([])              // tag IDs selecionadas
   const [boardTags, setBoardTags] = useState([])                // todas as tags da empresa
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [editingTagId, setEditingTagId] = useState(null)
   const [editingTagName, setEditingTagName] = useState('')
   const [editingTagColor, setEditingTagColor] = useState('#6366f1')
@@ -2716,8 +2725,10 @@ export default function CRMPage() {
   const location = useLocation()
   const navigate = useNavigate()
 
+  // Mouse arrasta após 5px. No toque, é preciso segurar ~250ms para arrastar (antes disso é rolagem)
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } })
   )
 
   // ── Load ───────────────────────────────────────────────────────────────────
@@ -3163,6 +3174,7 @@ export default function CRMPage() {
 
   const colIds = useMemo(() => columns.map(c => `col-${c.id}`), [columns])
   const totalCards = Object.values(cards).flat().length
+  const activeFilterCount = filterStatus.length + (filterPeriod.from || filterPeriod.to ? 1 : 0) + filterTags.length
   const totalValue = Object.values(cards).flat().reduce((s, c) => s + (parseFloat(c.valor_oportunidade) || 0), 0)
 
   if (boardsLoading) return (
@@ -3176,12 +3188,12 @@ export default function CRMPage() {
 
   // ── Boards list view ───────────────────────────────────────────────────────
   if (!selectedBoard) return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="crm-page min-h-screen bg-white dark:bg-gray-900">
       <SuperAdminBanner />
-      <div className="p-6">
+      <div className="p-1 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 pl-10 lg:pl-0 min-h-[40px]">
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow">
             <Kanban className="h-5 w-5 text-white" />
           </div>
@@ -3190,28 +3202,28 @@ export default function CRMPage() {
             <p className="text-xs text-gray-400">{boards.length} pipeline{boards.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
           <button
             onClick={() => navigate('/crm/leads' + (adminCompanyId ? `?from=admin&companyId=${adminCompanyId}` : ''))}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors"
+            className="flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors"
           >
             <Building2 className="h-4 w-4" /> Leads
           </button>
           <button
             onClick={() => navigate('/crm/contatos' + (adminCompanyId ? `?from=admin&companyId=${adminCompanyId}` : ''))}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors"
+            className="flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors"
           >
             <Users className="h-4 w-4" /> Contatos
           </button>
           <button
             onClick={() => navigate('/crm/produtos' + (adminCompanyId ? `?from=admin&companyId=${adminCompanyId}` : ''))}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors"
+            className="flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors"
           >
             <Package className="h-4 w-4" /> Produtos
           </button>
           <button
             onClick={() => { setNewBoardTitle(''); setNewBoardModal(true) }}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors shadow-sm"
+            className="order-first sm:order-none col-span-3 sm:col-span-1 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors shadow-sm"
           >
             <Plus className="h-4 w-4" /> Novo Pipeline
           </button>
@@ -3220,7 +3232,7 @@ export default function CRMPage() {
 
       {/* Grid de boards */}
       {boards.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-4 text-center py-24">
+        <div className="flex flex-col items-center justify-center gap-4 text-center py-16 sm:py-24">
           <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
             <LayoutGrid className="h-8 w-8 text-blue-300" />
           </div>
@@ -3236,18 +3248,18 @@ export default function CRMPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {boards.map(board => (
             <div key={board.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all group flex flex-col">
-              <div className="p-5 flex-1">
+              <div className="p-4 sm:p-5 flex-1">
                 <div className="flex items-start justify-between gap-2 mb-4">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-sm text-lg">
                     {renderIcon(board.icon || '🎯', 'h-5 w-5 text-white')}
                   </div>
                   <button
                     onClick={() => handleDeleteBoard(board)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 p-1 rounded-lg hover:bg-red-50"
-                    title="Excluir pipeline"
+                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 p-2.5 -m-2.5 sm:p-1 sm:m-0 rounded-lg hover:bg-red-50"
+                    title="Excluir pipeline" aria-label="Excluir pipeline"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -3257,10 +3269,10 @@ export default function CRMPage() {
                   Criado em {new Date(board.created_at).toLocaleDateString('pt-BR')}
                 </p>
               </div>
-              <div className="px-5 pb-5">
+              <div className="px-4 sm:px-5 pb-4 sm:pb-5">
                 <button
                   onClick={() => openBoard(board)}
-                  className="w-full py-2 text-sm font-semibold text-[#EBA500] border border-[#EBA500]/40 rounded-xl hover:bg-[#EBA500] hover:text-white transition-colors"
+                  className="w-full py-2.5 sm:py-2 text-sm font-semibold text-[#EBA500] border border-[#EBA500]/40 rounded-xl hover:bg-[#EBA500] hover:text-white transition-colors"
                 >
                   Abrir pipeline
                 </button>
@@ -3272,8 +3284,8 @@ export default function CRMPage() {
 
       {/* Modal: Novo Pipeline */}
       {newBoardModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-5 sm:p-6 w-full max-w-sm">
             <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Novo Pipeline</h2>
 
             {/* Seletor de ícone */}
@@ -3300,14 +3312,14 @@ export default function CRMPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setNewBoardModal(false)}
-                className="flex-1 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="flex-1 py-2.5 sm:py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Cancelar
               </button>
               <button
                 onClick={createBoard}
                 disabled={!newBoardTitle.trim()}
-                className="flex-1 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-40"
+                className="flex-1 py-2.5 sm:py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors disabled:opacity-40"
               >
                 Criar
               </button>
@@ -3341,26 +3353,26 @@ export default function CRMPage() {
 
   // ── Board detail view ──────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-white dark:bg-gray-900">
+    <div className="crm-page flex flex-col h-[calc(100dvh-4rem)] bg-white dark:bg-gray-900">
       <SuperAdminBanner />
       {/* Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-200/60 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shrink-0 relative z-20">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 mr-auto">
+      <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-200/60 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shrink-0 relative z-20">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="order-1 flex items-center gap-2 mr-auto min-w-0 flex-1 sm:flex-none pl-10 lg:pl-0">
             <button
               onClick={backToList}
-              className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              title="Voltar para pipelines"
+              className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              title="Voltar para pipelines" aria-label="Voltar para pipelines"
             >
               <ArrowLeft className="h-4 w-4 text-gray-600" />
             </button>
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow text-lg">
+            <div className="hidden sm:flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow text-lg">
               {renderIcon(selectedBoard?.icon || '🎯', 'h-5 w-5 text-white')}
             </div>
-            <div>
+            <div className="min-w-0">
               {editingTitle ? (
                 <input
-                  className="text-lg font-bold text-gray-800 dark:text-white bg-transparent border-b-2 border-[#EBA500] outline-none w-full min-w-[160px] max-w-xs dark:placeholder-gray-400"
+                  className="text-lg font-bold text-gray-800 dark:text-white bg-transparent border-b-2 border-[#EBA500] outline-none w-full min-w-0 max-w-xs dark:placeholder-gray-400"
                   value={titleDraft}
                   onChange={e => setTitleDraft(e.target.value)}
                   onBlur={handleSaveTitle}
@@ -3370,47 +3382,65 @@ export default function CRMPage() {
                 />
               ) : (
                 <h1
-                  className="text-lg font-bold cursor-pointer transition-colors group flex items-center gap-1.5 text-gray-800 dark:text-white hover:text-[#EBA500]"
+                  className="text-base sm:text-lg font-bold cursor-pointer transition-colors group flex items-center gap-1.5 text-gray-800 dark:text-white hover:text-[#EBA500] min-w-0"
                   onClick={() => { setTitleDraft(selectedBoard?.title || ''); setEditingTitle(true) }}
                   title="Clique para editar o título"
                 >
-                  {selectedBoard?.title}
-                  <Edit2 className="h-3.5 w-3.5 opacity-0 group-hover:opacity-40 transition-opacity" />
+                  <span className="truncate">{selectedBoard?.title}</span>
+                  <Edit2 className="h-3.5 w-3.5 shrink-0 opacity-40 sm:opacity-0 sm:group-hover:opacity-40 transition-opacity" />
                 </h1>
               )}
-              <p className="text-xs text-gray-400">{totalCards} leads · {fmtMoney(totalValue)} em oportunidades</p>
+              <p className="text-xs text-gray-400 truncate">{totalCards} leads · {fmtMoney(totalValue)} em oportunidades</p>
             </div>
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-            <input
-              className="pl-8 pr-3 py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] w-48"
-              placeholder="Buscar lead..."
-              value={search} onChange={e => setSearch(e.target.value)}
-            />
+          {/* Search (+ botão de filtros no celular) */}
+          <div className="order-3 sm:order-2 flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+              <input
+                className="pl-8 pr-3 py-2.5 sm:py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] w-full sm:w-48"
+                placeholder="Buscar lead..."
+                value={search} onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(v => !v)}
+              aria-expanded={filtersOpen}
+              className={`sm:hidden shrink-0 flex items-center gap-1.5 px-3 min-h-[42px] rounded-xl border text-sm font-medium transition-colors ${
+                filtersOpen || activeFilterCount > 0
+                  ? 'bg-amber-50 border-[#EBA500] text-[#EBA500] dark:bg-amber-900/20'
+                  : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              <Filter className="h-4 w-4" />
+              Filtros
+              {activeFilterCount > 0 && (
+                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#EBA500] text-white text-[10px] flex items-center justify-center">{activeFilterCount}</span>
+              )}
+            </button>
           </div>
 
           <button
             onClick={() => setColumnModal({})}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors shadow-sm"
+            className="order-2 sm:order-3 shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-2 text-sm font-semibold text-white bg-[#EBA500] hover:bg-[#d49500] rounded-xl transition-colors shadow-sm"
           >
-            <Plus className="h-4 w-4" /> Nova Coluna
+            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova Coluna</span><span className="sm:hidden">Coluna</span>
           </button>
         </div>
 
         {/* ── Filtros ── */}
-        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex-wrap">
+        <div className={`${filtersOpen ? 'flex' : 'hidden'} sm:flex items-center gap-x-4 gap-y-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex-wrap max-h-[55dvh] overflow-y-auto sm:max-h-none sm:overflow-visible`}>
           {/* Status */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide shrink-0">Status</span>
-            <div className="flex gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
               {STATUS_OPTIONS.map(s => (
                 <button
                   key={s.value}
                   onClick={() => setFilterStatus(p => p.includes(s.value) ? p.filter(x => x !== s.value) : [...p, s.value])}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                  className={`px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-full text-xs font-medium border transition-all ${
                     filterStatus.includes(s.value) ? s.color + ' border-current' : 'bg-gray-50 text-gray-400 border-transparent hover:border-gray-200'
                   }`}
                 >
@@ -3421,18 +3451,18 @@ export default function CRMPage() {
           </div>
 
           {/* Período */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide shrink-0">Período</span>
             <input
               type="date"
-              className="px-2.5 py-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
+              className="flex-1 min-w-0 sm:flex-none px-2.5 py-2 sm:py-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
               value={filterPeriod.from}
               onChange={e => setFilterPeriod(p => ({ ...p, from: e.target.value }))}
             />
             <span className="text-xs text-gray-400 dark:text-gray-500">até</span>
             <input
               type="date"
-              className="px-2.5 py-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
+              className="flex-1 min-w-0 sm:flex-none px-2.5 py-2 sm:py-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#EBA500]/30 focus:border-[#EBA500] bg-white"
               value={filterPeriod.to}
               onChange={e => setFilterPeriod(p => ({ ...p, to: e.target.value }))}
             />
@@ -3440,10 +3470,10 @@ export default function CRMPage() {
 
           {/* Tags — dropdown multi-select */}
           {boardTags.length > 0 && (
-            <div className="relative" ref={tagDropdownRef}>
+            <div className="sm:relative w-full sm:w-auto" ref={tagDropdownRef}>
               <button
                 onClick={() => setTagDropdownOpen(v => !v)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                className={`flex items-center justify-center sm:justify-start gap-1.5 w-full sm:w-auto px-3 py-2.5 sm:py-1.5 rounded-xl border text-xs font-semibold transition-all ${
                   filterTags.length > 0
                     ? 'bg-amber-50 border-[#EBA500] text-[#EBA500] dark:bg-amber-900/20'
                     : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:border-[#EBA500]/50'
@@ -3460,7 +3490,7 @@ export default function CRMPage() {
               </button>
 
               {tagDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[220px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden">
+                <div className="mt-1.5 sm:absolute sm:left-0 sm:top-full z-50 w-full sm:w-auto sm:min-w-[220px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden">
                   {/* Header */}
                   <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700">
                     <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Filtrar por tags</span>
@@ -3480,7 +3510,7 @@ export default function CRMPage() {
                       const isEditing = editingTagId === tag.id
                       if (isEditing) {
                         return (
-                          <div key={tag.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50">
+                          <div key={tag.id} className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 bg-gray-50 dark:bg-gray-700/50">
                             <input
                               type="color"
                               value={editingTagColor}
@@ -3493,20 +3523,20 @@ export default function CRMPage() {
                               value={editingTagName}
                               onChange={e => setEditingTagName(e.target.value)}
                               onKeyDown={e => { if (e.key === 'Enter') handleUpdateTag(tag.id); if (e.key === 'Escape') setEditingTagId(null) }}
-                              className="flex-1 text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 outline-none focus:border-[#EBA500]"
+                              className="flex-1 min-w-0 text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 sm:py-1 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 outline-none focus:border-[#EBA500]"
                               autoFocus
                               placeholder="Nome da tag"
                             />
                             <button
                               onClick={() => handleUpdateTag(tag.id)}
-                              className="p-1 rounded-lg bg-[#EBA500] hover:bg-[#d4940a] transition-colors"
+                              className="p-2 sm:p-1 rounded-lg bg-[#EBA500] hover:bg-[#d4940a] transition-colors"
                               title="Salvar"
                             >
                               <Check className="h-3 w-3 text-white" />
                             </button>
                             <button
                               onClick={() => setEditingTagId(null)}
-                              className="p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              className="p-2 sm:p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                               title="Cancelar"
                             >
                               <X className="h-3 w-3 text-gray-400" />
@@ -3515,7 +3545,7 @@ export default function CRMPage() {
                         )
                       }
                       return (
-                        <div key={tag.id} className="flex items-center justify-between px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 group/row">
+                        <div key={tag.id} className="flex items-center justify-between px-3 py-2 sm:py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 group/row">
                           <button
                             onClick={() => setFilterTags(p => active ? p.filter(x => x !== tag.id) : [...p, tag.id])}
                             className="flex items-center gap-2 flex-1 min-w-0"
@@ -3536,7 +3566,7 @@ export default function CRMPage() {
                               {tag.name}
                             </span>
                           </button>
-                          <div className="flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100 transition-opacity">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -3544,7 +3574,7 @@ export default function CRMPage() {
                                 setEditingTagName(tag.name)
                                 setEditingTagColor(tag.color)
                               }}
-                              className="p-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                              className="p-2 sm:p-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
                               title="Editar tag"
                             >
                               <Pencil className="h-3 w-3 text-gray-400 hover:text-blue-500" />
@@ -3563,7 +3593,7 @@ export default function CRMPage() {
                                   },
                                 })
                               }}
-                              className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                              className="p-2 sm:p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
                               title="Excluir tag"
                             >
                               <X className="h-3 w-3 text-gray-400 hover:text-red-500" />
@@ -3582,7 +3612,7 @@ export default function CRMPage() {
           {(filterStatus.length > 0 || filterPeriod.from || filterPeriod.to || filterTags.length > 0) && (
             <button
               onClick={() => { setFilterStatus([]); setFilterPeriod({ from: '', to: '' }); setFilterTags([]) }}
-              className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors"
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors py-2 sm:py-0"
             >
               <X className="h-3.5 w-3.5" /> Limpar filtros
             </button>
@@ -3621,7 +3651,7 @@ export default function CRMPage() {
             {/* Left scroll arrow */}
             <button
               onClick={() => boardScrollRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-md border border-gray-200 dark:border-gray-600 rounded-full text-gray-500 hover:text-[#EBA500] transition-all opacity-70 hover:opacity-100"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 hidden sm:flex items-center justify-center bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-md border border-gray-200 dark:border-gray-600 rounded-full text-gray-500 hover:text-[#EBA500] transition-all opacity-70 hover:opacity-100"
               title="Rolar para esquerda"
             >
               <ChevronRight className="h-4 w-4 rotate-180" />
@@ -3629,13 +3659,13 @@ export default function CRMPage() {
             {/* Right scroll arrow */}
             <button
               onClick={() => boardScrollRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-md border border-gray-200 dark:border-gray-600 rounded-full text-gray-500 hover:text-[#EBA500] transition-all opacity-70 hover:opacity-100"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 hidden sm:flex items-center justify-center bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-md border border-gray-200 dark:border-gray-600 rounded-full text-gray-500 hover:text-[#EBA500] transition-all opacity-70 hover:opacity-100"
               title="Rolar para direita"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
-            <div ref={boardScrollRef} className="flex-1 overflow-x-auto overflow-y-hidden h-full kanban-scroll">
-            <div className="flex gap-4 p-4 h-full">
+            <div ref={boardScrollRef} className={`flex-1 overflow-x-auto overflow-y-hidden h-full kanban-scroll scroll-px-3 ${activeCard || activeColumn ? '' : 'snap-x snap-proximity sm:snap-none'}`}>
+            <div className="flex gap-3 sm:gap-4 p-3 sm:p-4 h-full">
               <SortableContext items={colIds} strategy={horizontalListSortingStrategy}>
                 {columns.map(col => (
                   <KanbanColumn
@@ -3656,7 +3686,7 @@ export default function CRMPage() {
               {/* Add column shortcut */}
               <button
                 onClick={() => setColumnModal({})}
-                className="shrink-0 w-72 h-20 flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#EBA500]/50 hover:text-[#EBA500] hover:bg-amber-50/30 transition-all text-sm font-medium"
+                className="shrink-0 snap-start w-[82vw] max-w-[20rem] sm:w-72 sm:max-w-none h-20 flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#EBA500]/50 hover:text-[#EBA500] hover:bg-amber-50/30 transition-all text-sm font-medium"
               >
                 <Plus className="h-5 w-5" /> Adicionar coluna
               </button>
@@ -3667,7 +3697,7 @@ export default function CRMPage() {
           <DragOverlay>
             {activeCard && <KanbanCard card={activeCard} onEdit={() => {}} isDragOverlay tags={cardTagsMap[activeCard.id] || []} contacts={cardContactsMap[activeCard.id] || []} />}
             {activeColumn && (
-              <div className="w-72 bg-white rounded-2xl border-2 border-[#EBA500]/50 shadow-2xl p-3 opacity-90">
+              <div className="w-[82vw] max-w-[20rem] sm:w-72 sm:max-w-none bg-white rounded-2xl border-2 border-[#EBA500]/50 shadow-2xl p-3 opacity-90">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ background: activeColumn.color }} />
                   <span className="text-sm font-bold text-gray-700">{activeColumn.name}</span>
